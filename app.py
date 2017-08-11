@@ -24,6 +24,7 @@ import os
 import re
 import config as cfg
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = cfg.SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
