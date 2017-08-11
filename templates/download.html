@@ -1,0 +1,242 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div class="row"><div class="col-md-6 col-md-offset-3">
+  <h1>Download Data</h1>
+  <p class="lead">Access all of the current data here for your own modeling and analysis.<p>
+
+
+  <form id="dnld" action="/_getcsv" method="POST" class="form-horizontal">
+      <select placeholder="Choose site(s)" id="dsite" name="site" multiple>
+        <option value="">Choose site(s)</option>
+        {% for sv, sn, sd, ed, va in sites %}
+        <option value="{{sv}}">{{sn}}</option>
+        {% endfor %}
+      </select>
+    <input type="hidden" name="sites" value="">
+    <input type="hidden" name="variables" value="">
+    <input type="hidden" name="startDate" value="">
+    <input type="hidden" name="endDate" value="">
+    <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range"><br>
+    <p class="lead">Variables:</p>
+    <div id="dnld_vars"></div><br>
+    <div class="form-inline">
+      Include data flags: <input type="checkbox" id="flag" name="flag"> &nbsp; <small class="form-text text-muted">Unavailable if reformatting data.</small>
+      <br>
+      Include local USGS discharge and depth values: <input type="checkbox" name="usgs"><br>
+      <small class="form-text text-muted">Note: this feature can add considerable time for long timeseries due to querying the USGS server.</small>
+    </div><br>
+
+    <p class="lead">Formatting:</p>
+    <div class="form-inline">
+      Temporal aggregation:
+      <select id="aggregate" name="aggregate" class="form-control">
+        <option value="none" selected>15 minutes (default)</option>
+        <option value="H">1 hour</option>
+        <option value="D">1 day</option>
+      </select>
+      <br>
+      Data format:
+      <select id="dataform" name="dataform" class="form-control">
+        <option value="long" selected>Long</option>
+        <option value="wide">Wide</option>
+      </select> &nbsp; <a href="https://en.wikipedia.org/wiki/Wide_and_narrow_data" target="_new"><i class="fa fa-question-circle-o"></i></a>
+    </div><br>
+
+    <div class="form-inline">
+      <label>
+        <input class="form-control" type="checkbox" name="policy" required> I agree to the <a href="policy">StreamPULSE data policy</a> (required).
+      </label>
+    </div><br>
+
+    {% if not g.user.is_authenticated %}
+    <div class="form-inline">
+        Email (optional): <input class="form-control" type="textbox" name="email" placeholder="Email address, optional">
+        <br>
+      <span class="text-muted">We will add you to our mailing list to get occasional (3-4 times a year) updates about our project. We will not share your email with anyone else.<span>
+    </div><br>
+    {% endif %}
+
+    <button id="getcsv" type="submit" value=Download class="btn btn-primary btn-block">Download</button>
+  </form>
+</div></div>
+<br>
+
+<!--
+<div class="row" id="dnldspecs"><div class="col-md-6 col-md-offset-3">
+  <form id="dnld_specs" action="/_getcsv" method="POST" class="form-horizontal">
+    <p class="lead">Dates:</p>
+    <input type="hidden" name="site" value="">
+    <input type="hidden" name="variables" value="">
+    <input type="hidden" name="startDate" value="">
+    <input type="hidden" name="endDate" value="">
+    <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range"><br>
+    <p class="lead">Variables:</p>
+    <div id="dnld_vars"></div><br>
+    <div class="form-inline">
+      Include data flags: <input type="checkbox" id="flag" name="flag"> &nbsp; <small class="form-text text-muted">Unavailable if reformatting data.</small>
+      <br>
+      Include local USGS discharge and depth values: <input type="checkbox" name="usgs"><br>
+      <small class="form-text text-muted">Note: this feature can add considerable time for long timeseries due to querying the USGS server.</small>
+    </div><br>
+
+    <p class="lead">Formatting:</p>
+    <div class="form-inline">
+      Temporal aggregation:
+      <select id="aggregate" name="aggregate" class="form-control">
+        <option value="none" selected>15 minutes (default)</option>
+        <option value="H">1 hour</option>
+        <option value="D">1 day</option>
+      </select>
+      <br>
+      Data format:
+      <select id="dataform" name="dataform" class="form-control">
+        <option value="long" selected>Long</option>
+        <option value="wide">Wide</option>
+      </select> &nbsp; <a href="https://en.wikipedia.org/wiki/Wide_and_narrow_data" target="_new"><i class="fa fa-question-circle-o"></i></a>
+    </div><br>
+
+    <button id="getcsv" type="submit" value=Download class="btn btn-primary btn-block">Download</button>
+  </form>
+</div></div>
+-->
+
+<script>
+$('#dsite').selectize({
+    delimiter: ',',
+    persist: false,
+    create: function(input) { return { value: input,text: input } }
+});
+
+var sitedict = {}
+{% for sv, sn, sd, ed, va in sites %}
+  sitedict['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
+{% endfor %}
+
+$('#dsite').change(function(){
+  //http://www.daterangepicker.com/
+  var siteinfo = sitedict[$('select[name=site]').val()];
+  // var sitedates = siteinfo['dates']
+  var startdates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][0]) });
+  var enddates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][1]) });
+  var startdate = new Date(Math.min.apply(null, startdates));
+  var enddate = new Date(Math.max.apply(null, enddates));
+  sitedates = [startdate.toISOString().slice(0,10), enddate.toISOString().slice(0,10)]
+
+  $('#datepicker').daterangepicker({
+    locale: {format: 'YYYY-MM-DD', separator: ' to '},
+    startDate: sitedates[0],
+    endDate: sitedates[1],
+    minDate: sitedates[0],
+    maxDate: sitedates[1],
+    autoApply: true,
+    opens: 'left'
+  });
+
+  // $('#start_date').text( '"'+$("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD')+'"' );
+  // $('#end_date').text( '"'+$("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD')+'"' );
+
+  $('#dnld input[name=startDate]').val(sitedates[0]);
+  $('#dnld input[name=endDate]').val(sitedates[1]);
+  $('#dnld input[name=sites]').val($('select[name=site]').val().join());
+  $("#dnld_vars").empty();
+  // var sitevars = siteinfo['vars'].split(",")
+  // get all variables in all sites
+  var sitevars = $('select[name=site]').val().map(function(x){ return sitedict[x]['vars'].split(",") }).reduce(function(a,b){ return a.concat(b) })
+  // get unique variables in list
+  var uvars = sitevars.filter(function(item, i, ar){ return ar.indexOf(item) === i; }).sort()
+  for (var i = 0; i < uvars.length; ++i) {
+      $('#dnld_vars').append('<input type="checkbox" id="variables" value="'+uvars[i]+'" checked> '+uvars[i]+'<br>');
+  }
+
+});
+
+// $('#datepicker').on('apply.daterangepicker', function(ev, picker) {
+//   $('#start_date').text( '"'+picker.startDate.format('YYYY-MM-DD')+'"' );
+//   $('#end_date').text( '"'+picker.endDate.format('YYYY-MM-DD')+'"' );
+// });
+
+
+// $(function(){
+//   $("button[name=dnldsite]").click(function(){
+//     var dat = {}
+//     dat['site'] = $('select[name=site]').val();
+//     $('#loading').show();
+//     $.ajax({
+//       type: 'POST',
+//       url:'/_getstats',
+//       data: JSON.stringify(dat),
+//       contentType: 'application/json;charset=UTF-8',
+//       success: function(response){
+//         $('#loading').hide();
+//         $('#dnldspecs').show();
+//         // $('.input-daterange').datepicker({
+//         //     startDate: response.startDate,
+//         //     endDate: response.endDate,
+//         //     todayHighlight: true,
+//         //     format: 'yyyy-mm-dd'
+//         // });
+//         // $('#startDate').val(response.startDate);
+//         // $('#endDate').val(response.endDate);
+//         $('#datepicker').daterangepicker({
+//           locale: {format: 'YYYY-MM-DD', separator: ' to '},
+//           startDate: response.startDate,
+//           endDate: response.endDate,
+//           minDate: response.startDate,
+//           maxDate: response.endDate,
+//           autoApply: true,
+//           opens: 'left'
+//         });
+//
+//         $("#dnld_vars").empty();
+//         for (var i = 0; i < response.variables.length; ++i) {
+//             $('#dnld_vars').append('<input type="checkbox" id="variables" value="'+response.variables[i]+'" checked> '+response.variables[i]+'<br>');
+//         }
+//       },
+//       error: function(error){
+//         console.log(error);
+//       }
+//     });
+//     return false;
+//   })
+// });
+
+$('#datepicker').on('apply.daterangepicker', function(ev, picker) {
+  var sdt = picker.startDate.format("YYYY-MM-DD");
+  var edt = picker.endDate.format("YYYY-MM-DD");
+  $('#dnld input[name=startDate]').val(sdt);
+  $('#dnld input[name=endDate]').val(edt);
+});
+
+$(function(){
+  $("#getcsv").click(function(){
+    $('#dnld input[name=variables]').val( $('#variables:checked').map(function() { return this.value; }).get() );
+  })
+});
+
+$(function(){
+  $("#aggregate").change(function(){
+    $('#flag').prop('checked', false);
+    if(this.value=="none" && $("#dataform").val()=='long'){
+      $('#flag').attr("disabled", false);
+    }else{
+      $('#flag').attr("disabled", true);
+    };
+  })
+});
+
+$(function(){
+  $("#dataform").change(function(){
+    $('#flag').prop('checked', false);
+    if(this.value=="long" && $("#aggregate").val()=='none'){
+      $('#flag').attr("disabled", false);
+    }else{
+      $('#flag').attr("disabled", true);
+    };
+  })
+});
+
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,12 @@
+spv2code
+*.csv
+*.dat
+*.pyc
+static/img/*
+static/metadata/*
+static/uploads/*
+spenv/*
+config*
+wsgi*
+*.ini
+local.py
