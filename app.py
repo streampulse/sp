@@ -129,7 +129,7 @@ class Site(db.Model):
     longitude = db.Column(db.Float)
     usgs = db.Column(db.String(20))
     addDate = db.Column(db.DateTime)
-    embargo = db.Column(db.Boolean)
+    embargo = db.Column(db.Integer)
     by = db.Column(db.Integer)
     contact = db.Column(db.String(50))
     contactEmail = db.Column(db.String(255))
@@ -434,15 +434,15 @@ def authenticate_sites(sites,user=None,token=None):
         r,s = site.split("_")
         ss.append("(region='"+r+"' and site='"+s+"') ")
     qs = "or ".join(ss)
-    xx = pd.read_sql("select region, site, embargo, site.by from site where "+qs, db.engine)
+    xx = pd.read_sql("select region, site, embargo, addDate, site.by from site where "+qs, db.engine)
     if token is not None:
         tt = pd.read_sql("select * from user where token='"+token+"'", db.engine)
         if(len(tt)==1):
             user = str(tt.id[0])
     if user is not None: # return public sites and authenticated sites
-        xx = xx[(xx['embargo']==0)|(xx['by']==int(user))]
+        xx = xx[((datetime.utcnow()-xx['addDate']).days > xx['embargo']*365)|(xx['by']==int(user))]
     else: # return only public sites
-        xx = xx[(xx['embargo']==0)] # return
+        xx = xx[((datetime.utcnow()-xx['addDate']).days > xx['embargo']*365)] # return
     return [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
 
 def generate_confirmation_token(email):
@@ -697,7 +697,7 @@ def confirmcolumns():
         # Add site if new site
         if request.form['existing'] == "no":
             # need to add site to list
-            embargo = False #if request.form['policy']=="streampulse" else True
+            embargo = 1 # automatically embargo for 1 year, can change later in database...
             usgss = None if request.form['usgs']=="" else request.form['usgs']
             sx = Site(region=region, site=site, name=request.form['sitename'],
                 latitude=request.form['lat'], longitude=request.form['lng'], usgs=usgss,
