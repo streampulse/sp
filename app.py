@@ -439,10 +439,11 @@ def authenticate_sites(sites,user=None,token=None):
         tt = pd.read_sql("select * from user where token='"+token+"'", db.engine)
         if(len(tt)==1):
             user = str(tt.id[0])
+    embargoed = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
     if user is not None: # return public sites and authenticated sites
-        xx = xx[((datetime.utcnow()-xx['addDate']).days > xx['embargo']*365)|(xx['by']==int(user))]
+        xx = xx[(embargoed)|(xx['by']==int(user))]
     else: # return only public sites
-        xx = xx[((datetime.utcnow()-xx['addDate']).days > xx['embargo']*365)] # return
+        xx = xx[(embargoed)] # return
     return [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
 
 def generate_confirmation_token(email):
