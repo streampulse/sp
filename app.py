@@ -405,7 +405,8 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
     if(len(sitex)==0 or usgs is None):
         return []
     vcds = '00060,00065'#",".join(vvv)
-    url = "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&sites="+usgs+"&startDT="+startDate+"&endDT="+endDate+"&parameterCd="+vcds+"&siteStatus=all"
+    #request usgs water service data in universal time (T01:15 makes it line up with our datasets)
+    url = "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&sites="+usgs+"&startDT="+startDate+"T01:15Z&endDT="+endDate+"T23:59Z&parameterCd="+vcds+"&siteStatus=all"
     r = requests.get(url)
     r.status_code
     xf = r.json()
