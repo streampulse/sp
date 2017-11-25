@@ -74,22 +74,24 @@ drift.load('rwx4vf8u4wm7');
 </div>
 
 <div class="row">
+  <div class="col-md-3">
+  </div>
   <div class="col-md-6">
     <div class="panel panel-default">
-      <div class="panel-heading"><span class="lead">Flags</span> &ndash; data that should be noted as a concern (sensor failure, fouling, etc.)</div>
+      <div class="panel-heading"><span class="lead">Data Flagging</span> &ndash; Label points of interest or concern. </div>
       <div class="panel-body">
-        <select id="flags" placeholder="Choose (or enter) a flag ID (alphanumeric with no spaces please)" name="flagID">
-          <option value="">Choose (or enter) a flag ID</option>
+        <select id="flags" placeholder="Choose a flag" name="flagID">
+          <option value="">Choose (or enter) a flag ID</option> <!-- is this line doing anything? -->
           {% for f in flags %}
           <option value="{{f}}">{{f}}</option>
           {% endfor %}
         </select>
-        <input type="text" name="fcomment" class="form-control" placeholder="Add comments (optional)">
+        <input type="text" name="fcomment" class="form-control" placeholder='Add optional comments (e.g. "Sensor out of water")'>
         <button class="btn btn-warning btn-block" type="button" id="addflag">Flag selected</button>
       </div>
     </div>
   </div>
-  <div class="col-md-6">
+<!--  <div class="col-md-6">
     <div class="panel panel-default">
       <div class="panel-heading"><span class="lead">Tags/notes</span> &ndash; interesting features in the data (storms, leaf drop, etc.)</div>
       <div class="panel-body">
@@ -103,7 +105,7 @@ drift.load('rwx4vf8u4wm7');
         <button class="btn btn-info btn-block" type="button" id="addtag">Tag selected</button>
       </div>
     </div>
-  </div>
+  </div> -->
 
 </div>
 <div class="row">
@@ -131,11 +133,11 @@ $('#flags').selectize({
     create: function(input) { return {value: input,text: input} }
 });
 
-$('#tags').selectize({
-    delimiter: ',',
-    persist: false,
-    create: function(input) { return {value: input,text: input} }
-});
+//$('#tags').selectize({
+//    delimiter: ',',
+//    persist: false,
+//    create: function(input) { return {value: input,text: input} }
+//});
 
 var plotdates;
 var alldata;
@@ -325,40 +327,41 @@ $(function(){
   })
 });
 
-$(function(){
-  $("#addtag").click(function(){
-    if (undefined != selectedBrush){ // only do this if there is a brush selected
-      s = d3.brushSelection(d3.select("#"+selectedBrush).node())
-      dat = {}
-      dat['site'] = $('select[name=site]').val();
-      dat['startDate'] = x.invert(s[0]);
-      dat['endDate'] = x.invert(s[1]);
-      dat['var'] = selectedBrush;
-      dat['tagid'] = $("select[name=tagID]").val();
-      dat['comment'] = $("input[name=fcomment]").val();
-      d3.select("."+selectedBrush).selectAll(".selected").classed("highlighted", function(d) {
-        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-        return is_brushed;
-      });
-      $.ajax({
-        type: 'POST',
-        url:'/_addtag',
-        data: JSON.stringify(dat),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(response){
-          console.log("success")
-          $("#alerts").append(alertbox('success','Added tag.'))
-        },
-        error: function(error){
-          console.log(error);
-        }
-      });
-      return false;
-    }else{
-      $("#alerts").append(alertbox('warning','Please select values to add Tags/Notes.'))
-    }
-  })
-});
+
+//$(function(){
+//  $("#addtag").click(function(){
+//    if (undefined != selectedBrush){ // only do this if there is a brush selected
+//      s = d3.brushSelection(d3.select("#"+selectedBrush).node())
+//      dat = {}
+//      dat['site'] = $('select[name=site]').val();
+//      dat['startDate'] = x.invert(s[0]);
+//      dat['endDate'] = x.invert(s[1]);
+//      dat['var'] = selectedBrush;
+//      dat['tagid'] = $("select[name=tagID]").val();
+//      dat['comment'] = $("input[name=fcomment]").val();
+//      d3.select("."+selectedBrush).selectAll(".selected").classed("highlighted", function(d) {
+//        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+//        return is_brushed;
+//      });
+//      $.ajax({
+//        type: 'POST',
+//        url:'/_addtag',
+//        data: JSON.stringify(dat),
+//        contentType: 'application/json;charset=UTF-8',
+//        success: function(response){
+//          console.log("success")
+//          $("#alerts").append(alertbox('success','Added tag.'))
+//        },
+//        error: function(error){
+//          console.log(error);
+//        }
+//      });
+//      return false;
+//    }else{
+//      $("#alerts").append(alertbox('warning','Please select values to add Tags/Notes.'))
+//    }
+//  })
+//});
 
 $(function(){
   $('#fillbrush').change(function() {

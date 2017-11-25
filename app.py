@@ -950,8 +950,9 @@ def qaqc():
     sitesa = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
     qaqcuser = current_user.qaqc_auth()
     sites = [z for z in sitesa if z in qaqcuser]
-    xx = pd.read_sql("select distinct flag from flag", db.engine)
-    flags = xx['flag'].tolist()
+    #xx = pd.read_sql("select distinct flag from flag", db.engine)
+    #flags = xx['flag'].tolist()
+    flags = ['Interesting', 'Questionable', 'Bad Data']
     sitedict = sorted([getsitenames(x) for x in sites], key=lambda tup: tup[1])
     return render_template('qaqc.html',sites=sitedict,flags=flags, tags=[''])
 
