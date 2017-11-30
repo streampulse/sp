@@ -80,6 +80,7 @@ function Plots(variables, data, flags, page){
           .attr("cx", line.x())
           .attr("cy", line.y())
           .attr("r", 2)
+          .attr("pointer-events", "none") //pass mouseovers and clicks through to the graph
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
         });
@@ -115,6 +116,7 @@ function Sunlight(variables, sundat){
         .attr('width', function(d) { return x(d.rise) - x(d.set); })
         .attr('height', height)
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+        .attr("pointer-events", "none")
       .classed("outside", function(d) {
         is_inplot = extent[0] > d.rise || d.set > extent[1];
         return is_inplot;
