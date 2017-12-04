@@ -616,8 +616,8 @@ def upload():
             cdict = pd.read_sql("select * from cols where region='"+rr+"' and site='"+ss+"'", db.engine)
             cdict = dict(zip(cdict['rawcol'],cdict['dbcol']))
             flash("Please double check your column matching. Thanks!",'alert-warning')
-        except IOError:
-            msg = Markup('Unknown error. Please <a href="mailto:aaron.berdanier@gmail.com" class="alert-link">email Aaron</a> with a copy of the file you tried to upload...')
+        except: #formerly caught just IOError
+            msg = Markup('Unknown error. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with a copy of the file you tried to upload.')
             flash(msg,'alert-danger')
             [os.remove(f) for f in fnlong]
             return redirect(request.url)
