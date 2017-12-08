@@ -24,6 +24,16 @@ import os
 import re
 import config as cfg
 
+# f = '/home/mike/Dropbox/streampulse/data/NC_UEno_2017-01-04.csv'
+# xtmp = pd.read_csv('/home/mike/Dropbox/streampulse/data/NC_UEno_2017-01-04.csv', parse_dates=[0])
+# xtmp = xtmp.rename(columns={xtmp.columns.values[0]:'DateTimeUTC'})
+# replace=True; ufnms = [f.split('/')[6]]#; ufiles = [xtmp]
+# filename = secure_filename(ufnms[0])
+# xtmp.to_csv(fnlong[0], index=False)
+# fnlong = [f]
+
+# region='NC'; site = 'UEno'
+# c = cdict.keys()[0]
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = cfg.SECRET_KEY
@@ -587,6 +597,13 @@ def upload():
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
                 ver = len([x for x in ld if filename.split(".")[0] in x])
+                #the versioning system for leveraged sites ignores
+                #logger extensions when assigning v numbers.
+                #the expression below can be used to fix this, but
+                #then you'll have to update all leveraged site files on record.
+                # mch = re.match(
+                    # "([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?(.[a-zA-Z]{3})",
+                    # filename).groups()
                 # rename files if existing, add version number
                 fup = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 if replace and ver>0: # need to add version number to file
@@ -604,7 +621,7 @@ def upload():
                 x = sp_in(fnlong, gmtoff)
             else:
                 if len(fnlong)>1:
-                    flash('Please merge your data prior to upload.','alert-danger')
+                    flash('Please merge your files prior to upload.','alert-danger')
                     [os.remove(f) for f in fnlong]
                     return redirect(request.url)
                 x = sp_in_lev(fnlong[0])
@@ -687,6 +704,60 @@ def updatedb(xx, replace=False):
     else:
         xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
 
+def remove_misnamed_cols():
+    #repfile, fname):
+
+
+    fnamesp = fname.split('.')
+    ld = os.listdir(app.config['UPLOAD_FOLDER'])
+
+    prev_vsns = []
+    for f in ld: #get list of previous versions of this file
+        try:
+            fnov = re.search("([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}" \
+                + "(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?(.[a-zA-Z]{3})", f).groups()
+
+            if fnov[0] == fnamesp[0] and fnov[1] == '.' + fnamesp[1]:
+                prev_vsns.append(f)
+        except: pass
+
+    if not prev_vsns: #user is doing it the slow way in vain
+        return
+
+    historic_vnames = []
+    for f in prev_vsns: #get list of all variables ever included in this file
+        fpath = os.path.join(app.config['UPLOAD_FOLDER'], f)
+        site = f.split("_")[0] + "_" + f.split("_")[1]
+
+        if site in core.index.tolist():
+            gmtoff = core.loc[site].GMTOFF
+            x = sp_in([fpath], gmtoff)
+        else:
+            x = sp_in_lev(fpath)
+
+        historic_vnames.extend(x.columns.tolist())
+
+    #find the variable names that are missing from the newest file version
+    obsolete_rnames = set(historic_vnames).difference(set(repfile.columns))
+
+    cdict = pd.read_sql("select * from cols where region='" + rr \
+        + "' and site='" + ss + "'", db.engine)
+    cdict = dict(zip(cdict['rawcol'],cdict['dbcol']))
+
+    for i in xrange(len(cdict)):
+        if cdict.keys()[i] in obsolete_rnames and \
+            cdict.values()[i] != 'DateTime_UTC':
+            obsolete_vnames.append(cdict.values()[i])
+
+    #assume the old names were erroneous and delete those variables from the db
+    d = Data.query.filter(Data.region == rr, Data.site == ss,
+        Data.variable.in_(obsolete_vnames),
+        Data.DateTime_UTC.in_(list(repfile.DateTimeUTC))).all()
+
+    for rec in d:
+        db.session.delete(rec)
+        db.session.commit()
+
 @app.route("/upload_confirm",methods=["POST"]) # confirm columns
 def confirmcolumns():
     cdict = json.loads(request.form['cdict'])
@@ -727,7 +798,8 @@ def confirmcolumns():
         # xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
         updatedb(xx, replace)
         updatecdict(region, site, cdict)
-    except IOError:
+        # remove_misnamed_cols() #delete variables with mistaken names
+    except:# IOError:
         flash('There was an error, please try again.','alert-warning')
         return redirect(request.url)
     os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) # remove tmp file
@@ -764,7 +836,7 @@ def download():
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
     return render_template('download.html',sites=sitedict)
 
-# CODE FROM OLD Download, depreciated
+# CODE FROM OLD Download, deprecated
 # xx = pd.read_sql("select distinct region, site from data", db.engine)
 # sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
 # # xx = pd.read_sql("select distinct concat(region,'_',site) as sites from data", db.engine)
@@ -891,7 +963,7 @@ def visualize():
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
     return render_template('visualize.html',sites=sitedict)
 
-# OLD CODE FROM VISUALIZE, depriciated
+# OLD CODE FROM VISUALIZE, depricated
 # return "success"
 #
 # # xx = pd.read_sql("select distinct concat(region,'_',site) as sites from data", db.engine)
