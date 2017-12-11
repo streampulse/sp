@@ -23,17 +23,9 @@ import shutil
 import os
 import re
 import config as cfg
-
-# f = '/home/mike/Dropbox/streampulse/data/NC_UEno_2017-01-04.csv'
-# xtmp = pd.read_csv('/home/mike/Dropbox/streampulse/data/NC_UEno_2017-01-04.csv', parse_dates=[0])
-# xtmp = xtmp.rename(columns={xtmp.columns.values[0]:'DateTimeUTC'})
-# replace=True; ufnms = [f.split('/')[6]]#; ufiles = [xtmp]
-# filename = secure_filename(ufnms[0])
-# xtmp.to_csv(fnlong[0], index=False)
-# fnlong = [f]
-
-# region='NC'; site = 'UEno'
-# c = cdict.keys()[0]
+# import redis
+# from flask_kvsession import KVSessionExtension
+# from simplekv.memory.redisstore import RedisStore
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = cfg.SECRET_KEY
@@ -52,6 +44,11 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+#allow server-side session storage
+# store = RedisStore(redis.StrictRedis())
+# KVSessionExtension(store, app)
+
+#classes for SQLAlchemy's ORM
 class Data(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     region = db.Column(db.String(10))
@@ -619,7 +616,7 @@ def upload():
                 msg = Markup('Error 002. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
                 flash(msg,'alert-danger')
                 return redirect(request.url)
-        session['working_files'] = filenames #remove_misnamed_cols needs these names
+        # session['working_files'] = filenames #remove_misnamed_cols needs these names
 
         # PROCESS the data and save as tmp file
         try:
@@ -711,6 +708,7 @@ def updatedb(xx, replace=False):
     else:
         xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
 
+#deprecated (tons of "obsolete" varnames that might still be useful)
 def remove_misnamed_cols():
 
     #load relevant variables from the flask session
@@ -725,49 +723,56 @@ def remove_misnamed_cols():
     reg_site = rr + "_" + ss
 
     #get list of all variable names ever used in this file
-    historic_vnames = []
-    for fname in wfiles: #for each uploaded file...
-        fnamesp = fname.split('.')
-
-        #get list of previous versions of this file
-        new_noV = re.search("([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}" \
-            + "(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?", fnamesp[0]).groups()
-        prev_vsns = []
-        for f in ld:
-            try:
-                ex_noV = re.search("([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}" \
-                    + "(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?(.[a-zA-Z]{3})", f).groups()
-                if ex_noV[0] == new_noV[0] and ex_noV[1] == '.' + fnamesp[1]:
-                    prev_vsns.append(f)
-            except: pass
-
-        if not prev_vsns: #user is doing it the slow way in vain
-            return
-
-        #load each previous version and get list of column names
-        for f in prev_vsns:
-            fpath = os.path.join(app.config['UPLOAD_FOLDER'], f)
-            if reg_site in core.index.tolist():
-                gmtoff = core.loc[reg_site].GMTOFF
-                x = sp_in([fpath], gmtoff)
-            else:
-                x = sp_in_lev(fpath)
-            historic_vnames.extend(x.columns.tolist())
+    # historic_vnames = []
+    # for fname in wfiles: #for each uploaded file...
+    #     fnamesp = fname.split('.')
+    #
+    #     #get list of previous versions of this file
+    #     new_noV = re.search("([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}" \
+    #         + "(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?", fnamesp[0]).groups()
+    #     prev_vsns = []
+    #     for f in ld:
+    #         try:
+    #             ex_noV = re.search("([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}" \
+    #                 + "(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?(.[a-zA-Z]{3})", f).groups()
+    #             if ex_noV[0] == new_noV[0] and ex_noV[1] == '.' + fnamesp[1]:
+    #                 prev_vsns.append(f)
+    #         except: pass
+    #
+    #     if not prev_vsns: #user is doing it the slow way in vain
+    #         return
+    #
+    #     #load each previous version and get list of column names
+    #     for f in prev_vsns:
+    #         fpath = os.path.join(app.config['UPLOAD_FOLDER'], f)
+    #         if reg_site in core.index.tolist():
+    #             gmtoff = core.loc[reg_site].GMTOFF
+    #             x = sp_in([fpath], gmtoff)
+    #         else:
+    #             x = sp_in_lev(fpath)
+    #         historic_vnames.extend(x.columns.tolist())
+    #
+    # print historic_vnames
 
     #map user-specified var names to canonical ones
-    cdict = pd.read_sql("select * from cols where region='" + rr \
+    varmap = pd.read_sql("select * from cols where region='" + rr \
         + "' and site='" + ss + "'", db.engine)
-    cdict = dict(zip([i.encode('UTF-8') for i in cdict['rawcol']],
-        [i.encode('UTF-8') for i in cdict['dbcol']]))
-    historic_vnames = [cdict[i] for i in set(historic_vnames)]
+    # cdict = dict(zip([i.encode('UTF-8') for i in cdict['rawcol']],
+    #     [i.encode('UTF-8') for i in cdict['dbcol']]))
+    # historic_vnames = [cdict[i] for i in set(historic_vnames) if i in cdict]
+    historic_vnames = [i for i in varmap['dbcol']]
 
     #find the variable names that are missing from the new file(s)
     obsolete_vnames = set(historic_vnames).difference(set(newcols))
     if 'DateTime_UTC' in obsolete_vnames:
         obsolete_vnames.remove('DateTime_UTC')
 
-    #assume the old names were erroneous and delete those variables from the db
-    #should instead ask the user to confirm
+    #exit if nothing to delete
+    if not obsolete_vnames:
+        return
+
+    #ask the user to confirm variable deletion
+
     d = Data.query.filter(Data.region == rr, Data.site == ss,
         Data.variable.in_(list(obsolete_vnames)),
         Data.DateTime_UTC.in_(list(datelist))).all()
@@ -815,9 +820,9 @@ def confirmcolumns():
         # xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
         updatedb(xx, replace)
         updatecdict(region, site, cdict)
-        session['newcols'] = [i.encode('UTF-8') for i in set(xx.variable)]
-        session['datelist'] = list(set(xx.DateTime_UTC)) #for remove_misnamed_cols
-        remove_misnamed_cols() #delete variables with mistaken names
+        # session['newcols'] = [i.encode('UTF-8') for i in set(xx.variable)]
+        # session['datelist'] = list(set(xx.DateTime_UTC)) #for remove_misnamed_cols
+        # remove_misnamed_cols() #delete variables with mistaken names
     except:# IOError:
         flash('There was an error, please try again.','alert-warning')
         return redirect(request.url)
