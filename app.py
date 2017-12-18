@@ -1095,6 +1095,11 @@ def getqaqc():
     drr = daterange(sdt,edt)
     return jsonify(variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)
 
+@app.route('/_outlierdetect',methods=["POST"])
+def outlier_detect():
+    print request.json
+    return jsonify(outliers='chilidog')
+
 @app.route('/_addflag',methods=["POST"])
 def addflag():
     rgn, ste = request.json['site'].split("_")
@@ -1105,7 +1110,7 @@ def addflag():
     var = request.json['var']
     flg = request.json['flagid']
     cmt = request.json['comment']
-    print request.json
+    # print request.json
     for vv in var:
         fff = Flag(rgn, ste, sdt, edt, vv, flg, cmt, int(current_user.get_id()))
         print fff

@@ -170,6 +170,26 @@ $(function(){
         plotstart = plotdates[1];
         plotend = plotdates[0];
         data = getdisplaydata(plotstart,plotend,alldata);
+        
+        //ajaxtest();
+        //run outlier detector on each time series subset
+        $.ajax({
+          type: 'POST',
+          url: '/_outlierdetect',
+          data: JSON.stringify('potato'),
+          //data: data,
+          contentType: 'application/json;charset=UTF-8',
+          //async: false,
+          success: function(response2){
+            var outliers = response2.outliers //a list of lists of outliers for each variable, perhaps?
+            console.log(String(outliers)); 
+          },
+          error: function(error){
+            console.log(error);
+          }
+        });
+        console.log(String(outliers)); // cant get local variable back to this parent scope
+          
         variables = response.variables;
         sundat = JSON.parse(response.sunriseset);
         sundat.forEach(function(d){
@@ -196,6 +216,23 @@ $(function(){
     return false;
   })
 });
+
+//function ajaxtest(){
+//  $.ajax({
+//    type: 'POST',
+//    url: '/_outlier_detect',
+//    data: data,
+//    contentType: 'application/json;charset=UTF-8',
+//    success: function(response2){
+//      outliers = response2.outliers //a list of lists of outliers for each variable, perhaps?
+//      console.log(String(outliers)); //make sure this arrangement works
+//    },
+//    error: function(error){
+//      console.log(error);
+//    }
+//  });
+//}
+    
 
 $(function(){
   $("#zoomin").click(function(){
