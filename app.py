@@ -23,9 +23,15 @@ import shutil
 import os
 import re
 import config as cfg
+import readline #needed for rpy2 import in conda env
+import rpy2.robjects as robjects
+from rpy2.robjects import pandas2ri
+# from rpy2.robjects.packages import importr
 # import redis
 # from flask_kvsession import KVSessionExtension
 # from simplekv.memory.redisstore import RedisStore
+
+pandas2ri.activate() #for converting pandas df to R df
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = cfg.SECRET_KEY
@@ -279,6 +285,176 @@ variables = ['DateTime_UTC',
 'Light5_lux',
 'Light5_PAR',
 'Battery_V']
+
+#R code for outier detection
+# seq_map_string = """
+#     function(inds, x_advance=0, y_advance=0){
+#         seq_list = mapply(function(x, y){ seq(x+x_advance, y+y_advance, 1) },
+#             inds[,1], inds[,2],
+#             SIMPLIFY=FALSE)
+#         seq_vec = unlist(seq_list)
+#
+#         return(seq_vec)
+#     }
+# """
+# seq_map = robjects.r(seq_map_string)
+
+find_outliers_string = """
+    function(df){
+
+        library(imputeTS)
+        library(plotrix)
+        library(accelerometry)
+
+        df = subset(df, select=-c(DateTime_UTC)) #remove datetime col
+
+        outlier_list = list()
+
+        for(col in 1:ncol(df)){
+
+            #print(colnames(df)[col])
+
+            NA_prop = mean(is.na(df[,col]))
+            if(NA_prop > 0.98 | df[1,col] == 'None'){
+                outlier_list[[col]] = NULL
+                next
+            }
+
+            tm = ts(df[,col], deltat = 1/96)
+            tm = na.seadec(tm, algorithm='interpolation')
+
+            #real stuff
+            diffs = diff(tm)
+            # x11()
+            u = mean(diffs, na.rm=TRUE)
+            sd = sd(diffs, na.rm=TRUE)
+
+            sd_scaler = 1.8
+            big_jump_prop = Inf
+            while(big_jump_prop > 0.03){
+                sd_scaler = sd_scaler + 0.2
+                big_jump_prop = sum(diffs > sd_scaler * sd) / length(diffs)
+            }
+
+            pos_jumps = which(diffs > sd_scaler * sd)
+            neg_jumps = which(diffs < -sd_scaler * sd)
+
+            jump_inds = sort(c(pos_jumps, neg_jumps))
+
+            runs = rle2(as.numeric(jump_inds %in% pos_jumps), indices=TRUE)
+            lr = runs[,'lengths'] > 3
+            long_runs = runs[lr, 2:3, drop=FALSE]
+
+            keep = numeric()
+            if(length(long_runs)){
+                for(i in 1:nrow(long_runs)){
+                    r = long_runs[i,]
+                    j = jump_inds[unique(c(r[1], r[1] + 1, r[2] - 1, r[2]))]
+                    if(abs(j[2]-j[1]) < 8 & abs(j[length(j)]-j[length(j)-1]) < 9) next
+                    t = time(tm)[j + 1] #+1 to convert from diff indices to original ts indices
+                    left_jump_interv = t[2] - t[1]
+                    right_jump_interv = t[length(t)] - t[length(t)-1]
+                    not_outlier = which.min(c(left_jump_interv, right_jump_interv))
+                    keep = append(keep, r[-not_outlier])
+                }
+            }
+
+            posNeg_jump_pairs = sort(unique(c(keep, as.vector(runs[!lr,2:3]))))
+            outlier_inds = jump_inds[posNeg_jump_pairs]
+
+            n_outlier_pieces = Inf
+            counter = 0
+            if(length(outlier_inds) == 1){
+                outlier_ts = NULL
+            } else {
+                while(length(outlier_inds) > 1 & n_outlier_pieces > 50 & counter < 5){
+                    outdif = diff(outlier_inds)
+                    rm_multjump = rm_oneway = NULL
+
+                    short_jumps = outdif < 15
+                    if(!short_jumps[1]){
+                        outlier_inds = outlier_inds[-1]
+                        counter = counter + 1
+                        next
+                    }
+
+                    jump_runs = rle2(as.numeric(short_jumps), indices=TRUE,
+                        return.list=FALSE)
+                    multijumps = jump_runs[jump_runs[,'lengths'] > 1, 2:3, drop=FALSE]
+                    if(length(multijumps)){
+                        multijumps = multijumps[short_jumps[multijumps[,'starts']], ,
+                            drop=FALSE]
+                        seq_list = mapply(function(x, y){ seq(x, y+1, 1) },
+                            multijumps[,1], multijumps[,2],
+                            SIMPLIFY=FALSE)
+                        rm_multjump = unlist(seq_list)
+                    }
+
+                    big_outdif = outdif > 15
+                    if(big_outdif[length(big_outdif)]){
+                        outlier_inds = outlier_inds[-length(outlier_inds)]
+                        counter = counter + 1
+                        next
+                    }
+
+                    if(all(big_outdif)){
+                        outlier_ts = NULL
+                        break
+                    } else {
+                        same_sign_runs = rle2(as.numeric(big_outdif), indices=TRUE,
+                            return.list=TRUE)
+
+                        if(length(same_sign_runs)){
+                            l = same_sign_runs$lengths
+                            one_way_jumps = numeric()
+                            for(i in 1:length(l)){
+                                if(l[i] > 1){
+                                    s = same_sign_runs$starts[i]
+                                    one_way_jumps = append(one_way_jumps,
+                                        seq(s, s + (l[i] - 2), 1))
+                                }
+                            }
+                        }
+
+                        if(length(one_way_jumps)){
+                            one_way_jumps = one_way_jumps[big_outdif[one_way_jumps]]
+                            outdif_filt = outdif
+                            outdif_filt[-one_way_jumps] = 0
+                            rm_oneway = which(outdif_filt > 0) + 1
+                        }
+                    }
+                    removals = unique(c(rm_multjump, rm_oneway))
+                    if(!is.null(removals)){
+                        outlier_inds = outlier_inds[-removals]
+                    }
+
+                    if(length(outlier_inds) %% 2 == 0){
+                        outlier_inds = matrix(outlier_inds, ncol=2, byrow=TRUE)
+                        seq_list = mapply(function(x, y){ seq(x+1, y, 1) },
+                            outlier_inds[,1], outlier_inds[,2],
+                            SIMPLIFY=FALSE)
+                        outlier_ts = unlist(seq_list)
+                    } else {
+                        smallest_diff = which.min(abs(diffs[outlier_inds]))
+                        outlier_inds = outlier_inds[-smallest_diff]
+                        counter = counter + 1
+                        next
+                    }
+                    n_outlier_pieces = length(outlier_ts)
+                    counter = counter + 1
+                }
+            }
+            if(n_outlier_pieces > 50){
+                outlier_ts = NULL
+            }
+            outlier_list[[col]] = outlier_ts
+        }
+
+        return(outlier_list)
+    }
+"""
+find_outliers = robjects.r(find_outliers_string)
+
 
 # File uploading function
 ALLOWED_EXTENSIONS = set(['txt', 'dat', 'csv'])
@@ -637,15 +813,22 @@ def upload():
             cdict = pd.read_sql("select * from cols where region='"+rr+"' and site='"+ss+"'", db.engine)
             cdict = dict(zip(cdict['rawcol'],cdict['dbcol']))
             flash("Please double check your column matching. Thanks!",'alert-warning')
-        except: #formerly caught just IOError
+        except: #this has been thrown when the expected and actual file formats dont match
             msg = Markup('Error 001. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
             flash(msg,'alert-danger')
             [os.remove(f) for f in fnlong]
             return redirect(request.url)
         # check if existing site
-        allsites = pd.read_sql("select concat(region,'_',site) as sitenm from site",db.engine).sitenm.tolist()
-        existing = True if site[0] in allsites else False
-        return render_template('upload_columns.html', filenames=filenames, columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict, existing=existing, sitenm=site[0], replacing=replace)
+        try:
+            allsites = pd.read_sql("select concat(region,'_',site) as sitenm from site",db.engine).sitenm.tolist()
+            existing = True if site[0] in allsites else False
+            return render_template('upload_columns.html', filenames=filenames, columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict, existing=existing, sitenm=site[0], replacing=replace)
+        except: #this one has been thrown when there are unreadable symbols (like degree) in the csv
+            msg = Markup('Error 003. Check for unusual characters in your column names (degree symbol, etc.). If problem persists, <a href="mailto:vlahm13@gmail.com" class="alert-link">Email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
+            flash(msg,'alert-danger')
+            [os.remove(f) for f in fnlong]
+            return redirect(request.url)
+
     if request.method == 'GET':
         xx = pd.read_sql("select distinct region, site from data", db.engine)
         vv = pd.read_sql("select distinct variable from data", db.engine)['variable'].tolist()
@@ -1097,7 +1280,23 @@ def getqaqc():
 
 @app.route('/_outlierdetect',methods=["POST"])
 def outlier_detect():
-    print request.json
+    dat_chunk = pd.DataFrame(request.json)
+    outl_ind_r = find_outliers(dat_chunk)
+
+    outl_ind = []
+    for j in xrange(1, len(outl_ind_r) + 1):
+
+        if outl_ind_r.rx2(j) == robjects.rinterface.NULL:
+            outl_ind.append(None)
+            continue
+
+        tmp_lst = []
+        for i in outl_ind_r.rx2(j):
+            tmp_lst.append(int(i))
+        outl_ind.append(tmp_lst)
+
+    print outl_ind
+
     return jsonify(outliers='chilidog')
 
 @app.route('/_addflag',methods=["POST"])
