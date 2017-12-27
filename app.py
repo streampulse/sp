@@ -306,17 +306,17 @@ find_outliers_string = """
         library(plotrix)
         library(accelerometry)
 
-        df = subset(df, select=-c(DateTime_UTC)) #remove datetime col
+
+        df = df[,-which(names(df) %in% c("DateTime_UTC","date"))]
 
         outlier_list = list()
 
         for(col in 1:ncol(df)){
 
-            #print(colnames(df)[col])
-
             NA_prop = mean(is.na(df[,col]))
             if(NA_prop > 0.98 | df[1,col] == 'None'){
-                outlier_list[[col]] = NULL
+                outlier_list[[col]] = 'NONE'
+                names(outlier_list)[col] = colnames(df)[col]
                 next
             }
 
@@ -365,7 +365,7 @@ find_outliers_string = """
             n_outlier_pieces = Inf
             counter = 0
             if(length(outlier_inds) == 1){
-                outlier_ts = NULL
+                outlier_ts = 'NONE'
             } else {
                 while(length(outlier_inds) > 1 & n_outlier_pieces > 50 & counter < 5){
                     outdif = diff(outlier_inds)
@@ -398,7 +398,7 @@ find_outliers_string = """
                     }
 
                     if(all(big_outdif)){
-                        outlier_ts = NULL
+                        outlier_ts = 'NONE'
                         break
                     } else {
                         same_sign_runs = rle2(as.numeric(big_outdif), indices=TRUE,
@@ -444,13 +444,14 @@ find_outliers_string = """
                     counter = counter + 1
                 }
             }
-            if(n_outlier_pieces > 50){
-                outlier_ts = NULL
+            if(n_outlier_pieces > 50 || !exists('outlier_ts') ||
+                is.null(outlier_ts)){ #deal with R-py null value mismatch
+                outlier_ts = 'NONE'
             }
             outlier_list[[col]] = outlier_ts
+            names(outlier_list)[col] = colnames(df)[col]
         }
 
-        names(outlier_list) = colnames(df)
         return(outlier_list)
     }
 """
@@ -1282,12 +1283,14 @@ def getqaqc():
 @app.route('/_outlierdetect',methods=["POST"])
 def outlier_detect():
     dat_chunk = pd.DataFrame(request.json)
+    # dat_chunk.to_csv('~/Dropbox/streampulse/data/test_outl2.csv', index=False)
+
     outl_ind_r = find_outliers(dat_chunk) #call R code for outlier detect
 
     outl_ind = {}
     for j in xrange(1, len(outl_ind_r) + 1): #loop through R-ified list
 
-        if outl_ind_r.rx2(j) == robjects.rinterface.NULL: #handle R's NULL
+        if outl_ind_r.rx2(j)[0] == 'NONE':
             outl_ind[outl_ind_r.names[j-1]] = None
             continue
 
@@ -1295,7 +1298,7 @@ def outlier_detect():
         for i in outl_ind_r.rx2(j):
             tmp_lst.append(int(i))
         outl_ind[outl_ind_r.names[j-1]] = tmp_lst
-        
+
     return jsonify(outliers=outl_ind)
 
 @app.route('/_addflag',methods=["POST"])

@@ -15,7 +15,8 @@ setwd('/home/mike/Dropbox/streampulse/data/NC_download/')
 # v=1
 # d = d_chili[d_chili$variable == sitevars[v],]
 
-df = read.csv('../test_outl.csv', stringsAsFactors=FALSE)
+# df = read.csv('../test_outl.csv', stringsAsFactors=FALSE)
+df = read.csv('../test_outl2.csv', stringsAsFactors=FALSE)
 
 
 
@@ -40,14 +41,13 @@ find_outliers = function(df){
 
     for(col in 1:ncol(df)){
 
-        print(colnames(df)[col])
+        # print(colnames(df)[col])
 
-        print(sum(is.na(df[,col])) / nrow(df))
         if(sum(is.na(df[,col])) / nrow(df) > 0.98){ #if almost all NA
-            outlier_list[[col]] = NULL
-            print('ass')
+            outlier_list[[col]] = 'NONE'
+            print(paste(1, names(outlier_list), colnames(df)[col]))
+            names(outlier_list)[col] = colnames(df)[col]
             next
-            print('ass2')
         }
 
         tm = ts(df[,col], deltat = 1/96)
@@ -95,7 +95,7 @@ find_outliers = function(df){
         n_outlier_pieces = Inf
         counter = 0
         if(length(outlier_inds) == 1){
-            outlier_ts = NULL
+            outlier_ts = 'NONE'
         } else {
             while(length(outlier_inds) > 1 & n_outlier_pieces > 50 & counter < 5){
                 outdif = diff(outlier_inds)
@@ -129,7 +129,7 @@ find_outliers = function(df){
                 }
 
                 if(all(big_outdif)){
-                    outlier_ts = NULL
+                    outlier_ts = 'NONE'
                     break
                 } else {
                     same_sign_runs = rle2(as.numeric(big_outdif), indices=TRUE,
@@ -176,17 +176,18 @@ find_outliers = function(df){
                 counter = counter + 1
             }
         }
-        if(n_outlier_pieces > 50){
-            outlier_ts = NULL
+        if(n_outlier_pieces > 50 | is.null(outlier_ts)){
+            outlier_ts = 'NONE'
             print('argh2')
         }
         # print(paste('sd_scaler =', sd_scaler))
         # print(paste('big_jump_prop =', big_jump_prop))
 
         outlier_list[[col]] = outlier_ts
+        print(paste(2, names(outlier_list), colnames(df)[col]))
+        names(outlier_list)[col] = colnames(df)[col]
     }
 
-    names(outlier_list) = colnames(df)
     return(outlier_list)
 }
 
