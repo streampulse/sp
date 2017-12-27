@@ -178,9 +178,7 @@ $(function(){
           data: JSON.stringify(data),
           contentType: 'application/json;charset=UTF-8',
           success: function(response2){
-            outliers = response2.outliers
-            console.log(outliers);
-
+            outliers = response2.outliers;
             variables = response.variables;
             sundat = JSON.parse(response.sunriseset);
             sundat.forEach(function(d){
@@ -188,7 +186,8 @@ $(function(){
               d.set = parseDate(d.set);
             });
             flags = JSON.parse(response.flagdat);
-            Plots(variables, data, flags, "qaqc");
+            // console.log(outliers);
+            Plots(variables, data, flags, outliers, "qaqc");
             if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
             $('#flagging').show();
             $('#backgraphlist')
@@ -255,9 +254,21 @@ $(function(){
       }else{
         data = getdisplaydata(plotstart,plotend,alldata);
       }
-      $("#graphs").empty();
-      Plots(variables, data, flags, "qaqc");
-      if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
+      $.ajax({
+        type: 'POST',
+        url: '/_outlierdetect',
+        data: JSON.stringify(data),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response2){
+          outliers = response2.outliers;
+          $("#graphs").empty();
+          Plots(variables, data, flags, outliers, "qaqc");
+          if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
     }
   });
 })
@@ -273,9 +284,21 @@ $(function(){
       }else{
         data = getdisplaydata(plotstart,plotend,alldata);
       }
-      $("#graphs").empty();
-      Plots(variables, data, flags, "qaqc");
-      if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
+      $.ajax({
+        type: 'POST',
+        url: '/_outlierdetect',
+        data: JSON.stringify(data),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response2){
+          outliers = response2.outliers;
+          $("#graphs").empty();
+          Plots(variables, data, flags, outliers, "qaqc");
+          if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
     }
   });
 })

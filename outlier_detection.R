@@ -18,7 +18,6 @@ setwd('/home/mike/Dropbox/streampulse/data/NC_download/')
 df = read.csv('../test_outl.csv', stringsAsFactors=FALSE)
 
 
-find_outliers(df)
 
 # seq_map = function(inds, x_advance=0, y_advance=0){
 #     seq_list = mapply(function(x, y){ seq(x+x_advance, y+y_advance, 1) },
@@ -187,5 +186,8 @@ find_outliers = function(df){
         outlier_list[[col]] = outlier_ts
     }
 
+    names(outlier_list) = colnames(df)
     return(outlier_list)
 }
+
+find_outliers(df)

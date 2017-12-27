@@ -450,6 +450,7 @@ find_outliers_string = """
             outlier_list[[col]] = outlier_ts
         }
 
+        names(outlier_list) = colnames(df)
         return(outlier_list)
     }
 """
@@ -1283,18 +1284,18 @@ def outlier_detect():
     dat_chunk = pd.DataFrame(request.json)
     outl_ind_r = find_outliers(dat_chunk) #call R code for outlier detect
 
-    outl_ind = []
+    outl_ind = {}
     for j in xrange(1, len(outl_ind_r) + 1): #loop through R-ified list
 
         if outl_ind_r.rx2(j) == robjects.rinterface.NULL: #handle R's NULL
-            outl_ind.append(None)
+            outl_ind[outl_ind_r.names[j-1]] = None
             continue
 
         tmp_lst = []
         for i in outl_ind_r.rx2(j):
             tmp_lst.append(int(i))
-        outl_ind.append(tmp_lst)
-
+        outl_ind[outl_ind_r.names[j-1]] = tmp_lst
+        
     return jsonify(outliers=outl_ind)
 
 @app.route('/_addflag',methods=["POST"])

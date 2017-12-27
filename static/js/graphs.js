@@ -18,12 +18,15 @@ var datna;
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 
-function Plots(variables, data, flags, page){
+function Plots(variables, data, flags, outliers, page){
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+
   x.domain(d3.extent(data, function(d) { return d.date; }));
+  
   for (var i = 0; i < variables.length; ++i) {
     vvv = variables[i];
+
     if(datna != null){ // check if NA, need to rescale Y axis
       y.domain(d3.extent(datna, function(d) { return d[vvv]; }));
     }else{
@@ -81,8 +84,11 @@ function Plots(variables, data, flags, page){
           .attr("cy", line.y())
           .attr("r", 2)
           .attr("pointer-events", "none") //pass mouseovers and clicks through to the graph
+        .classed("maybe_outl", function(d, j){
+          return outliers[vvv] && outliers[vvv].includes(j+1);
+        })
         .classed("flagdot", function(d){
-          return vvv == dff[d.DateTime_UTC]
+          return vvv == dff[d.DateTime_UTC] //datetime here is actually the variable name
         });
     }else{ // viz page
       svg.append("path")
