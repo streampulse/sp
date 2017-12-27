@@ -1281,12 +1281,12 @@ def getqaqc():
 @app.route('/_outlierdetect',methods=["POST"])
 def outlier_detect():
     dat_chunk = pd.DataFrame(request.json)
-    outl_ind_r = find_outliers(dat_chunk)
+    outl_ind_r = find_outliers(dat_chunk) #call R code for outlier detect
 
     outl_ind = []
-    for j in xrange(1, len(outl_ind_r) + 1):
+    for j in xrange(1, len(outl_ind_r) + 1): #loop through R-ified list
 
-        if outl_ind_r.rx2(j) == robjects.rinterface.NULL:
+        if outl_ind_r.rx2(j) == robjects.rinterface.NULL: #handle R's NULL
             outl_ind.append(None)
             continue
 
@@ -1295,9 +1295,7 @@ def outlier_detect():
             tmp_lst.append(int(i))
         outl_ind.append(tmp_lst)
 
-    print outl_ind
-
-    return jsonify(outliers='chilidog')
+    return jsonify(outliers=outl_ind)
 
 @app.route('/_addflag',methods=["POST"])
 def addflag():

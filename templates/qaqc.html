@@ -178,8 +178,8 @@ $(function(){
           data: JSON.stringify(data),
           contentType: 'application/json;charset=UTF-8',
           success: function(response2){
-            outliers = response2.outliers //a list of lists of outliers for each variable, perhaps?
-            console.log(String(outliers));
+            outliers = response2.outliers
+            console.log(outliers);
 
             variables = response.variables;
             sundat = JSON.parse(response.sunriseset);
