@@ -922,19 +922,22 @@ def getcsv():
     # loop through sites
     for s in sitenm:
         # get data for site s
-        sqlq = "select * from data where concat(region,'_',site)='"+s+"' "+\
-            "and DateTime_UTC>'"+startDate+"' "+\
-            "and DateTime_UTC<'"+endDate+"' "+\
-            "and variable in ('"+"', '".join(variables)+"')"
+        sqlq = "select data.*, flag.flag as flagtype, flag.comment as " +\
+            "flagcomment from data " +\
+            "left join flag on data.flag=flag.id where concat(data.region, " +\
+            "'_', data.site)='" + s + "' and data.DateTime_UTC > '" +\
+            startDate + "' and data.DateTime_UTC < '" + endDate + "' " +\
+            "and data.variable in ('"+"', '".join(variables)+"')"
         xx = pd.read_sql(sqlq, db.engine)
         if len(xx)<1:
             continue
         xx.loc[xx.flag==0,"value"] = None # set NA values
         xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
         if request.form.get('flag') is not None:
-            xx.drop(['id'], axis=1, inplace=True) # keep the flags
+            xx.drop(['id','flag'], axis=1, inplace=True) # keep the flags
         else:
-            xx.drop(['id','flag'], axis=1, inplace=True) # get rid of them
+            xx.drop(['id','flag','flagtype','flagcomment'], axis=1,
+                inplace=True) # get rid of them
         if request.form.get('usgs') is not None:
             #xu = get_usgs([s],startDate,endDate)
             print xx['DateTime_UTC'].min()
