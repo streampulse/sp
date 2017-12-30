@@ -7,7 +7,8 @@ var x = d3.scaleUtc().range([0, width]),
     xAxis = d3.axisBottom().scale(x).ticks(6);
 var brush = d3.brushX()
   .on("start", brushstart)
-  .on("brush", brushmove);
+  .on("brush", brushmove)
+  .on("end", brushend);
   // .on("end", brushend);
 var selectedBrush;
 var data;
@@ -17,13 +18,18 @@ var flags;
 var datna;
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
+var qaqc_opt = d3.select("body") //options menu popup after brushing
+  .append("div")
+  .attr("style", "position: absolute; text-align: center; width: 60px; height: 28px");
+  // .attr("class", "tooltip");
+  // .style("opacity", 0);
 
 function Plots(variables, data, flags, outliers, page){
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
 
   x.domain(d3.extent(data, function(d) { return d.date; }));
-  
+
   for (var i = 0; i < variables.length; ++i) {
     vvv = variables[i];
 
@@ -87,6 +93,10 @@ function Plots(variables, data, flags, outliers, page){
         .classed("maybe_outl", function(d, j){
           return outliers[vvv] && outliers[vvv].includes(j+1);
         })
+          // .attr("r", function(d){
+          //   if(d.classed("maybe_outl")) {return 4}
+          //   else {return 2};
+          // })
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC] //datetime here is actually the variable name
         });
@@ -183,6 +193,7 @@ function brushstart() {
   // d3.selectAll(".brush").call(brush.move, null);
   selectedBrush = $(this).attr("id")
 }
+
 function brushmove() {
   var s = d3.event.selection;
   if (s) {
@@ -199,7 +210,18 @@ function brushmove() {
     });
   }
 }
-// function brushend(){}
+
+function brushend(){
+  // qaqc_opt.transition()
+  //   .duration(500)
+  //   .style("opacity", 0);
+  // qaqc_opt.transition()
+  //   .duration(200)
+  //   .style("opacity", .9);
+  qaqc_opt.html('test')// + "<br/>" + 'test2');
+    .style("left", (d3.event.pageX) + "px")
+    .style("top", (d3.event.pageY) + "px");
+}
 
 function redrawPoints(zoom_in, sbrush, reset){
   sbb = d3.select("."+sbrush).select(".brush").node()

@@ -321,6 +321,13 @@ find_outliers_string = """
             }
 
             tm = ts(df[,col], deltat = 1/96)
+
+            ts_u = mean(tm, na.rm=TRUE)
+            ts_sd = sd(tm, na.rm=TRUE)
+            big_outliers_h = which(tm > ts_u + (4*ts_sd))
+            big_outliers_l = which(tm < ts_u - (4*ts_sd))
+            big_outliers = unique(c(big_outliers_h, big_outliers_l))
+
             tm = na.seadec(tm, algorithm='interpolation')
 
             #real stuff
@@ -448,6 +455,7 @@ find_outliers_string = """
                 is.null(outlier_ts)){ #deal with R-py null value mismatch
                 outlier_ts = 'NONE'
             }
+            outlier_ts = unique(c(outlier_ts, big_outliers))
             outlier_list[[col]] = outlier_ts
             names(outlier_list)[col] = colnames(df)[col]
         }
