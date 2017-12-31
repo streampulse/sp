@@ -20,7 +20,11 @@ var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 var qaqc_opt = d3.select("body") //options menu popup after brushing
   .append("div")
-  .attr("style", "position: absolute; text-align: center; width: 60px; height: 28px");
+  // .style("position", "absolute")
+  // .style("text-alig", "center")
+  // .style("width", "60px")
+  // .style("height", "28px");
+
   // .attr("class", "tooltip");
   // .style("opacity", 0);
 
@@ -88,15 +92,17 @@ function Plots(variables, data, flags, outliers, page){
           .attr("class", "dot")
           .attr("cx", line.x())
           .attr("cy", line.y())
-          .attr("r", 2)
           .attr("pointer-events", "none") //pass mouseovers and clicks through to the graph
         .classed("maybe_outl", function(d, j){
           return outliers[vvv] && outliers[vvv].includes(j+1);
         })
-          // .attr("r", function(d){
-          //   if(d.classed("maybe_outl")) {return 4}
-          //   else {return 2};
-          // })
+        .attr("r", function(d, j){
+          if(outliers[vvv] && outliers[vvv].includes(j+1)) {
+            return 3
+          } else {
+            return 2
+          };
+        })
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC] //datetime here is actually the variable name
         });
