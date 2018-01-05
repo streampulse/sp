@@ -223,6 +223,18 @@ class Downloads(db.Model):
     def __repr__(self):
         return '<Download %r>' % (self.id)
 
+class Upload(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(100))
+    version = db.Column(db.Integer)
+
+    def __init__(self, filename, version):
+        self.filename = filename
+        self.version = version
+
+    def __repr__(self):
+        return '<Upload %r, %r>' % (self.filename, self.version)
+
 db.create_all()
 
 @login_manager.user_loader
@@ -604,6 +616,18 @@ def upload():
                     # filename).groups()
                 # rename files if existing, add version number
                 fup = os.path.join(upfold, filename)
+
+                #record upload in db
+                #consider errors, back button on matching screen
+                all_fnames = list(pd.read_sql('select distinct filename from upload',
+                    db.engine).filename)
+                if filename not in all_fnames:
+                    uq = Upload(filename, str(ver+1))
+                    db.session.add(uq)
+                else:
+                    uq = Upload.query.filter(Upload.filename==filename).first()
+                    uq.version = ver+1
+
                 if replace and ver > 0: # need to add version number to file
                     fns = filename.split(".")
                     filename = fns[0] + "v" + str(ver+1) + "." + fns[1]
@@ -645,6 +669,7 @@ def upload():
         # check if existing site
         allsites = pd.read_sql("select concat(region,'_',site) as sitenm from site",db.engine).sitenm.tolist()
         existing = True if site[0] in allsites else False
+        db.session.commit()
         return render_template('upload_columns.html', filenames=filenames, columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict, existing=existing, sitenm=site[0], replacing=replace)
     if request.method == 'GET':
         xx = pd.read_sql("select distinct region, site from data", db.engine)
