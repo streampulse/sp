@@ -226,14 +226,13 @@ class Downloads(db.Model):
 class Upload(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100))
-    version = db.Column(db.Integer)
+    # version = db.Column(db.Integer)
 
-    def __init__(self, filename, version):
+    def __init__(self, filename):
         self.filename = filename
-        self.version = version
 
     def __repr__(self):
-        return '<Upload %r, %r>' % (self.filename, self.version)
+        return '<Upload %r>' % (self.filename)
 
 db.create_all()
 
@@ -603,9 +602,11 @@ def upload():
         # UPLOAD locally and to sb
         filenames = []
         fnlong = []
+        filenamesNoV = [] #for filenames without version numbers
         for file in ufiles:
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
+                filenamesNoV.append(filename)
                 ver = len([x for x in ld if filename.split(".")[0] in x])
                 #the versioning system for leveraged sites ignores
                 #logger extensions when assigning v numbers.
@@ -616,17 +617,6 @@ def upload():
                     # filename).groups()
                 # rename files if existing, add version number
                 fup = os.path.join(upfold, filename)
-
-                #record upload in db
-                #consider errors, back button on matching screen
-                all_fnames = list(pd.read_sql('select distinct filename from upload',
-                    db.engine).filename)
-                if filename not in all_fnames:
-                    uq = Upload(filename, str(ver+1))
-                    db.session.add(uq)
-                else:
-                    uq = Upload.query.filter(Upload.filename==filename).first()
-                    uq.version = ver+1
 
                 if replace and ver > 0: # need to add version number to file
                     fns = filename.split(".")
@@ -641,6 +631,7 @@ def upload():
                 flash(msg,'alert-danger')
                 return redirect(request.url)
         # session['working_files'] = filenames #remove_misnamed_cols needs these names
+        session['filenamesNoV'] = filenamesNoV
 
         # PROCESS the data and save as tmp file
         try:
@@ -669,7 +660,7 @@ def upload():
         # check if existing site
         allsites = pd.read_sql("select concat(region,'_',site) as sitenm from site",db.engine).sitenm.tolist()
         existing = True if site[0] in allsites else False
-        db.session.commit()
+        # db.session.commit()
         return render_template('upload_columns.html', filenames=filenames, columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict, existing=existing, sitenm=site[0], replacing=replace)
     if request.method == 'GET':
         xx = pd.read_sql("select distinct region, site from data", db.engine)
@@ -713,11 +704,11 @@ def updatecdict(region, site, cdict):
         if c in rawcols: # update
             cx = Cols.query.filter_by(rawcol=c).first()
             cx.dbcol = cdict[c] # assign column to value
-            db.session.commit()
+            # db.session.commit()
         else: # add
             cx = Cols(region, site, c, cdict[c])
             db.session.add(cx)
-            db.session.commit()
+            # db.session.commit()
 
 def updatedb(xx, replace=False):
     if replace: # need to go row by row... ugh!
@@ -729,7 +720,7 @@ def updatedb(xx, replace=False):
             except: # doesn't exist, need to add it
                 d = Data(r[0], r[1], r[2], r[3], r[4], r[5])
                 db.session.add(d)
-            db.session.commit()
+            # db.session.commit()
     else:
         xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
 
@@ -809,6 +800,21 @@ def remove_misnamed_cols():
 def confirmcolumns():
     cdict = json.loads(request.form['cdict'])
     tmpfile = request.form['tmpfile']
+
+    filenamesNoV = session.get('filenamesNoV', None)
+    #record upload in db
+    #consider errors, back button on matching screen
+    all_fnames = list(pd.read_sql('select distinct filename from upload',
+        db.engine).filename)
+    for f in filenamesNoV:
+        if f not in all_fnames:
+            uq = Upload(f)#, str(ver+1))
+            db.session.add(uq)
+            # db.session.commit()
+        # else:
+            # uq = Upload.query.filter(Upload.filename==filename).first()
+            # uq.version = ver+1
+
     cdict = dict([(r['name'],r['value']) for r in cdict])
     try: #something successful
         xx = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv"), parse_dates=[0])
@@ -824,7 +830,7 @@ def confirmcolumns():
                 addDate=datetime.utcnow(), embargo=embargo, by=current_user.get_id(),
                 contact=request.form['contactName'], contactEmail=request.form['contactEmail'])
             db.session.add(sx)
-            db.session.commit()
+            # db.session.commit()
             # need to make a new text file with the metadata
             metastring = request.form['metadata']
             metafilepath = os.path.join(app.config['META_FOLDER'],region+"_"+site+"_metadata.txt")
@@ -852,6 +858,7 @@ def confirmcolumns():
         flash('There was an error, please try again.','alert-warning')
         return redirect(request.url)
     os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) # remove tmp file
+    db.session.commit()
     flash('Uploaded '+str(len(xx.index))+' values, thank you!','alert-success')
     return redirect(url_for('upload'))
 
