@@ -57,15 +57,20 @@ class Data(db.Model):
     variable = db.Column(db.String(50))
     value = db.Column(db.Float)
     flag = db.Column(db.Integer)
-    def __init__(self, region, site, DateTime_UTC, variable, value, flag):
+    upload_id = db.Column(db.Integer)
+
+    def __init__(self, region, site, DateTime_UTC, variable, value, flag, upid):
         self.region = region
         self.site = site
         self.DateTime_UTC = DateTime_UTC
         self.variable = variable
         self.value = value
         self.flag = flag
+        self.upload_id = upid
+
     def __repr__(self):
-        return '<Data %r, %r, %r, %r>' % (self.region, self.site, self.DateTime_UTC, self.variable)
+        return '<Data %r, %r, %r, %r, %r>' % (self.region, self.site,
+        self.DateTime_UTC, self.variable, self.upload_id)
 
 class Manual(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -322,7 +327,8 @@ def read_hobo(f):
         xt = xt.rename(columns={'TempC':'LightTemp_C'})
     xt.columns = [cc+inum for cc in xt.columns]
     cols = xt.columns.tolist()
-    return xt[cols[-1:]+cols[1:-1]]
+    xx = xt[cols[-1:]+cols[1:-1]]
+    return xx
 
 def read_csci(f, gmtoff):
     xt = pd.read_csv(f, header=0, skiprows=[0,2,3])
@@ -348,51 +354,86 @@ def read_manta(f, gmtoff):
 
 def load_file(f, gmtoff, logger):
     if "CS" in logger:
-        return read_csci(f, gmtoff)
+        xtmp = read_csci(f, gmtoff)
     elif "H" in logger:
-        return read_hobo(f)
+        xtmp = read_hobo(f)
     elif "EM" in logger:
-        return read_manta(f, gmtoff)
+        xtmp = read_manta(f, gmtoff)
     else:
         xtmp = pd.read_csv(f, parse_dates=[0])
         xtmp = xtmp.rename(columns={xtmp.columns.values[0]:'DateTimeUTC'})
-        return xtmp
+
+    n_vals = np.prod(xtmp.shape) - xtmp.shape[0] #excludes datetimes
+    n_missing_vals = xtmp.isnull().sum().sum()
+    n_vals = n_vals - n_missing_vals
+
+    return [xtmp, n_vals]
 
 def load_multi_file(ff, gmtoff, logger):
+
     f = [fi for fi in ff if "_"+logger in fi]
-    if len(f)>1:
+
+    if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
-        xx = reduce(lambda x,y: x.append(y), xx)
+        val_nums = [i.pop(1) for i in xx]
+        xx = reduce(lambda x,y: x[0].append(y[0]), xx)
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
-    return wash_ts(xx)
+        val_nums = xx[1]
+        xx = xx[0]
+
+    wash_ts(xx)
+    print xx
+    print val_nums
+
+    return [xx, val_nums]
 
 # read and munge files for a site and date
 def sp_in(ff, gmtoff): # ff must be a list!!!
-    if len(ff)==1: # only one file, load
+    if len(ff) == 1: # only one file, load
         xx = load_file(ff[0], gmtoff, re.sub("(.*_)(.*)\\..*", "\\2", ff[0]))
+        print xx
+        val_nums = xx[1]
+        xx = xx[0]
         xx = wash_ts(xx)
+        print xx
+        print val_nums
     else: # list by logger
         logger = list(set([re.sub("(.*_)(.*)\\..*", "\\2", f) for f in ff]))
         # if multiple loggers, map over loggers
-        if len(logger)>1:
+        if len(logger) > 1:
             xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
-            xx = reduce(lambda x,y: x.merge(y,how='outer',left_index=True,right_index=True), xx)
+            val_nums = [i.pop(1) for i in xx]
+            xx = reduce(lambda x,y: x[0].merge(y[0],how='outer',left_index=True,right_index=True), xx)
+            print xx
+            print val_nums
         else:
             logger = logger[0]
             xx = load_multi_file(ff, gmtoff, logger)
+            val_nums = xx[1]
+            xx = xx[0]
+            print xx
+            print val_nums
+
     return xx.reset_index()
 
 def sp_in_lev(ff):
     xx = pd.read_csv(ff, parse_dates=[0])
-    return wash_ts(xx).reset_index()
+
+    n_vals = np.prod(xx.shape) - xx.shape[0] #excludes datetimes
+    n_missing_vals = xx.isnull().sum().sum()
+    n_vals = n_vals - n_missing_vals
+
+    xx = wash_ts(xx).reset_index()
+    return [xx, n_vals]
 
 def wash_ts(x):
     cx = list(x.select_dtypes(include=['datetime64']).columns)[0]
     if x.columns.tolist()[0] != cx: # move date time to first column
         x = x[[cx]+[xo for xo in x.columns.tolist() if xo!=cx]]
     x = x.rename(columns={x.columns.tolist()[0]:'DateTime_UTC'})
-    x = x.set_index("DateTime_UTC").sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean().dropna(how='all')
+    x = x.set_index("DateTime_UTC").sort_index().apply(lambda x: pd.to_numeric(x,
+        errors='coerce')).resample('15Min').mean().dropna(how='all')
     return x
 
 def panda_usgs(x,jsof):
@@ -615,9 +656,9 @@ def upload():
                 # mch = re.match(
                     # "([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?(.[a-zA-Z]{3})",
                     # filename).groups()
+
                 # rename files if existing, add version number
                 fup = os.path.join(upfold, filename)
-
                 if replace and ver > 0: # need to add version number to file
                     fns = filename.split(".")
                     filename = fns[0] + "v" + str(ver+1) + "." + fns[1]
@@ -635,15 +676,24 @@ def upload():
 
         # PROCESS the data and save as tmp file
         try:
+            #determine what the new upload_id values will be for the data table
+            # last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
+            # last_upID = last_upID['m'][0]
+            # new_upIDs = list(xrange(last_upID + 1, last_upID + len(fnlong) + 1))
+
             if site[0] in core.index.tolist():
                 gmtoff = core.loc[site].GMTOFF[0]
                 x = sp_in(fnlong, gmtoff)
             else:
-                if len(fnlong)>1:
-                    flash('Please merge your files prior to upload.','alert-danger')
+                if len(fnlong) > 1:
+                    flash('For non-core sites, please merge files prior to upload.',
+                        'alert-danger')
                     [os.remove(f) for f in fnlong]
                     return redirect(request.url)
                 x = sp_in_lev(fnlong[0])
+                val_nums = x[1]
+                x = x[0]
+
             tmp_file = site[0].encode('ascii')+"_"+binascii.hexlify(os.urandom(6))
             out_file = os.path.join(upfold, tmp_file + ".csv")
             x.to_csv(out_file,index=False)
@@ -657,6 +707,7 @@ def upload():
             flash(msg,'alert-danger')
             [os.remove(f) for f in fnlong]
             return redirect(request.url)
+
         # check if existing site
         allsites = pd.read_sql("select concat(region,'_',site) as sitenm from site",db.engine).sitenm.tolist()
         existing = True if site[0] in allsites else False
@@ -718,7 +769,7 @@ def updatedb(xx, replace=False):
                 d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
                 d.value = r[4]
             except: # doesn't exist, need to add it
-                d = Data(r[0], r[1], r[2], r[3], r[4], r[5])
+                d = Data(r[0], r[1], r[2], r[3], r[4], r[5], 999)
                 db.session.add(d)
             # db.session.commit()
     else:
@@ -801,9 +852,8 @@ def confirmcolumns():
     cdict = json.loads(request.form['cdict'])
     tmpfile = request.form['tmpfile']
 
+    #record upload in mysql upload table
     filenamesNoV = session.get('filenamesNoV', None)
-    #record upload in db
-    #consider errors, back button on matching screen
     all_fnames = list(pd.read_sql('select distinct filename from upload',
         db.engine).filename)
     for f in filenamesNoV:
@@ -845,6 +895,7 @@ def confirmcolumns():
         xx['region'] = region
         xx['site'] = site
         xx['flag'] = None
+        # xx['upload_id'] =
         xx = xx[['region','site','DateTime_UTC','variable','value','flag']]
         # add a check for duplicates?
         replace = True if request.form['replacing']=='yes' else False
@@ -858,7 +909,7 @@ def confirmcolumns():
         flash('There was an error, please try again.','alert-warning')
         return redirect(request.url)
     os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) # remove tmp file
-    db.session.commit()
+    db.session.commit() #persist all db changes made during upload
     flash('Uploaded '+str(len(xx.index))+' values, thank you!','alert-success')
     return redirect(url_for('upload'))
 
