@@ -383,6 +383,8 @@ def load_multi_file(ff, gmtoff, logger):
         xx = load_file(f[0], gmtoff, logger)
         val_nums = xx[1]
         xx = xx[0]
+        print 'aa'
+        print xx
 
     xx = wash_ts(xx)
     print 'b'
@@ -396,7 +398,7 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
     if len(ff) == 1: # only one file, load
         xx = load_file(ff[0], gmtoff, re.sub("(.*_)(.*)\\..*", "\\2", ff[0]))
         print xx
-        val_nums = xx[1]
+        val_nums = [xx[1]]
         xx = xx[0]
         xx = wash_ts(xx)
         print xx
@@ -422,7 +424,8 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
             print xx
             print val_nums
 
-    return xx.reset_index()
+    xx = xx.reset_index()
+    return [xx, val_nums]
 
 def sp_in_lev(ff):
     xx = pd.read_csv(ff, parse_dates=[0])
@@ -432,7 +435,10 @@ def sp_in_lev(ff):
     n_vals = n_vals - n_missing_vals
 
     xx = wash_ts(xx).reset_index()
-    return [xx, n_vals]
+    print 'f'
+    print xx
+    print n_vals
+    return [xx, [n_vals]]
 
 def wash_ts(x):
     cx = list(x.select_dtypes(include=['datetime64']).columns)[0]
@@ -683,14 +689,13 @@ def upload():
 
         # PROCESS the data and save as tmp file
         try:
-            #determine what the new upload_id values will be for the data table
-            # last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
-            # last_upID = last_upID['m'][0]
-            # new_upIDs = list(xrange(last_upID + 1, last_upID + len(fnlong) + 1))
-
             if site[0] in core.index.tolist():
                 gmtoff = core.loc[site].GMTOFF[0]
                 x = sp_in(fnlong, gmtoff)
+                val_nums = x[1]
+                x = x[0]
+                print 'AAA'
+                print val_nums
             else:
                 if len(fnlong) > 1:
                     flash('For non-core sites, please merge files prior to upload.',
@@ -700,6 +705,9 @@ def upload():
                 x = sp_in_lev(fnlong[0])
                 val_nums = x[1]
                 x = x[0]
+                print 'BBB'
+                print val_nums
+            session['val_nums'] = val_nums
 
             tmp_file = site[0].encode('ascii')+"_"+binascii.hexlify(os.urandom(6))
             out_file = os.path.join(upfold, tmp_file + ".csv")
@@ -780,6 +788,21 @@ def updatedb(xx, replace=False):
                 db.session.add(d)
             # db.session.commit()
     else:
+        val_nums = session.get('val_nums', None)
+        #determine what the new upload_id values will be for the data table
+        last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
+        last_upID = last_upID['m'][0]
+        new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
+        print 'CCC'
+        print val_nums
+        print new_upIDs
+        upID_col = []
+        for i in xrange(len(new_upIDs)):
+            upID_col.extend(np.repeat(new_upIDs[i], val_nums[i]))
+        print upID_col
+        xx['upload_id'] = upID_col
+        print xx
+        #ADD ERROR HANDLER HERE
         xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
 
 #deprecated (tons of "obsolete" varnames that might still be useful)
