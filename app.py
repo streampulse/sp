@@ -376,13 +376,16 @@ def load_multi_file(ff, gmtoff, logger):
     if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
         val_nums = [i.pop(1) for i in xx]
+        print 'a'
+        print xx
         xx = reduce(lambda x,y: x[0].append(y[0]), xx)
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
         val_nums = xx[1]
         xx = xx[0]
 
-    wash_ts(xx)
+    xx = wash_ts(xx)
+    print 'b'
     print xx
     print val_nums
 
@@ -404,7 +407,10 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
         if len(logger) > 1:
             xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
             val_nums = [i.pop(1) for i in xx]
+            print 'c'
+            print xx
             xx = reduce(lambda x,y: x[0].merge(y[0],how='outer',left_index=True,right_index=True), xx)
+            print 'd'
             print xx
             print val_nums
         else:
@@ -412,6 +418,7 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
             xx = load_multi_file(ff, gmtoff, logger)
             val_nums = xx[1]
             xx = xx[0]
+            print 'e'
             print xx
             print val_nums
 
