@@ -372,13 +372,16 @@ def load_file(f, gmtoff, logger):
 def load_multi_file(ff, gmtoff, logger):
 
     f = [fi for fi in ff if "_"+logger in fi]
-
+    print 'f'
+    print f
     if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
         val_nums = [i.pop(1) for i in xx]
-        # print 'a'
-        # print xx
+        print 'a'
+        print xx
         xx = reduce(lambda x,y: x[0].append(y[0]), xx)
+        print 'g'
+        print xx
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
         val_nums = xx[1]
@@ -387,8 +390,8 @@ def load_multi_file(ff, gmtoff, logger):
         # print xx
 
     xx = wash_ts(xx)
-    # print 'b'
-    # print xx
+    print 'b'
+    print xx
     # print val_nums
 
     return [xx, val_nums]
@@ -710,6 +713,8 @@ def upload():
                 x = sp_in(fnlong, gmtoff)
                 val_nums = x[1]
                 x = x[0]
+                print 'x'
+                print x
             else:
                 if len(fnlong) > 1:
                     flash('For non-core sites, please merge files prior to upload.',
@@ -797,6 +802,10 @@ def updatedb(xx, replace=False):
             "', '".join(filenamesNoV) + "')", db.engine)
         upIDs = list(upIDs.id)
         print upIDs
+        flagged_obs = pd.read_sql("select * from data where upload_id in ('" +\
+            "', '".join(upIDs) + "') and flag is not null", db.engine)
+        print flagged_obs
+
 
 
 
@@ -821,6 +830,7 @@ def updatedb(xx, replace=False):
         for i in xrange(len(new_upIDs)):
             upID_col.extend(np.repeat(new_upIDs[i], val_nums[i]))
         print upID_col
+        print xx
         xx['upload_id'] = upID_col
         print xx
         #ADD ERROR HANDLER HERE
@@ -918,6 +928,7 @@ def confirmcolumns():
 
     cdict = dict([(r['name'],r['value']) for r in cdict])
     try: #something successful
+        print xx
         xx = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv"), parse_dates=[0])
         xx = xx[cdict.keys()].rename(columns=cdict)
         region, site = tmpfile.split("_")[:-1]
@@ -1068,16 +1079,18 @@ def getcsv():
         xx.loc[xx.flag==0,"value"] = None # set NA values
         xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
         if request.form.get('flag') is not None:
-            xx.drop(['id','flag'], axis=1, inplace=True) # keep the flags
+            xx.drop(['id','flag','upload_id'], axis=1, inplace=True) # keep the flags
         else:
-            xx.drop(['id','flag','flagtype','flagcomment'], axis=1,
+            xx.drop(['id','flag','flagtype','flagcomment','upload_id'], axis=1,
                 inplace=True) # get rid of them
         if request.form.get('usgs') is not None:
             #xu = get_usgs([s],startDate,endDate)
-            print xx['DateTime_UTC'].min()
+            # print xx['DateTime_UTC'].min()
             xu = get_usgs([s], xx['DateTime_UTC'].min().strftime("%Y-%m-%d"), xx['DateTime_UTC'].max().strftime("%Y-%m-%d"))
+            df_index = xx.columns
             if len(xu) is not 0:
                 xx = pd.concat([xx,xu])
+                xx = xx.reindex_axis(df_index, axis=1)
         # check for doubles with same datetime, region, site, variable...
         xx = xx.set_index(["DateTime_UTC","region","site","variable"])
         xx = xx[~xx.index.duplicated(keep='last')].sort_index().reset_index()
@@ -1151,7 +1164,7 @@ def getviz():
     xx = pd.read_sql(sqlq, db.engine)
     xx.loc[xx.flag==0,"value"] = None # set NaNs
     flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
-    xx = xx.drop('id', axis=1).drop_duplicates()\
+    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
       .set_index(["DateTime_UTC","variable"])\
       .drop(['region','site','flag'],axis=1)
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
@@ -1195,12 +1208,13 @@ def getqaqc():
     sqlq = "select * from data where region='"+region+"' and site='"+site+"'"
     xx = pd.read_sql(sqlq, db.engine)
     xx.loc[xx.flag==0,"value"] = None # set NaNs
-    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
+    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
+        axis=1).to_json(orient='records',date_format='iso') # flag data
     #xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
     variables = list(set(xx['variable'].tolist()))
     xx = xx.drop('id', axis=1).drop_duplicates()\
       .set_index(["DateTime_UTC","variable"])\
-      .drop(['region','site','flag'],axis=1)
+      .drop(['region','site','flag','upload_id'], axis=1)
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
@@ -1289,7 +1303,7 @@ def addna():
     xx = pd.read_sql(sqlq, db.engine)
     xx.loc[xx.flag==0,"value"] = None # set NaNs
     xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
-    xx = xx.drop('id', axis=1).drop_duplicates()\
+    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
       .set_index(["DateTime_UTC","variable"])\
       .drop(['region','site','flag'],axis=1)
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
@@ -1307,7 +1321,7 @@ def qaqcdemo():
     # xx.loc[xx.flag==0,"value"] = None # set NaNs existing flags
     flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
     variables = list(set(xx['variable'].tolist()))
-    xx = xx.drop('id', axis=1).drop_duplicates()\
+    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
       .set_index(["DateTime_UTC","variable"])\
       .drop(['region','site','flag'],axis=1)\
       .unstack('variable')
@@ -1371,6 +1385,7 @@ def api():
         vvv = variables.split(",")
         sqlq = sqlq+"and variable in ('"+"', '".join(vvv)+"')"
     xx = pd.read_sql(sqlq, db.engine)
+    xx = xx.drop('upload_id', axis=1)
     vv = xx.variable.unique().tolist()
     xx.loc[xx.flag==0,"value"] = None # set NA values
     xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
