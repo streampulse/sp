@@ -376,20 +376,20 @@ def load_multi_file(ff, gmtoff, logger):
     if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
         val_nums = [i.pop(1) for i in xx]
-        print 'a'
-        print xx
+        # print 'a'
+        # print xx
         xx = reduce(lambda x,y: x[0].append(y[0]), xx)
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
         val_nums = xx[1]
         xx = xx[0]
-        print 'aa'
-        print xx
+        # print 'aa'
+        # print xx
 
     xx = wash_ts(xx)
-    print 'b'
-    print xx
-    print val_nums
+    # print 'b'
+    # print xx
+    # print val_nums
 
     return [xx, val_nums]
 
@@ -397,32 +397,27 @@ def load_multi_file(ff, gmtoff, logger):
 def sp_in(ff, gmtoff): # ff must be a list!!!
     if len(ff) == 1: # only one file, load
         xx = load_file(ff[0], gmtoff, re.sub("(.*_)(.*)\\..*", "\\2", ff[0]))
-        print xx
+        # print xx
         val_nums = [xx[1]]
         xx = xx[0]
         xx = wash_ts(xx)
-        print xx
-        print val_nums
+        # print xx
+        # print val_nums
     else: # list by logger
         logger = list(set([re.sub("(.*_)(.*)\\..*", "\\2", f) for f in ff]))
-        # if multiple loggers, map over loggers
-        if len(logger) > 1:
-            xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
-            val_nums = [i.pop(1) for i in xx]
-            print 'c'
-            print xx
-            xx = reduce(lambda x,y: x[0].merge(y[0],how='outer',left_index=True,right_index=True), xx)
-            print 'd'
-            print xx
-            print val_nums
-        else:
-            logger = logger[0]
-            xx = load_multi_file(ff, gmtoff, logger)
-            val_nums = xx[1]
-            xx = xx[0]
-            print 'e'
-            print xx
-            print val_nums
+        # if multiple loggers, map over loggers (currently out of commission)
+        # if len(logger) > 1:
+            # xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
+            # val_nums = [i.pop(1) for i in xx]
+            # xx = reduce(lambda x,y: x[0].merge(y[0],how='outer',left_index=True,right_index=True), xx)
+        # else:
+        logger = logger[0]
+        xx = load_multi_file(ff, gmtoff, logger)
+        val_nums = xx[1]
+        xx = xx[0]
+        # print 'e'
+        # print xx
+        # print val_nums
 
     xx = xx.reset_index()
     return [xx, val_nums]
@@ -435,9 +430,9 @@ def sp_in_lev(ff):
     n_vals = n_vals - n_missing_vals
 
     xx = wash_ts(xx).reset_index()
-    print 'f'
-    print xx
-    print n_vals
+    # print 'f'
+    # print xx
+    # print n_vals
     return [xx, [n_vals]]
 
 def wash_ts(x):
@@ -639,7 +634,7 @@ def upload():
         pattern = re.compile(ffregex+"|"+ffregex2)
         if not all([pattern.match(f) is not None for f in ufnms]):
             # file names do not match expected pattern
-            flash('Please name your files with the specified format.','alert-danger')
+            flash('Please name your files in the specified format.','alert-danger')
             return redirect(request.url)
         if not replace: # not replacing files, need to check if files already exist
             if all([f in ld for f in ufnms]):
@@ -687,15 +682,34 @@ def upload():
         # session['working_files'] = filenames #remove_misnamed_cols needs these names
         session['filenamesNoV'] = filenamesNoV
 
+        logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})\\.\\w{3}", "\\1",
+            f) for f in filenamesNoV]))
+        #only allow one logger type per upload (sp_in formerly allowed many)
+        if len(logger) != 1:
+            flash('Ony one logger type allowed per upload.', 'alert-danger')
+            [os.remove(f) for f in fnlong]
+            return redirect(request.url)
+        #make sure logger format is right. if not logger will contain full name
+        if any([len(i) != 2 for i in logger]):
+            flash('Logger type must be specified by two capital letters in ' +\
+                'the file name. See formatting instructions.', 'alert-danger')
+            [os.remove(f) for f in fnlong]
+            return redirect(request.url)
+
         # PROCESS the data and save as tmp file
         try:
             if site[0] in core.index.tolist():
+
+                if logger[0] == 'XX' and len(fnlong) > 1:
+                    flash('For loggerID "XX", please merge files prior to upload.',
+                        'alert-danger')
+                    [os.remove(f) for f in fnlong]
+                    return redirect(request.url)
+
                 gmtoff = core.loc[site].GMTOFF[0]
                 x = sp_in(fnlong, gmtoff)
                 val_nums = x[1]
                 x = x[0]
-                print 'AAA'
-                print val_nums
             else:
                 if len(fnlong) > 1:
                     flash('For non-core sites, please merge files prior to upload.',
@@ -705,8 +719,6 @@ def upload():
                 x = sp_in_lev(fnlong[0])
                 val_nums = x[1]
                 x = x[0]
-                print 'BBB'
-                print val_nums
             session['val_nums'] = val_nums
 
             tmp_file = site[0].encode('ascii')+"_"+binascii.hexlify(os.urandom(6))
@@ -777,18 +789,27 @@ def updatecdict(region, site, cdict):
             # db.session.commit()
 
 def updatedb(xx, replace=False):
-    if replace: # need to go row by row... ugh!
-        for r in xx.values:
-            try: # if it exists, will return something and update the last one (since we grab the last one in the downloads)
-                # don't know if the order_by has any performance cost (prob does)... may be a better way to do this.
-                d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
-                d.value = r[4]
-            except: # doesn't exist, need to add it
-                d = Data(r[0], r[1], r[2], r[3], r[4], r[5], 999)
-                db.session.add(d)
-            # db.session.commit()
+    val_nums = session.get('val_nums', None)
+    filenamesNoV = session.get('filenamesNoV', None)
+
+    if replace:
+        upIDs = pd.read_sql("select id from upload where filename in ('" +\
+            "', '".join(filenamesNoV) + "')", db.engine)
+        upIDs = list(upIDs.id)
+        print upIDs
+
+
+
+        # for r in xx.values:
+        #     try: # if it exists, will return something and update the last one (since we grab the last one in the downloads)
+        #         # don't know if the order_by has any performance cost (prob does)... may be a better way to do this.
+        #         d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
+        #         d.value = r[4]
+        #     except: # doesn't exist, need to add it
+        #         d = Data(r[0], r[1], r[2], r[3], r[4], r[5], 999)
+        #         db.session.add(d)
+        #     # db.session.commit()
     else:
-        val_nums = session.get('val_nums', None)
         #determine what the new upload_id values will be for the data table
         last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
         last_upID = last_upID['m'][0]
