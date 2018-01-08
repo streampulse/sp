@@ -796,6 +796,8 @@ def updatecdict(region, site, cdict):
 def updatedb(xx, replace=False):
     val_nums = session.get('val_nums', None)
     filenamesNoV = session.get('filenamesNoV', None)
+    print val_nums
+    print filenamesNoV
 
     if replace:
         upIDs = pd.read_sql("select id from upload where filename in ('" +\
@@ -822,6 +824,9 @@ def updatedb(xx, replace=False):
         #determine what the new upload_id values will be for the data table
         last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
         last_upID = last_upID['m'][0]
+        print last_upID
+        if not last_upID:
+            last_upID = 0
         new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
         print 'CCC'
         print val_nums
@@ -912,7 +917,6 @@ def remove_misnamed_cols():
 def confirmcolumns():
     cdict = json.loads(request.form['cdict'])
     tmpfile = request.form['tmpfile']
-
     #record upload in mysql upload table
     filenamesNoV = session.get('filenamesNoV', None)
     all_fnames = list(pd.read_sql('select distinct filename from upload',
@@ -927,8 +931,8 @@ def confirmcolumns():
             # uq.version = ver+1
 
     cdict = dict([(r['name'],r['value']) for r in cdict])
+
     try: #something successful
-        print xx
         xx = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv"), parse_dates=[0])
         xx = xx[cdict.keys()].rename(columns=cdict)
         region, site = tmpfile.split("_")[:-1]
