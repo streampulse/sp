@@ -6,12 +6,14 @@ from sunrise_sunset import SunriseSunset as suns
 from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
+# from sqlalchemy.ext import serializer
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
 from dateutil import parser as dtparse
 from math import log, sqrt, floor
 import simplejson as json
 from sklearn import svm
+from operator import itemgetter
 import pandas as pd
 import numpy as np
 import requests
@@ -353,7 +355,7 @@ def read_manta(f, gmtoff):
     return xt
 
 def load_file(f, gmtoff, logger):
-    # filenamesNoV = session.get('filenamesNoV')
+    filenamesNoV = session.get('filenamesNoV')
     # print 'fienamesNoV'
     # print filenamesNoV
     # print 'AAAAAAAAAA'
@@ -380,9 +382,10 @@ def load_file(f, gmtoff, logger):
     # filenamesNoV = session.get('filenamesNoV', None)
     all_fnames = list(pd.read_sql('select distinct filename from upload',
         db.engine).filename)
-    # print 'all fnames'
-    # print all_fnames
+    print 'all fnames'
+    print all_fnames
 
+    #reset auto increment for upload table primary key if necessary
     # upID = pd.read_sql("select max(id) from upload", db.engine)
     # upID = list(upID.id)
     # if not last_upID:
@@ -390,27 +393,62 @@ def load_file(f, gmtoff, logger):
     #     last_upID = 0
 
     if fn not in all_fnames:
-        uq = Upload(fn)
-        db.session.add(uq)
-        db.session.commit()
+        # print 'fn'
+        # print fn
+        last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
+        last_upID = list(last_upID.m)
+        # print 'last id'
+        # print last_upID
+        if not last_upID[0]: #reset auto increment for upload table if necessary
+            db.engine.execute('alter table upload auto_increment=1')
+            last_upID[0] = 0
+        pending_upIDs = [i[1] for i in filenamesNoV]
+        new_upID = max(last_upID[0], max(pending_upIDs)) + 1
+        # print 'new id'
+        # print new_upID
+        # print 'fienamesnov'
+        # print filenamesNoV
+        filenamesNoV[filenamesNoV.index([fn, None])][1] = new_upID #update
+        # print filenamesNoV
+        session['filenamesNoV'] = filenamesNoV
 
-    upID = pd.read_sql("select id from upload where filename='" +\
-        fn + "'", db.engine)
-    upID = list(upID.id)
+
+        # upload_queries = session.get('upload_queries')
+        # print 'upload queries'
+        # print upload_queries
+
+        # if not upload_queries:
+
+            # last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
+            # print last_upID
+            # last_upID = list(last_upID.m)
+            # print last_upID
+            # print fn
+            # if not last_upID: #reset auto increment for upload table if necessary
+            #     db.engine.execute('alter table upload auto_increment=1')
+            #     last_upID = 0
+            #
+            # uq = Upload(fn)
+            # db.session.add
+            # print db.session
+            #
+            # print serializer.dumps(db.session, -1)
+            # # session['upload_queries'] = serializer.dumps(db.session, -1)
+            #
+            # query = serializer.loads(session['upload_queries'], db.metadata, db.session)
+            # objects = query.all()
+            # # db.session.commit()
+
+    # upID = pd.read_sql("select id from upload where filename='" +\
+    #     fn + "'", db.engine)
+    # upID = list(upID.id)
     # print 'upid'
     # print upID
 
-    xtmp['upload_id'] = upID[0]
-    # print 'xtmp'
-    # print xtmp
+    xtmp['upload_id'] = new_upID
+    print '\nxtmp, leaving loader'
+    print xtmp
 
-    # last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
-    # last_upID = last_upID['m'][0]
-    # if not last_upID:
-    #     db.engine.execute('alter table upload auto_increment=1')
-    #     last_upID = 0
-    # print 'last upid'
-    # print last_upID
     # new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
     # for i in xrange(len(new_upIDs)):
     #     upID_col.extend(np.repeat(new_upIDs[i], val_nums[i]))
@@ -426,25 +464,25 @@ def load_file(f, gmtoff, logger):
 def load_multi_file(ff, gmtoff, logger):
 
     f = [fi for fi in ff if "_"+logger in fi]
-    print 'f'
-    print f
+    # print 'f'
+    # print f
     if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
         # val_nums = [i.pop(1) for i in xx]
-        print 'a'
-        print xx
+        # print 'a'
+        # print xx
         xx = reduce(lambda x,y: x.append(y), xx)
-        print 'g'
-        print xx
+        # print 'g'
+        # print xx
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
         # val_nums = xx[1]
         # xx = xx[0]
-        print 'aa'
-        print xx
+        # print 'aa'
+        # print xx
 
     xx = wash_ts(xx)
-    print 'b'
+    print '\nafter washing, before lweaving muti load'
     print xx
     # print val_nums
 
@@ -453,12 +491,13 @@ def load_multi_file(ff, gmtoff, logger):
 
 # read and munge files for a site and date
 def sp_in(ff, gmtoff): # ff must be a list!!!
-    print 'ff'
-    print ff
+    # print 'ff'
+    # print ff
     if len(ff) == 1: # only one file, load
-        xx = load_file(ff[0], gmtoff,
-            re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}).*\\.\\w{3}",
-            "\\1", ff[0]))
+        logger = re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}).*\\.\\w{3}",
+        "\\1", ff[0])
+        xx = load_file(ff[0], gmtoff, logger)
+        # print logger
         # print xx
         # val_nums = [xx[1]]
         # xx = xx[0]
@@ -473,8 +512,32 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
         if len(logger) > 1:
             xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
             # val_nums = [i.pop(1) for i in xx]
+            # print 'xx in sp_in'
+            # print xx
             xx = reduce(lambda x,y: x.merge(y, how='outer', left_index=True,
                 right_index=True), xx)
+            # print 'xx in sp_in'
+            # print xx
+
+            upid_cols = xx.columns[xx.columns.str.contains('upload_id')]
+            # print upid_cols
+            upid_cols = [xx.pop(i) for i in upid_cols] #remove upload id cols
+            # print 'ui_col'
+            # print upid_cols
+            # print 'xx'
+            # print xx
+            upid_col = reduce(lambda x, y: x.fillna(y), upid_cols)
+            # print 'upid col'
+            # print upid_col
+            xx = pd.concat([xx, upid_col], axis=1) #put upid col last
+            # print 'derp2'
+            # print xx
+
+            xx = xx.rename(columns={xx.columns.tolist()[-1]: 'upload_id'})
+            print 'xx inside mutilogger handler'
+            print xx
+
+
         else:
             logger = logger[0]
             xx = load_multi_file(ff, gmtoff, logger)
@@ -484,6 +547,7 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
         # print xx
         # print val_nums
 
+    xx['upload_id'] = xx['upload_id'].astype(int)
     xx = xx.reset_index()
     # return [xx, val_nums]
     return xx
@@ -495,9 +559,16 @@ def sp_in_lev(ff):
     # n_missing_vals = xx.isnull().sum().sum()
     # n_vals = n_vals - n_missing_vals
 
+    last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
+    last_upID = list(last_upID.m)
+    if not last_upID[0]: #reset auto increment for upload table if necessary
+        db.engine.execute('alter table upload auto_increment=1')
+        last_upID[0] = 0
+    xx['upload_id'] = last_upID[0] + 1
+
     xx = wash_ts(xx).reset_index()
-    # print 'f'
-    # print xx
+    print '\n XX AFTER SP_IN_LEV'
+    print xx
     # print n_vals
     # return [xx, [n_vals]]
     return xx
@@ -506,25 +577,25 @@ def wash_ts(x):
 
     # x.to_csv('~/temp/xa.csv', index=True)
     cx = list(x.select_dtypes(include=['datetime64']).columns)
-    print 'cx'
-    print cx
+    # print 'cx'
+    # print cx
     dt_col = [x.pop(i) for i in cx] #remove datetime col(s)
-    print 'dt_col'
-    print dt_col
+    # print 'dt_col'
+    # print dt_col
     print type(dt_col)
-    print 'x'
-    print x
+    # print 'x'
+    # print x
     if len(cx) > 1: #more than one dataset, so merge datetime cols
         dt_col = reduce(lambda x, y: x.fillna(y), dt_col)
     else:
         dt_col = dt_col[0]
-    print 'dt_col'
-    print dt_col
+    # print 'dt_col'
+    # print dt_col
     # if x.columns.tolist()[0] != cx: # move date time to first column
         # x = x[[cx] + [xo for xo in x.columns.tolist()]# if xo != cx]]
     x = pd.concat([dt_col, x], axis=1) #put datetime col first
-    print 'derp'
-    print x
+    # print 'derp'
+    # print x
 
     x = x.rename(columns={x.columns.tolist()[0]:'DateTime_UTC'})
     # print 'chili'
@@ -548,10 +619,11 @@ def wash_ts(x):
 
     x = x.set_index("DateTime_UTC").sort_index().apply(lambda x: pd.to_numeric(x,
         errors='coerce')).resample('15Min').mean().dropna(how='all')
+    # x['upload_id'] = x['upload_id'].astype(int)
     # x = x.set_index("DateTime_UTC").apply(lambda x: pd.to_numeric(x,
     #     errors='coerce')).dropna(how='all')
-    print 'not chili'
-    print x
+    # print 'x from wash'
+    # print x
     return x
 
 def panda_usgs(x,jsof):
@@ -761,11 +833,11 @@ def upload():
         # UPLOAD locally and to sb
         filenames = []
         fnlong = []
-        filenamesNoV = [] #for filenames without version numbers
+        filenamesNoV = [] #for filenames without version numbers, and upload IDs
         for file in ufiles:
             if file and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
-                filenamesNoV.append(filename)
+                filenamesNoV.append([filename, None])
                 ver = len([x for x in ld if filename.split(".")[0] in x])
                 #the versioning system for leveraged sites ignores
                 #logger extensions when assigning v numbers.
@@ -790,10 +862,10 @@ def upload():
                 flash(msg,'alert-danger')
                 return redirect(request.url)
 
-        # session['filenamesNoV'] = filenamesNoV
-
         logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})\\.\\w{3}",
-            "\\1", f) for f in filenamesNoV]))
+            "\\1", f[0]) for f in filenamesNoV]))
+
+        session['filenamesNoV'] = filenamesNoV
 
         #only allow one logger type per upload (sp_in formerly allowed many)
         # if len(logger) != 1:
@@ -854,18 +926,24 @@ def upload():
         allsites = pd.read_sql("select concat(region,'_',site) as sitenm from site",db.engine).sitenm.tolist()
         existing = True if site[0] in allsites else False
         # db.session.commit()
-        print 'SSSSSSSSSSSSSSS'
-        print tmp_file
-        print ' '
-        from pprint import pprint
-        pprint(cdict)
-        return render_template('upload_columns.html', filenames=filenames, columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict, existing=existing, sitenm=site[0], replacing=replace)
+        # print 'x, inside upload'
+        # print x
+        # print tmp_file
+        # print '\n CDICT'
+        # from pprint import pprint
+        # pprint(cdict)
+        return render_template('upload_columns.html', filenames=filenames,
+            columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict,
+            existing=existing, sitenm=site[0], replacing=replace)
     if request.method == 'GET':
         xx = pd.read_sql("select distinct region, site from data", db.engine)
-        vv = pd.read_sql("select distinct variable from data", db.engine)['variable'].tolist()
+        vv = pd.read_sql("select distinct variable from data",
+            db.engine)['variable'].tolist()
         sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
-        sitedict = sorted([getsitenames(x) for x in sites], key=lambda tup: tup[1])
-        return render_template('upload.html', sites=sitedict, variables = map(str,vv))
+        sitedict = sorted([getsitenames(x) for x in sites],
+            key=lambda tup: tup[1])
+        return render_template('upload.html', sites=sitedict,
+            variables=map(str,vv))
 
 @app.route("/upload_cancel",methods=["POST"])
 def cancelcolumns():
@@ -927,6 +1005,8 @@ def updatedb(xx, replace=False):
 
 
         for r in xx.values:
+            # print 'r'
+            # print r
             try: # if it exists, will return something and update the last one (since we grab the last one in the downloads)
                 # don't know if the order_by has any performance cost (prob does)... may be a better way to do this.
                 d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
@@ -1051,7 +1131,13 @@ def confirmcolumns():
 
     try: #something successful
         xx = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv"), parse_dates=[0])
-        xx = xx[cdict.keys()].rename(columns=cdict)
+        # print 'CDICT'
+        # print cdict
+        upid_col = xx['upload_id']
+        xx = xx[cdict.keys()].rename(columns=cdict) #assign canonical names
+        xx = pd.concat([xx, upid_col], axis=1) #reattach upload IDs
+        # print 'XX INSIDE CONFIRMCOLS'
+        # print xx
         region, site = tmpfile.split("_")[:-1]
         # Add site if new site
         if request.form['existing'] == "no":
@@ -1069,16 +1155,29 @@ def confirmcolumns():
             metafilepath = os.path.join(app.config['META_FOLDER'],region+"_"+site+"_metadata.txt")
             with open(metafilepath, 'a') as metafile:
                 metafile.write(metastring)
-        xx = xx.set_index("DateTime_UTC")
+        xx = xx.set_index(["DateTime_UTC", "upload_id"])
+        # xx = xx.set_index("DateTime_UTC")
+        # print 'THE PIPELINE\n'
         xx.columns.name = 'variable'
+        # from pprint import pprint
+        # pprint(xx)
         xx = xx.stack()
         xx.name="value"
+        # print '\n'
+        # print xx
         xx = xx.reset_index()
         xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() # average duplicates
+        # print '\n'
+        # print xx
         xx['region'] = region
         xx['site'] = site
         xx['flag'] = None
-        xx = xx[['region','site','DateTime_UTC','variable','value','flag']]
+        # print '\n'
+        # print xx
+        xx = xx[['region','site','DateTime_UTC','variable','value','flag',
+            'upload_id']]
+        # print '\n'
+        # print xx
         # add a check for duplicates?
         replace = True if request.form['replacing']=='yes' else False
         # xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
@@ -1091,6 +1190,16 @@ def confirmcolumns():
         flash('There was an error, please try again.','alert-warning')
         return redirect(request.url)
     os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) # remove tmp file
+    filenamesNoV = session.get('filenamesNoV')
+    print 'FILENAMES NO V'
+    print filenamesNoV
+    filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
+    print filenamesNoV
+
+    for f in filenamesNoV:
+        uq = Upload(f[0])
+        db.session.add(uq)
+
     db.session.commit() #persist all db changes made during upload
     flash('Uploaded '+str(len(xx.index))+' values, thank you!','alert-success')
     return redirect(url_for('upload'))
