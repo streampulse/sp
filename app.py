@@ -353,6 +353,12 @@ def read_manta(f, gmtoff):
     return xt
 
 def load_file(f, gmtoff, logger):
+    # filenamesNoV = session.get('filenamesNoV')
+    # print 'fienamesNoV'
+    # print filenamesNoV
+    # print 'AAAAAAAAAA'
+    # print f
+
     if "CS" in logger:
         xtmp = read_csci(f, gmtoff)
     elif "H" in logger:
@@ -362,6 +368,53 @@ def load_file(f, gmtoff, logger):
     else:
         xtmp = pd.read_csv(f, parse_dates=[0])
         xtmp = xtmp.rename(columns={xtmp.columns.values[0]:'DateTimeUTC'})
+
+    # print 'xtmp'
+    # print xtmp
+
+    fn = re.sub(".*/(\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}).*(\\.\\w{3})",
+        "\\1\\2", f)
+    # print 'fn'
+    # print fn
+
+    # filenamesNoV = session.get('filenamesNoV', None)
+    all_fnames = list(pd.read_sql('select distinct filename from upload',
+        db.engine).filename)
+    # print 'all fnames'
+    # print all_fnames
+
+    # upID = pd.read_sql("select max(id) from upload", db.engine)
+    # upID = list(upID.id)
+    # if not last_upID:
+    #     db.engine.execute('alter table upload auto_increment=1')
+    #     last_upID = 0
+
+    if fn not in all_fnames:
+        uq = Upload(fn)
+        db.session.add(uq)
+        db.session.commit()
+
+    upID = pd.read_sql("select id from upload where filename='" +\
+        fn + "'", db.engine)
+    upID = list(upID.id)
+    # print 'upid'
+    # print upID
+
+    xtmp['upload_id'] = upID[0]
+    # print 'xtmp'
+    # print xtmp
+
+    # last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
+    # last_upID = last_upID['m'][0]
+    # if not last_upID:
+    #     db.engine.execute('alter table upload auto_increment=1')
+    #     last_upID = 0
+    # print 'last upid'
+    # print last_upID
+    # new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
+    # for i in xrange(len(new_upIDs)):
+    #     upID_col.extend(np.repeat(new_upIDs[i], val_nums[i]))
+    # xx['upload_id'] = upID_col
 
     # n_vals = np.prod(xtmp.shape) - xtmp.shape[0] #excludes datetimes
     # n_missing_vals = xtmp.isnull().sum().sum()
@@ -373,22 +426,22 @@ def load_file(f, gmtoff, logger):
 def load_multi_file(ff, gmtoff, logger):
 
     f = [fi for fi in ff if "_"+logger in fi]
-    # print 'f'
-    # print f
+    print 'f'
+    print f
     if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
         # val_nums = [i.pop(1) for i in xx]
-        # print 'a'
-        # print xx
+        print 'a'
+        print xx
         xx = reduce(lambda x,y: x.append(y), xx)
-        # print 'g'
-        # print xx
+        print 'g'
+        print xx
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
         # val_nums = xx[1]
         # xx = xx[0]
-        # print 'aa'
-        # print xx
+        print 'aa'
+        print xx
 
     xx = wash_ts(xx)
     print 'b'
@@ -400,16 +453,23 @@ def load_multi_file(ff, gmtoff, logger):
 
 # read and munge files for a site and date
 def sp_in(ff, gmtoff): # ff must be a list!!!
+    print 'ff'
+    print ff
     if len(ff) == 1: # only one file, load
-        xx = load_file(ff[0], gmtoff, re.sub("(.*_)(.*)\\..*", "\\2", ff[0]))
+        xx = load_file(ff[0], gmtoff,
+            re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}).*\\.\\w{3}",
+            "\\1", ff[0]))
         # print xx
         # val_nums = [xx[1]]
         # xx = xx[0]
         xx = wash_ts(xx)
         # print val_nums
     else: # list by logger
-        logger = list(set([re.sub("(.*_)(.*)\\..*", "\\2", f) for f in ff]))
-        # if multiple loggers, map over loggers (currently out of commission)
+        logger = list(set([re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}).*\\.\\w{3}",
+            "\\1", f) for f in ff]))
+        print 'logger'
+        print logger
+        # if multiple loggers, map over loggers
         if len(logger) > 1:
             xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
             # val_nums = [i.pop(1) for i in xx]
@@ -729,8 +789,8 @@ def upload():
                 msg = Markup('Error 002. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
                 flash(msg,'alert-danger')
                 return redirect(request.url)
-        # session['working_files'] = filenames #remove_misnamed_cols needs these names
-        session['filenamesNoV'] = filenamesNoV
+
+        # session['filenamesNoV'] = filenamesNoV
 
         logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})\\.\\w{3}",
             "\\1", f) for f in filenamesNoV]))
@@ -762,8 +822,8 @@ def upload():
                 x = sp_in(fnlong, gmtoff)
                 # val_nums = x[1]
                 # x = x[0]
-                print 'x'
-                print x
+                # print 'x'
+                # print x
             else:
                 if len(fnlong) > 1:
                     flash('For non-core sites, please merge files prior to upload.',
@@ -779,6 +839,7 @@ def upload():
             out_file = os.path.join(upfold, tmp_file + ".csv")
             x.to_csv(out_file,index=False)
             columns = x.columns.tolist()
+            columns.remove('upload_id')
             rr,ss = site[0].split("_")
             cdict = pd.read_sql("select * from cols where region='"+rr+"' and site='"+ss+"'", db.engine)
             cdict = dict(zip(cdict['rawcol'],cdict['dbcol']))
@@ -793,6 +854,11 @@ def upload():
         allsites = pd.read_sql("select concat(region,'_',site) as sitenm from site",db.engine).sitenm.tolist()
         existing = True if site[0] in allsites else False
         # db.session.commit()
+        print 'SSSSSSSSSSSSSSS'
+        print tmp_file
+        print ' '
+        from pprint import pprint
+        pprint(cdict)
         return render_template('upload_columns.html', filenames=filenames, columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict, existing=existing, sitenm=site[0], replacing=replace)
     if request.method == 'GET':
         xx = pd.read_sql("select distinct region, site from data", db.engine)
@@ -871,22 +937,22 @@ def updatedb(xx, replace=False):
             # db.session.commit()
     else:
         #determine what the new upload_id values will be for the data table
-        last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
-        last_upID = last_upID['m'][0]
-        print last_upID
-        if not last_upID:
-            db.engine.execute('alter table upload auto_increment=1')
-            last_upID = 0
-        new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
-        print 'CCC'
-        print val_nums
-        print new_upIDs
-        upID_col = []
-        for i in xrange(len(new_upIDs)):
-            upID_col.extend(np.repeat(new_upIDs[i], val_nums[i]))
-        print upID_col
-        print xx
-        xx['upload_id'] = upID_col
+        # last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
+        # last_upID = last_upID['m'][0]
+        # print last_upID
+        # if not last_upID:
+        #     db.engine.execute('alter table upload auto_increment=1')
+        #     last_upID = 0
+        # new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
+        # print 'CCC'
+        # print val_nums
+        # print new_upIDs
+        # upID_col = []
+        # for i in xrange(len(new_upIDs)):
+        #     upID_col.extend(np.repeat(new_upIDs[i], val_nums[i]))
+        # print upID_col
+        # print xx
+        # xx['upload_id'] = upID_col
         print xx
         #ADD ERROR HANDLER HERE
         xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
@@ -967,18 +1033,19 @@ def remove_misnamed_cols():
 def confirmcolumns():
     cdict = json.loads(request.form['cdict'])
     tmpfile = request.form['tmpfile']
-    #record upload in mysql upload table
-    filenamesNoV = session.get('filenamesNoV', None)
-    all_fnames = list(pd.read_sql('select distinct filename from upload',
-        db.engine).filename)
-    for f in filenamesNoV:
-        if f not in all_fnames:
-            uq = Upload(f)#, str(ver+1))
-            db.session.add(uq)
-            # db.session.commit()
-        # else:
-            # uq = Upload.query.filter(Upload.filename==filename).first()
-            # uq.version = ver+1
+
+    # #record upload in mysql upload table
+    # filenamesNoV = session.get('filenamesNoV', None)
+    # all_fnames = list(pd.read_sql('select distinct filename from upload',
+    #     db.engine).filename)
+    # for f in filenamesNoV:
+    #     if f not in all_fnames:
+    #         uq = Upload(f)#, str(ver+1))
+    #         db.session.add(uq)
+    #         # db.session.commit()
+    #     # else:
+    #         # uq = Upload.query.filter(Upload.filename==filename).first()
+    #         # uq.version = ver+1
 
     cdict = dict([(r['name'],r['value']) for r in cdict])
 
