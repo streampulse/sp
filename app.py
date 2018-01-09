@@ -363,11 +363,12 @@ def load_file(f, gmtoff, logger):
         xtmp = pd.read_csv(f, parse_dates=[0])
         xtmp = xtmp.rename(columns={xtmp.columns.values[0]:'DateTimeUTC'})
 
-    n_vals = np.prod(xtmp.shape) - xtmp.shape[0] #excludes datetimes
-    n_missing_vals = xtmp.isnull().sum().sum()
-    n_vals = n_vals - n_missing_vals
-
-    return [xtmp, n_vals]
+    # n_vals = np.prod(xtmp.shape) - xtmp.shape[0] #excludes datetimes
+    # n_missing_vals = xtmp.isnull().sum().sum()
+    # n_vals = n_vals - n_missing_vals
+    #
+    # return [xtmp, n_vals]
+    return xtmp
 
 def load_multi_file(ff, gmtoff, logger):
 
@@ -376,16 +377,16 @@ def load_multi_file(ff, gmtoff, logger):
     # print f
     if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
-        val_nums = [i.pop(1) for i in xx]
+        # val_nums = [i.pop(1) for i in xx]
         # print 'a'
         # print xx
-        xx = reduce(lambda x,y: x[0].append(y[0]), xx)
+        xx = reduce(lambda x,y: x.append(y), xx)
         # print 'g'
         # print xx
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
-        val_nums = xx[1]
-        xx = xx[0]
+        # val_nums = xx[1]
+        # xx = xx[0]
         # print 'aa'
         # print xx
 
@@ -394,48 +395,52 @@ def load_multi_file(ff, gmtoff, logger):
     print xx
     # print val_nums
 
-    return [xx, val_nums]
+    # return [xx, val_nums]
+    return xx
 
 # read and munge files for a site and date
 def sp_in(ff, gmtoff): # ff must be a list!!!
     if len(ff) == 1: # only one file, load
         xx = load_file(ff[0], gmtoff, re.sub("(.*_)(.*)\\..*", "\\2", ff[0]))
         # print xx
-        val_nums = [xx[1]]
-        xx = xx[0]
+        # val_nums = [xx[1]]
+        # xx = xx[0]
         xx = wash_ts(xx)
         # print val_nums
     else: # list by logger
         logger = list(set([re.sub("(.*_)(.*)\\..*", "\\2", f) for f in ff]))
         # if multiple loggers, map over loggers (currently out of commission)
-        # if len(logger) > 1:
-            # xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
+        if len(logger) > 1:
+            xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
             # val_nums = [i.pop(1) for i in xx]
-            # xx = reduce(lambda x,y: x[0].merge(y[0],how='outer',left_index=True,right_index=True), xx)
-        # else:
-        logger = logger[0]
-        xx = load_multi_file(ff, gmtoff, logger)
-        val_nums = xx[1]
-        xx = xx[0]
+            xx = reduce(lambda x,y: x.merge(y, how='outer', left_index=True,
+                right_index=True), xx)
+        else:
+            logger = logger[0]
+            xx = load_multi_file(ff, gmtoff, logger)
+        # val_nums = xx[1]
+        # xx = xx[0]
         # print 'e'
         # print xx
         # print val_nums
 
     xx = xx.reset_index()
-    return [xx, val_nums]
+    # return [xx, val_nums]
+    return xx
 
 def sp_in_lev(ff):
     xx = pd.read_csv(ff, parse_dates=[0])
 
-    n_vals = np.prod(xx.shape) - xx.shape[0] #excludes datetimes
-    n_missing_vals = xx.isnull().sum().sum()
-    n_vals = n_vals - n_missing_vals
+    # n_vals = np.prod(xx.shape) - xx.shape[0] #excludes datetimes
+    # n_missing_vals = xx.isnull().sum().sum()
+    # n_vals = n_vals - n_missing_vals
 
     xx = wash_ts(xx).reset_index()
     # print 'f'
     # print xx
     # print n_vals
-    return [xx, [n_vals]]
+    # return [xx, [n_vals]]
+    return xx
 
 def wash_ts(x):
 
@@ -446,10 +451,15 @@ def wash_ts(x):
     dt_col = [x.pop(i) for i in cx] #remove datetime col(s)
     print 'dt_col'
     print dt_col
+    print type(dt_col)
+    print 'x'
+    print x
     if len(cx) > 1: #more than one dataset, so merge datetime cols
         dt_col = reduce(lambda x, y: x.fillna(y), dt_col)
-        print 'dt_col'
-        print dt_col
+    else:
+        dt_col = dt_col[0]
+    print 'dt_col'
+    print dt_col
     # if x.columns.tolist()[0] != cx: # move date time to first column
         # x = x[[cx] + [xo for xo in x.columns.tolist()]# if xo != cx]]
     x = pd.concat([dt_col, x], axis=1) #put datetime col first
@@ -722,13 +732,15 @@ def upload():
         # session['working_files'] = filenames #remove_misnamed_cols needs these names
         session['filenamesNoV'] = filenamesNoV
 
-        logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})\\.\\w{3}", "\\1",
-            f) for f in filenamesNoV]))
+        logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})\\.\\w{3}",
+            "\\1", f) for f in filenamesNoV]))
+
         #only allow one logger type per upload (sp_in formerly allowed many)
-        if len(logger) != 1:
-            flash('Ony one logger type allowed per upload.', 'alert-danger')
-            [os.remove(f) for f in fnlong]
-            return redirect(request.url)
+        # if len(logger) != 1:
+        #     flash('Ony one logger type allowed per upload.', 'alert-danger')
+        #     [os.remove(f) for f in fnlong]
+        #     return redirect(request.url)
+
         #make sure logger format is right. if not logger will contain full name
         if any([len(i) != 2 for i in logger]):
             flash('Logger type must be specified by two capital letters in ' +\
@@ -748,8 +760,8 @@ def upload():
 
                 gmtoff = core.loc[site].GMTOFF[0]
                 x = sp_in(fnlong, gmtoff)
-                val_nums = x[1]
-                x = x[0]
+                # val_nums = x[1]
+                # x = x[0]
                 print 'x'
                 print x
             else:
@@ -759,9 +771,9 @@ def upload():
                     [os.remove(f) for f in fnlong]
                     return redirect(request.url)
                 x = sp_in_lev(fnlong[0])
-                val_nums = x[1]
-                x = x[0]
-            session['val_nums'] = val_nums
+                # val_nums = x[1]
+                # x = x[0]
+            # session['val_nums'] = val_nums
 
             tmp_file = site[0].encode('ascii')+"_"+binascii.hexlify(os.urandom(6))
             out_file = os.path.join(upfold, tmp_file + ".csv")
@@ -831,32 +843,32 @@ def updatecdict(region, site, cdict):
             # db.session.commit()
 
 def updatedb(xx, replace=False):
-    val_nums = session.get('val_nums', None)
-    filenamesNoV = session.get('filenamesNoV', None)
-    print val_nums
-    print filenamesNoV
+    # val_nums = session.get('val_nums', None)
+    # filenamesNoV = session.get('filenamesNoV', None)
+    # print val_nums
+    # print filenamesNoV
 
     if replace:
-        upIDs = pd.read_sql("select id from upload where filename in ('" +\
-            "', '".join(filenamesNoV) + "')", db.engine)
-        upIDs = list(upIDs.id)
-        print upIDs
-        flagged_obs = pd.read_sql("select * from data where upload_id in ('" +\
-            "', '".join(upIDs) + "') and flag is not null", db.engine)
-        print flagged_obs
+        # upIDs = pd.read_sql("select id from upload where filename in ('" +\
+        #     "', '".join(filenamesNoV) + "')", db.engine)
+        # upIDs = list(upIDs.id)
+        # print upIDs
+        # flagged_obs = pd.read_sql("select * from data where upload_id in ('" +\
+        #     "', '".join(upIDs) + "') and flag is not null", db.engine)
+        # print flagged_obs
 
 
 
 
-        # for r in xx.values:
-        #     try: # if it exists, will return something and update the last one (since we grab the last one in the downloads)
-        #         # don't know if the order_by has any performance cost (prob does)... may be a better way to do this.
-        #         d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
-        #         d.value = r[4]
-        #     except: # doesn't exist, need to add it
-        #         d = Data(r[0], r[1], r[2], r[3], r[4], r[5], 999)
-        #         db.session.add(d)
-        #     # db.session.commit()
+        for r in xx.values:
+            try: # if it exists, will return something and update the last one (since we grab the last one in the downloads)
+                # don't know if the order_by has any performance cost (prob does)... may be a better way to do this.
+                d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
+                d.value = r[4]
+            except: # doesn't exist, need to add it
+                d = Data(r[0], r[1], r[2], r[3], r[4], r[5], 999)
+                db.session.add(d)
+            # db.session.commit()
     else:
         #determine what the new upload_id values will be for the data table
         last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
