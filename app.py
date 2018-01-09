@@ -372,16 +372,16 @@ def load_file(f, gmtoff, logger):
 def load_multi_file(ff, gmtoff, logger):
 
     f = [fi for fi in ff if "_"+logger in fi]
-    print 'f'
-    print f
+    # print 'f'
+    # print f
     if len(f) > 1:
         xx = map(lambda x: load_file(x, gmtoff, logger), f)
         val_nums = [i.pop(1) for i in xx]
-        print 'a'
-        print xx
+        # print 'a'
+        # print xx
         xx = reduce(lambda x,y: x[0].append(y[0]), xx)
-        print 'g'
-        print xx
+        # print 'g'
+        # print xx
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
         val_nums = xx[1]
@@ -404,7 +404,6 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
         val_nums = [xx[1]]
         xx = xx[0]
         xx = wash_ts(xx)
-        # print xx
         # print val_nums
     else: # list by logger
         logger = list(set([re.sub("(.*_)(.*)\\..*", "\\2", f) for f in ff]))
@@ -439,12 +438,50 @@ def sp_in_lev(ff):
     return [xx, [n_vals]]
 
 def wash_ts(x):
-    cx = list(x.select_dtypes(include=['datetime64']).columns)[0]
-    if x.columns.tolist()[0] != cx: # move date time to first column
-        x = x[[cx]+[xo for xo in x.columns.tolist() if xo!=cx]]
+
+    # x.to_csv('~/temp/xa.csv', index=True)
+    cx = list(x.select_dtypes(include=['datetime64']).columns)
+    print 'cx'
+    print cx
+    dt_col = [x.pop(i) for i in cx] #remove datetime col(s)
+    print 'dt_col'
+    print dt_col
+    if len(cx) > 1: #more than one dataset, so merge datetime cols
+        dt_col = reduce(lambda x, y: x.fillna(y), dt_col)
+        print 'dt_col'
+        print dt_col
+    # if x.columns.tolist()[0] != cx: # move date time to first column
+        # x = x[[cx] + [xo for xo in x.columns.tolist()]# if xo != cx]]
+    x = pd.concat([dt_col, x], axis=1) #put datetime col first
+    print 'derp'
+    print x
+
     x = x.rename(columns={x.columns.tolist()[0]:'DateTime_UTC'})
+    # print 'chili'
+    # print x
+    # x = x.set_index("DateTime_UTC")
+    # print '1'
+    # print x
+    # x = x.sort_index()
+    # print '2'
+    # print x
+    # x = x.apply(lambda x: pd.to_numeric(x, errors='coerce'))
+    # print '3'
+    # print x
+    # print type(x)
+    # x = x.resample('15Min')
+    # print '4'
+    # print x
+    # x.mean().dropna(how='all')
+    # print '5'
+    # print x
+
     x = x.set_index("DateTime_UTC").sort_index().apply(lambda x: pd.to_numeric(x,
         errors='coerce')).resample('15Min').mean().dropna(how='all')
+    # x = x.set_index("DateTime_UTC").apply(lambda x: pd.to_numeric(x,
+    #     errors='coerce')).dropna(how='all')
+    print 'not chili'
+    print x
     return x
 
 def panda_usgs(x,jsof):
@@ -826,6 +863,7 @@ def updatedb(xx, replace=False):
         last_upID = last_upID['m'][0]
         print last_upID
         if not last_upID:
+            db.engine.execute('alter table upload auto_increment=1')
             last_upID = 0
         new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
         print 'CCC'
@@ -961,7 +999,6 @@ def confirmcolumns():
         xx['region'] = region
         xx['site'] = site
         xx['flag'] = None
-        # xx['upload_id'] =
         xx = xx[['region','site','DateTime_UTC','variable','value','flag']]
         # add a check for duplicates?
         replace = True if request.form['replacing']=='yes' else False
