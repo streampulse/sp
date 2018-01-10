@@ -818,7 +818,8 @@ def upload():
             return redirect(request.url)
         upfold = app.config['UPLOAD_FOLDER']
         ld = os.listdir(upfold)
-        ffregex = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}[0-9]?.[a-zA-Z]{3}" # core sites
+        ffregex = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
+            "(?:[0-9]+)?.[a-zA-Z]{3}" # core sites
         ffregex2 = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}.csv" # leveraged sites
         pattern = re.compile(ffregex+"|"+ffregex2)
         if not all([pattern.match(f) is not None for f in ufnms]):
@@ -827,19 +828,36 @@ def upload():
                 'alert-danger')
             return redirect(request.url)
         if not replace: # not replacing files, need to check if files already exist
-            if all([f in ld for f in ufnms]):
+            existing_l = [fn not in ld for fn in ufnms]
+            existing_n = [ufnms[f] for f in xrange(len(ufnms)) if
+                not existing_l[f]] #list of names to report if any files exist
+            print '\nEXISTING'
+            print existing_l
+            ufiles = [ufiles[f] for f in xrange(len(ufiles)) if existing_l[f]]
+            ufnms = [ufnms[f] for f in xrange(len(ufnms)) if existing_l[f]]
+            print ufiles
+            print ufnms
+            # if all([f in ld for f in ufnms]):
+            if not ufnms:
                 # all files already uploaded
                 flash('All of those files were already uploaded.',
                     'alert-danger')
                 return redirect(request.url)
-            if (any([f in ld for f in ufnms])):
-                # print 'ld'
-                # print ld
-                # print ufiles
+            if existing_n:
+                if len(existing_n) > 1:
+                    insrt1 = ('These files', 'exist'); insrt2 = 'them'
+                if len(existing_n) == 1:
+                    insrt1 = ('This file', 'exists'); insrt2 = 'it'
+                flash('%s already %s: ' % insrt1 + ', '.join(existing_n) +\
+                    '. You may continue, or click "Cancel" at the bottom of ' +\
+                    'this page to go back and replace %s by checking the box.'
+                    % insrt2, 'alert-warning')
+            # if (any([f in ld for f in ufnms])):
                 # remove files already uploaded
-                ufiles = [f for f in ufiles if f not in ld]
-        site = list(set([x.split("_")[0]+"_"+x.split("_")[1] for x in ufnms]))
-        if len(site)>1:
+                # ufiles = [f for f in ufiles if f not in ld]
+        site = list(set([x.split("_")[0] + "_" + x.split("_")[1] for
+            x in ufnms]))
+        if len(site) > 1:
             flash('Please only select data from a single site.','alert-danger')
             return redirect(request.url)
         # UPLOAD locally and to sb
@@ -929,7 +947,7 @@ def upload():
             rr,ss = site[0].split("_")
             cdict = pd.read_sql("select * from cols where region='"+rr+"' and site='"+ss+"'", db.engine)
             cdict = dict(zip(cdict['rawcol'],cdict['dbcol']))
-            flash("Please double check your column matching. Thanks!",'alert-warning')
+            flash("Please double check your column matching.",'alert-warning')
         except: #formerly caught just IOError
             msg = Markup('Error 001. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
             flash(msg,'alert-danger')
