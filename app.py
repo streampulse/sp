@@ -306,12 +306,16 @@ def allowed_file(filename):
 
 def read_hobo(f):
     xt = pd.read_csv(f, skiprows=[0])
-    cols = [x for x in xt.columns.tolist() if re.match("^#$|Coupler|File|Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad",x) is None]
+    cols = [x for x in xt.columns.tolist() if re.match("^#$|Coupler|File|" +\
+        "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad",x) is None]
     xt = xt[cols]
     m = [re.sub(" ","",x.split(",")[0]) for x in xt.columns.tolist()]
     u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
     tzoff = re.sub("GMT(.[0-9]{2}):([0-9]{2})","\\1",u[0])
-    ll = f.split("_")[3].split(".")[0].split("v")[0]
+    logger_regex = ".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}" +\
+        "(?:[0-9]+)?)(?:v[0-9]+)?\\.\\w{3}"
+    ll = re.sub(logger_regex, "\\1", f)
+    # ll = f.split("_")[3].split(".")[0].split("v")[0]
     inum = re.sub("[A-Z]{2}","",ll)
     uu = [re.sub("\\ |\\/|°","",x) for x in u[1:]]
     uu = [re.sub(r'[^\x00-\x7f]',r'', x) for x in uu] # get rid of unicode
@@ -324,9 +328,9 @@ def read_hobo(f):
     if "_HA" in f:
         xt = xt.rename(columns={'AbsPreskPa':'AirPres_kPa','TempC':'AirTemp_C'})
     if "_HD" in f:
-        xt = xt.rename(columns={'TempC':'DOTemp_C'})
+        xt = xt.rename(columns={'TempC':'DOLoggerTemp_C'})
     if "_HP" in f:
-        xt = xt.rename(columns={'TempC':'LightTemp_C'})
+        xt = xt.rename(columns={'TempC':'LightLoggerTemp_C'})
     xt.columns = [cc+inum for cc in xt.columns]
     cols = xt.columns.tolist()
     xx = xt[cols[-1:]+cols[1:-1]]
@@ -356,8 +360,8 @@ def read_manta(f, gmtoff):
 
 def load_file(f, gmtoff, logger):
     filenamesNoV = session.get('filenamesNoV')
-    print 'fienamesNoV'
-    print filenamesNoV
+    # print 'fienamesNoV'
+    # print filenamesNoV
     # print 'AAAAAAAAAA'
     # print f
 
@@ -371,13 +375,13 @@ def load_file(f, gmtoff, logger):
         xtmp = pd.read_csv(f, parse_dates=[0])
         xtmp = xtmp.rename(columns={xtmp.columns.values[0]:'DateTimeUTC'})
 
-    # print 'xtmp'
-    # print xtmp
+    print 'xtmp'
+    print xtmp.head(5)
 
-    fn = re.sub(".*/(\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}(?:[0-9]+)?)(?:v[0-9]+)?(\\.\\w{3})",
-        "\\1\\2", f)
-    print 'fn'
-    print fn
+    fn = re.sub(".*/(\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
+        "(?:[0-9]+)?)(?:v[0-9]+)?(\\.\\w{3})", "\\1\\2", f)
+    # print 'fn'
+    # print fn
 
     # filenamesNoV = session.get('filenamesNoV', None)
     all_fnames = list(pd.read_sql('select distinct filename from upload',
@@ -449,8 +453,8 @@ def load_file(f, gmtoff, logger):
     # print upID
 
     xtmp['upload_id'] = upID
-    print '\nxtmp, leaving loader'
-    print xtmp
+    # print '\nxtmp, leaving loader'
+    # print xtmp
 
     # new_upIDs = list(xrange(last_upID + 1, last_upID + len(val_nums) + 1))
     # for i in xrange(len(new_upIDs)):
@@ -496,9 +500,11 @@ def load_multi_file(ff, gmtoff, logger):
 def sp_in(ff, gmtoff): # ff must be a list!!!
     # print '\nff'
     # print ff
+    logger_regex = ".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2})" +\
+        "(?:[0-9]+)?(?:v[0-9]+)?\\.\\w{3}"
+
     if len(ff) == 1: # only one file, load
-        logger = re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2})(?:[0-9]+)?(?:v[0-9]+)?\\.\\w{3}",
-        "\\1", ff[0])
+        logger = re.sub(logger_regex, "\\1", ff[0])
         xx = load_file(ff[0], gmtoff, logger)
         print '\nlogger'
         print logger
@@ -510,10 +516,9 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
         # print xx
         # print val_nums
     else: # list by logger
-        logger = list(set([re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2})(?:[0-9]+)?(?:v[0-9]+)?\\.\\w{3}",
-            "\\1", f) for f in ff]))
-        print '\nlogger'
-        print logger
+        logger = list(set([re.sub(logger_regex, "\\1", f) for f in ff]))
+        # print '\nlogger'
+        # print logger
         # if multiple loggers, map over loggers
         if len(logger) > 1:
             xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
@@ -831,12 +836,12 @@ def upload():
             existing_l = [fn not in ld for fn in ufnms]
             existing_n = [ufnms[f] for f in xrange(len(ufnms)) if
                 not existing_l[f]] #list of names to report if any files exist
-            print '\nEXISTING'
-            print existing_l
+            # print '\nEXISTING'
+            # print existing_l
             ufiles = [ufiles[f] for f in xrange(len(ufiles)) if existing_l[f]]
             ufnms = [ufnms[f] for f in xrange(len(ufnms)) if existing_l[f]]
-            print ufiles
-            print ufnms
+            # print ufiles
+            # print ufnms
             # if all([f in ld for f in ufnms]):
             if not ufnms:
                 # all files already uploaded
@@ -904,8 +909,8 @@ def upload():
         #     return redirect(request.url)
 
         #make sure logger format is right. if not logger will contain full name
-        print 'logger'
-        print logger
+        # print 'logger'
+        # print logger
         if any([len(i) != 2 for i in logger]):
             flash('Logger type must be specified by two capital letters in ' +\
                 'the file name. See formatting instructions.', 'alert-danger')
@@ -941,8 +946,12 @@ def upload():
 
             tmp_file = site[0].encode('ascii')+"_"+binascii.hexlify(os.urandom(6))
             out_file = os.path.join(upfold, tmp_file + ".csv")
-            x.to_csv(out_file,index=False)
+            x.to_csv(out_file, index=False)
             columns = x.columns.tolist()
+            # print 'x'
+            # print x
+            print 'cols'
+            print columns
             columns.remove('upload_id')
             rr,ss = site[0].split("_")
             cdict = pd.read_sql("select * from cols where region='"+rr+"' and site='"+ss+"'", db.engine)
@@ -964,6 +973,9 @@ def upload():
         # print '\n CDICT'
         # from pprint import pprint
         # pprint(cdict)
+        print columns
+        print variables
+        print cdict
         return render_template('upload_columns.html', filenames=filenames,
             columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict,
             existing=existing, sitenm=site[0], replacing=replace)
@@ -1022,19 +1034,19 @@ def updatedb(xx, fnamelist, replace=False):
     # val_nums = session.get('val_nums', None)
     # filenamesNoV = session.get('filenamesNoV', None)
     # print val_nums
-    print 'UPDATEDB FNAMES'
-    print fnamelist
+    # print 'UPDATEDB FNAMES'
+    # print fnamelist
 
     if replace:
         upIDs = pd.read_sql("select id from upload where filename in ('" +\
             "', '".join(fnamelist) + "')", db.engine)
         upIDs = [str(i) for i in upIDs.id]
-        print 'UPDATEDB UPIDS'
-        print upIDs
+        # print 'UPDATEDB UPIDS'
+        # print upIDs
         flagged_obs = pd.read_sql("select * from data where upload_id in ('" +\
             "', '".join(upIDs) + "') and flag is not null", db.engine)
-        print 'flagged_obs'
-        print flagged_obs
+        # print 'flagged_obs'
+        # print flagged_obs
 
         #delete records that are being replaced (this could be sped up)
         d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
@@ -1042,7 +1054,7 @@ def updatedb(xx, fnamelist, replace=False):
         #     Data.variable.in_(list(obsolete_vnames)),
         #     Data.DateTime_UTC.in_(list(datelist))).all()
         # d = Data.query.filter(Data.upload_id.in_(upIds)).all()
-        print 'd'
+        # print 'd'
         for rec in d:
             db.session.delete(rec)
             # db.session.commit()
@@ -1225,7 +1237,7 @@ def confirmcolumns():
         # pprint(xx)
         xx = xx.stack()
         xx.name="value"
-        # print '\n'
+        # print '\nHERE'
         # print xx
         xx = xx.reset_index()
         xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() # average duplicates
@@ -1248,8 +1260,8 @@ def confirmcolumns():
         # print 'FILENAMES NO V'
         # print filenamesNoV
         fn_to_db = [i[0] for i in filenamesNoV]
-        print 'FILENAMES NO V'
-        print fn_to_db
+        # print 'FILENAMES NO V'
+        # print fn_to_db
         filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
         filenamesNoV = [i for i in filenamesNoV if i[1] is not None]
         if filenamesNoV:
@@ -1551,14 +1563,14 @@ def addflag():
     var = request.json['var']
     flg = request.json['flagid']
     cmt = request.json['comment']
-    print request.json
+    # print request.json
     for vv in var:
         fff = Flag(rgn, ste, sdt, edt, vv, flg, cmt, int(current_user.get_id()))
-        print fff
+        # print fff
         db.session.add(fff)
         db.session.commit()
         flgdat = Data.query.filter(Data.region==rgn, Data.site==ste, Data.DateTime_UTC>=sdt, Data.DateTime_UTC<=edt, Data.variable==vv).all()
-        print flgdat
+        # print flgdat
         for f in flgdat:
             f.flag = fff.id
         db.session.commit()
