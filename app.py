@@ -356,8 +356,8 @@ def read_manta(f, gmtoff):
 
 def load_file(f, gmtoff, logger):
     filenamesNoV = session.get('filenamesNoV')
-    # print 'fienamesNoV'
-    # print filenamesNoV
+    print 'fienamesNoV'
+    print filenamesNoV
     # print 'AAAAAAAAAA'
     # print f
 
@@ -374,16 +374,16 @@ def load_file(f, gmtoff, logger):
     # print 'xtmp'
     # print xtmp
 
-    fn = re.sub(".*/(\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}).*(\\.\\w{3})",
+    fn = re.sub(".*/(\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}(?:[0-9]+)?)(?:v[0-9]+)?(\\.\\w{3})",
         "\\1\\2", f)
-    # print 'fn'
-    # print fn
+    print 'fn'
+    print fn
 
     # filenamesNoV = session.get('filenamesNoV', None)
     all_fnames = list(pd.read_sql('select distinct filename from upload',
         db.engine).filename)
-    print 'all fnames'
-    print all_fnames
+    # print 'all fnames'
+    # print all_fnames
 
     #reset auto increment for upload table primary key if necessary
     # upID = pd.read_sql("select max(id) from upload", db.engine)
@@ -393,8 +393,6 @@ def load_file(f, gmtoff, logger):
     #     last_upID = 0
 
     if fn not in all_fnames:
-        # print 'fn'
-        # print fn
         last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
         last_upID = list(last_upID.m)
         # print 'last id'
@@ -403,14 +401,19 @@ def load_file(f, gmtoff, logger):
             db.engine.execute('alter table upload auto_increment=1')
             last_upID[0] = 0
         pending_upIDs = [i[1] for i in filenamesNoV]
-        new_upID = max(last_upID[0], max(pending_upIDs)) + 1
+        upID = max(last_upID[0], max(pending_upIDs)) + 1
         # print 'new id'
         # print new_upID
         # print 'fienamesnov'
         # print filenamesNoV
-        filenamesNoV[filenamesNoV.index([fn, None])][1] = new_upID #update
+        filenamesNoV[filenamesNoV.index([fn, None])][1] = upID #update
         # print filenamesNoV
         session['filenamesNoV'] = filenamesNoV
+    else:
+        upID = pd.read_sql("select id from upload where filename='" +\
+            fn + "'", db.engine)
+        upID = list(upID.id)[0]
+
 
 
         # upload_queries = session.get('upload_queries')
@@ -445,7 +448,7 @@ def load_file(f, gmtoff, logger):
     # print 'upid'
     # print upID
 
-    xtmp['upload_id'] = new_upID
+    xtmp['upload_id'] = upID
     print '\nxtmp, leaving loader'
     print xtmp
 
@@ -482,8 +485,8 @@ def load_multi_file(ff, gmtoff, logger):
         # print xx
 
     xx = wash_ts(xx)
-    print '\nafter washing, before lweaving muti load'
-    print xx
+    # print '\nafter washing, before lweaving muti load'
+    # print xx
     # print val_nums
 
     # return [xx, val_nums]
@@ -491,22 +494,25 @@ def load_multi_file(ff, gmtoff, logger):
 
 # read and munge files for a site and date
 def sp_in(ff, gmtoff): # ff must be a list!!!
-    # print 'ff'
+    # print '\nff'
     # print ff
     if len(ff) == 1: # only one file, load
-        logger = re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}).*\\.\\w{3}",
+        logger = re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2})(?:[0-9]+)?(?:v[0-9]+)?\\.\\w{3}",
         "\\1", ff[0])
         xx = load_file(ff[0], gmtoff, logger)
-        # print logger
+        print '\nlogger'
+        print logger
         # print xx
         # val_nums = [xx[1]]
         # xx = xx[0]
         xx = wash_ts(xx)
+        # print '\n post wash'
+        # print xx
         # print val_nums
     else: # list by logger
-        logger = list(set([re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}).*\\.\\w{3}",
+        logger = list(set([re.sub(".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2})(?:[0-9]+)?(?:v[0-9]+)?\\.\\w{3}",
             "\\1", f) for f in ff]))
-        print 'logger'
+        print '\nlogger'
         print logger
         # if multiple loggers, map over loggers
         if len(logger) > 1:
@@ -534,9 +540,8 @@ def sp_in(ff, gmtoff): # ff must be a list!!!
             # print xx
 
             xx = xx.rename(columns={xx.columns.tolist()[-1]: 'upload_id'})
-            print 'xx inside mutilogger handler'
-            print xx
-
+            # print 'xx inside mutilogger handler'
+            # print xx
 
         else:
             logger = logger[0]
@@ -567,8 +572,8 @@ def sp_in_lev(ff):
     xx['upload_id'] = last_upID[0] + 1
 
     xx = wash_ts(xx).reset_index()
-    print '\n XX AFTER SP_IN_LEV'
-    print xx
+    # print '\n XX AFTER SP_IN_LEV'
+    # print xx
     # print n_vals
     # return [xx, [n_vals]]
     return xx
@@ -582,7 +587,6 @@ def wash_ts(x):
     dt_col = [x.pop(i) for i in cx] #remove datetime col(s)
     # print 'dt_col'
     # print dt_col
-    print type(dt_col)
     # print 'x'
     # print x
     if len(cx) > 1: #more than one dataset, so merge datetime cols
@@ -809,6 +813,9 @@ def upload():
             return redirect(request.url)
         ufiles = request.files.getlist("file")
         ufnms = [x.filename for x in ufiles]
+        if len(ufnms[0]) == 0:
+            flash('No files selected.','alert-danger')
+            return redirect(request.url)
         upfold = app.config['UPLOAD_FOLDER']
         ld = os.listdir(upfold)
         ffregex = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}[0-9]?.[a-zA-Z]{3}" # core sites
@@ -816,14 +823,19 @@ def upload():
         pattern = re.compile(ffregex+"|"+ffregex2)
         if not all([pattern.match(f) is not None for f in ufnms]):
             # file names do not match expected pattern
-            flash('Please name your files in the specified format.','alert-danger')
+            flash('Please name your files in the specified format.',
+                'alert-danger')
             return redirect(request.url)
         if not replace: # not replacing files, need to check if files already exist
             if all([f in ld for f in ufnms]):
                 # all files already uploaded
-                flash('All of those files were already uploaded.','alert-danger')
+                flash('All of those files were already uploaded.',
+                    'alert-danger')
                 return redirect(request.url)
             if (any([f in ld for f in ufnms])):
+                # print 'ld'
+                # print ld
+                # print ufiles
                 # remove files already uploaded
                 ufiles = [f for f in ufiles if f not in ld]
         site = list(set([x.split("_")[0]+"_"+x.split("_")[1] for x in ufnms]))
@@ -862,7 +874,7 @@ def upload():
                 flash(msg,'alert-danger')
                 return redirect(request.url)
 
-        logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})\\.\\w{3}",
+        logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})(?:[0-9]+)?\\.\\w{3}",
             "\\1", f[0]) for f in filenamesNoV]))
 
         session['filenamesNoV'] = filenamesNoV
@@ -874,6 +886,8 @@ def upload():
         #     return redirect(request.url)
 
         #make sure logger format is right. if not logger will contain full name
+        print 'logger'
+        print logger
         if any([len(i) != 2 for i in logger]):
             flash('Logger type must be specified by two capital letters in ' +\
                 'the file name. See formatting instructions.', 'alert-danger')
@@ -884,11 +898,11 @@ def upload():
         try:
             if site[0] in core.index.tolist():
 
-                if logger[0] == 'XX' and len(fnlong) > 1:
-                    flash('For loggerID "XX", please merge files prior to upload.',
-                        'alert-danger')
-                    [os.remove(f) for f in fnlong]
-                    return redirect(request.url)
+                # if logger[0] == 'XX' and len(fnlong) > 1:
+                #     flash('For loggerID "XX", please merge files prior to upload (or upload separately).',
+                #         'alert-danger')
+                #     [os.remove(f) for f in fnlong]
+                #     return redirect(request.url)
 
                 gmtoff = core.loc[site].GMTOFF[0]
                 x = sp_in(fnlong, gmtoff)
@@ -986,35 +1000,62 @@ def updatecdict(region, site, cdict):
             db.session.add(cx)
             # db.session.commit()
 
-def updatedb(xx, replace=False):
+def updatedb(xx, fnamelist, replace=False):
     # val_nums = session.get('val_nums', None)
     # filenamesNoV = session.get('filenamesNoV', None)
     # print val_nums
-    # print filenamesNoV
+    print 'UPDATEDB FNAMES'
+    print fnamelist
 
     if replace:
-        # upIDs = pd.read_sql("select id from upload where filename in ('" +\
-        #     "', '".join(filenamesNoV) + "')", db.engine)
-        # upIDs = list(upIDs.id)
-        # print upIDs
-        # flagged_obs = pd.read_sql("select * from data where upload_id in ('" +\
-        #     "', '".join(upIDs) + "') and flag is not null", db.engine)
-        # print flagged_obs
+        upIDs = pd.read_sql("select id from upload where filename in ('" +\
+            "', '".join(fnamelist) + "')", db.engine)
+        upIDs = [str(i) for i in upIDs.id]
+        print 'UPDATEDB UPIDS'
+        print upIDs
+        flagged_obs = pd.read_sql("select * from data where upload_id in ('" +\
+            "', '".join(upIDs) + "') and flag is not null", db.engine)
+        print 'flagged_obs'
+        print flagged_obs
 
-
-
-
-        for r in xx.values:
-            # print 'r'
-            # print r
-            try: # if it exists, will return something and update the last one (since we grab the last one in the downloads)
-                # don't know if the order_by has any performance cost (prob does)... may be a better way to do this.
-                d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
-                d.value = r[4]
-            except: # doesn't exist, need to add it
-                d = Data(r[0], r[1], r[2], r[3], r[4], r[5], 999)
-                db.session.add(d)
+        #delete records that are being replaced (this could be sped up)
+        d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
+        # d = Data.query.filter(Data.region == rr, Data.site == ss,
+        #     Data.variable.in_(list(obsolete_vnames)),
+        #     Data.DateTime_UTC.in_(list(datelist))).all()
+        # d = Data.query.filter(Data.upload_id.in_(upIds)).all()
+        print 'd'
+        for rec in d:
+            db.session.delete(rec)
             # db.session.commit()
+
+        xx = xx.to_dict('records')
+        db.session.bulk_insert_mappings(Data, xx)
+
+        # xx.to_sql('data', db.engine, if_exists='append', index=False,
+        #     chunksize=1000)
+
+        for ind, r in flagged_obs.iterrows():
+            d = Data.query.filter(Data.region==r['region'], Data.site==r['site'],
+                Data.upload_id==r['upload_id'], Data.variable==r['variable'],
+                Data.DateTime_UTC==r['DateTime_UTC']).first_or_404()
+            d.flag = r['flag']
+            db.session.add(d)
+
+        # print pd.read_sql('select * from data where id > 9277108', db.engine)
+
+
+        # for r in xx.values:
+        #     # print 'r'
+        #     # print r
+        #     try: # if it exists, will return something and update the last one (since we grab the last one in the downloads)
+        #         # don't know if the order_by has any performance cost (prob does)... may be a better way to do this.
+        #         d = Data.query.order_by(Data.id.desc()).filter(Data.region==r[0], Data.site==r[1], Data.DateTime_UTC==r[2], Data.variable==r[3]).first_or_404()
+        #         d.value = r[4]
+        #     except: # doesn't exist, need to add it
+        #         d = Data(r[0], r[1], r[2], r[3], r[4], r[5], 999)
+        #         db.session.add(d)
+        #     # db.session.commit()
     else:
         #determine what the new upload_id values will be for the data table
         # last_upID = pd.read_sql('select max(id) as m from upload', db.engine)
@@ -1033,9 +1074,12 @@ def updatedb(xx, replace=False):
         # print upID_col
         # print xx
         # xx['upload_id'] = upID_col
-        print xx
+        # print xx
         #ADD ERROR HANDLER HERE
-        xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
+        xx = xx.to_dict('records')
+        db.session.bulk_insert_mappings(Data, xx)
+        # xx.to_sql("data", db.engine, if_exists='append', index=False,
+        #     chunksize=1000)
 
 #deprecated (tons of "obsolete" varnames that might still be useful)
 def remove_misnamed_cols():
@@ -1157,8 +1201,8 @@ def confirmcolumns():
                 metafile.write(metastring)
         xx = xx.set_index(["DateTime_UTC", "upload_id"])
         # xx = xx.set_index("DateTime_UTC")
-        # print 'THE PIPELINE\n'
         xx.columns.name = 'variable'
+        # print 'THE PIPELINE\n'
         # from pprint import pprint
         # pprint(xx)
         xx = xx.stack()
@@ -1181,7 +1225,20 @@ def confirmcolumns():
         # add a check for duplicates?
         replace = True if request.form['replacing']=='yes' else False
         # xx.to_sql("data", db.engine, if_exists='append', index=False, chunksize=1000)
-        updatedb(xx, replace)
+
+        filenamesNoV = session.get('filenamesNoV')
+        # print 'FILENAMES NO V'
+        # print filenamesNoV
+        fn_to_db = [i[0] for i in filenamesNoV]
+        print 'FILENAMES NO V'
+        print fn_to_db
+        filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
+        filenamesNoV = [i for i in filenamesNoV if i[1] is not None]
+        if filenamesNoV:
+            for f in filenamesNoV:
+                uq = Upload(f[0])
+                db.session.add(uq)
+        updatedb(xx, fn_to_db, replace)
         updatecdict(region, site, cdict)
         # session['newcols'] = [i.encode('UTF-8') for i in set(xx.variable)]
         # session['datelist'] = list(set(xx.DateTime_UTC)) #for remove_misnamed_cols
@@ -1190,15 +1247,6 @@ def confirmcolumns():
         flash('There was an error, please try again.','alert-warning')
         return redirect(request.url)
     os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) # remove tmp file
-    filenamesNoV = session.get('filenamesNoV')
-    print 'FILENAMES NO V'
-    print filenamesNoV
-    filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
-    print filenamesNoV
-
-    for f in filenamesNoV:
-        uq = Upload(f[0])
-        db.session.add(uq)
 
     db.session.commit() #persist all db changes made during upload
     flash('Uploaded '+str(len(xx.index))+' values, thank you!','alert-success')
