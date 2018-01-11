@@ -9,7 +9,7 @@ var brush = d3.brushX()
   .on("start", brushstart)
   .on("brush", brushmove)
   .on("end", brushend);
-  // .on("end", brushend);
+  .on("end", brushend);
 var selectedBrush;
 var data;
 var variables;
@@ -20,12 +20,7 @@ var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 var qaqc_opt = d3.select("body") //options menu popup after brushing
   .append("div")
-  // .style("position", "absolute")
-  // .style("text-alig", "center")
-  // .style("width", "60px")
-  // .style("height", "28px");
-
-  // .attr("class", "tooltip");
+  .attr("class", "popupbox");
   // .style("opacity", 0);
 
 function Plots(variables, data, flags, outliers, page){
