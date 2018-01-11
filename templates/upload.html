@@ -5,8 +5,8 @@
 <script>
 !function() {
   var t;
-  if (t = window.driftt = window.drift = window.driftt || [], !t.init) return t.invoked ? void (window.console && console.error && console.error("Drift snippet included twice.")) : (t.invoked = !0, 
-  t.methods = [ "identify", "config", "track", "reset", "debug", "show", "ping", "page", "hide", "off", "on" ], 
+  if (t = window.driftt = window.drift = window.driftt || [], !t.init) return t.invoked ? void (window.console && console.error && console.error("Drift snippet included twice.")) : (t.invoked = !0,
+  t.methods = [ "identify", "config", "track", "reset", "debug", "show", "ping", "page", "hide", "off", "on" ],
   t.factory = function(e) {
     return function() {
       var n;
@@ -16,8 +16,8 @@
     t[e] = t.factory(e);
   }), t.load = function(t) {
     var e, n, o, i;
-    e = 3e5, i = Math.ceil(new Date() / e) * e, o = document.createElement("script"), 
-    o.type = "text/javascript", o.async = !0, o.crossorigin = "anonymous", o.src = "https://js.driftt.com/include/" + i + "/" + t + ".js", 
+    e = 3e5, i = Math.ceil(new Date() / e) * e, o = document.createElement("script"),
+    o.type = "text/javascript", o.async = !0, o.crossorigin = "anonymous", o.src = "https://js.driftt.com/include/" + i + "/" + t + ".js",
     n = document.getElementsByTagName("script")[0], n.parentNode.insertBefore(o, n);
   });
 }();
@@ -50,7 +50,7 @@ drift.load('s2rst4h926mg');
     <small id="fileHelp" class="form-text text-muted">Select files to upload, including .csv, .dat, .txt.</small>
   </div>
   Uploading replacement files? If so, check this box: <input type="checkbox" name="replace"><br>
-  <small class="form-text text-muted">(note: this is way slower, so don't do it if this is an initial upload)</small><br><br>
+  <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small><br><br>
   <button id="upx" type="submit" value=Upload class="btn btn-primary btn-block">Upload</button>
 </form>
 
@@ -86,24 +86,30 @@ drift.load('s2rst4h926mg');
   <ul>
   <li><code>REGIONID</code> is the name of your region (PR, FL, NC, WI, or AZ),</li>
   <li><code>SITEID</code> is your unique site name,</li>
-  <li><code>YYYY-MM-DD</code> is the download date, and</li>
-  <li><code>LOGGERID.xxx</code> is the logger routing code:
+  <li><code>YYYY-MM-DD</code> is the download date,</li>
+  <li><code>LOGGERID</code> is the logger routing code,
   <ul>
-  <li><code>CS.dat</code>: CR1000 data file</li>
-  <li><code>HD.csv</code>: Hobo DO logger</li>
-  <li><code>HW.csv</code>: Hobo water pressure logger</li>
-  <li><code>HA.csv</code>: Hobo air pressure logger</li>
-  <li><code>HP.csv</code>: Hobo light pendant logger</li>
-  <li><code>EM.csv</code>: Eureka Manta logger</li>
-  <li><code>XX.csv</code>: Calibrated and formatted data</li>
+  <li><code>CS</code>: CR1000 data file</li>
+  <li><code>HD</code>: Hobo DO logger</li>
+  <li><code>HW</code>: Hobo water pressure logger</li>
+  <li><code>HA</code>: Hobo air pressure logger</li>
+  <li><code>HP</code>: Hobo light pendant logger</li>
+  <li><code>EM</code>: Eureka Manta logger</li>
+  <li><code>XX</code>: Calibrated and formatted data</li>
   </ul></li>
+  <li>and <code>.xxx</code> is the file extension.
+  <ul>
+  <li>Extension must be <code>.dat</code> if <code>LOGGERID</code> is <code>CS</code>. Otherwise must be <code>.csv</code>.
+  </li></ul>
+  <li><b>Note:</b> <code>LOGGERID</code> may include numbers if you have several of the same logger type at one site. For example, <code>LOGGERID</code> could be <code>CS4</code> or <code>HA12</code>.</li>
+  <li><b>Example filename:</b> <code>NC_Eno_2017-12-06_HP.csv</code></li>
   </ul>
 
   <h3>Calibrated and formatted data</h3>
   <p>You can upload raw data (from the datalogger) <em>and/or</em> calibrated data (e.g., turbidity in NTU, water level or discharge, etc.) at the same time.</p>
   <p>If you modify a datalogger file to generate calibrated and derived variables, you must save it as a <code>.csv</code> with:</p>
   <ul>
-  <li>the <code>_XX.csv</code> extension,</li>
+  <li>the <code>_XX.csv</code> extension (see <code>LOGGERID</code> above),</li>
   <li>one header row followed directly by data rows, one row per timestamp,</li>
   <li>the <em>first column</em> as a Date-Time stamp converted to UTC standard time and formatted as: <code>YYYY-MM-DD HH:MM:SS</code>, and</li>
   <li>additional columns for each data variable.</li>
