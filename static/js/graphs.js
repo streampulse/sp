@@ -214,6 +214,7 @@ function brushmove() {
     });
   }
 
+  //helps make sure the options bubble doesnt show up if there's no data selected
   if (typeof dott == 'undefined') {
     dott_undef = true
   } else {
@@ -238,7 +239,7 @@ function brushend(){
     d3.select('body')
       .append('div')
       .attr('class', 'popupbox')
-      .html('test')
+      .html('<button class="btn btn-warning btn-block" type="button" id="addflag2">Flag selected</button>')
       // .style("opacity", 0);
       // .transition()
   	  //   .duration(500)

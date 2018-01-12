@@ -344,48 +344,53 @@ $(function(){
   });
 })
 
+$(document).on('click', '#addflag2', add_flag);
+
 $(function(){
-  $("#addflag").click(function(){
-    if (undefined != selectedBrush){ // only do this if there is a brush selected
-      s = d3.brushSelection(d3.select("#"+selectedBrush).node())
-      dat = {}
-      dat['site'] = $('select[name=site]').val();
-      dat['startDate'] = x.invert(s[0]);
-      dat['endDate'] = x.invert(s[1]);
-      if(brushdown){
-        dat['var'] = variables;
-        d3.selectAll("svg").selectAll(".selected").classed("highlighted", function(d) {
-          is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-          return is_brushed;
-        });
-      }else{
-        dat['var'] = [selectedBrush];
-        d3.select("."+selectedBrush).selectAll(".selected").classed("highlighted", function(d) {
-          is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-          return is_brushed;
-        });
-      }
-      dat['flagid'] = $("select[name=flagID]").val();
-      dat['comment'] = $("input[name=fcomment]").val();
-      $.ajax({
-        type: 'POST',
-        url:'/_addflag',
-        data: JSON.stringify(dat),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(response){
-          console.log("success")
-          $("#alerts").append(alertbox('success','Added flag.'))
-        },
-        error: function(error){
-          console.log(error);
-        }
-      });
-      return false;
-    }else{
-      $("#alerts").append(alertbox('warning','Please select values to add Flags.'))
-    }
-  })
+  $("#addflag").click(add_flag);
 });
+
+function add_flag() {
+  console.log('click');
+  if (undefined != selectedBrush){ // only do this if there is a brush selected
+    s = d3.brushSelection(d3.select("#"+selectedBrush).node())
+    dat = {}
+    dat['site'] = $('select[name=site]').val();
+    dat['startDate'] = x.invert(s[0]);
+    dat['endDate'] = x.invert(s[1]);
+    if(brushdown){
+      dat['var'] = variables;
+      d3.selectAll("svg").selectAll(".selected").classed("highlighted", function(d) {
+        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+        return is_brushed;
+      });
+    }else{
+      dat['var'] = [selectedBrush];
+      d3.select("."+selectedBrush).selectAll(".selected").classed("highlighted", function(d) {
+        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+        return is_brushed;
+      });
+    }
+    dat['flagid'] = $("select[name=flagID]").val();
+    dat['comment'] = $("input[name=fcomment]").val();
+    $.ajax({
+      type: 'POST',
+      url:'/_addflag',
+      data: JSON.stringify(dat),
+      contentType: 'application/json;charset=UTF-8',
+      success: function(response){
+        console.log("success")
+        $("#alerts").append(alertbox('success','Added flag.'))
+      },
+      error: function(error){
+        console.log(error);
+      }
+    });
+    return false;
+  }else{
+    $("#alerts").append(alertbox('warning','Please select values to add Flags.'))
+  }
+}
 
 
 //$(function(){
