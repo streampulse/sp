@@ -1245,6 +1245,8 @@ def outlier_detect():
 
     outl_ind_r = find_outliers(dat_chunk) #call R code for outlier detect
 
+    # print '\n outl ind r'
+    # print outl_ind_r
     outl_ind = {}
     for j in xrange(1, len(outl_ind_r) + 1): #loop through R-ified list
 
@@ -1257,6 +1259,8 @@ def outlier_detect():
             tmp_lst.append(int(i))
         outl_ind[outl_ind_r.names[j-1]] = tmp_lst
 
+    print 'bottom py'
+    print outl_ind
     return jsonify(outliers=outl_ind)
 
 @app.route('/_addflag',methods=["POST"])
@@ -1281,24 +1285,24 @@ def addflag():
             f.flag = fff.id
         db.session.commit()
     return jsonify(result="success")
-
-@app.route('/_addtag',methods=["POST"])
-def addtag():
-    rgn, ste = request.json['site'].split("_")
-    sdt = dtparse.parse(request.json['startDate'])
-    edt = dtparse.parse(request.json['endDate'])
-    var = request.json['var']
-    tag = request.json['tagid']
-    cmt = request.json['comment']
-    for vv in var:
-        ttt = Tag(rgn, ste, sdt, edt, vv, tag, cmt, int(current_user.get_id()))
-        db.session.add(ttt)
-        db.session.commit()
-    # flgdat = Data.query.filter(Data.region==rgn,Data.site==ste,Data.DateTime_UTC>=sdt,Data.DateTime_UTC<=edt,Data.variable==var).all()
-    # for f in flgdat:
-    #     f.flag = fff.id
-    # db.session.commit()
-    return jsonify(result="success")
+# 
+# @app.route('/_addtag',methods=["POST"])
+# def addtag():
+#     rgn, ste = request.json['site'].split("_")
+#     sdt = dtparse.parse(request.json['startDate'])
+#     edt = dtparse.parse(request.json['endDate'])
+#     var = request.json['var']
+#     tag = request.json['tagid']
+#     cmt = request.json['comment']
+#     for vv in var:
+#         ttt = Tag(rgn, ste, sdt, edt, vv, tag, cmt, int(current_user.get_id()))
+#         db.session.add(ttt)
+#         db.session.commit()
+#     # flgdat = Data.query.filter(Data.region==rgn,Data.site==ste,Data.DateTime_UTC>=sdt,Data.DateTime_UTC<=edt,Data.variable==var).all()
+#     # for f in flgdat:
+#     #     f.flag = fff.id
+#     # db.session.commit()
+#     return jsonify(result="success")
 
 @app.route('/_addna',methods=["POST"])
 def addna():

@@ -1,4 +1,5 @@
 function(df){
+    print('here')
 
     #read in r packages
     library(imputeTS)
@@ -229,6 +230,7 @@ function(df){
         names(outlier_list)[col] = colnames(df)[col]
     }
 
+    # print(outlier_list)
     return(outlier_list)
 }
 

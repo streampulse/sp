@@ -6,9 +6,9 @@ var x = d3.scaleUtc().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
     xAxis = d3.axisBottom().scale(x).ticks(6);
 var brush = d3.brushX()
+  // .extent([0, 0], [width, height])
   .on("start", brushstart)
   .on("brush", brushmove)
-  .on("end", brushend);
   .on("end", brushend);
 var selectedBrush;
 var data;
@@ -18,10 +18,7 @@ var flags;
 var datna;
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
-var qaqc_opt = d3.select("body") //options menu popup after brushing
-  .append("div")
-  .attr("class", "popupbox");
-  // .style("opacity", 0);
+var dott_undef //for disabling popup if no points selected
 
 function Plots(variables, data, flags, outliers, page){
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -65,6 +62,9 @@ function Plots(variables, data, flags, outliers, page){
         .attr("fill", "#000")
         .attr("dy", "-0.71em")
         .attr("dx", "0.71em")
+
+        .attr('class', vvv + '_txt')
+
         .style("text-anchor", "start")
         .text(vvv);
     svg.append("g")
@@ -89,17 +89,19 @@ function Plots(variables, data, flags, outliers, page){
           .attr("cy", line.y())
           .attr("pointer-events", "none") //pass mouseovers and clicks through to the graph
         .classed("maybe_outl", function(d, j){
-          return outliers[vvv] && outliers[vvv].includes(j+1);
+          return outliers[vvv] && outliers[vvv].includes(j+1) &&
+            vvv != dff[d.DateTime_UTC]; //datetime is actually stream variable name now
         })
         .attr("r", function(d, j){
-          if(outliers[vvv] && outliers[vvv].includes(j+1)) {
+          if(outliers[vvv] && outliers[vvv].includes(j+1) &&
+            vvv != dff[d.DateTime_UTC]) {
             return 3
           } else {
             return 2
           };
         })
         .classed("flagdot", function(d){
-          return vvv == dff[d.DateTime_UTC] //datetime here is actually the variable name
+          return vvv == dff[d.DateTime_UTC]
         });
     }else{ // viz page
       svg.append("path")
@@ -186,8 +188,9 @@ $(function(){
   });
 })
 
-// Clear the previously-active brush, if any.
+// Clear the previously active brush, if any.
 function brushstart() {
+  $('.popupbox').remove();
   d3.select("."+selectedBrush).select(".brush").call(brush.move, null);
   d3.selectAll(".dot").classed("selected", false); // clear on new start
   // d3.selectAll(".brush").clear();
@@ -201,27 +204,51 @@ function brushmove() {
     ext0 = x.invert(s[0]);
     ext1 = x.invert(s[1]);
     if(brushdown){ // select all dots
-      var dott = d3.selectAll(".dot")
-    }else{ // select just these dots
-      var dott = d3.select("."+selectedBrush).selectAll(".dot")
+      var dott = d3.selectAll(".dot, .maybe_outl")
+    }else{ // select just the dots in plot window = selectedBrush
+      var dott = d3.select("."+selectedBrush).selectAll(".dot, .maybe_outl")
     }
     dott.classed("selected", function(d) {
       is_brushed = ext0 <= d.date && d.date <= ext1;
       return is_brushed;
     });
   }
+
+  if (typeof dott == 'undefined') {
+    dott_undef = true
+  } else {
+    dott_undef = false
+  }
+
 }
 
 function brushend(){
-  // qaqc_opt.transition()
-  //   .duration(500)
-  //   .style("opacity", 0);
-  // qaqc_opt.transition()
-  //   .duration(200)
-  //   .style("opacity", .9);
-  qaqc_opt.html('test')// + "<br/>" + 'test2');
-    .style("left", (d3.event.pageX) + "px")
-    .style("top", (d3.event.pageY) + "px");
+
+  $('.popupbox').remove();
+
+  var popupx = d3.select('.' + selectedBrush)
+    .select('.brush')
+    .select('.selection')
+    .attr('x');
+
+  var popupy = document.querySelector('.' + selectedBrush + '_txt')
+    .getBoundingClientRect().y + window.scrollY;
+
+  if (!dott_undef) {
+    d3.select('body')
+      .append('div')
+      .attr('class', 'popupbox')
+      .html('test')
+      // .style("opacity", 0);
+      // .transition()
+  	  //   .duration(500)
+  	  //   .style("opacity", 0)
+  	  // .transition()
+  	  // .duration(200)
+  	  // .style("opacity", .9)
+      .style('left', (popupx) + 'px')
+      .style('top', (popupy) + 'px');
+  }
 }
 
 function redrawPoints(zoom_in, sbrush, reset){

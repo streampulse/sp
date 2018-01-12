@@ -10,3 +10,4 @@ config*
 wsgi*
 *.ini
 local.py
+.Rdata
