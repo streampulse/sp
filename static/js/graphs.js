@@ -227,19 +227,48 @@ function brushend(){
 
   $('.popupbox').remove();
 
-  var popupx = d3.select('.' + selectedBrush)
-    .select('.brush')
-    .select('.selection')
-    .attr('x');
+  // var popupx = d3.select('.' + selectedBrush)
+  //   .select('.brush')
+  //   .select('.selection')
+  //   .attr('x');
+
+  var popupx = document.querySelector('.' + selectedBrush + '_txt')
+    .getBoundingClientRect().right;
 
   var popupy = document.querySelector('.' + selectedBrush + '_txt')
-    .getBoundingClientRect().y + window.scrollY;
+    .getBoundingClientRect().bottom + window.scrollY;
+
+  //if i run into trouble, reset flags2, flagID2, fcomment2, qaqc2
+  //can eventually commet the part in qaqc.html about #addflag
+
+  html_str = '<form id="qaqc">'
+    // + '<div class="col-md-11">'
+    // html_str = '<button class="btn btn-warning btn-xs v_align" type="button" '
+    + '<button class="btn btn-warning btn-xs v_align" type="button" '
+    + 'id="addflag2">Flag all<br />selected</button>'
+    + '<button class="btn btn-danger btn-xs v_align" type="button" '
+    + 'id="addflag_outl">Flag red<br />points</button>'
+    + '<select id="flags2" placeholder="Choose (or enter) a flag ID" '
+    + 'name="flagID2" class="v_align">'
+    + '<option value="" disabled selected hidden>Choose flag type</option>'
+    + '<option value="Interesting">Interesting</option>'
+    + '<option value="Questionable">Questionable</option>'
+    + '<option value="Bad Data">Bad Data</option>'
+    + '</select>'
+    // + '</div>'
+    // + '<div class="col-md-7">'
+    + '<input type="text" name="fcomment2" class="form-control v_align" '
+    + 'style="width: 150px;"'
+    + 'placeholder=\'Add optional comments (e.g. "Sensor out of water")\'>'
+    // + '</div>'
+    + '</form>'
 
   if (!dott_undef) {
     d3.select('body')
       .append('div')
       .attr('class', 'popupbox')
-      .html('<button class="btn btn-warning btn-block" type="button" id="addflag2">Flag selected</button>')
+      .html(html_str)
+      // .html('<button class="btn btn-danger btn-xs v_align" type="button" id="addflag_outl">Flag red<br />points</button>')
       // .style("opacity", 0);
       // .transition()
   	  //   .duration(500)
@@ -247,8 +276,9 @@ function brushend(){
   	  // .transition()
   	  // .duration(200)
   	  // .style("opacity", .9)
-      .style('left', (popupx) + 'px')
+      .style('left', (popupx) + 3 + 'px')
       .style('top', (popupy) + 'px');
+      // .style("text-anchor", "start");
   }
 }
 

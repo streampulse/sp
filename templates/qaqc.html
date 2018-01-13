@@ -33,7 +33,7 @@ drift.load('s2rst4h926mg');
   <h1>Clean Data</h1>
   <p class="lead">Authorized users will be able to visually clean and analyze data here. <small>This step is important for assuring data quality.</small><p>
 
-  <form id="qaqc">
+  <form id="qaqc2">
     <div class="col-md-8">
       <select placeholder="Choose a site" id="dsite" name="site">
         <option value="">Choose a site</option>
@@ -84,7 +84,7 @@ drift.load('s2rst4h926mg');
       <div class="panel-heading"><span class="lead">Data Flagging</span> &ndash; Label points of interest or concern. </div>
       <div class="panel-body">
         <select id="flags" placeholder="Choose a flag" name="flagID">
-          <option value="">Choose (or enter) a flag ID</option> <!-- is this line doing anything? -->
+          <option value="">Choose (or enter) a flag ID</option> <!--part of placeholder?-->
           {% for f in flags %}
           <option value="{{f}}">{{f}}</option>
           {% endfor %}
@@ -130,7 +130,7 @@ $('#dsite').selectize({
     create: function(input) { return {value: input,text: input} }
 });
 
-$('#flags').selectize({
+$('#flags2').selectize({
     delimiter: ',',
     persist: false,
     create: function(input) { return {value: input,text: input} }
@@ -339,19 +339,20 @@ $(function(){
       });
       return false;
     }else{
-      $("#alerts").append(alertbox('warning','Please select values to add NAs.'))
+      $("#alerts").append(alertbox('warning','Please select points to add NAs.'))
     }
   });
 })
 
-$(document).on('click', '#addflag2', add_flag);
-
+//add flags when static button is clicked
 $(function(){
   $("#addflag").click(add_flag);
 });
 
+//add flags when popup button is clicked
+$(document).on('click', '#addflag2', add_flag);
+
 function add_flag() {
-  console.log('click');
   if (undefined != selectedBrush){ // only do this if there is a brush selected
     s = d3.brushSelection(d3.select("#"+selectedBrush).node())
     dat = {}
@@ -371,24 +372,29 @@ function add_flag() {
         return is_brushed;
       });
     }
-    dat['flagid'] = $("select[name=flagID]").val();
-    dat['comment'] = $("input[name=fcomment]").val();
-    $.ajax({
-      type: 'POST',
-      url:'/_addflag',
-      data: JSON.stringify(dat),
-      contentType: 'application/json;charset=UTF-8',
-      success: function(response){
-        console.log("success")
-        $("#alerts").append(alertbox('success','Added flag.'))
-      },
-      error: function(error){
-        console.log(error);
-      }
-    });
-    return false;
-  }else{
-    $("#alerts").append(alertbox('warning','Please select values to add Flags.'))
+    dat['comment'] = $("input[name=fcomment2]").val();
+    dat['flagid'] = $("select[name=flagID2]").val();
+    if (dat.flagid != null){
+      console.log('here');
+      $.ajax({
+        type: 'POST',
+        url:'/_addflag',
+        data: JSON.stringify(dat),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response){
+          console.log("success")
+          $("#alerts").append(alertbox('success','Added flag.'))
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
+      return false;
+    } else {
+      $("#alerts").append(alertbox('warning','Please select a flag type.'))
+    }
+  } else {
+    $("#alerts").append(alertbox('warning','Please select points to add Flags.'))
   }
 }
 
