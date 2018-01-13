@@ -1278,14 +1278,14 @@ def addflag():
         fff = Flag(rgn, ste, sdt, edt, vv, flg, cmt, int(current_user.get_id()))
         # print fff
         db.session.add(fff)
-        db.session.commit()
+        # db.session.commit()
         flgdat = Data.query.filter(Data.region==rgn, Data.site==ste, Data.DateTime_UTC>=sdt, Data.DateTime_UTC<=edt, Data.variable==vv).all()
         # print flgdat
         for f in flgdat:
             f.flag = fff.id
         db.session.commit()
     return jsonify(result="success")
-# 
+#
 # @app.route('/_addtag',methods=["POST"])
 # def addtag():
 #     rgn, ste = request.json['site'].split("_")

@@ -349,11 +349,19 @@ $(function(){
   $("#addflag").click(add_flag);
 });
 
-//add flags when popup button is clicked
-$(document).on('click', '#addflag2', add_flag);
+// add flags for all points when popup button is clicked
+$(document).on('click', '#addflag2', function(){
+  add_flag(red_points_only=false);
+});
 
+// add flags for red points when popup button is clicked
+$(document).on('click', '#addflag_outl', function(){
+  add_flag(red_points_only=true);
+});
+
+// function add_flag(red_points_only) {
 function add_flag() {
-  if (undefined != selectedBrush){ // only do this if there is a brush selected
+  if(undefined != selectedBrush){ // only do this if there is a brush selected
     s = d3.brushSelection(d3.select("#"+selectedBrush).node())
     dat = {}
     dat['site'] = $('select[name=site]').val();
@@ -361,43 +369,93 @@ function add_flag() {
     dat['endDate'] = x.invert(s[1]);
     if(brushdown){
       dat['var'] = variables;
-      d3.selectAll("svg").selectAll(".selected").classed("highlighted", function(d) {
+      b = d3.selectAll("svg").selectAll(".selected");
+      if(red_points_only){
+        b = b.filter('.maybe_outl');
+      }
+      b.classed('highlighted', function(d) {
         is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
         return is_brushed;
       });
-    }else{
+    } else {
       dat['var'] = [selectedBrush];
-      d3.select("."+selectedBrush).selectAll(".selected").classed("highlighted", function(d) {
+      b = d3.select("."+selectedBrush).selectAll(".selected");
+      if(red_points_only){
+        b = b.filter('.maybe_outl');
+      }
+      b.classed('highlighted', function(d) {
         is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
         return is_brushed;
       });
     }
     dat['comment'] = $("input[name=fcomment2]").val();
     dat['flagid'] = $("select[name=flagID2]").val();
+    if(red_points_only){
+      so = d3.select("."+selectedBrush).selectAll(".selected")
+      .filter('.maybe_outl').data(); //extract selected outliers
+      counter = 0; //prepare for flag_ajax_serial recursion
+      dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
+      dat['endDate'] = so[counter].DateTime_UTC;
+    }
     if (dat.flagid != null){
-      console.log('here');
-      $.ajax({
-        type: 'POST',
-        url:'/_addflag',
-        data: JSON.stringify(dat),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(response){
-          console.log("success")
-          $("#alerts").append(alertbox('success','Added flag.'))
-        },
-        error: function(error){
-          console.log(error);
-        }
-      });
+      if(red_points_only){
+        flag_ajax_serial(counter, so);
+      } else {
+        flag_ajax_batch();
+      }
       return false;
     } else {
-      $("#alerts").append(alertbox('warning','Please select a flag type.'))
+      $("#alerts").append(alertbox('warning','Please select a flag type.'));
     }
   } else {
-    $("#alerts").append(alertbox('warning','Please select points to add Flags.'))
+    $("#alerts").append(alertbox('warning','Please select points to add Flags.'));
   }
 }
 
+function flag_ajax_batch(){
+  $.ajax({
+    type: 'POST',
+    url:'/_addflag',
+    data: JSON.stringify(dat),
+    contentType: 'application/json;charset=UTF-8',
+    // success: function(response){
+    success: function(){
+      console.log("success");
+      $("#alerts").append(alertbox('success','Added flag.'));
+    },
+    error: function(error){
+      console.log(error);
+    }
+  });
+}
+
+function flag_ajax_serial(counter, selection){
+  $.ajax({
+    type: 'POST',
+    url:'/_addflag',
+    data: JSON.stringify(dat),
+    contentType: 'application/json;charset=UTF-8',
+    // success: function(response){
+    success: function(){
+      console.log('counter');
+      console.log(counter);
+      // console.log(dat);
+      console.log('so.length');
+      console.log(so.length);
+      dat['startDate'] = so[counter].DateTime_UTC; //focus on next red point
+      dat['endDate'] = so[counter].DateTime_UTC;
+      $("#alerts").append(alertbox('success','Added flag.'));
+      if (counter < so.length - 1){ //one value gets missed when adding to database. try
+        //using startdate - 1 second and enddate + 1 second
+        counter++;
+        flag_ajax_serial(counter, so);
+      }
+    },
+    error: function(error){
+      console.log(error);
+    }
+  });
+}
 
 //$(function(){
 //  $("#addtag").click(function(){
