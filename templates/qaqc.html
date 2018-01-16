@@ -31,7 +31,7 @@ drift.load('s2rst4h926mg');
 
 <div class="row"><div class="col-md-6 col-md-offset-3">
   <h1>Clean Data</h1>
-  <p class="lead">Authorized users will be able to visually clean and analyze data here. <small>This step is important for assuring data quality.</small><p>
+  <p class="lead">Authorized users can visually clean data here.<br />This step is important for assuring data quality.</p>
 
   <form id="qaqc2">
     <div class="col-md-8">
@@ -64,11 +64,11 @@ drift.load('s2rst4h926mg');
           <option value="15m" selected>15 minutes (default)</option>
           <option value="1h">1 hour</option>
           <option value="1d">1 day</option></select> &nbsp; -->
-        Fill down marking brush: <input type="checkbox" id="fillbrush" value="yes"> &nbsp;
+        <!-- Fill down marking brush: <input type="checkbox" id="fillbrush" value="yes"> &nbsp; -->
         Backfill area variable: <select class="form-control" id="backgraphlist" name="backgraphlist"></select>
         <br>
-        <button class="btn btn-danger" type="button" id="addna">Set NA values</button>
-        <button class="btn btn-primary" type="button" id="zoomin">Zoom in to selected region</button>
+        <!-- <button class="btn btn-danger" type="button" id="addna">Set NA values</button> -->
+        <!-- <button class="btn btn-primary" type="button" id="zoomin">Zoom in to selected region</button> -->
         <button class="btn btn-link" type="button" id="zoomreset">Reset zoom</button>
         </div>
       </div>
@@ -76,24 +76,25 @@ drift.load('s2rst4h926mg');
   </div>
 </div>
 
-<div class="row">
+<div class="row"> <!-- this chunk now just used as a placeholder -->
   <div class="col-md-3">
   </div>
   <div class="col-md-6">
     <div class="panel panel-default">
-      <div class="panel-heading"><span class="lead">Data Flagging</span> &ndash; Label points of interest or concern. </div>
+      <!-- <div class="panel-heading"><span class="lead">Data Flagging</span> &ndash; Label points of interest or concern. </div>
       <div class="panel-body">
         <select id="flags" placeholder="Choose a flag" name="flagID">
-          <option value="">Choose (or enter) a flag ID</option> <!--part of placeholder?-->
+          <option value="">Choose (or enter) a flag ID</option>
           {% for f in flags %}
           <option value="{{f}}">{{f}}</option>
           {% endfor %}
         </select>
         <input type="text" name="fcomment" class="form-control" placeholder='Add optional comments (e.g. "Sensor out of water")'>
         <button class="btn btn-warning btn-block" type="button" id="addflag">Flag selected</button>
-      </div>
+      </div> -->
     </div>
   </div>
+
 <!--  <div class="col-md-6">
     <div class="panel panel-default">
       <div class="panel-heading"><span class="lead">Tags/notes</span> &ndash; interesting features in the data (storms, leaf drop, etc.)</div>
@@ -232,12 +233,16 @@ $(function(){
 //  });
 //}
 
-
-$(function(){
-  $("#zoomin").click(function(){
+// $(function(){
+//   $("#zoomin").click(function(){
+//     redrawPoints(zoom_in = true, sbrush=selectedBrush, reset=false)
+//   });
+// })
+$('body').ready(function(){
+  $('body').on("click", "#zoomin", function(){
     redrawPoints(zoom_in = true, sbrush=selectedBrush, reset=false)
   });
-})
+});
 
 $(function(){
   $("#zoomreset").click(function(){
@@ -345,19 +350,29 @@ $(function(){
 })
 
 //add flags when static button is clicked
-$(function(){
-  $("#addflag").click(add_flag);
-});
+// $(function(){
+//   $("#addflag").click(add_flag);
+// });
 
 // add flags for all points when popup button is clicked
-$(document).on('click', '#addflag2', function(){
-  add_flag(red_points_only=false);
+$('body').ready(function(){
+  $('body').on("click", "#addflag2", function(){
+    add_flag(red_points_only=false);
+  });
 });
+// $(document).on('click', '#addflag2', function(){
+//   add_flag(red_points_only=false);
+// });
 
 // add flags for red points when popup button is clicked
-$(document).on('click', '#addflag_outl', function(){
-  add_flag(red_points_only=true);
+$('body').ready(function(){
+  $('body').on("click", "#addflag_outl", function(){
+    add_flag(red_points_only=true);
+  });
 });
+// $(document).on('click', '#addflag_outl', function(){
+//   add_flag(red_points_only=true);
+// });
 
 // function add_flag(red_points_only) {
 function add_flag() {
@@ -388,6 +403,7 @@ function add_flag() {
         return is_brushed;
       });
     }
+    brushdown = false;
     dat['comment'] = $("input[name=fcomment2]").val();
     dat['flagid'] = $("select[name=flagID2]").val();
     if(red_points_only){
@@ -420,10 +436,12 @@ function flag_ajax_batch(){
     contentType: 'application/json;charset=UTF-8',
     // success: function(response){
     success: function(){
+      $('.popupbox').remove();
       console.log("success");
       $("#alerts").append(alertbox('success','Added flag.'));
     },
     error: function(error){
+      $('.popupbox').remove();
       console.log(error);
     }
   });
@@ -437,21 +455,18 @@ function flag_ajax_serial(counter, selection){
     contentType: 'application/json;charset=UTF-8',
     // success: function(response){
     success: function(){
-      console.log('counter');
-      console.log(counter);
-      // console.log(dat);
-      console.log('so.length');
-      console.log(so.length);
-      dat['startDate'] = so[counter].DateTime_UTC; //focus on next red point
-      dat['endDate'] = so[counter].DateTime_UTC;
-      $("#alerts").append(alertbox('success','Added flag.'));
       if (counter < so.length - 1){ //one value gets missed when adding to database. try
-        //using startdate - 1 second and enddate + 1 second
         counter++;
+        dat['startDate'] = so[counter].DateTime_UTC; //focus on next red point
+        dat['endDate'] = so[counter].DateTime_UTC;
         flag_ajax_serial(counter, so);
+      } else {
+        $('.popupbox').remove();
+        $("#alerts").append(alertbox('success','Added flag.'));
       }
     },
     error: function(error){
+      $('.popupbox').remove();
       console.log(error);
     }
   });
@@ -492,15 +507,25 @@ function flag_ajax_serial(counter, selection){
 //  })
 //});
 
-$(function(){
-  $('#fillbrush').change(function() {
-    if($(this).is(":checked")) {
+// $(function(){
+//   $('#fillbrush').change(function() {
+//     if($(this).is(":checked")) {
+//       brushdown = true;
+//     }else{
+//       brushdown = false;
+//     }
+//   });
+// })
+$('body').ready(function(){ //delegated event handler for filldown brush
+  $('body').on('change', '#fillbrush', function(){
+    if($(this).is(":checked")){
       brushdown = true;
+      console.log('in brushdown');
     }else{
       brushdown = false;
     }
   });
-})
+});
 
 </script>
 

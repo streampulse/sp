@@ -232,7 +232,7 @@ function brushend(){
   //   .select('.selection')
   //   .attr('x');
 
-  var popupx = document.querySelector('.' + selectedBrush + '_txt')
+  var popupx = document.querySelector('.' + selectedBrush + '_txt')//based on plot title
     .getBoundingClientRect().right;
 
   var popupy = document.querySelector('.' + selectedBrush + '_txt')
@@ -244,10 +244,6 @@ function brushend(){
   html_str = '<form id="qaqc">'
     // + '<div class="col-md-11">'
     // html_str = '<button class="btn btn-warning btn-xs v_align" type="button" '
-    + '<button class="btn btn-warning btn-xs v_align" type="button" '
-    + 'id="addflag2">Flag all<br />selected</button>'
-    + '<button class="btn btn-danger btn-xs v_align" type="button" '
-    + 'id="addflag_outl">Flag red<br />points</button>'
     + '<select id="flags2" placeholder="Choose (or enter) a flag ID" '
     + 'name="flagID2" class="v_align">'
     + '<option value="" disabled selected hidden>Choose flag type</option>'
@@ -258,12 +254,32 @@ function brushend(){
     // + '</div>'
     // + '<div class="col-md-7">'
     + '<input type="text" name="fcomment2" class="form-control v_align" '
-    + 'style="width: 150px;"'
-    + 'placeholder=\'Add optional comments (e.g. "Sensor out of water")\'>'
+    + 'style="width: 26em;"'
+    + 'placeholder=\'Optional comments (e.g. "Sensor out of water")\'>'
+    // + '<div class="form-inline">'
+    + '<div class="v_align" style="width: .5em"></div><p class="v_align" style="font: 10pt sans-serif">Apply to <br> all variables:</p> <input type="checkbox" id="fillbrush" value="yes"><div class="v_align" style="width: .5em"></div>'
+    // + '<p class="v_align" style="font: 10pt sans-serif">Apply to <br> all variables</p>: <input type="checkbox" id="fillbrush" value="yes">'
     // + '</div>'
+    + '<button class="btn btn-warning btn-xs v_align" type="button" '
+    + 'id="addflag2">Flag all<br />selected</button>'
+    + '<button class="btn btn-danger btn-xs v_align" type="button" '
+    + 'id="addflag_outl">Flag red<br />points</button>'
+    + '<div class="v_align" style="width: .5em"></div>'
+    + '<button class="btn btn-primary btn-xs v_align" type="button" '
+    + 'id="zoomin">Zoom in to<br />selected region</button>'
     + '</form>'
 
   if (!dott_undef) {
+
+    //get height of popup to offset by later
+    var height_of_popupbox = d3.select('body')
+      .append('div')
+      .attr('class', 'popupbox')
+      .html(html_str).node().getBoundingClientRect().height
+
+    $('.popupbox').remove();
+
+    //create tooltop
     d3.select('body')
       .append('div')
       .attr('class', 'popupbox')
@@ -277,7 +293,7 @@ function brushend(){
   	  // .duration(200)
   	  // .style("opacity", .9)
       .style('left', (popupx) + 3 + 'px')
-      .style('top', (popupy) + 'px');
+      .style('top', (popupy) - height_of_popupbox + 'px');
       // .style("text-anchor", "start");
   }
 }
