@@ -884,11 +884,14 @@ def updatedb(xx, fnamelist, replace=False):
 
         #reconstitute flags
         for ind, r in flagged_obs.iterrows():
-            d = Data.query.filter(Data.region==r['region'], Data.site==r['site'],
-                Data.upload_id==r['upload_id'], Data.variable==r['variable'],
-                Data.DateTime_UTC==r['DateTime_UTC']).first_or_404()
-            d.flag = r['flag']
-            db.session.add(d)
+            try:
+                d = Data.query.filter(Data.region==r['region'], Data.site==r['site'],
+                    Data.upload_id==r['upload_id'], Data.variable==r['variable'],
+                    Data.DateTime_UTC==r['DateTime_UTC']).first()
+                d.flag = r['flag']
+                db.session.add(d)
+            except:
+                continue
 
     else: #if not replacing, just insert new data
         xx = xx.to_dict('records')
