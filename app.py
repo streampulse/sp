@@ -25,9 +25,12 @@ import shutil
 import os
 import re
 import config as cfg
+import logging
 import readline #needed for rpy2 import in conda env
+os.environ['R_HOME'] = '/usr/lib/R' #needed for rpy2 to find R. has to be a better way
 import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
+
 # from rpy2.robjects.packages import importr
 # import redis
 # from flask_kvsession import KVSessionExtension
@@ -43,6 +46,12 @@ app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16 MB
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
+#app.config['PROPAGATE_EXCEPTIONS'] = True
+
+#error logging
+#handler = logging.FileHandler('/home/aaron/app.log')
+#handler.setLevel(logging.NOTSET)
+#app.logger.addHandler(handler)
 
 #sb.login(cfg.SB_USER,cfg.SB_PASS)
 #sbupf = sb.get_item(cfg.SB_UPFL)
