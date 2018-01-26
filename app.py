@@ -374,23 +374,24 @@ def load_file(f, gmtoff, logger):
     fn = re.sub(".*/(\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
         "(?:[0-9]+)?)(?:v[0-9]+)?(\\.\\w{3})", "\\1\\2", f)
 
-    if fn not in all_fnames: #if not...
+    if fn not in all_fnames:
 
         #find the last upload_id that was added to the database
         last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
         last_upID = list(last_upID.m)
 
         #reset auto increment for upload table if necessary
-        if not last_upID[0]:
-            db.engine.execute('alter table upload auto_increment=1')
-            last_upID[0] = 0
+        #if not last_upID[0]:
+        #    db.engine.execute('alter table upload auto_increment=1')
+        #    last_upID[0] = 0
 
         #find out what the next upload_id will be and update working list
         pending_upIDs = [i[1] for i in filenamesNoV]
         upID = max(last_upID[0], max(pending_upIDs)) + 1
         filenamesNoV[filenamesNoV.index([fn, None])][1] = upID #update
         session['filenamesNoV'] = filenamesNoV
-    else: #if so...
+
+    else:
 
         #retrieve upload_id
         upID = pd.read_sql("select id from upload where filename='" +\
@@ -450,17 +451,43 @@ def sp_in(ff, gmtoff): # ff must be a list
 
     return xx
 
-def sp_in_lev(ff):
-    xx = pd.read_csv(ff, parse_dates=[0])
+def sp_in_lev(f):
 
-    last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
-    last_upID = list(last_upID.m)
+    filenamesNoV = session.get('filenamesNoV')
+    xx = pd.read_csv(f, parse_dates=[0])
 
-    if not last_upID[0]: #reset auto increment for upload table if necessary
-        db.engine.execute('alter table upload auto_increment=1')
-        last_upID[0] = 0
+    #get list of all filenames on record
+    all_fnames = list(pd.read_sql('select distinct filename from upload',
+        db.engine).filename)
 
-    xx['upload_id'] = last_upID[0] + 1
+    #see if this one is among them
+    fn = re.sub(".*/(\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2})" +\
+        "(?:v[0-9]+)?(\\.\\w{3})", "\\1\\2", f)
+
+    if fn not in all_fnames:
+
+        #find out what the next upload_id will be and update session variable
+        last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
+        last_upID = list(last_upID.m)[0]
+        filenamesNoV[0][1] = last_upID + 1
+        
+        #append column of upload_ids to df
+        xx['upload_id'] = last_upID + 1
+
+    else:
+
+        #retrieve upload_id
+        upID = pd.read_sql("select id from upload where filename='" +\
+            fn + "'", db.engine)
+        upID = list(upID.id)[0]
+ 
+        #append column of upload_ids to df
+        xx['upload_id'] = upID
+
+    #if not last_upID[0]: #reset auto increment for upload table if necessary
+    #    db.engine.execute('alter table upload auto_increment=1')
+    #    last_upID[0] = 0
+
     xx = wash_ts(xx).reset_index()
 
     return xx
@@ -1273,8 +1300,6 @@ def outlier_detect():
 
     outl_ind_r = find_outliers(dat_chunk) #call R code for outlier detect
 
-    # print '\n outl ind r'
-    # print outl_ind_r
     outl_ind = {}
     for j in xrange(1, len(outl_ind_r) + 1): #loop through R-ified list
 
@@ -1287,8 +1312,6 @@ def outlier_detect():
             tmp_lst.append(int(i))
         outl_ind[outl_ind_r.names[j-1]] = tmp_lst
 
-    print 'bottom py'
-    print outl_ind
     return jsonify(outliers=outl_ind)
 
 @app.route('/_addflag',methods=["POST"])
@@ -1301,14 +1324,12 @@ def addflag():
     var = request.json['var']
     flg = request.json['flagid']
     cmt = request.json['comment']
-    # print request.json
+
     for vv in var:
         fff = Flag(rgn, ste, sdt, edt, vv, flg, cmt, int(current_user.get_id()))
-        # print fff
         db.session.add(fff)
         # db.session.commit()
         flgdat = Data.query.filter(Data.region==rgn, Data.site==ste, Data.DateTime_UTC>=sdt, Data.DateTime_UTC<=edt, Data.variable==vv).all()
-        # print flgdat
         for f in flgdat:
             f.flag = fff.id
         db.session.commit()
