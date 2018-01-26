@@ -884,13 +884,28 @@ def updatedb(xx, fnamelist, replace=False):
             "', '".join(upIDs) + "') and flag is not null", db.engine)
 
         #delete records that are being replaced (this could be sped up)
-        d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
-        for rec in d:
-            db.session.delete(rec)
+        if list(upIDs):
+            d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
+            for rec in d:
+                db.session.delete(rec)
 
-        #insert new (replacement) data
-        xx = xx.to_dict('records')
-        db.session.bulk_insert_mappings(Data, xx)
+        #insert new (replacement) data (chunk it if > 100k records)
+        n_full_chunks = xx.shape[0] / 100000
+        partial_chunk_len = xx.shape[0] % 100000
+
+        if n_full_chunks == 0:
+            xx = xx.to_dict('records')
+            db.session.bulk_insert_mappings(Data, xx) #ingest all records
+        else:
+            for i in xrange(n_full_chunks): #ingest full (100k-record) chunks
+                chunk = xx.head(100000)
+                xx = xx.drop(xx.head(100000).index)
+                chunk = chunk.to_dict('records')
+                db.session.bulk_insert_mappings(Data, chunk)
+
+            if partial_chunk_len:
+                xx = xx.to_dict('records')
+                db.session.bulk_insert_mappings(Data, xx) #ingest remainder
 
         #reconstitute flags
         for ind, r in flagged_obs.iterrows():
