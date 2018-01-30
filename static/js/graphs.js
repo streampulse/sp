@@ -246,7 +246,7 @@ function brushend(){
     // html_str = '<button class="btn btn-warning btn-xs v_align" type="button" '
     + '<select id="flags2" placeholder="Choose (or enter) a flag ID" '
     + 'name="flagID2" class="v_align">'
-    + '<option value="" disabled selected hidden>Choose flag type</option>'
+    // + '<option value="" disabled selected hidden>Choose flag type</option>'
     + '<option value="Interesting">Interesting</option>'
     + '<option value="Questionable">Questionable</option>'
     + '<option value="Bad Data">Bad Data</option>'
