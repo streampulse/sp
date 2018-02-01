@@ -11,3 +11,4 @@ wsgi*
 *.ini
 local.py
 .Rdata
+.Rhistory

@@ -470,7 +470,7 @@ def sp_in_lev(f):
         last_upID = pd.read_sql("select max(id) as m from upload", db.engine)
         last_upID = list(last_upID.m)[0]
         filenamesNoV[0][1] = last_upID + 1
-        
+
         #append column of upload_ids to df
         xx['upload_id'] = last_upID + 1
 
@@ -480,7 +480,7 @@ def sp_in_lev(f):
         upID = pd.read_sql("select id from upload where filename='" +\
             fn + "'", db.engine)
         upID = list(upID.id)[0]
- 
+
         #append column of upload_ids to df
         xx['upload_id'] = upID
 
@@ -1424,68 +1424,104 @@ def qaqcdemo():
 
 @app.route('/api')
 def api():
+
+    #pull in requests
     startDate = request.args.get('startdate')
     endDate = request.args.get('enddate')
     variables = request.args.get('variables')
     sites = request.args['sitecode'].split(',')
+
+    #tests
     if request.headers.get('Token') is not None:
         sites = authenticate_sites(sites, token=request.headers['Token'])
     elif current_user.is_authenticated:
         sites = authenticate_sites(sites, user=current_user.get_id())
     else:
         sites = authenticate_sites(sites)
-    ss = []
+
+    #assemble sql queries for data and metadata
+    ss = []; ss2 = []
     for site in sites:
         r,s = site.split("_")
         ss.append("(region='"+r+"' and site='"+s+"') ")
+        ss2.append("(data.region='"+r+"' and data.site='"+s+"') ")
+
     qs = "or ".join(ss)
-    # META
-    meta = pd.read_sql("select region, site, name, latitude as lat, longitude as lon, usgs as usgsid from site where "+qs, db.engine)
-    # DATA
-    sqlq = "select * from data where "+qs
+    qs2 = "or ".join(ss2)
+
+    meta = pd.read_sql("select region, site, name, latitude as lat, " +\
+        "longitude as lon, usgs as usgsid from site where " + qs, db.engine)
+
+    sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
+        "data.variable, data.value, flag.flag as flagtype, flag.comment as " +\
+        "flagcomment from data left join flag on data.flag = flag.id where " +\
+        qs2
+
     if startDate is not None:
-        sqlq = sqlq+"and DateTime_UTC>'"+startDate+"' "
+        sqlq = sqlq+"and data.DateTime_UTC>'"+startDate+"' "
     if endDate is not None:
-        sqlq = sqlq+"and DateTime_UTC<'"+endDate+"' "
+        sqlq = sqlq+"and data.DateTime_UTC<'"+endDate+"' "
     if variables is not None:
         vvv = variables.split(",")
-        sqlq = sqlq+"and variable in ('"+"', '".join(vvv)+"')"
+        sqlq = sqlq+"and data.variable in ('"+"', '".join(vvv)+"')"
+
+    #read in data as df; format it
     xx = pd.read_sql(sqlq, db.engine)
-    xx = xx.drop('upload_id', axis=1)
     vv = xx.variable.unique().tolist()
-    xx.loc[xx.flag==0,"value"] = None # set NA values
+    # xx.loc[xx.flag==0,"value"] = None # set NA values (deprecated)
     xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
-    # check if we need to get USGS data - if depth requested but not available
+
+    #get USGS data if depth requested but not available
     xu = []
     if variables is not None:
         if "Discharge_m3s" in variables and "Discharge_m3s" not in vv:
             xu = get_usgs(sites, min(xx.DateTime_UTC).strftime("%Y-%m-%d"), max(xx.DateTime_UTC).strftime("%Y-%m-%d"))
         if "Depth_m" in variables and "Depth_m" not in vv and len(xu) is 0:
             xu = get_usgs(sites, min(xx.DateTime_UTC).strftime("%Y-%m-%d"), max(xx.DateTime_UTC).strftime("%Y-%m-%d"))
+
     if len(xu) is not 0:
-        # subset usgs data based on each sites' dates...
+        # subset usgs data based on each site's dates
         xx = pd.concat([xx,xu])
+
+    #rearrange columns
+    # flagcols = ['flagtype','flagcomment']
+    # reordered = [i for i in xx.columns.tolist() if i not in flagcols] + flagcols
+    # xx = xx[reordered]
+
     # check for doubles with same datetime, region, site, variable...
     xx = xx.set_index(["DateTime_UTC","region","site","variable"])
     xx = xx[~xx.index.duplicated(keep='last')].sort_index().reset_index()
-    xx['DateTime_UTC'] = xx['DateTime_UTC'].apply(lambda x: x.strftime('%Y-%m-%d %H:%M:%S'))
-    # FLAGS
-    if request.args.get('flags')=='true':
-        fsql = "select * from flag where "+qs
+    xx['DateTime_UTC'] = xx['DateTime_UTC'].apply(lambda x: \
+        x.strftime('%Y-%m-%d %H:%M:%S'))
+
+    #get flag data (already done above, so this may be obsolete)
+    if request.args.get('flags') == 'true':
+        fsql = "select * from flag where " + qs
         if startDate is not None:
-            fsql = fsql+"and startDate>'"+startDate+"' "
+            fsql = fsql + "and startDate > '" + startDate + "' "
         if endDate is not None:
-            fsql = fsql+"and endDate<'"+endDate+"' "
+            fsql = fsql + "and endDate < '" + endDate + "' "
         if variables is not None:
             vvv = variables.split(",")
-            fsql = fsql+"and variable in ('"+"', '".join(vvv)+"')"
+            fsql = fsql + "and variable in ('" + "', '".join(vvv) + "')"
         flags = pd.read_sql(fsql, db.engine)
         flags.drop(['by'], axis=1, inplace=True)
-        xx.drop(['id'], axis=1, inplace=True)
-        resp = jsonify(data=xx.to_dict(orient='records'),sites=meta.to_dict(orient='records'),flags=flags.to_dict(orient='records'))
+        # xx.drop(['id'], axis=1, inplace=True)
+        xx[['flagtype','flagcomment']] = \
+            xx[['flagtype','flagcomment']].fillna('') #repace NaNs in flag cols
+
+        #assemble response
+        resp = jsonify(data=xx.to_dict(orient='records'),
+            sites=meta.to_dict(orient='records'),
+            flags=flags.to_dict(orient='records'))
     else:
-        xx.drop(['id','flag'], axis=1, inplace=True)
-        resp = jsonify(data=xx.to_dict(orient='records'),sites=meta.to_dict(orient='records'))
+        xx.drop(['flagtype','flagcomment'], axis=1, inplace=True)
+        # xx.drop(['id','flag'], axis=1, inplace=True)
+
+        #assemble response
+        resp = jsonify(data=xx.to_dict(orient='records'),
+            sites=meta.to_dict(orient='records'))
+
     return resp
 
 @app.route('/model')

@@ -1,5 +1,4 @@
 function(df){
-    print('here')
 
     #read in r packages
     library(imputeTS)
