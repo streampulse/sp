@@ -30,6 +30,7 @@ import readline #needed for rpy2 import in conda env
 os.environ['R_HOME'] = '/usr/lib/R' #needed for rpy2 to find R. has to be a better way
 import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
+import markdown
 
 # from rpy2.robjects.packages import importr
 # import redis
@@ -1235,6 +1236,13 @@ def getviz():
     rss.set = rss.set.shift(1)
     sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
     return jsonify(variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
+
+@app.route('/logbook')
+def print_log():
+    with open('templates/logbook.md', 'r') as f:
+        logbook_md = f.read()
+    logbook_md = Markup(markdown.markdown(logbook_md))
+    return render_template('logbook.html', **locals())
 
 @app.route('/clean')
 @login_required
