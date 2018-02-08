@@ -176,3 +176,19 @@ r wrappers now hande flag information
 fixed phil's processing_func so that it works when model_type='bayes'
 wrote diagnostic for evaluating cor between daily K and ER
 air pressure automatically retrieved if necessary
+
+### mon20180205
+ + finished first round of model runs, not including WI
+
+### tue20180206
+ + finished WI and added to zip file
+ + fixed 3 errors in pipeline discovered during model round 1.
+   + much more intelligent handling of inconsistent time intervals
+   + may want to handle interval stuff without user input
+   + possible interpolation error introduced. test tomorrow
+   + air pressure retrieval error introduced.
+ + enhanced many and formatted all errors and warnings. removed calls from these messages
+
+### wed20170207
+ + new errors fixed
+ + adding new core sites requires manual editing of files and database. should let users do this themselves

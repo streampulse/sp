@@ -787,16 +787,19 @@ def upload():
 
         session['filenamesNoV'] = filenamesNoV #persist across requests
 
-        #make sure logger format is right. if not logger will contain full name
-        if site[0] in core.index.tolist():
-            logger = list(set([re.sub(".*\\d{4}-\\d{2}-\\d{2}_([A-Z]{2})" +\
-                "(?:[0-9]+)?\\.\\w{3}", "\\1", f[0]) for f in filenamesNoV]))
+        #make sure LOGGERID formats are valid
+        for i in xrange(len(filenamesNoV)):
+            logger = re.search(".*\\d{4}-\\d{2}-\\d{2}(_[A-Z]{2})?" +\
+                "(?:[0-9]+)?\\.\\w{3}", filenamesNoV[i][0]).group(1)
 
-            if any([len(i) != 2 for i in logger]):
-                flash('Logger type must be specified by two capital letters in ' +\
-                    'the file name. See formatting instructions.', 'alert-danger')
-                [os.remove(f) for f in fnlong]
-                return redirect(request.url)
+            if logger: #if there is a LOGGERID format
+                logger = logger[1:len(logger)] #remove underscore
+
+                if logger not in ['CS','HD','HW','HA','HP','EM','XX']:
+                    flash('"' + str(logger) + '" is an invalid LOGGERID. ' +\
+                        'See formatting instructions.', 'alert-danger')
+                    [os.remove(f) for f in fnlong]
+                    return redirect(request.url)
 
         # PROCESS the data and save as tmp file
         try:
