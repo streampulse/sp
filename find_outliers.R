@@ -63,7 +63,7 @@ function(df){
         long_runs = runs[lr, 2:3, drop=FALSE]
 
         #and then decide which ones to "keep", i.e. which ones may be actual
-        #outliers based on
+        #outliers
         keep = numeric()
         if(length(long_runs)){
             for(i in 1:nrow(long_runs)){
@@ -99,8 +99,8 @@ function(df){
         posNeg_jump_pairs = sort(unique(c(keep, as.vector(runs[!lr,2:3]))))
         outlier_inds = jump_inds[posNeg_jump_pairs]
 
-        #
-        n_outlier_pieces = Inf #a piece is one unidirectional jump
+        #winnow them down using various heuristics
+        n_outlier_pieces = Inf #an outlier piece is one unidirectional jump
         counter = 0 #dont loop for too long
         if(length(outlier_inds) == 1){
             outlier_ts = 'NONE' #if only one ind, can't be an alternating jump

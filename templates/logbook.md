@@ -189,6 +189,21 @@ air pressure automatically retrieved if necessary
    + air pressure retrieval error introduced.
  + enhanced many and formatted all errors and warnings. removed calls from these messages
 
-### wed20170207
+### wed20180207
  + new errors fixed
  + adding new core sites requires manual editing of files and database. should let users do this themselves
+
+###thu20180208
+ + made imore robust tests for valid LOGGERIDs
+ + deleted all FL data so Lily can reupload with new files
+ + fixed bash run commands file for user hbef
+   + that user's default shell was at some point changed to /bin/sh
+
+###tue20180213
+ + modifying pipeline so that rating curves can be used to estimate discharge from level/depth/stage when available, and so that these can be estimated from air and water pressure (and sensor height) where necessary.
+   + the user can supply a small sample of Z and Q data to build a rating curve, or can supply a and b of Q=aZ^b if they want to override that.
+ + building all the checks and system messages to guide the user through this now.
+ + noticed that level is ignored by the pipeline at the moment, although it's a synonym for depth. depth and discharge are both passed into streamMetabolizer.
+ + changing it so that calc_depth(), which uses a stock rating curve to estimate depth from discharge, is only used as a last resort when both depth and level are missing
+ + if the user specifies rating curve arguments, any discharge data available from StreamPULSE or USGS will be ignored and the user will be warned.
+ + removed AZ_LV_2017-07-11_EM.csv from database (left name in upload table). these file had been marked with "do not send these data to aaron"
