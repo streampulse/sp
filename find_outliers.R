@@ -55,6 +55,18 @@ function(df){
         neg_jumps = which(diffs < -sd_scaler * sd)
         jump_inds = sort(c(pos_jumps, neg_jumps))
 
+        #if there are no such jumps to speak of, grab global outliers
+        #(or nothing) and move on
+        if(length(pos_jumps) == 0 | length(neg_jumps) == 0){ 
+            if(length(big_outliers)){
+                outlier_list[[col]] = big_outliers
+            } else { 
+                outlier_list[[col]] = 'NONE'
+            }
+            names(outlier_list)[col] = colnames(df)[col]
+            next
+        }
+
         #an outlier as defined here must consist of a pair of positive and
         #negative jumps. here we get the run lengths of consecutive positive
         #(1) and negative (0) jumps
@@ -224,7 +236,15 @@ function(df){
         }
 
         #bring in the global outliers from above
-        outlier_ts = unique(c(outlier_ts, big_outliers))
+        if(outlier_ts == 'NONE'){
+            if(length(big_outliers)){
+                outlier_ts = unique(big_outliers)
+            } else {
+                outlier_ts = 'NONE'
+            }
+        } else {
+            outlier_ts = unique(c(outlier_ts, big_outliers))
+        }
         outlier_list[[col]] = outlier_ts
         names(outlier_list)[col] = colnames(df)[col]
     }
