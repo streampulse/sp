@@ -207,3 +207,7 @@ air pressure automatically retrieved if necessary
  + changing it so that calc_depth(), which uses a stock rating curve to estimate depth from discharge, is only used as a last resort when both depth and level are missing
  + if the user specifies rating curve arguments, any discharge data available from StreamPULSE or USGS will be ignored and the user will be warned.
  + removed AZ_LV_2017-07-11_EM.csv from database (left name in upload table). these file had been marked with "do not send these data to aaron"
+ + fixed issue with outlier detector when there are no outliers identified
+
+wed20180214
+turns out there's little consensus on what "stage", "level", and "depth" mean. seems likely that different sitegroups will be using these terms interchangeably, but they may refer either to depth at a point in the stream, average depth across the stream, or the vertical distance between sensor and surface. gotta add more checks and warnings for this.
