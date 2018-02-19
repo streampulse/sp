@@ -194,20 +194,31 @@ air pressure automatically retrieved if necessary
  + adding new core sites requires manual editing of files and database. should let users do this themselves
 
 ###thu20180208
- + made imore robust tests for valid LOGGERIDs
+ + made more robust tests for valid LOGGERIDs
  + deleted all FL data so Lily can reupload with new files
  + fixed bash run commands file for user hbef
    + that user's default shell was at some point changed to /bin/sh
 
 ###tue20180213
- + modifying pipeline so that rating curves can be used to estimate discharge from level/depth/stage when available, and so that these can be estimated from air and water pressure (and sensor height) where necessary.
+ + modifying pipeline so that rating curves can be used to estimate discharge from level/depth/stage when available, and so that these can be estimated from air and water pressure (and sometimes ensor height) where necessary.
    + the user can supply a small sample of Z and Q data to build a rating curve, or can supply a and b of Q=aZ^b if they want to override that.
  + building all the checks and system messages to guide the user through this now.
  + noticed that level is ignored by the pipeline at the moment, although it's a synonym for depth. depth and discharge are both passed into streamMetabolizer.
- + changing it so that calc_depth(), which uses a stock rating curve to estimate depth from discharge, is only used as a last resort when both depth and level are missing
+ + changing it so that calc_depth(), which uses a stock rating curve to estimate depth from discharge, is only used as a last resort when both depth and level are missing [undid when i found out Depth_m usually refers to level-at-gage]
  + if the user specifies rating curve arguments, any discharge data available from StreamPULSE or USGS will be ignored and the user will be warned.
  + removed AZ_LV_2017-07-11_EM.csv from database (left name in upload table). these file had been marked with "do not send these data to aaron"
  + fixed issue with outlier detector when there are no outliers identified
 
 wed20180214
-turns out there's little consensus on what "stage", "level", and "depth" mean. seems likely that different sitegroups will be using these terms interchangeably, but they may refer either to depth at a point in the stream, average depth across the stream, or the vertical distance between sensor and surface. gotta add more checks and warnings for this.
+ + turns out there's little consensus on what "stage", "level", and "depth" mean. seems likely that different sitegroups will be using these terms interchangeably, but they may refer either to depth at a point in the stream, average depth across the stream, or the vertical distance between sensor and surface. gotta add more checks and warnings for this.
+ + turns out pretty much any measure of depth or level, averaged or not, can be used to fit a rating curve with discharge. what streamMetabolizer expects though is average depth for an area defined by the width of the stream and the O2 turnover distance. This can be estimated from discharge.
+ + finished incorporating rating curves. can now estimate discharge using prefit curve parameters or just fit one on the fly using Z and Q data. still need to test.
+ + now estimating mean areal depth by default, rather than assuming Depth_m from StreamPULSE database is adequate. But the user can override and pass this value directly into the model. Looks like it will usually be something like depth-at-gage or, worse, level-at-gage, rather than areal depth as described above.
+
+thu20180215
+ + added options for fitting ZQ curve as power, exponential, linear
+ + if interpolation by seasonal decomposition fails (e.g. because of too many NAs for a variable), automatically attemps linear interp
+ + new option to plot rating curve fit and discharge estimates
+ + new option to use depth_m from StreaamPULSE (which may represent many things), or estimate mean areal depth via discharge
+ + option to correct for sensor height above bed or not
+ + added more warnings, messages, errors, and tests
