@@ -87,6 +87,18 @@ class SunriseSunset(object):
         cosH_rise = (cos_zenith - (sinDec_rise * sin_latitude)) / (cosDec_rise * cos_latitude)
         cosH_set = (cos_zenith - (sinDec_set * sin_latitude)) / (cosDec_set * cos_latitude)
 
+        #for extreme latitudes, this patch keeps the arccos domain within bounds.
+        #only acceptable because these light calculations don't seem to matter
+        #beyond site viz. Will fix one day regardless.
+        if cosH_rise < -1:
+            cosH_rise = -1
+        if cosH_rise > 1:
+            cosH_rise = 1
+        if cosH_set < -1:
+            cosH_set = -1
+        if cosH_set > 1:
+            cosH_set = 1
+
         # Finish calculating H and convert into hours
         H_rise = (360 - math.degrees(math.acos(cosH_rise))) / 15
         H_set = math.degrees(math.acos(cosH_set)) / 15

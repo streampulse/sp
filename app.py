@@ -1264,7 +1264,7 @@ def qaqc():
 def getqaqc():
     region, site = request.json['site'].split(",")[0].split("_")
     sqlq = "select * from data where region='"+region+"' and site='"+site+"'"
-    xx = pd.read_sql(sqlq, db.engine)
+    xx = pd.read_sql(sqlq, db.engine) #this is what makes it take so long. read in 4w chunks
     xx.loc[xx.flag==0,"value"] = None # set NaNs
     flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
         axis=1).to_json(orient='records',date_format='iso') # flag data
@@ -1280,6 +1280,7 @@ def getqaqc():
     sxx = pd.read_sql("select * from site where region='"+region+"' and site='"+site+"'",db.engine)
     sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)
     edt = max(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)+timedelta(days=1)
+
     ddt = edt-sdt
     lat = sxx.latitude[0]
     lng = sxx.longitude[0]
