@@ -673,17 +673,17 @@ def index():
     nsit = pd.read_sql("select count(id) as n from site", db.engine)
     return render_template('index.html',nobs="{:,}".format(nobs.n.sum()), nuse=nuse.n[0], nsit=nsit.n[0])
 
-@app.route('/analytics')
-def analytics():
+@app.route('/sitelist')
+def sitelist():
     ss = pd.read_sql_table('site',db.engine).set_index(['site','region'])
     sqlq = 'select region, site, count(region) as value from data group by region, site'
     xx = pd.read_sql(sqlq, db.engine).set_index(['site','region'])
     res = xx.merge(ss,"left",left_index=True,right_index=True)
     res = res.reset_index()
     res = res[['region','site','name','latitude','longitude','value']]
-    res = res.rename(columns={'region':'Region','site':'Site','name':'Name','latitude':'Latitude','longitude':'Longitude','value':'Observations'}).fillna(0).sort_values(['Observations','Longitude'],ascending=False)
+    res = res.rename(columns={'region':'Region','site':'Site','name':'Name','latitude':'Latitude','longitude':'Longitude','value':'Observations'}).fillna(0).sort_values(['Region','Site'],ascending=True)
     res.Observations = res.Observations.astype(int)
-    return render_template('analytics.html',dats=Markup(res.to_html(index=False,classes=['table','table-condensed'])))
+    return render_template('sitelist.html',dats=Markup(res.to_html(index=False,classes=['table','table-condensed'])))
 
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
