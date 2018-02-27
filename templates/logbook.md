@@ -222,3 +222,39 @@ thu20180215
  + new option to use depth_m from StreaamPULSE (which may represent many things), or estimate mean areal depth via discharge
  + option to correct for sensor height above bed or not
  + added more warnings, messages, errors, and tests
+
+mon20180219
+ + new Sweden data could not be viewed in cleaning tool. traced this back to an error in sunrise/sunset calculations that resulted in an invalid arccosine domain. probably relates to the fact that sun never sets on a few days each year at 68 latitude.
+
+tue20180220
+ + fixed sunrise/sunset error.
+ + tested pipeline after major changes of last week. fixed a few bugs; added a few messages and comments
+ + started running models for Sweden and NC (the ones that require rating curves)
+ + started making StreamPULSE R package
+ + changed Analytics tab to Sitelist tab on data portal. Now sorting sites by region and sitecode
+ + in request_data(), the variabes argument was not hooked up to anything. built this up so that user can select which variables to request from streampulse. if omitted, all vars necessary for metab modeling will be requested. also notifies the user of which requests were successful and which weren't.
+
+wed20180221
+ + finished documentation for request_data
+ + working on documentation for prep_metabolism
+ + finished sweden model runs
+
+thu20180222
+ + turns out sweden discharge data were in the wrong units. redoing models
+ + pitched raw -> corrected -> derived data management solution. still needs work
+ + organizing meetings to discuss model output before all-hands presentation
+ + sent out temp version of current pipeline code for students that need it now. package should be done by monday.
+
+fri20180223
+ + "Show local night time" disabled by default on website plots. Small speed improvement.
+ + switched from geoknife to Cathy's code for air pressure acquisition
+ + cleaned up and added date axes to MetaboPlots
+ + replotted all round 1 model output (omitting all but one calendar year for each)
+
+sat20180224
+ + finished StreamPULSE R package
+ + finished NC model runs
+
+mon20180226
+ + shipped individual model run results to all PIs
+ + worked out R package kinks and published
