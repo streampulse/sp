@@ -244,3 +244,17 @@ thu20180222
  + pitched raw -> corrected -> derived data management solution. still needs work
  + organizing meetings to discuss model output before all-hands presentation
  + sent out temp version of current pipeline code for students that need it now. package should be done by monday.
+
+fri20180223
+ + "Show local night time" disabled by default on website plots. Small speed improvement.
+ + switched from geoknife to Cathy's code for air pressure acquisition
+ + cleaned up and added date axes to MetaboPlots
+ + replotted all round 1 model output (omitting all but one calendar year for each)
+
+sat20180224
+ + finished StreamPULSE R package
+ + finished NC model runs
+
+mon20180226
+ + shipped individual model run results to all PIs
+ + worked out R package kinks and published
