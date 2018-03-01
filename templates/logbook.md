@@ -261,6 +261,11 @@ mon20180226
 
 tue20180227
  + wrote script for running all models in a loop
+ + finished SE model runs
+ + NCDC database fails when asked for FL airpressure data. NCEP succeeds, so geoknife method for airpressure retrieval is back in place, just secondary
+
+wed20180228
+ + working on late-stage scheme for incorporating data levels
 
 thu20180301
  + added error handlers in request_data() for USGS maintenance and generic request failures.
