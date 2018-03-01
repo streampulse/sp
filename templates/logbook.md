@@ -258,3 +258,10 @@ sat20180224
 mon20180226
  + shipped individual model run results to all PIs
  + worked out R package kinks and published
+
+tue20180227
+ + wrote script for running all models in a loop
+
+thu20180301
+ + added error handlers in request_data() for USGS maintenance and generic request failures.
+ + sent out PR results
