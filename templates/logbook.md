@@ -258,3 +258,8 @@ sat20180224
 mon20180226
  + shipped individual model run results to all PIs
  + worked out R package kinks and published
+
+tue20180227
+ + finished SE model runs
+ + NCDC database fails when asked for FL airpressure data. NCEP succeeds, so geoknife method for airpressure retrieval is back in place, just secondary
+
