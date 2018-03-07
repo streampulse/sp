@@ -543,7 +543,9 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
     #request usgs water service data in universal time (T01:15 makes it line up with our datasets)
     url = "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&sites="+usgs+"&startDT="+startDate+"T01:15Z&endDT="+endDate+"T23:59Z&parameterCd="+vcds+"&siteStatus=all"
     r = requests.get(url)
-    r.status_code
+    print r.status_code
+    if r.status_code != 200:
+        return 'USGS_error'
     xf = r.json()
     xx = map(lambda x: panda_usgs(x, xf), range(len(xf['value']['timeSeries'])))
     xoo = []
@@ -1488,8 +1490,13 @@ def api():
     if variables is not None:
         if "Discharge_m3s" in variables and "Discharge_m3s" not in vv:
             xu = get_usgs(sites, min(xx.DateTime_UTC).strftime("%Y-%m-%d"), max(xx.DateTime_UTC).strftime("%Y-%m-%d"))
+            print xu
+            if xu == 'USGS_error':
+                return jsonify(data=xu)
         if "Depth_m" in variables and "Depth_m" not in vv and len(xu) is 0:
             xu = get_usgs(sites, min(xx.DateTime_UTC).strftime("%Y-%m-%d"), max(xx.DateTime_UTC).strftime("%Y-%m-%d"))
+            if xu == 'USGS_error':
+                return jsonify(data=xu)
 
     if len(xu) is not 0:
         # subset usgs data based on each site's dates
