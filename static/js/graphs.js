@@ -4,7 +4,10 @@ var margin = {top: 40, right: 40, bottom: 40, left: 40},
 var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
 var x = d3.scaleUtc().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
-    xAxis = d3.axisBottom().scale(x).ticks(6);
+    xAxis = d3.axisBottom().scale(x).ticks(6).tickFormat(function(date, i){
+      //conditional date formatting on tickmarks
+      return (i == 0 ? d3.utcFormat("%b %e, %Y") : d3.utcFormat("%b %e"))(date);
+    });
 var brush = d3.brushX()
   // .extent([0, 0], [width, height])
   .on("start", brushstart)
@@ -24,32 +27,39 @@ function Plots(variables, data, flags, outliers, page){
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
 
+  //set x domain to extent of dates
   x.domain(d3.extent(data, function(d) { return d.date; }));
+  // console.log(xAxis.tickValues());
+  // console.log(xAxis.ticks())
 
   for (var i = 0; i < variables.length; ++i) {
     vvv = variables[i];
 
+    //set y domain to extent of data
     if(datna != null){ // check if NA, need to rescale Y axis
       y.domain(d3.extent(datna, function(d) { return d[vvv]; }));
     }else{
       y.domain(d3.extent(data, function(d) { return d[vvv]; }));
     }
+
+    //create line accessor and handler for ignoring undefined values
     var line = d3.line()
         .defined(function(d){return d[vvv];})
         .x(function(d) { return x(d.date); })
         .y(function(d) { return y(d[vvv]); });
+
     var svg = d3.select("#graphs").append("svg")
-      .datum(data)
+      .datum(data) //initialize and position
         .attr("class",vvv)
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-    svg.append("g")
+    svg.append("g") //x axis and x label
         .attr("class", "axis axis--x")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
-        .append("text")
+        .append("text") //label here
           .attr("fill", "#000")
           .attr("dy", "3em")
           .attr("dx", width)
@@ -189,7 +199,7 @@ $(function(){
 })
 
 // Clear the previously active brush, if any.
-function brushstart() {
+function brushstart(){
   $('.popupbox').remove();
   d3.select("."+selectedBrush).select(".brush").call(brush.move, null);
   d3.selectAll(".dot").classed("selected", false); // clear on new start
@@ -198,7 +208,7 @@ function brushstart() {
   selectedBrush = $(this).attr("id")
 }
 
-function brushmove() {
+function brushmove(){
   var s = d3.event.selection;
   if (s) {
     ext0 = x.invert(s[0]);

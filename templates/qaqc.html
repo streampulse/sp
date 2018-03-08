@@ -161,6 +161,7 @@ function getdisplaydata(start, end, dat){
   return $.makeArray(pltdat)
 }
 
+//get plots
 $(function(){
   $("button[name=qaqcsite]").click(function(){
     var dat = {}
@@ -242,18 +243,22 @@ $(function(){
 //     redrawPoints(zoom_in = true, sbrush=selectedBrush, reset=false)
 //   });
 // })
+
+//zoomin
 $('body').ready(function(){
   $('body').on("click", "#zoomin", function(){
     redrawPoints(zoom_in = true, sbrush=selectedBrush, reset=false)
   });
 });
 
+//zoomreset
 $(function(){
   $("#zoomreset").click(function(){
     redrawPoints(zoom_in = true, sbrush=selectedBrush, reset=true)
   });
 })
 
+//panback
 $(function(){
   $("#panback").click(function(){
     if(plotstart!=plotdates.slice(-1)[0]){
@@ -284,6 +289,7 @@ $(function(){
   });
 })
 
+//panforward
 $(function(){
   $("#panforward").click(function(){
     if(plotend!=plotdates[0]){
@@ -314,6 +320,7 @@ $(function(){
   });
 })
 
+//alertbox
 function alertbox(alrt,msg){
   return '<div class="alert alert-dismissible alert-'+alrt+'">\
     <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
@@ -321,6 +328,7 @@ function alertbox(alrt,msg){
 }
 
 
+//addna
 $(function(){
   $("#addna").click(function(){
     if (undefined != selectedBrush){ // only do this if there is a brush selected
@@ -520,6 +528,8 @@ function flag_ajax_serial(counter, selection){
 //     }
 //   });
 // })
+
+//fillbrush
 $('body').ready(function(){ //delegated event handler for filldown brush
   $('body').on('change', '#fillbrush', function(){
     if($(this).is(":checked")){
