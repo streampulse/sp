@@ -1367,74 +1367,74 @@ def addflag():
 #     # db.session.commit()
 #     return jsonify(result="success")
 
-@app.route('/_addna',methods=["POST"])
-def addna():
-    rgn, ste = request.json['site'].split("_")
-    sdt = dtparse.parse(request.json['startDate'])
-    edt = dtparse.parse(request.json['endDate'])
-    var = request.json['var']
-    # add NA flag = 0
-    flgdat = Data.query.filter(Data.region==rgn,Data.site==ste,Data.DateTime_UTC>=sdt,Data.DateTime_UTC<=edt,Data.variable==var).all()
-    for f in flgdat:
-        f.flag = 0
-    db.session.commit()
-    # new query
-    sqlq = "select * from data where region='"+rgn+"' and site='"+ste+"'"
-    xx = pd.read_sql(sqlq, db.engine)
-    xx.loc[xx.flag==0,"value"] = None # set NaNs
-    xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
-    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
-      .set_index(["DateTime_UTC","variable"])\
-      .drop(['region','site','flag'],axis=1)
-    xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
-    xx.columns = xx.columns.droplevel()
-    xx = xx.reset_index()
-    return jsonify(dat=xx.to_json(orient='records',date_format='iso'))
+# @app.route('/_addna',methods=["POST"])
+# def addna():
+#     rgn, ste = request.json['site'].split("_")
+#     sdt = dtparse.parse(request.json['startDate'])
+#     edt = dtparse.parse(request.json['endDate'])
+#     var = request.json['var']
+#     # add NA flag = 0
+#     flgdat = Data.query.filter(Data.region==rgn,Data.site==ste,Data.DateTime_UTC>=sdt,Data.DateTime_UTC<=edt,Data.variable==var).all()
+#     for f in flgdat:
+#         f.flag = 0
+#     db.session.commit()
+#     # new query
+#     sqlq = "select * from data where region='"+rgn+"' and site='"+ste+"'"
+#     xx = pd.read_sql(sqlq, db.engine)
+#     xx.loc[xx.flag==0,"value"] = None # set NaNs
+#     xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
+#     xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
+#       .set_index(["DateTime_UTC","variable"])\
+#       .drop(['region','site','flag'],axis=1)
+#     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
+#     xx.columns = xx.columns.droplevel()
+#     xx = xx.reset_index()
+#     return jsonify(dat=xx.to_json(orient='records',date_format='iso'))
 
-@app.route('/cleandemo')
-def qaqcdemo():
-    sqlq = "select * from data where region='NC' and site='NHC' and "+\
-        "DateTime_UTC>'2016-09-23' and DateTime_UTC<'2016-10-07' and "+\
-        "variable in ('DO_mgL','WaterPres_kPa','CDOM_mV','Turbidity_mV','WaterTemp_C','pH','SpecCond_mScm')"
-    # sqlq = "select * from data where region='NC' and site='Mud'"
-    xx = pd.read_sql(sqlq, db.engine) # training data
-    # xx.loc[xx.flag==0,"value"] = None # set NaNs existing flags
-    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
-    variables = list(set(xx['variable'].tolist()))
-    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
-      .set_index(["DateTime_UTC","variable"])\
-      .drop(['region','site','flag'],axis=1)\
-      .unstack('variable')
-    xx.columns = xx.columns.droplevel()
-    xx = xx.reset_index()
-        # get anomaly dates
-    xtrain = xx[(xx.DateTime_UTC<'2016-09-29')].dropna()# training data first portion
-    clf = svm.OneClassSVM(nu=0.01,kernel='rbf',gamma='auto')
-    xsvm = xtrain.as_matrix(variables)
-    clf.fit(xsvm)
-    # xss.assign(pred=clf.predict(xsvm))
-    xss = xx.dropna()
-    xpred = xss.as_matrix(variables)
-    xss['pred'] = clf.predict(xpred).tolist()
-    anomaly = xss[xss.pred==-1].DateTime_UTC.to_json(orient='records',date_format='iso')
-    # Get sunrise sunset data
-    sxx = pd.read_sql("select * from site where region='NC' and site='NHC'",db.engine)
-    sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)
-    edt = max(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)+timedelta(days=1)
-    ddt = edt-sdt
-    lat = sxx.latitude[0]
-    lng = sxx.longitude[0]
-    rss = []
-    for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt+timedelta(days=i-1), latitude=lat, longitude=lng).calculate())
-        if rise>sets:
-            sets = sets + timedelta(days=1) # account for UTC
-        rss.append([rise, sets])
-    #
-    rss = pd.DataFrame(rss, columns=("rise","set"))
-    rss.set = rss.set.shift(1)
-    sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
-    return render_template('qaqcdemo.html', variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat, anomaly=anomaly)
+# @app.route('/cleandemo')
+# def qaqcdemo():
+#     sqlq = "select * from data where region='NC' and site='NHC' and "+\
+#         "DateTime_UTC>'2016-09-23' and DateTime_UTC<'2016-10-07' and "+\
+#         "variable in ('DO_mgL','WaterPres_kPa','CDOM_mV','Turbidity_mV','WaterTemp_C','pH','SpecCond_mScm')"
+#     # sqlq = "select * from data where region='NC' and site='Mud'"
+#     xx = pd.read_sql(sqlq, db.engine) # training data
+#     # xx.loc[xx.flag==0,"value"] = None # set NaNs existing flags
+#     flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
+#     variables = list(set(xx['variable'].tolist()))
+#     xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
+#       .set_index(["DateTime_UTC","variable"])\
+#       .drop(['region','site','flag'],axis=1)\
+#       .unstack('variable')
+#     xx.columns = xx.columns.droplevel()
+#     xx = xx.reset_index()
+#         # get anomaly dates
+#     xtrain = xx[(xx.DateTime_UTC<'2016-09-29')].dropna()# training data first portion
+#     clf = svm.OneClassSVM(nu=0.01,kernel='rbf',gamma='auto')
+#     xsvm = xtrain.as_matrix(variables)
+#     clf.fit(xsvm)
+#     # xss.assign(pred=clf.predict(xsvm))
+#     xss = xx.dropna()
+#     xpred = xss.as_matrix(variables)
+#     xss['pred'] = clf.predict(xpred).tolist()
+#     anomaly = xss[xss.pred==-1].DateTime_UTC.to_json(orient='records',date_format='iso')
+#     # Get sunrise sunset data
+#     sxx = pd.read_sql("select * from site where region='NC' and site='NHC'",db.engine)
+#     sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)
+#     edt = max(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)+timedelta(days=1)
+#     ddt = edt-sdt
+#     lat = sxx.latitude[0]
+#     lng = sxx.longitude[0]
+#     rss = []
+#     for i in range(ddt.days + 1):
+#         rise, sets = list(suns(sdt+timedelta(days=i-1), latitude=lat, longitude=lng).calculate())
+#         if rise>sets:
+#             sets = sets + timedelta(days=1) # account for UTC
+#         rss.append([rise, sets])
+#     #
+#     rss = pd.DataFrame(rss, columns=("rise","set"))
+#     rss.set = rss.set.shift(1)
+#     sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
+#     return render_template('qaqcdemo.html', variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat, anomaly=anomaly)
 
 @app.route('/api')
 def api():
