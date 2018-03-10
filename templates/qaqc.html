@@ -128,7 +128,7 @@ drift.load('s2rst4h926mg');
     </div>
     <div class="col-md-4 text-right">
       <button class="btn btn-link" type="button" id="panforward">
-        Next four weeks >>
+        <!-- Next four weeks >> -->
       </button>
     </div>
   </div>
@@ -297,16 +297,6 @@ $(function(){
   });
 })
 
-//jumptodate
-$(function(){
-  $('#jumptodate').change(function(){
-    daterange_val = this.value
-    daterange_vals = daterange_val.split(' ')
-    data = getdisplaydata(daterange_vals[0], daterange_vals[1], alldata);
-    async_replot(data=data)
-  })
-})
-
 $(function(){
   $("#backgraphlist").change(function () {
     var backfill = this.value;
@@ -323,10 +313,27 @@ function async_replot(data){
     data: JSON.stringify(data),
     contentType: 'application/json;charset=UTF-8',
     success: function(response){
+
+      //pull in outliers, empty plots, replot
       outliers = response.outliers;
       $("#graphs").empty();
       Plots(variables, data, flags, outliers, "qaqc");
       if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
+
+      //show panback if applicable
+      if(plotstart != plotdates.slice(-1)[0]){
+        $('#panback').html('<< Previous four weeks')
+      } else {
+        $('#panback').html('')
+      }
+
+      //show panforward if applicable
+      if(plotend != plotdates[0]){
+        $('#panforward').html('Next four weeks >>')
+      } else {
+        $('#panforward').html('')
+      }
+
     },
     error: function(error){
       console.log(error);
@@ -367,6 +374,18 @@ $(function(){
       async_replot(data=data)
     }
   });
+})
+
+//jumptodate
+$(function(){
+  $('#jumptodate').change(function(){
+    daterange_val = this.value
+    daterange_vals = daterange_val.split(' ')
+    plotstart = daterange_vals[0]
+    plotend = daterange_vals[1]
+    data = getdisplaydata(plotstart, plotend, alldata);
+    async_replot(data=data)
+  })
 })
 
 //alertbox

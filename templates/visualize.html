@@ -253,7 +253,7 @@ $('#datepicker').on('apply.daterangepicker', function(ev, picker) {
 
 $(function(){
   $("button[name=getviz]").click(function(){
-    $('#loading').show();
+    // $('#loading').show();
     var dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');//$('#startDate').datepicker().val();
@@ -266,7 +266,7 @@ $(function(){
       data: JSON.stringify(dat),
       contentType: 'application/json;charset=UTF-8',
       success: function(response){
-        $('#loading').hide();
+        // $('#loading').hide();
         $("#graphs").empty();
         $('#graphcontrol').show();
         data = JSON.parse(response.dat);
