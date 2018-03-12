@@ -270,3 +270,19 @@ wed20180228
 thu20180301
  + added error handlers in request_data() for USGS maintenance and generic request failures.
  + sent out PR results
+
+### fri-thur (lost these logs)
+ + reran PR models and sent out
+ + presented plans for data level management at all-hands
+ + added year to initial tickmark on cleaning tool
+ + prepared git lecture for Phil, hopefully others
+
+### fri20180309
+ + configured automatic archiving of server logs
+ + loading icon now appears whenever an ajax request is made
+ + can now jump to any 4 week period in cleaning tool
+ + cleaned up qaqc code
+ + panback and panforward now only appear if applicable
+
+### sun20180311
+ + selected date range in dropdown now updates as range changes
