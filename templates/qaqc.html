@@ -148,11 +148,17 @@ $('#dsite').selectize({
     create: function(input) { return {value: input,text: input} }
 });
 
-$('#flags2').selectize({
-    delimiter: ',',
-    persist: false,
-    create: function(input) { return {value: input,text: input} }
-});
+// $('#flags2').selectize({
+//     delimiter: ',',
+//     persist: false,
+//     create: function(input) { return {value: input,text: input} }
+// });
+
+// $('#jumptodate').selectize({
+//     delimiter: ',',
+//     persist: false,
+//     create: function(input) { return {value: input,text: input} }
+// });
 
 //$('#tags').selectize({
 //    delimiter: ',',
@@ -229,8 +235,8 @@ $(function(){
               $('#backgraphlist').append('<option value="'+response.variables[i]+'">'+response.variables[i]+'</option>');
             }
 
-            //populate dropdown of potential date ranges to jump to
-            //this establishes the selected option
+            //populate dropdown of potential date ranges to jump to.
+            //this part establishes the most recent range as the selected option
             default_range = plotdates_reform[1] + ' - ' + plotdates_reform[0]
             default_range_val = plotdates[1] + ' ' + plotdates[0]
             $('#jumptodate')
@@ -334,6 +340,9 @@ function async_replot(data){
         $('#panforward').html('')
       }
 
+      //update selected value in date range dropdown
+      $('#jumptodate').val(plotstart + ' ' + plotend)
+
     },
     error: function(error){
       console.log(error);
@@ -362,8 +371,9 @@ $(function(){
 //panforward
 $(function(){
   $("#panforward").click(function(){
+
+    // if the end date is not the first date in the list
     if(plotend != plotdates[0]){
-      // if the end date is not the first date in the list
       plotstart = plotend;
       plotend = plotdates[plotdates.indexOf(plotend)-1];
       // if(datna != null){

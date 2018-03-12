@@ -391,3 +391,9 @@ function redrawPoints(zoom_in, sbrush, reset){
   d3.selectAll(".brush").call(brush.move, null);
   var selectedBrush;
 }
+
+// $('#flags2').selectize({
+//     delimiter: ',',
+//     persist: false,
+//     create: function(input) { return {value: input,text: input} }
+// });

@@ -282,3 +282,7 @@ thu20180301
  + loading icon now appears whenever an ajax request is made
  + can now jump to any 4 week period in cleaning tool
  + cleaned up qaqc code
+ + panback and panforward now only appear if applicable
+
+### sun20180311
+ + selected date range in dropdown now updates as range changes
