@@ -46,11 +46,13 @@ drift.load('s2rst4h926mg');
 
 <form action="" method=post enctype=multipart/form-data>
   <div class="form-group">
-    <input type="file" class="form-control-file" name=file aria-describedby="fileHelp" multiple>
-    <small id="fileHelp" class="form-text text-muted">Select files to upload, including .csv, .dat, .txt.</small>
+    <input type="file" class="form-control-file" name=file multiple>
+    <!-- <input type="file" class="form-control-file" name=file aria-describedby="fileHelp" multiple> -->
+    <!-- <small id="fileHelp" class="form-text text-muted">Select files to upload.</small> -->
   </div>
   Uploading replacement files? If so, check this box: <input type="checkbox" name="replace"><br>
-  <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small><br><br>
+  <!-- <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small> -->
+  <br><br>
   <button id="upx" type="submit" value=Upload class="btn btn-primary btn-block">Upload</button>
 </form>
 

@@ -4,27 +4,22 @@
 
 <!-- <p class="text-center"><a class="btn btn-lg btn-primary" href="https://docs.google.com/document/d/1D0DcSsNAPx_kfFECg23AEwNw5LTtx2_Fev-jKCXfk6Q/edit?usp=sharing">Before modeling stream metabolism...</a></p> -->
 
-<div class="container-fluid">
+<div class="container">
+  <div class='row' style='margin-top: 100px'></div>
   <div class="row">
-    <div class="col-md-3"></div>
-    <div class="col-md-6 text-center">
+    <div class="col-md-6 col-md-offset-3 text-center">
       <p class='lead'>The upload process differs by mode of data collection.</p>
+      <br><br>
     </div>
-    <div class="col-md-3"></div>
   </div>
-</div>
-
-<div class="container-fluid">
   <div class="row">
-    <div class="col-md-6 text-right">
-      <button class="btn btn-primary btn-lg" type="button" id="series_upload">
-        Upload sensor data
-      </button>
+    <div class="col-md-3 col-md-offset-3">
+      <input type='button' class="btn btn-primary btn-lg btn-block"
+      value='Upload sensor data' onclick="location.href = 'series_upload';">
     </div>
-    <div class="col-md-6 text-left">
-      <button class="btn btn-success btn-lg" type="button" id="grab_upload">
-        Upload manually sampled data
-      </button>
+    <div class="col-md-3">
+      <input type='button' class="btn btn-success btn-lg"
+      value='Upload manually sampled data' onclick="location.href = 'grab_upload';">
     </div>
   </div>
 </div>
