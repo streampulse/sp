@@ -685,11 +685,15 @@ def sitelist():
     res = res[['region','site','name','latitude','longitude','value']]
     res = res.rename(columns={'region':'Region','site':'Site','name':'Name','latitude':'Latitude','longitude':'Longitude','value':'Observations'}).fillna(0).sort_values(['Region','Site'],ascending=True)
     res.Observations = res.Observations.astype(int)
-    return render_template('sitelist.html',dats=Markup(res.to_html(index=False,classes=['table','table-condensed'])))
+    return render_template('sitelist.html', dats=Markup(res.to_html(index=False, classes=['table','table-condensed'])))
 
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload_choice')
+def upload_choice():
+    return render_template('upload_choice.html')
+
+@app.route('/series_upload', methods=['GET', 'POST'])
 @login_required
-def upload():
+def series_upload():
     if request.method == 'POST':
 
         replace = False if request.form.get('replace') is None else True
@@ -861,7 +865,7 @@ def upload():
         sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
         sitedict = sorted([getsitenames(x) for x in sites],
             key=lambda tup: tup[1])
-        return render_template('upload.html', sites=sitedict,
+        return render_template('series_upload.html', sites=sitedict,
             variables=map(str,vv))
 
 @app.route("/upload_cancel",methods=["POST"])
@@ -871,22 +875,22 @@ def cancelcolumns():
     ofiles.append(tmpfile)
     [os.remove(os.path.join(app.config['UPLOAD_FOLDER'],x)) for x in ofiles] # remove tmp files
     flash('Upload cancelled.','alert-primary')
-    return redirect(url_for('upload'))
+    return redirect(url_for('series_upload'))
 
-@app.route("/_addmanualdata",methods=["POST"])
-def manual_upload():
-    rgn, ste = request.json['site'].split("_")
-    data = [d for d in request.json['data'] if None not in d] # get all complete rows
-    dd = pd.DataFrame(data,columns=["DateTime_UTC","variable","value"])
-    dd['DateTime_UTC'] = pd.to_datetime(dd['DateTime_UTC'],format='%Y-%m-%d %H:%M')
-    dd['DateTime_UTC'] = pd.DatetimeIndex(dd['DateTime_UTC']).round("15Min")
-    dd['region'] = rgn
-    dd['site'] = ste
-    dd['value'] = pd.to_numeric(dd['value'], errors='coerce')
-    # region site datetime variable value
-    dd = dd[['region','site','DateTime_UTC','variable','value']]
-    dd.to_sql("manual", db.engine, if_exists='append', index=False, chunksize=1000)
-    return jsonify(result="success")
+# @app.route("/_addmanualdata",methods=["POST"])
+# def manual_upload():
+#     rgn, ste = request.json['site'].split("_")
+#     data = [d for d in request.json['data'] if None not in d] # get all complete rows
+#     dd = pd.DataFrame(data,columns=["DateTime_UTC","variable","value"])
+#     dd['DateTime_UTC'] = pd.to_datetime(dd['DateTime_UTC'],format='%Y-%m-%d %H:%M')
+#     dd['DateTime_UTC'] = pd.DatetimeIndex(dd['DateTime_UTC']).round("15Min")
+#     dd['region'] = rgn
+#     dd['site'] = ste
+#     dd['value'] = pd.to_numeric(dd['value'], errors='coerce')
+#     # region site datetime variable value
+#     dd = dd[['region','site','DateTime_UTC','variable','value']]
+#     dd.to_sql("manual", db.engine, if_exists='append', index=False, chunksize=1000)
+#     return jsonify(result="success")
 
 @app.route("/policy")
 def datapolicy():
@@ -1026,7 +1030,7 @@ def confirmcolumns():
     db.session.commit() #persist all db changes made during upload
     flash('Uploaded '+str(len(xx.index))+' values, thank you!','alert-success')
 
-    return redirect(url_for('upload'))
+    return redirect(url_for('series_upload'))
 
 def getsitenames(regionsite):
     region, site = regionsite.split("_")
@@ -1190,7 +1194,7 @@ def visualize():
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
     return render_template('visualize.html',sites=sitedict)
 
-# OLD CODE FROM VISUALIZE, depricated
+# OLD CODE FROM VISUALIZE, deprecated
 # return "success"
 #
 # # xx = pd.read_sql("select distinct concat(region,'_',site) as sites from data", db.engine)
@@ -1348,7 +1352,7 @@ def addflag():
             f.flag = fff.id
         db.session.commit()
     return jsonify(result="success")
-#
+
 # @app.route('/_addtag',methods=["POST"])
 # def addtag():
 #     rgn, ste = request.json['site'].split("_")

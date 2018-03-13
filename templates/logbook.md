@@ -278,7 +278,7 @@ thu20180301
  + prepared git lecture for Phil, hopefully others
 
 ### fri20180309
- + configured automatic archiving of server logs
+ + configured automatic archiving of server logs (broke website, must revisit)
  + loading icon now appears whenever an ajax request is made
  + can now jump to any 4 week period in cleaning tool
  + cleaned up qaqc code
