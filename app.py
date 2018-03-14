@@ -1042,7 +1042,7 @@ def grab_upload():
         sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
         sitedict = sorted([getsitenames(x) for x in sites],
             key=lambda tup: tup[1])
-        return render_template('series_upload.html', sites=sitedict,
+        return render_template('grab_upload.html', sites=sitedict,
             variables=map(str,vv))
 
 @app.route("/upload_cancel",methods=["POST"])

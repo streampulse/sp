@@ -1,0 +1,210 @@
+{% extends "layout.html" %}
+
+{% block chatbot %}
+<!-- Start of Async Drift Code -->
+<script>
+!function() {
+  var t;
+  if (t = window.driftt = window.drift = window.driftt || [], !t.init) return t.invoked ? void (window.console && console.error && console.error("Drift snippet included twice.")) : (t.invoked = !0,
+  t.methods = [ "identify", "config", "track", "reset", "debug", "show", "ping", "page", "hide", "off", "on" ],
+  t.factory = function(e) {
+    return function() {
+      var n;
+      return n = Array.prototype.slice.call(arguments), n.unshift(e), t.push(n), t;
+    };
+  }, t.methods.forEach(function(e) {
+    t[e] = t.factory(e);
+  }), t.load = function(t) {
+    var e, n, o, i;
+    e = 3e5, i = Math.ceil(new Date() / e) * e, o = document.createElement("script"),
+    o.type = "text/javascript", o.async = !0, o.crossorigin = "anonymous", o.src = "https://js.driftt.com/include/" + i + "/" + t + ".js",
+    n = document.getElementsByTagName("script")[0], n.parentNode.insertBefore(o, n);
+  });
+}();
+drift.SNIPPET_VERSION = '0.3.1';
+drift.load('s2rst4h926mg');
+</script>
+<!-- End of Async Drift Code -->
+{% endblock %}
+
+{% block headcode %}
+<!-- <script src="static/hot/handsontable.full.js"></script> -->
+<!-- <link rel="stylesheet" media="screen" href="static/hot/handsontable.full.css"> -->
+{% endblock %}
+
+{% block body %}
+
+<div id="loading"><span id="loading-image">
+  <i class="fa fa-circle-o-notch fa-spin fa-5x fa-fw"></i><span class="sr-only">Loading...</span>
+</span></div>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <h1>Upload manually collected data</h1>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3 text-center">
+    <h4 style='margin: 0'>(i.e. from periodic grab samples)</h4>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <br>
+    <p class="lead">Only select files <b>from a single site</b> with each upload.</p>
+    <!-- See instructions below for more information.<p> -->
+    <hr>
+
+    <form action="" method=post enctype=multipart/form-data>
+      <div class="form-group">
+        <input type="file" class="form-control-file" name=fileG multiple>
+        <!-- <input type="file" class="form-control-file" name=file aria-describedby="fileHelp" multiple> -->
+        <!-- <small id="fileHelp" class="form-text text-muted">Select files to upload.</small> -->
+      </div>
+      Uploading replacement files? If so, check this box: <input type="checkbox" name="replaceG"><br>
+      <!-- <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small> -->
+      <br><br>
+      <button id="upxG" type="submit" value=Upload class="btn btn-primary btn-block">Upload</button>
+    </form>
+<!--
+<br>
+<h2>File upload help</h2>
+<ul class="nav nav-tabs">
+  <li><a class="dropdown-toggle" data-toggle="tab" href="#fileformatting">File formatting</a></li>
+  <li class="active"><a class="dropdown-toggle" data-toggle="tab" href="#fileupload">File upload</a></li>
+</ul>
+<div class="tab-content">
+  <div id="fileformatting" class="tab-pane fade">
+    <div class="embed-responsive embed-responsive-16by9">
+      <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/howgqEyGIrA" frameborder="0" allowfullscreen></iframe>
+    </div>
+  </div>
+  <div id="fileupload" class="tab-pane fade in active">
+    <div class="embed-responsive embed-responsive-16by9">
+      <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/LYJbGOx_4s0" frameborder="0" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+<br>
+-->
+
+<!--
+<mark>Expand instructions:</mark>
+<button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">Core sites</button>
+
+<p class="text-muted">Core sites are those funded by the grant. Leveraged sites are those with a different sensor-datalogger array.</p>
+
+<div id="coreinst" class="collapse">
+  <p class="lead"><b>StreamPULSE core sites</b> can upload raw datalogger files and/or pre-formatted data.</p>
+
+  <h3>File naming</h3>
+  <p>Name your upload file &ndash; <code>REGIONID_SITEID_YYYY-MM-DD_LOGGERID.xxx</code> &ndash; where</p>
+  <ul>
+  <li><code>REGIONID</code> is the name of your region (PR, FL, NC, WI, or AZ),</li>
+  <li><code>SITEID</code> is your unique site name,</li>
+  <li><code>YYYY-MM-DD</code> is the download date,</li>
+  <li><code>LOGGERID</code> is the logger routing code,
+  <ul>
+  <li><code>CS</code>: CR1000 data file</li>
+  <li><code>HD</code>: Hobo DO logger</li>
+  <li><code>HW</code>: Hobo water pressure logger</li>
+  <li><code>HA</code>: Hobo air pressure logger</li>
+  <li><code>HP</code>: Hobo light pendant logger</li>
+  <li><code>EM</code>: Eureka Manta logger</li>
+  <li><code>XX</code>: Calibrated and formatted data</li>
+  </ul></li>
+  <li>and <code>.xxx</code> is the file extension.
+  <ul>
+  <li>Extension must be <code>.dat</code> if <code>LOGGERID</code> is <code>CS</code>. Otherwise must be <code>.csv</code>.
+  </li></ul>
+  <li><b>Note:</b> <code>LOGGERID</code> may include numbers if you have several of the same logger type at one site. For example, <code>LOGGERID</code> could be <code>CS4</code> or <code>HA12</code>.</li>
+  <li><b>Example filename:</b> <code>NC_Eno_2017-12-06_HP.csv</code></li>
+  </ul>
+
+  <h3>Calibrated and formatted data</h3>
+  <p>You can upload raw data (from the datalogger) <em>and/or</em> calibrated data (e.g., turbidity in NTU, water level or discharge, etc.) at the same time.</p>
+  <p>If you modify a datalogger file to generate calibrated and derived variables, you must save it as a <code>.csv</code> with:</p>
+  <ul>
+  <li>the <code>_XX.csv</code> extension (see <code>LOGGERID</code> above),</li>
+  <li>one header row followed directly by data rows, one row per timestamp,</li>
+  <li>the <em>first column</em> as a Date-Time stamp converted to UTC standard time and formatted as: <code>YYYY-MM-DD HH:MM:SS</code>, and</li>
+  <li>additional columns for each data variable.</li>
+  </ul>
+
+  <h3>Variables</h3>
+  <p>Potential variables include:</p>
+  <ul>
+  <li>Date-Time (UTC)</li>
+  <li>DO (mg/L)</li>
+  <li>Saturation DO (mg/L)</li>
+  <li>Water Temperature (°C)</li>
+  <li>Water Pressure (kPa)</li>
+  <li>Air Temperature (°C)</li>
+  <li>Air Pressure (kPa)</li>
+  <li>Depth (m)</li>
+  <li>Discharge (m3/s)</li>
+  <li>Velocity (m/s)</li>
+  <li>Light, PAR (μmol/m2/s)</li>
+  <li>Light, lux</li>
+  <li>Specific Conductivity (mS/cm or μS/cm)</li>
+  <li>pH</li>
+  <li>fDOM (frac)</li>
+  <li>fDOM (mV from sensor)</li>
+  <li>Turbidity (NTU)</li>
+  <li>Turbidity (mV from sensor)</li>
+  <li>Nitrate (mg/L)</li>
+  <li>CO2 (ppm)</li>
+  </ul>
+
+  <h3>Date formatting help for calibrated files</h3>
+  <p>Date-time stamps can be challenging to format.</p>
+  <p>In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an example converting a date-time string to the correct format:</p>
+<pre>datetimeorig &lt;- &quot;8/31/16 13:24:16&quot; # can also be a vector
+# In POSIX, 1. designate the format to match the original date time
+#  and 2. specify the timezone... a full list can be viewed by running OlsonNames()
+dtval &lt;- as.POSIXct(datetimeorig, format=&quot;%m/%d/%y %H:%M:%S&quot;, tz=&quot;EST&quot;)
+# Then, just switch the display to UTC
+attr(dtval,&quot;tzone&quot;) &lt;- &quot;UTC&quot;
+# The output will be 2016-08-31T18:24:16Z
+</pre>
+  <p>The as.POSIXct function can convert any date-time format and any time zone. For details on all of the format structure codes, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/strptime.html">see the R documentation</a>.</p>
+  <p>In <code>matlab</code> you can create a date time string with the numeric values for your timestamp, accounting for the UTC offset:</p>
+<pre>time.UTC = -5; % UTC offset for EST
+timeVec = [time.year time.month time.day time.hour-time.UTC time.min time.sec];
+timeStr = datestr(timeVec,&#39;yyyy-mm-dd HH:MM:SS&#39;); % what you will save
+</pre>
+  <p>In <code>Excel</code> you can modify the timestamp with a formula based on the timezone offset:</p>
+  <pre>=TimeCell+(tzOffsetHours/24)</pre>
+  <p>Then modify the cell format of the new column with a &ldquo;custom&rdquo; type to match <code>YYYY-MM-DD HH:MM:SS</code> (<a href="https://support.office.com/en-us/article/Format-a-date-the-way-you-want-8e10019e-d5d8-47a1-ba95-db95123d273e">see documentation</a>).</p>
+  <p>Be sure to put the modified date-time stamp as the first column in your exported <code>.csv</code>.</p>
+
+  <h3>Saving files</h3>
+  <p>Exporting a <code>.csv</code> from R is easy with the <code>readr</code> package, which saves files without row names and preserves the ISO date-time format:</p>
+<pre>library(readr)
+write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
+</pre>
+</div>
+
+<hr>
+-->
+
+  </div>
+</div>
+
+<script>
+function alertbox(alrt,msg){
+  return '<div class="alert alert-dismissible alert-'+alrt+'">\
+    <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
+    '+msg+'</div>'
+}
+</script>
+
+<script>
+$(function(){
+  $("#upxG").click(function(){
+    $('#loading').show();
+  })
+});
+</script>
+
+{% endblock %}
