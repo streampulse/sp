@@ -45,6 +45,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
+app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16 MB
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
 #app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -90,21 +91,21 @@ class Data(db.Model):
         return '<Data %r, %r, %r, %r, %r>' % (self.region, self.site,
         self.DateTime_UTC, self.variable, self.upload_id)
 
-class Manual(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    region = db.Column(db.String(10))
-    site = db.Column(db.String(50))
-    DateTime_UTC = db.Column(db.DateTime)
-    variable = db.Column(db.String(50))
-    value = db.Column(db.Float)
-    def __init__(self, region, site, DateTime_UTC, variable, value):
-        self.region = region
-        self.site = site
-        self.DateTime_UTC = DateTime_UTC
-        self.variable = variable
-        self.value = value
-    def __repr__(self):
-        return '<Manual %r, %r, %r, %r>' % (self.region, self.site, self.DateTime_UTC, self.variable)
+# class Manual(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     region = db.Column(db.String(10))
+#     site = db.Column(db.String(50))
+#     DateTime_UTC = db.Column(db.DateTime)
+#     variable = db.Column(db.String(50))
+#     value = db.Column(db.Float)
+#     def __init__(self, region, site, DateTime_UTC, variable, value):
+#         self.region = region
+#         self.site = site
+#         self.DateTime_UTC = DateTime_UTC
+#         self.variable = variable
+#         self.value = value
+#     def __repr__(self):
+#         return '<Manual %r, %r, %r, %r>' % (self.region, self.site, self.DateTime_UTC, self.variable)
 
 class Flag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -128,27 +129,27 @@ class Flag(db.Model):
     def __repr__(self):
         return '<Flag %r, %r, %r>' % (self.flag, self.comment, self.startDate)
 
-class Tag(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    region = db.Column(db.String(10))
-    site = db.Column(db.String(50))
-    startDate = db.Column(db.DateTime)
-    endDate = db.Column(db.DateTime)
-    variable = db.Column(db.String(50))
-    tag = db.Column(db.String(50))
-    comment = db.Column(db.String(255))
-    by = db.Column(db.Integer) # user ID
-    def __init__(self, region, site, startDate, endDate, variable, tag, comment, by):
-        self.region = region
-        self.site = site
-        self.startDate = startDate
-        self.endDate = endDate
-        self.variable = variable
-        self.tag = tag
-        self.comment = comment
-        self.by = by
-    def __repr__(self):
-        return '<Tag %r, %r>' % (self.tag, self.comment)
+# class Tag(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     region = db.Column(db.String(10))
+#     site = db.Column(db.String(50))
+#     startDate = db.Column(db.DateTime)
+#     endDate = db.Column(db.DateTime)
+#     variable = db.Column(db.String(50))
+#     tag = db.Column(db.String(50))
+#     comment = db.Column(db.String(255))
+#     by = db.Column(db.Integer) # user ID
+#     def __init__(self, region, site, startDate, endDate, variable, tag, comment, by):
+#         self.region = region
+#         self.site = site
+#         self.startDate = startDate
+#         self.endDate = endDate
+#         self.variable = variable
+#         self.tag = tag
+#         self.comment = comment
+#         self.by = by
+#     def __repr__(self):
+#         return '<Tag %r, %r>' % (self.tag, self.comment)
 
 class Site(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -287,6 +288,10 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'SpecCond_uScm', 'CO2_ppm', 'Light_lux', 'Light_PAR', 'Light2_lux',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
 'Light5_lux', 'Light5_PAR', 'Battery_V']
+
+grab_variables = ['DateTime_UTC', 'Site', 'TOC_ppm', 'TN_ppm', 'Ammonium',
+'Phosphate_leachate', 'Sodium', 'Potassium', 'Magnesium', 'Calcium', 'Chloride',
+'Sulfate', 'Bromide', 'Nitrate', 'Phosphate_IC']
 
 #R code for outlier detection
 with open('find_outliers.R', 'r') as f:
@@ -713,9 +718,9 @@ def series_upload():
         ld = os.listdir(upfold)
 
         #check names of uploaded files
-        ffregex = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
-            "(?:[0-9]+)?.[a-zA-Z]{3}" # core sites
-        ffregex2 = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}.csv" #leveraged sites
+        ffregex = "^[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
+            "(?:[0-9]+)?.[a-zA-Z]{3}$" # core sites
+        ffregex2 = "^[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}.csv$" #leveraged sites
         pattern = re.compile(ffregex+"|"+ffregex2)
         if not all([pattern.match(f) is not None for f in ufnms]):
             flash('Please name your files in the specified format.',
@@ -761,7 +766,7 @@ def series_upload():
         for file in ufiles:
             if file and allowed_file(file.filename):
 
-                #clean filename, separate version num from rest
+                #clean filename, get version num if applicable
                 filename = secure_filename(file.filename)
                 filenamesNoV.append([filename, None])
                 ver = len([x for x in ld if filename.split(".")[0] in x])
@@ -873,149 +878,166 @@ def series_upload():
 def grab_upload():
     if request.method == 'POST':
 
-        replace = False if request.form.get('replace') is None else True
+        try: #huge try block as catch-all
 
-        #checks
-        if 'file' not in request.files:
-            flash('No file part','alert-danger')
-            return redirect(request.url)
-        ufiles = request.files.getlist("file")
-        ufnms = [x.filename for x in ufiles]
-        if len(ufnms[0]) == 0:
-            flash('No files selected.','alert-danger')
-            return redirect(request.url)
+            replace = False if request.form.get('replace') is None else True
+            # print 'replace'
+            # print replace
 
-        #get list of all files in spupload directory
-        upfold = app.config['UPLOAD_FOLDER']
-        ld = os.listdir(upfold)
+            #checks
+            if 'fileG' not in request.files:
+                flash('File missing or unreadable','alert-danger')
+                return redirect(request.url)
+            ufile = request.files.getlist("fileG") #list helps with following tests
+            # print 'ufile'
+            # print ufile
+            ufnm = [x.filename for x in ufile]
+            # print 'ufnm'
+            # print ufnm
+            if len(ufnm) > 1:
+                flash('Please upload one file at a time.','alert-danger')
+                return redirect(request.url)
+            if len(ufnm[0]) == 0:
+                flash('No files selected.','alert-danger')
+                return redirect(request.url)
 
-        #check names of uploaded files
-        ffregex = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
-            "(?:[0-9]+)?.[a-zA-Z]{3}" # core sites
-        ffregex2 = "[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}.csv" #leveraged sites
-        pattern = re.compile(ffregex+"|"+ffregex2)
-        if not all([pattern.match(f) is not None for f in ufnms]):
-            flash('Please name your files in the specified format.',
-                'alert-danger')
-            return redirect(request.url)
+            #list format no longer useful; extract items
+            ufile = ufile[0]
+            ufnm = ufnm[0]
 
-        if not replace: #if user has not checked replace box
+            #check name of uploaded file
+            try:
+                re.match("^[A-Z]{2}_[0-9]{4}-[0-9]{2}-[0-9]{2}.csv$", ufnm).group(0)
+            except:
+                flash('Please follow the file naming instructions.', 'alert-danger')
+                return redirect(request.url)
 
-            #get lists of new and existing files, filter uploaded files by new
-            new = [fn not in ld for fn in ufnms]
-            existing = [ufnms[f] for f in xrange(len(ufnms)) if not new[f]]
-            ufiles = [ufiles[f] for f in xrange(len(ufiles)) if new[f]]
-            ufnms = [ufnms[f] for f in xrange(len(ufnms)) if new[f]]
+            #get list of all files in spgrab directory
+            upfold = app.config['GRAB_FOLDER']
+            ld = os.listdir(upfold)
+            print 'ld'
+            print ld
 
-            if not ufnms: #if no files left in list
-                flash('All of those files were already uploaded.',
+            if not replace and ufnm in ld:
+                flash("This filename has already been uploaded. Check the " +\
+                    "box if you want to update this file's contents.",
                     'alert-danger')
                 return redirect(request.url)
 
-            if existing: #if some uploaded files aready exist
+            #get list of sites
+            # site = list(set([x.split("_")[0] + "_" + x.split("_")[1] for
+                # x in ufnms]))
 
-                if len(existing) > 1:
-                    insrt1 = ('These files', 'exist'); insrt2 = 'them'
-                if len(existing) == 1:
-                    insrt1 = ('This file', 'exists'); insrt2 = 'it'
+            # UPLOAD locally and to sciencebase (eventually)
+            # filenames = []
+            # fnlong = []
+            # filenamesNoV = [] #for filenames without version numbers, and upload IDs
+            # for f in ufile:
 
-                flash('%s already %s: ' % insrt1 + ', '.join(existing) +\
-                    '. You may continue, or click "Cancel" at the bottom of ' +\
-                    'this page to go back and replace %s by checking the box.'
-                    % insrt2, 'alert-warning')
+            #clean filename, get version num if applicable
+            filename = secure_filename(ufnm)
+            filenameNoV = [filename, None]
+            ver = len([x for x in ld if filename.split(".")[0] in x])
+            print 'ver'
+            print ver
 
-        #get list of sites. can only be one per upload
-        site = list(set([x.split("_")[0] + "_" + x.split("_")[1] for
-            x in ufnms]))
-        if len(site) > 1:
-            flash('Please only select data from a single site.','alert-danger')
-            return redirect(request.url)
+            # add version number to file if already existing
+            fnlong = os.path.join(upfold, filename)
+            if replace and ver > 0:
+                fns = filename.split(".")
+                filename = fns[0] + "v" + str(ver+1) + "." + fns[1]
+                fnlong = os.path.join(upfold, filename)
+            print 'fnlong'
+            print fnlong
 
-        # UPLOAD locally and to sciencebase
-        filenames = []
-        fnlong = []
-        filenamesNoV = [] #for filenames without version numbers, and upload IDs
-        for file in ufiles:
-            if file and allowed_file(file.filename):
+            ufile.save(fnlong) # save locally
+            # print 'REDIRECT'
+            # return redirect(request.url)
 
-                #clean filename, separate version num from rest
-                filename = secure_filename(file.filename)
-                filenamesNoV.append([filename, None])
-                ver = len([x for x in ld if filename.split(".")[0] in x])
+            # sb.upload_file_to_item(sbupf, fnlong) #broken
 
-                #the versioning system for leveraged sites ignores
-                #logger extensions when assigning v numbers.
-                #the expression below can be used to fix this, but
-                #then you'll have to update all leveraged site files on record.
-                # mch = re.match(
-                    # "([A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}(?:_[A-Z]{2})?[0-9]?)(?:v\d+)?(.[a-zA-Z]{3})",
-                    # filename).groups()
+            # filenames.append(filename) #fname list passed on for display
+            # fnlong.append(fup) #list of files that get processed
 
-                # rename files if existing, add version number
-                fup = os.path.join(upfold, filename)
-                if replace and ver > 0: # need to add version number to file
-                    fns = filename.split(".")
-                    filename = fns[0] + "v" + str(ver+1) + "." + fns[1]
-                    fup = os.path.join(upfold, filename)
+            # session['filenameNoV'] = filenameNoV #persist across requests
+            # filenamesNoV = session.get('filenamesNoV')
+            x = pd.read_csv(fnlong, parse_dates=[0])
 
-                file.save(fup) # save locally
-                # sb.upload_file_to_item(sbupf, fup) #broken (need to get credentials)
+            #get list of all filenames on record
+            all_fnames = list(pd.read_sql('select distinct filename from grabupload',
+                db.engine).filename)
 
-                filenames.append(filename) #fname list passed on for display
-                fnlong.append(fup) #list of files that get processed
-            else: #name may be messed up or something else could have gone wrong
-                msg = Markup('Error 002. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
-                flash(msg,'alert-danger')
-                return redirect(request.url)
+            #see if this one is among them
+            fn = re.sub(".*/(\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2})" +\
+                "(?:v[0-9]+)?(\\.\\w{3})", "\\1\\2", fnlong)
 
-        session['filenamesNoV'] = filenamesNoV #persist across requests
+            if fn not in all_fnames:
 
-        #make sure LOGGERID formats are valid
-        for i in xrange(len(filenamesNoV)):
-            logger = re.search(".*\\d{4}-\\d{2}-\\d{2}(_[A-Z]{2})?" +\
-                "(?:[0-9]+)?\\.\\w{3}", filenamesNoV[i][0]).group(1)
+                #find out what next upload_id will be and update session variable
+                last_upID = pd.read_sql("select max(id) as m from grabupload",
+                    db.engine)
+                last_upID = list(last_upID.m)[0]
+                filenameNoV[1] = last_upID + 1
 
-            if logger: #if there is a LOGGERID format
-                logger = logger[1:len(logger)] #remove underscore
+                #append column of upload_ids to df
+                x['upload_id'] = last_upID + 1
 
-                if logger not in ['CS','HD','HW','HA','HP','EM','XX']:
-                    flash('"' + str(logger) + '" is an invalid LOGGERID. ' +\
-                        'See formatting instructions.', 'alert-danger')
-                    [os.remove(f) for f in fnlong]
-                    return redirect(request.url)
-
-        # PROCESS the data and save as tmp file
-        try:
-            if site[0] in core.index.tolist():
-                gmtoff = core.loc[site].GMTOFF[0]
-                x = sp_in(fnlong, gmtoff)
             else:
-                if len(fnlong) > 1:
-                    flash('For non-core sites, please merge files prior ' +\
-                        'to upload.', 'alert-danger')
-                    [os.remove(f) for f in fnlong]
-                    return redirect(request.url)
-                x = sp_in_lev(fnlong[0])
+
+                #retrieve upload_id
+                upID = pd.read_sql("select id from grabupload where filename='" +\
+                    fn + "'", db.engine)
+                upID = list(upID.id)[0]
+
+                #append column of upload_ids to df
+                x['upload_id'] = upID
+
+            #if not last_upID[0]: #reset auto increment for upload table if necessary
+            #    db.engine.execute('alter table upload auto_increment=1')
+            #    last_upID[0] = 0
+
+
+            #put wash contents here.
+            x = wash_ts(x).reset_index()
+
+
+
+
+            # PROCESS the data and save as tmp file
+            # try:
+            #     if site[0] in core.index.tolist():
+            #         gmtoff = core.loc[site].GMTOFF[0]
+            #         x = sp_in(fnlong, gmtoff)
+            #     else:
+            #         if len(fnlong) > 1:
+            #             flash('For non-core sites, please merge files prior ' +\
+            #                 'to upload.', 'alert-danger')
+            #             [os.remove(f) for f in fnlong]
+            #             return redirect(request.url)
+            #         x = sp_in_lev(fnlong[0])
 
             #save combined input files to a temporary csv
-            tmp_file = site[0].encode('ascii') + "_" +\
-                binascii.hexlify(os.urandom(6))
-            out_file = os.path.join(upfold, tmp_file + ".csv")
-            x.to_csv(out_file, index=False)
+            # tmp_file = site[0].encode('ascii') + "_" +\
+            #     binascii.hexlify(os.urandom(6))
+            # out_file = os.path.join(upfold, tmp_file + ".csv")
+            # x.to_csv(out_file, index=False)
 
             #get data to pass on to confirm columns screen
             columns = x.columns.tolist() #col names
             columns.remove('upload_id')
-            rr, ss = site[0].split("_") #region and site
-            cdict = pd.read_sql("select * from cols where region='" + rr +\
+            # rr, ss = site[0].split("_") #region and site
+            cdict = pd.read_sql("select * from grabcols where region='" + rr +\
                 "' and site='" + ss + "'", db.engine)
-            cdict = dict(zip(cdict['rawcol'],cdict['dbcol'])) #varname mappings
-            flash("Please double check your column matching.",'alert-warning')
+            cdict = dict(zip(cdict['rawcol'], cdict['dbcol'])) #varname mappings
+            flash("Please double check your column matching.", 'alert-warning')
 
         except:
-            msg = Markup('Error 001. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
-            flash(msg,'alert-danger')
-            [os.remove(f) for f in fnlong]
+            msg = Markup('Error 001. Please <a href=' +\
+                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+                'email Mike Vlah</a> with the error number and a copy of ' +\
+                'the file you tried to upload.')
+            flash(msg, 'alert-danger')
+            os.remove(fnlong)
             return redirect(request.url)
 
         # check if existing site
@@ -1030,7 +1052,7 @@ def grab_upload():
                 existing=existing, sitenm=site[0], replacing=replace)
 
         except: #thrown when there are unreadable symbols (like deg) in the csv
-            msg = Markup('Error 004. Check for unusual characters in your column names (degree symbol, etc.). If problem persists, <a href="mailto:vlahm13@gmail.com" class="alert-link">Email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
+            msg = Markup('Error 002. Check for unusual characters in your column names (degree symbol, etc.). If problem persists, <a href="mailto:vlahm13@gmail.com" class="alert-link">Email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
             flash(msg,'alert-danger')
             [os.remove(f) for f in fnlong]
             return redirect(request.url)
