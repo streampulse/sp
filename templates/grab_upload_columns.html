@@ -29,152 +29,179 @@ drift.load('s2rst4h926mg');
 
 {% block body %}
 
-<form id="choosecolumns" class="form-horizontal" method="POST" action="/upload_confirm">
+<form id="choosecolumns" class="form-horizontal" method="POST"
+  action="/upload_confirm">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
 
-  <div class="row"><div class="col-md-8 col-md-offset-2">
-
-  <p>Uploading file: <strong>{{filename}}</strong><br>
-  <br>
-  <hr>
-
-  {% if replacing %}
-    <input type="hidden" name="replacing" value="yes">
-  {% else %}
-    <input type="hidden" name="replacing" value="no">
-  {% endif %}
-
-  {% set newlen = newsites|length %}
-  {% if newlen == 0 %}
-    <input type="hidden" name="no_new" value="yes">
-  {% else %}
-    {% for i in range(newlen) %}
-
-      <p class="lead">Please supply metadata for new site:
-        <strong>{{ newsites[i] }}</strong>.
-      </p>
-      <div class="input-group input-group-sm">
-        <span class="input-group-addon">Full site name</span>
-        <input type="text" class="form-control" name="sitename"
-          aria-describedby="Site name" maxlength="50">
-      </div>
       <br>
-      <em>Coordinates in decimal degrees:</em>
-      <div class="input-group input-group-sm">
-        <span class="input-group-addon">Latitude</span>
-        <input type="text" class="form-control" name="lat"
-          placeholder="e.g., 36.00" aria-describedby="Latitude" required>
-        <span class="input-group-addon">Longitude</span>
-        <input type="text" class="form-control" name="lng"
-          placeholder="e.g., -78.97" aria-describedby="Longitude" required>
-      </div>
+      <p>Uploading file: <strong>{{filename}}</strong><br>
       <br>
-      <div class="input-group input-group-sm">
-        <span class="input-group-addon">Associated USGS gauge ID</span>
-        <input type="text" class="form-control" name="usgs"
-          placeholder="Site ID (if none, leave blank), e.g., 02085000"
-          aria-describedby="USGS site #" maxlength="20">
-      </div>
-      <br>
-      <div>
-        <p><strong>Site metadata:</strong> Characteristics, instruments, dates,
-          personnel, any other information that you'd like to share with others
-          about this site.
-        </p>
-        <textarea class="form-control" rows="5" name="metadata"
-          placeholder="Site characteristics, instruments, etc. Anything that
-          you want to share with people when they download the data."></textarea>
-      </div>
-      <br>
-      <div class="input-group input-group-sm">
-        <span class="input-group-addon">Data set contact name</span>
-        <input type="text" class="form-control" name="contactName"
-          aria-describedby="Contact name" maxlength="50">
-          <span class="input-group-addon">Contact email</span>
-          <input type="text" class="form-control" name="contactEmail"
-            aria-describedby="Contact email" maxlength="255">
-      </div>
-      <br><br>
       <hr>
 
-    {% endfor %}
-  {% endif %}
+      {% if replacing %}
+        <input type="hidden" name="replacing" value="yes">
+      {% else %}
+        <input type="hidden" name="replacing" value="no">
+      {% endif %}
 
+      {% set newlen = newsites|length %}
+      {% if newlen == 0 %}
+        <input type="hidden" name="no_new" value="yes">
+      {% else %}
+        <input type="hidden" name="no_new" value="no">
+        {% for i in range(newlen) %}
+          <p class="lead text-success">
+            Please supply the following metadata for new site
+            <strong>{{ newsites[i] }}</strong>:
+          </p>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Full site name</span>
+            <input type="text" class="form-control" name="sitename"
+              aria-describedby="Site name" maxlength="50">
+          </div>
+          <br>
+          <em>Coordinates in decimal degrees:</em>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Latitude</span>
+            <input type="text" class="form-control" name="lat"
+              placeholder="e.g. 36.00" aria-describedby="Latitude" required>
+            <span class="input-group-addon">Longitude</span>
+            <input type="text" class="form-control" name="lng"
+              placeholder="e.g. -78.97" aria-describedby="Longitude" required>
+          </div>
+          <br>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Associated USGS gauge ID</span>
+            <input type="text" class="form-control" name="usgs"
+              placeholder="e.g. 02085000 (if none, leave blank)"
+              aria-describedby="USGS site #" maxlength="20">
+          </div>
+          <br>
+          <div>
+            <p><strong>Describe site:</strong> characteristics, instruments,
+              dates, personnel, etc.
+            </p>
+            <textarea class="form-control" rows="5" name="metadata"></textarea>
+          </div>
+          <br>
+          <em>Site contact person:</em>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Full name</span>
+            <input type="text" class="form-control" name="contactName"
+              aria-describedby="Contact name" maxlength="50">
+              <span class="input-group-addon">email address</span>
+              <input type="text" class="form-control" name="contactEmail"
+                aria-describedby="Contact email" maxlength="255">
+          </div>
+          <br><br>
+          <hr>
+        {% endfor %}
+      {% endif %}
 
+      <em>Data sharing policy:</em>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" name="policy" required>
+            I agree to the <a href="policy">StreamPULSE data policy</a> and confirm
+            that this data set will be shared under that policy.
+        </label>
+      </div>
+      <br>
+      <hr>
 
-    <i>Data sharing policy:</i>
-    <div class="checkbox">
-      <label>
-        <input type="checkbox" name="policy" required> I agree to the <a href="policy">StreamPULSE data policy</a> and confirm that this data will be shared under that policy.
-      </label>
+        <!-- <div class="radio"><label>
+          <input type="radio" name="policy" id="streampulse" value="streampulse" checked> <u>StreamPULSE open data license</u>:
+            Others will be allowed to publicly share (copy, distribute, and use), create (produce works), and adapt (modify, transform, and build upon) this data with attribution given to the StreamPULSE project.
+        </label></div>
+        <div class="radio"><label>
+          <input type="radio" name="policy" id="embargo" value="embargo"> <u>Embargoed data license</u>:
+            This data will remain private (not publicly shared online or with other StreamPULSE members) for one year from the upload date (today). After one year, the embargo will lift and the StreamPULSE open data license will take effect.
+        </label></div> -->
+
+      <p class="lead">Variable name matching</p>
+      <p>
+        Match your variable names below with their official names in the database
+        (selected from the dropdown menus). To exclude a variable, leave its
+        dropdown blank. The dropdowns will automatically populate with your previous
+        selections.
+      </p>
+      <p>
+        <strong>Please double check all fields below</strong>, even if they were
+        populated automatically!
+      </p>
+      <br>
+      <p class="text-center">
+        Don't see your variable names?
+        <a href="mailto:vlahm13@gmail.com">Send us an email!</a>
+      </p>
     </div>
+  </div>
+  <br>
 
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3">
+      <!-- <input type="hidden" name="tmpfile" value="{{tmpfile}}"> -->
+      <input type="hidden" name="cdict" value="">
 
-
-
-
-    <!-- <div class="radio"><label>
-      <input type="radio" name="policy" id="streampulse" value="streampulse" checked> <u>StreamPULSE open data license</u>:
-        Others will be allowed to publicly share (copy, distribute, and use), create (produce works), and adapt (modify, transform, and build upon) this data with attribution given to the StreamPULSE project.
-    </label></div>
-    <div class="radio"><label>
-      <input type="radio" name="policy" id="embargo" value="embargo"> <u>Embargoed data license</u>:
-        This data will remain private (not publicly shared online or with other StreamPULSE members) for one year from the upload date (today). After one year, the embargo will lift and the StreamPULSE open data license will take effect.
-    </label></div> -->
-
-
-
-
-
-    <input type="hidden" name="existing" value="no">
-    <br><hr>
-
-  <p class="lead">Variable matching</p>
-  <h1>HERE</h1>
-  <p>Match <u>your variable names below</u> with the <u>database variables (in the dropdown)</u>. To exclude a column, leave the dropdown blank. The dropdowns will automatically populate with your last selection.</p>
-  <p><b>Please double check your column specifications!</b> If you duplicate variables in the dropdowns our database will consider those columns as the same variable (and average them by date).</p>
-  </div></div>
-  <div class="row"><div class="col-md-6 col-md-offset-3">
-    <p class="text-right">Don't see your variables? <a href="mailto:aaron.berdanier@gmail.com">Send us an email!</a></p>
-    <input type="hidden" name="tmpfile" value="{{tmpfile}}">
-    <input type="hidden" name="cdict" value="">
-    {% for c in columns %}
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">{{c}}</span>
-      <select class="form-control" name="{{c}}">
-        {% if c in cdict.keys() %}
-          <option value=""></option>
-          {% for v in variables %}
-            {% if v == cdict[c] %}
-            <option value="{{v}}" selected>{{v}}</option>
-            {% else %}
-            <option value="{{v}}">{{v}}</option>
-            {% endif %}
-          {% endfor %}
-        {% else %}
-          <option selected value=""></option>
-          {% for v in variables %}
-          <option value="{{v}}">{{v}}</option>
-          {% endfor %}
-        {% endif %}
-      </select>
-    </div><br>
-    {% endfor %}
-    <button name="columnin" type="submit" class="btn btn-primary btn-block">Submit</button>
-  </div></div>
+      <div class="col-md-5 col-md-offset-1 text-left">
+        <p><strong>Upload variable name</strong></p>
+      </div>
+      <div class="col-md-5 text-right">
+        <p><strong>Database variable name</strong></p>
+      </div>
+      <!-- <div class="col-md-2 text-left">
+        <p><strong>Unit</strong></p>
+      </div> -->
+      <div class="col-md-10 col-md-offset-1">
+        {% for c in columns %}
+          <div class="input-group">
+            <span class="input-group-addon">{{c}}</span>
+            <select class="form-control" name="{{c}}">
+              {% if c in cdict.keys() %}
+                <option value=""></option>
+                {% for v in variables %}
+                  {% if v == cdict[c] %}
+                    <option value="{{v}}" selected>{{v}}</option>
+                  {% else %}
+                    <option value="{{v}}">{{v}}</option>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                <option selected value=""></option>
+                {% for v in variables %}
+                  <option value="{{v}}">{{v}}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+          <br>
+        {% endfor %}
+      </div>
+      <br>
+      <div class="col-md-4 col-md-offset-2">
+        <button name="columnin" type="submit" class="btn btn-primary btn-block">
+          Submit
+        </button>
+      </div>
+      <div class="col-md-4">
+        <input type='button' class="btn btn-danger btn-block"
+        value='Cancel' onclick="location.href = 'grab_upload';">
+      </div>
+    </div>
+  </div>
 </form>
 <br>
-<div class="row"><div class="col-md-6 col-md-offset-3">
-  <form id="cancelcols" class="form-horizontal" method="POST" action="/upload_cancel">
-    <input type="hidden" name="ofiles" value="{{ filenames|join(',') }}">
-    <input type="hidden" name="tmpfile" value="{{tmpfile}}">
-    <button name="cancel" class="btn btn-link btn-block">Cancel</button>
-  </form>
-</div></div>
-
-
-
-
-
+<!-- <br>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <div class="col-md-4 col-md-offset-4">
+      <input type='button' class="btn btn-danger btn-block"
+      value='Cancel' onclick="location.href = 'grab_upload';">
+    </div>
+  </div>
+</div>
+<br> -->
 
 <script>
 function alertbox(alrt,msg){

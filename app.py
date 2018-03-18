@@ -289,7 +289,7 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
 'Light5_lux', 'Light5_PAR', 'Battery_V']
 
-grab_variables = ['DateTime_UTC', 'Site', 'TOC_ppm', 'TN_ppm', 'Ammonium',
+grab_variables = ['TOC_ppm', 'TN_ppm', 'Ammonium',
 'Phosphate_leachate', 'Sodium', 'Potassium', 'Magnesium', 'Calcium', 'Chloride',
 'Sulfate', 'Bromide', 'Nitrate', 'Phosphate_IC']
 
@@ -1076,7 +1076,8 @@ def grab_upload():
 
             #get data to pass on to confirm columns screen
             columns = x.columns.tolist() #col names
-            columns.remove('upload_id')
+            columns = [c for c in columns if c not in
+                ['upload_id','DateTime_UTC','Sitecode']]
             print 'columns'
             print columns
             ureg = filenameNoV[0].split('_')[0]
@@ -1111,39 +1112,39 @@ def grab_upload():
         # print 'REDIRECT'
         # return redirect(request.url)
 
-        # try:
+        try:
 
-        # get list of new sites
-        allsites = pd.read_sql("select concat(region, '_', site) as" +\
-            " sitenm from site", db.engine).sitenm.tolist()
-        print 'allsites'
-        print allsites
-        new = list(set([rs for rs in urs if rs not in allsites]))
-        print 'new'
-        print new
+            # get list of new sites
+            allsites = pd.read_sql("select concat(region, '_', site) as" +\
+                " sitenm from site", db.engine).sitenm.tolist()
+            print 'allsites'
+            print allsites
+            new = list(set([rs for rs in urs if rs not in allsites]))
+            print 'new'
+            print new
 
-        # if new:
-        #     flash('New sitecodes detected.  ' +\
-        #         '"Sitecode".', 'alert-danger')
-        #     return redirect(request.ur)
+            # if new:
+            #     flash('New sitecodes detected.  ' +\
+            #         '"Sitecode".', 'alert-danger')
+            #     return redirect(request.ur)
 
-        flash("Please double check your variable name matching.",
-            'alert-warning')
+            flash("Please double check your variable name matching.",
+                'alert-warning')
 
-        #GOTTA PUT X IN SESSION OR SERIALIZE
-        #go to next webpage
-        return render_template('grab_upload_columns.html', filename=filename,
-            columns=columns, variables=variables, cdict=cdict,
-            newsites=new, sitenames=allsites, replacing=replace)
+            #GOTTA PUT X IN SESSION OR SERIALIZE
+            #go to next webpage
+            return render_template('grab_upload_columns.html', filename=filename,
+                columns=columns, variables=grab_variables, cdict=cdict,
+                newsites=new, sitenames=allsites, replacing=replace)
 
-        # except:
-        #     msg = Markup('Error 003. Please <a href=' +\
-        #         '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-        #         'email Mike Vlah</a> with the error number and a copy of ' +\
-        #         'the file you tried to upload.')
-        #     flash(msg, 'alert-danger')
-        #     # os.remove(fnlong)
-        #     return redirect(request.url)
+        except:
+            msg = Markup('Error 003. Please <a href=' +\
+                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+                'email Mike Vlah</a> with the error number and a copy of ' +\
+                'the file you tried to upload.')
+            flash(msg, 'alert-danger')
+            # os.remove(fnlong)
+            return redirect(request.url)
 
 
         try:
