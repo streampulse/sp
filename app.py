@@ -1079,19 +1079,25 @@ def grab_upload():
             columns.remove('upload_id')
             print 'columns'
             print columns
-            ureg = filenameNoV.split('_')[0]
+            ureg = filenameNoV[0].split('_')[0]
+            print 'ureg'
+            print ureg
             usites = list(x.Sitecode)
+            print 'usites'
+            print usites
             urs = [ureg + '_' + s for s in usites]
+            print 'urs'
+            print urs
             # rr, ss = site[0].split("_") #region and site
             # rr = 'CT'; ss = 'Eno'
             cdict = pd.read_sql("select * from grabcols where site in ('" +\
-                "', '".join(usites) + "') and region='", ureg, "'",
+                "', '".join(usites) + "') and region='" + ureg + "';",
                 db.engine)
+            print 'cdict'
+            print cdict
             cdict = dict(zip(cdict['rawcol'], cdict['dbcol'])) #varname mappings
             print 'cdict'
             print cdict
-            flash("Please double check your variable name matching.",
-                'alert-warning')
 
         except:
             msg = Markup('Error 002. Please <a href=' +\
@@ -1105,35 +1111,42 @@ def grab_upload():
         # print 'REDIRECT'
         # return redirect(request.url)
 
+        # try:
+
+        # get list of new sites
+        allsites = pd.read_sql("select concat(region, '_', site) as" +\
+            " sitenm from site", db.engine).sitenm.tolist()
+        print 'allsites'
+        print allsites
+        new = list(set([rs for rs in urs if rs not in allsites]))
+        print 'new'
+        print new
+
+        # if new:
+        #     flash('New sitecodes detected.  ' +\
+        #         '"Sitecode".', 'alert-danger')
+        #     return redirect(request.ur)
+
+        flash("Please double check your variable name matching.",
+            'alert-warning')
+
+        #GOTTA PUT X IN SESSION OR SERIALIZE
+        #go to next webpage
+        return render_template('grab_upload_columns.html', filename=filename,
+            columns=columns, variables=variables, cdict=cdict,
+            newsites=new, sitenames=allsites, replacing=replace)
+
+        # except:
+        #     msg = Markup('Error 003. Please <a href=' +\
+        #         '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+        #         'email Mike Vlah</a> with the error number and a copy of ' +\
+        #         'the file you tried to upload.')
+        #     flash(msg, 'alert-danger')
+        #     # os.remove(fnlong)
+        #     return redirect(request.url)
+
+
         try:
-
-            # get list of new sites
-            allsites = pd.read_sql("select concat(region, '_', site) as" +\
-                " sitenm from site", db.engine).sitenm.tolist()
-            new = [rs for rs in urs if rs not in allsites]
-
-            # if new:
-            #     flash('New sitecodes detected.  ' +\
-            #         '"Sitecode".', 'alert-danger')
-            #     return redirect(request.ur)
-
-
-            #go to next webpage
-            return render_template('grab_upload_columns.html', filename=filename,
-                columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict,
-                newsites=new, sitenm=site[0], replacing=replace)
-
-        except:
-            msg = Markup('Error 003. Please <a href=' +\
-                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-                'email Mike Vlah</a> with the error number and a copy of ' +\
-                'the file you tried to upload.')
-            flash(msg, 'alert-danger')
-            # os.remove(fnlong)
-            return redirect(request.url)
-
-
-
 
 
 
@@ -1188,6 +1201,14 @@ def grab_upload():
                 db.session.bulk_insert_mappings(Data, xx)
 
 
+        except:
+            msg = Markup('Error 004. Please <a href=' +\
+                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+                'email Mike Vlah</a> with the error number and a copy of ' +\
+                'the file you tried to upload.')
+            flash(msg, 'alert-danger')
+            # os.remove(fnlong)
+            return redirect(request.url)
 
 
 

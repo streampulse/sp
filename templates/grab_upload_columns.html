@@ -33,7 +33,9 @@ drift.load('s2rst4h926mg');
 
   <div class="row"><div class="col-md-8 col-md-offset-2">
 
-  <p><i>Uploading file: {{filename}} </i><br>
+  <p>Uploading file: <strong>{{filename}}</strong><br>
+  <br>
+  <hr>
 
   {% if replacing %}
     <input type="hidden" name="replacing" value="yes">
@@ -41,38 +43,63 @@ drift.load('s2rst4h926mg');
     <input type="hidden" name="replacing" value="no">
   {% endif %}
 
-  {% if existing %}
-    <input type="hidden" name="existing" value="yes">
+  {% set newlen = newsites|length %}
+  {% if newlen == 0 %}
+    <input type="hidden" name="no_new" value="yes">
   {% else %}
-    <p class="lead">{{sitenm}} looks like a new site...
-      We need to get some more information before we can process it (you only need to do this part once):</p>
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Full site name</span>
-      <input type="text" class="form-control" name="sitename" aria-describedby="Site name" maxlength="50">
-    </div><br>
-    <i>Coordinates, decimal degrees:</i>
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Latitude</span>
-      <input type="text" class="form-control" name="lat" placeholder="e.g., 36.00" aria-describedby="Latitude" required>
-      <span class="input-group-addon">Longitude</span>
-      <input type="text" class="form-control" name="lng" placeholder="e.g., -78.97" aria-describedby="Longitude" required>
-    </div><br>
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Associated USGS gauge ID</span>
-      <input type="text" class="form-control" name="usgs" placeholder="Site ID (if none, leave blank), e.g., 02085000" aria-describedby="USGS site #" maxlength="20">
-    </div><br>
+    {% for i in range(newlen) %}
 
-    <div>
-      <p><b>Site metadata:</b> Characteristics, instruments, dates, personnel, any other information that you'd like to share with others about the data.</p>
-      <textarea class="form-control" rows="5" name="metadata" placeholder="Site characteristics, instruments, etc. Anything that you want to share with people when they download the data."></textarea>
-    </div><br>
+      <p class="lead">Please supply metadata for new site:
+        <strong>{{ newsites[i] }}</strong>.
+      </p>
+      <div class="input-group input-group-sm">
+        <span class="input-group-addon">Full site name</span>
+        <input type="text" class="form-control" name="sitename"
+          aria-describedby="Site name" maxlength="50">
+      </div>
+      <br>
+      <em>Coordinates in decimal degrees:</em>
+      <div class="input-group input-group-sm">
+        <span class="input-group-addon">Latitude</span>
+        <input type="text" class="form-control" name="lat"
+          placeholder="e.g., 36.00" aria-describedby="Latitude" required>
+        <span class="input-group-addon">Longitude</span>
+        <input type="text" class="form-control" name="lng"
+          placeholder="e.g., -78.97" aria-describedby="Longitude" required>
+      </div>
+      <br>
+      <div class="input-group input-group-sm">
+        <span class="input-group-addon">Associated USGS gauge ID</span>
+        <input type="text" class="form-control" name="usgs"
+          placeholder="Site ID (if none, leave blank), e.g., 02085000"
+          aria-describedby="USGS site #" maxlength="20">
+      </div>
+      <br>
+      <div>
+        <p><strong>Site metadata:</strong> Characteristics, instruments, dates,
+          personnel, any other information that you'd like to share with others
+          about this site.
+        </p>
+        <textarea class="form-control" rows="5" name="metadata"
+          placeholder="Site characteristics, instruments, etc. Anything that
+          you want to share with people when they download the data."></textarea>
+      </div>
+      <br>
+      <div class="input-group input-group-sm">
+        <span class="input-group-addon">Data set contact name</span>
+        <input type="text" class="form-control" name="contactName"
+          aria-describedby="Contact name" maxlength="50">
+          <span class="input-group-addon">Contact email</span>
+          <input type="text" class="form-control" name="contactEmail"
+            aria-describedby="Contact email" maxlength="255">
+      </div>
+      <br><br>
+      <hr>
 
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Data set contact name</span>
-      <input type="text" class="form-control" name="contactName" aria-describedby="Contact name" maxlength="50">
-      <span class="input-group-addon">Contact email</span>
-      <input type="text" class="form-control" name="contactEmail" aria-describedby="Contact email" maxlength="255">
-    </div><br>
+    {% endfor %}
+  {% endif %}
+
+
 
     <i>Data sharing policy:</i>
     <div class="checkbox">
@@ -80,6 +107,10 @@ drift.load('s2rst4h926mg');
         <input type="checkbox" name="policy" required> I agree to the <a href="policy">StreamPULSE data policy</a> and confirm that this data will be shared under that policy.
       </label>
     </div>
+
+
+
+
 
     <!-- <div class="radio"><label>
       <input type="radio" name="policy" id="streampulse" value="streampulse" checked> <u>StreamPULSE open data license</u>:
@@ -89,12 +120,17 @@ drift.load('s2rst4h926mg');
       <input type="radio" name="policy" id="embargo" value="embargo"> <u>Embargoed data license</u>:
         This data will remain private (not publicly shared online or with other StreamPULSE members) for one year from the upload date (today). After one year, the embargo will lift and the StreamPULSE open data license will take effect.
     </label></div> -->
+
+
+
+
+
     <input type="hidden" name="existing" value="no">
     <br><hr>
-  {% endif %}
 
   <p class="lead">Variable matching</p>
-  <p>Match <u>your columns (on the left)</u> with the <u>database variables (in the dropdown)</u>. To exclude a column, leave the dropdown blank. The dropdowns will automatically populate with your last selection.</p>
+  <h1>HERE</h1>
+  <p>Match <u>your variable names below</u> with the <u>database variables (in the dropdown)</u>. To exclude a column, leave the dropdown blank. The dropdowns will automatically populate with your last selection.</p>
   <p><b>Please double check your column specifications!</b> If you duplicate variables in the dropdowns our database will consider those columns as the same variable (and average them by date).</p>
   </div></div>
   <div class="row"><div class="col-md-6 col-md-offset-3">
@@ -138,6 +174,8 @@ drift.load('s2rst4h926mg');
 
 
 
+
+
 <script>
 function alertbox(alrt,msg){
   return '<div class="alert alert-dismissible alert-'+alrt+'">\
@@ -159,5 +197,7 @@ $(function(){
 })
 
 </script>
+
+
 
 {% endblock %}
