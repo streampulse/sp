@@ -30,7 +30,7 @@ drift.load('s2rst4h926mg');
 {% block body %}
 
 <form id="choosecolumns" class="form-horizontal" method="POST"
-  action="/upload_confirm">
+  action="/grab_upload_confirm">
   <div class="row">
     <div class="col-md-8 col-md-offset-2">
 
@@ -79,7 +79,8 @@ drift.load('s2rst4h926mg');
           </div>
           <br>
           <div>
-            <p><strong>Describe site:</strong> characteristics, instruments,
+            <p>
+              <strong>Describe site:</strong> characteristics, instruments,
               dates, personnel, etc.
             </p>
             <textarea class="form-control" rows="5" name="metadata"></textarea>
@@ -204,11 +205,13 @@ drift.load('s2rst4h926mg');
 <br> -->
 
 <script>
-function alertbox(alrt,msg){
-  return '<div class="alert alert-dismissible alert-'+alrt+'">\
+
+function alertbox(alrt, msg){
+  return '<div class="alert alert-dismissible alert-' + alrt + '">\
     <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
-    '+msg+'</div>'
+    ' + msg + '</div>'
 }
+
 $(function(){
   $('button[name=columnin]').click(function() {
     cvals = [];
@@ -219,12 +222,12 @@ $(function(){
     });
     //cdict = JSON.stringify($("#choosecolumns").find("select").serializeArray());
     cdict = JSON.stringify(cvals);
+    console.log('OI')
+    console.log(cdict)
     $('#choosecolumns input[name=cdict]').val( cdict );
   });
 })
 
 </script>
-
-
 
 {% endblock %}
