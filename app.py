@@ -939,6 +939,22 @@ def series_upload():
 @login_required
 def grab_upload():
     if request.method == 'GET': #occurs when you first visit the page
+
+        #remove the last uploaded file if the upload did not complete
+        try:
+            fnlong = session.get('fnlong')
+            upload_complete = session.get('upload_complete')
+            print 'fnlong'
+            print fnlong
+            print 'ul comp'
+            print upload_complete
+
+            if not upload_complete:
+                os.remove(fnlong)
+
+        except:
+            pass
+
         return render_template('grab_upload.html')
 
     if request.method == 'POST': #invoked when you interact with the page
@@ -958,11 +974,11 @@ def grab_upload():
                 flash('File missing or unreadable','alert-danger')
                 return redirect(request.url)
             ufile = request.files.getlist("fileG") #list helps with following tests
-            # print 'ufile'
-            # print ufile
+            print 'ufile'
+            print ufile
             ufnm = [x.filename for x in ufile]
-            # print 'ufnm'
-            # print ufnm
+            print 'ufnm'
+            print ufnm
             if len(ufnm) > 1:
                 flash('Please upload one file at a time.','alert-danger')
                 return redirect(request.url)
@@ -1088,13 +1104,13 @@ def grab_upload():
                     upID = last_upID + 1
                     filenameNoV[1] = upID
                 else:
-                    upID = 0
-                    filenameNoV[1] = 1
+                    upID = 1
+                    filenameNoV[1] = upID
                 print 'upID'
                 print upID
 
                 #append column of upload_ids to df
-                x['upload_id'] = upID
+                # x['upload_id'] = upID
 
             else:
 
@@ -1102,12 +1118,13 @@ def grab_upload():
                 upID = pd.read_sql("select id from grabupload where filename='" +\
                     fn + "'", db.engine)
                 upID = list(upID.id)[0]
+                filenameNoV[1] = upID
 
                 #append column of upload_ids to df
-                x['upload_id'] = upID
+                # x['upload_id'] = upID
 
-            print 'x with upid'
-            print x.head()
+            # print 'x with upid'
+            # print x.head()
 
 
             #if not last_upID[0]: #reset auto increment for upload table if necessary
@@ -1141,7 +1158,7 @@ def grab_upload():
             #get data to pass on to confirm columns screen
             columns = x.columns.tolist() #col names
             columns = [c for c in columns if c not in
-                ['upload_id','DateTime_UTC','Sitecode']]
+                ['DateTime_UTC','Sitecode']]
             print 'columns'
             print columns
             ureg = filenameNoV[0].split('_')[0]
@@ -1212,8 +1229,17 @@ def grab_upload():
             # print 'aaa'
             # print x.head()
 
-            #save input csv locally
-            # ufile.save(fnlong)
+            #save input csv locally; store filename in session
+            print fnlong
+            ufile.save(fnlong)
+            print 'HERE'
+            raise ValueError('a')
+
+            xx = pd.read_csv(fnlong, parse_dates=[0])
+            print 'xx'
+            print xx
+            session['fnlong'] = fnlong
+            session['upload_complete'] = False
 
             #GOTTA PUT X IN SESSION OR SERIALIZE
             #go to next webpage
@@ -1227,12 +1253,15 @@ def grab_upload():
                 'email Mike Vlah</a> with the error number and a copy of ' +\
                 'the file you tried to upload.')
             flash(msg, 'alert-danger')
-            # os.remove(fnlong)
-            return redirect(request.url)
-
+            try:
+                os.remove(fnlong)
+            except:
+                pass
+            finally:
+                return redirect(request.url)
 
 @app.route("/upload_cancel",methods=["POST"])
-def cancelcolumns():
+def cancelcolumns(): #only used when cancelling series_upload
     ofiles = request.form['ofiles'].split(",")
     tmpfile = request.form['tmpfile']+".csv"
     ofiles.append(tmpfile)
@@ -1398,29 +1427,48 @@ def confirmcolumns():
 @app.route("/grab_upload_confirm", methods=["POST"])
 def grab_confirmcolumns():
 
-    #get combined inputs (tmpfile) and varname mappings (cdict)
+    #retrieve variables from request, session, and filesystem
     cdict = json.loads(request.form['cdict'])
-    # tmpfile = request.form['tmpfile']
-    cdict = dict([(r['name'],r['value']) for r in cdict])
+    print 'cdict'
+    print cdict
+    fnlong = session.get('fnlong')
+    print 'fnlong'
+    print fnlong
+    xx = pd.read_csv(fnlong, parse_dates=[0])
+    upID = session.get('filenameNoV')[1]
+    # filenameNoV = session.get('filenameNoV')[0]
+
+    #parse cdict
+    cdict = dict([(r['name'], r['value']) for r in cdict])
     print 'cdict'
     print cdict
 
     # try:
 
-    #load and format dataframe
-    xx = uploaded_data
-    # xx = pd.read_csv(os.path.join(app.config['GRAB_FOLDER'],
-    #     tmpfile + ".csv"), parse_dates=[0])
+    #format dataframe
     print xx.head()
-    upid_col = xx['upload_id']
-    xx = xx[cdict.keys()].rename(columns=cdict) #assign canonical names
-    xx = pd.concat([xx, upid_col], axis=1) #reattach upload IDs
-    region, site = tmpfile.split("_")[:-1]
+    xx_pre = xx.iloc[:,0:2]
+    xx_post = xx.iloc[:,2:]
+    # upid_col = xx['upload_id']
+    xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign canonical names
+    xx = pd.concat([xx_pre, xx_post], axis=1)
+    xx['upload_id'] = upID
+    print xx.head()
+    # xx = pd.concat([xx, upid_col], axis=1) #reattach upload IDs
+    # region, site = tmpfile.split("_")[:-1]
 
-    if request.form['existing'] == "no":
-        # add new site to database
+    if request.form['new_sites'] == "true":
+
+        # add new sites to database
         embargo = 1 # automatically embargo for 1 year, can change later in database...
+
         usgss = None if request.form['usgs']=="" else request.form['usgs']
+
+        print 'req lat'
+        print request.form['lat']
+        print 'REDIRECT'
+        return redirect(request.url)
+
         sx = Site(region=region, site=site, name=request.form['sitename'],
             latitude=request.form['lat'], longitude=request.form['lng'],
             usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,

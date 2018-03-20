@@ -47,9 +47,9 @@ drift.load('s2rst4h926mg');
 
       {% set newlen = newsites|length %}
       {% if newlen == 0 %}
-        <input type="hidden" name="no_new" value="yes">
+        <input type="hidden" name="new_sites" value="false">
       {% else %}
-        <input type="hidden" name="no_new" value="no">
+        <input type="hidden" name="new_sites" value="true">
         {% for i in range(newlen) %}
           <p class="lead text-success">
             Please supply the following metadata for new site
