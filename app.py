@@ -152,6 +152,29 @@ class Data(db.Model):
         return '<Data %r, %r, %r, %r, %r>' % (self.region, self.site,
         self.DateTime_UTC, self.variable, self.upload_id)
 
+class Grabdata(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(10))
+    site = db.Column(db.String(50))
+    DateTime_UTC = db.Column(db.DateTime)
+    variable = db.Column(db.String(50))
+    value = db.Column(db.Float)
+    flag = db.Column(db.Integer)
+    upload_id = db.Column(db.Integer)
+
+    def __init__(self, region, site, DateTime_UTC, variable, value, flag, upid):
+        self.region = region
+        self.site = site
+        self.DateTime_UTC = DateTime_UTC
+        self.variable = variable
+        self.value = value
+        self.flag = flag
+        self.upload_id = upid
+
+    def __repr__(self):
+        return '<Grabdata %r, %r, %r, %r, %r>' % (self.region, self.site,
+        self.DateTime_UTC, self.variable, self.upload_id)
+
 # class Manual(db.Model):
 #     id = db.Column(db.Integer, primary_key=True)
 #     region = db.Column(db.String(10))
@@ -254,6 +277,21 @@ class Cols(db.Model):
     def __repr__(self):
         return '<Cols %r, %r, %r>' % (self.region, self.site, self.dbcol)
 
+class Grabcols(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(10))
+    site = db.Column(db.String(50))
+    rawcol = db.Column(db.String(100))
+    dbcol = db.Column(db.String(100))
+    def __init__(self, region, site, rawcol, dbcol):
+        self.region = region
+        self.site = site
+        self.rawcol = rawcol
+        self.dbcol = dbcol
+    def __repr__(self):
+        return '<Grabcols %r, %r, %r>' % (self.region, self.site, self.dbcol)
+
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(55), unique=True, index=True)
@@ -318,6 +356,18 @@ class Upload(db.Model):
 
     def __repr__(self):
         return '<Upload %r>' % (self.filename)
+
+class Grabupload(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(100))
+    # version = db.Column(db.Integer)
+
+    def __init__(self, filename):
+        self.filename = filename
+
+    def __repr__(self):
+        return '<Grabupload %r>' % (self.filename)
+
 
 db.create_all()
 
@@ -1364,6 +1414,75 @@ def updatedb(xx, fnamelist, replace=False):
         xx = xx.to_dict('records')
         db.session.bulk_insert_mappings(Data, xx)
 
+def grab_updatecdict(region, sitelist, cdict):
+    rawcols = pd.read_sql("select * from grabcols where region='" + region +\
+        "' and site in ('" + "', '".join(sitelist) + "')", db.engine)
+    rawcols = set(rawcols['rawcol'].tolist())
+    for c in cdict.keys():
+        for s in sitelist:
+            if c in rawcols: # update
+                cx = Grabcols.query.filter_by(rawcol=c, site=s).first()
+                cx.dbcol = cdict[c] # assign new dbcol value for this rawcol
+                # db.session.commit()
+            else: # add
+                cx = Grabcols(region, s, c, cdict[c])
+                db.session.add(cx)
+                # db.session.commit()
+
+def grab_updatedb(xx, fnamelist, replace=False):
+
+    if replace:
+
+        #get list of existing upload ids and table of flagged obs to be replaced
+        upIDs = pd.read_sql("select id from grabupload where filename in ('" +\
+            "', '".join(fnamelist) + "')", db.engine)
+        upIDs = [str(i) for i in upIDs.id]
+        print 'in updatedb - upIDs'
+        print upIDs
+        flagged_obs = pd.read_sql("select * from grabdata where upload_id in ('" +\
+            "', '".join(upIDs) + "') and flag is not null", db.engine)
+
+        #delete records that are being replaced (this could be sped up)
+        if list(upIDs):
+            print 'DANGER - somethings getting deleted'
+            d = Grabdata.query.filter(Grabdata.upload_id.in_(list(upIDs))).all()
+            for rec in d:
+                db.session.delete(rec)
+
+        #insert new (replacement) data (chunk it if > 100k records)
+        n_full_chunks = xx.shape[0] / 100000
+        partial_chunk_len = xx.shape[0] % 100000
+
+        if n_full_chunks == 0:
+            xx = xx.to_dict('records')
+            db.session.bulk_insert_mappings(Grabdata, xx) #ingest all records
+        else:
+            for i in xrange(n_full_chunks): #ingest full (100k-record) chunks
+                chunk = xx.head(100000)
+                xx = xx.drop(xx.head(100000).index)
+                chunk = chunk.to_dict('records')
+                db.session.bulk_insert_mappings(Grabata, chunk)
+
+            if partial_chunk_len:
+                xx = xx.to_dict('records')
+                db.session.bulk_insert_mappings(Data, xx) #ingest remainder
+
+        #reconstitute flags
+        for ind, r in flagged_obs.iterrows():
+            print 'inside flag reconstituter'
+            try:
+                d = Grabdata.query.filter(Grabdata.region==r['region'], Grabdata.site==r['site'],
+                    Grabdata.upload_id==r['upload_id'], Grabdata.variable==r['variable'],
+                    Grabdata.DateTime_UTC==r['DateTime_UTC']).first()
+                d.flag = r['flag']
+                db.session.add(d)
+            except:
+                continue
+
+    else: #if not replacing, just insert new data
+        xx = xx.to_dict('records')
+        db.session.bulk_insert_mappings(Grabdata, xx)
+
 @app.route("/upload_confirm", methods=["POST"])
 def confirmcolumns():
 
@@ -1492,6 +1611,10 @@ def grab_confirmcolumns():
             # filenameNoV[1] = upID
         else:
             upID = 1
+
+            #reset auto increment for grabupload table if necessary
+            db.engine.execute('alter table grabupload auto_increment=1')
+
             # filenameNoV[1] = upID
         print 'upID'
         print upID
@@ -1504,7 +1627,7 @@ def grab_confirmcolumns():
 
         #retrieve upload_id
         upID = pd.read_sql("select id from grabupload where filename='" +\
-            fn + "'", db.engine)
+            filenameNoV + "'", db.engine)
         upID = list(upID.id)[0]
         # filenameNoV[1] = upID
 
@@ -1637,24 +1760,26 @@ def grab_confirmcolumns():
     #         uq = Upload(f[0])
     #         db.session.add(uq)
     if update_upload_table:
-        uq = Upload(filenameNoV)
+        uq = Grabupload(filenameNoV)
         db.session.add(uq)
-    raise Exception('DONE')
 
+    # raise Exception('DONE')
 
     #add data and mappings to db
-    updatedb(xx, fn_to_db, replace)
-    updatecdict(region, site, cdict)
-
+    grab_updatedb(xx, [filenameNoV], replace)
+    sitelist = list(set(xx.site))
+    grab_updatecdict(region, sitelist, cdict)
     # except:
     #     flash('There was an error, please try again.','alert-warning')
     #     return redirect(request.url)
 
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) #rm tmp
+    # os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) #rm tmp
     db.session.commit() #persist all db changes made during upload
-    flash('Uploaded '+str(len(xx.index))+' values, thank you!','alert-success')
+    session['upload_complete'] = True
+    flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
+        'alert-success')
 
-    return redirect(url_for('series_upload'))
+    return redirect(url_for('grab_upload'))
 
 def getsitenames(regionsite):
     region, site = regionsite.split("_")

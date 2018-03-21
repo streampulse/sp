@@ -316,3 +316,6 @@ thu20180301
 ### tue20180320
  + met with Miguel Leon to discuss possibility of adopting ODM2 (Corinna Gries' suggestion)
  + many small improvements to variable matching and the following machinery
+### wed20180321
+ + finished grab upload
+ + clarified cleaning tool terminology
