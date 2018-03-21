@@ -312,4 +312,7 @@ thu20180301
    + clarified language
 ### mon20180319
  + met with Emily Stanley about data levels, revision tracking
- + 
+ + working through database updating and backend after variable matching
+### tue20180320
+ + met with Miguel Leon to discuss possibility of adopting ODM2 (Corinna Gries' suggestion)
+ + many small improvements to variable matching and the following machinery
