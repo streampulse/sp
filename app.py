@@ -994,10 +994,6 @@ def grab_upload():
         try:
             fnlong = session.get('fnlong')
             upload_complete = session.get('upload_complete')
-            print 'fnlongAAAAAA'
-            print fnlong
-            print 'ul comp'
-            print upload_complete
 
             if not upload_complete:
                 os.remove(fnlong)
@@ -1009,26 +1005,18 @@ def grab_upload():
 
     if request.method == 'POST': #invoked when you interact with the page
 
-        try: #huge try block as catch-all
+        try:
 
             replace = False if request.form.get('replaceG') is None else True
-            print ''
-            print ''
-            print ''
-            print ''
-            # print 'replace'
-            # print replace
 
             #checks
             if 'fileG' not in request.files:
                 flash('File missing or unreadable','alert-danger')
                 return redirect(request.url)
+
             ufile = request.files.getlist("fileG") #list helps with following tests
-            # print 'ufile'
-            # print ufile
             ufnm = [x.filename for x in ufile]
-            # print 'ufnm'
-            # print ufnm
+
             if len(ufnm) > 1:
                 flash('Please upload one file at a time.','alert-danger')
                 return redirect(request.url)
@@ -1039,8 +1027,6 @@ def grab_upload():
             #list format no longer useful; extract items
             ufile = ufile[0]
             ufnm = ufnm[0]
-            print 'ufile'
-            print ufile
 
             #check name of uploaded file
             try:
@@ -1052,8 +1038,6 @@ def grab_upload():
             #get list of all files in spgrab directory
             upfold = app.config['GRAB_FOLDER']
             ld = os.listdir(upfold)
-            print 'ld'
-            print ld
 
             if not replace and ufnm in ld:
                 flash("This filename has already been uploaded. Check the " +\
@@ -1061,23 +1045,10 @@ def grab_upload():
                     'alert-danger')
                 return redirect(request.url)
 
-            #get list of sites
-            # site = list(set([x.split("_")[0] + "_" + x.split("_")[1] for
-                # x in ufnms]))
-
-            # UPLOAD locally and to sciencebase (eventually)
-            # filenames = []
-            # fnlong = []
-            # filenamesNoV = [] #for filenames without version numbers, and upload IDs
-            # for f in ufile:
-
             #clean filename, generate version number
             filename = secure_filename(ufnm)
             filenameNoV = filename
-            # filenameNoV = [filename, None]
             ver = len([x for x in ld if filename.split(".")[0] in x])
-            # print 'ver'
-            # print ver
 
             #add version number to file if this filename already exists
             fnlong = os.path.join(upfold, filename)
@@ -1085,20 +1056,7 @@ def grab_upload():
                 fns = filename.split(".")
                 filename = fns[0] + "v" + str(ver+1) + "." + fns[1]
                 fnlong = os.path.join(upfold, filename)
-            # print 'fnlong'
-            # print fnlong
 
-            #CONSIDER
-
-            # sb.upload_file_to_item(sbupf, fnlong) #broken
-
-            # filenames.append(filename) #fname list passed on for display
-            # fnlong.append(fup) #list of files that get processed
-
-            # session['filenameNoV'] = filenameNoV #persist across requests
-            # filenamesNoV = session.get('filenamesNoV')
-            #CONSIDER
-            # x = pd.read_csv(fnlong, parse_dates=[0])
         except:
             msg = Markup('Error 001. Please <a href=' +\
                 '"mailto:vlahm13@gmail.com" class="alert-link">' +\
@@ -1107,11 +1065,9 @@ def grab_upload():
             flash(msg, 'alert-danger')
             return redirect(request.url)
 
+        #more checks
         try:
             x = pd.read_csv(ufile, parse_dates=[0])
-            print 'x'
-            print x.head()
-
             xcols = x.columns
 
         except:
@@ -1134,107 +1090,22 @@ def grab_upload():
             return redirect(request.url)
 
         try:
-            #SP_IN
+
             #get list of all filenames on record
             all_fnames = list(pd.read_sql('select distinct filename from grabupload',
                 db.engine).filename)
-            # print 'all_fnames'
-            # print all_fnames
-
-            #see if this one is among them
-            # fn = re.sub(".*/(\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2})" +\
-                # "(?:v[0-9]+)?(\\.\\w{3})", "\\1\\2", fnlong)
-
-            # if filenameNoV[0] not in all_fnames:
-            # if filenameNoV not in all_fnames:
-            #
-            #     #find out what next upload_id will be and update session variable
-            #     last_upID = pd.read_sql("select max(id) as m from grabupload",
-            #         db.engine)
-            #     last_upID = list(last_upID.m)[0]
-            #     # print 'last upid'
-            #     # print last_upID
-            #     if last_upID:
-            #         upID = last_upID + 1
-            #         # filenameNoV[1] = upID
-            #     else:
-            #         upID = 1
-            #         # filenameNoV[1] = upID
-            #     print 'upID'
-            #     print upID
-
-                #append column of upload_ids to df
-                # x['upload_id'] = upID
-
-            # else:
-
-                #retrieve upload_id
-                # upID = pd.read_sql("select id from grabupload where filename='" +\
-                #     fn + "'", db.engine)
-                # upID = list(upID.id)[0]
-                # filenameNoV[1] = upID
-
-                #append column of upload_ids to df
-                # x['upload_id'] = upID
-
-            # print 'x with upid'
-            # print x.head()
-
-
-            #if not last_upID[0]: #reset auto increment for upload table if necessary
-            #    db.engine.execute('alter table upload auto_increment=1')
-            #    last_upID[0] = 0
-
-            #put wash contents here.
-            # x = wash_ts(x).reset_index()
-
-
-
-            # PROCESS the data and save as tmp file
-            # try:
-            #     if site[0] in core.index.tolist():
-            #         gmtoff = core.loc[site].GMTOFF[0]
-            #         x = sp_in(fnlong, gmtoff)
-            #     else:
-            #         if len(fnlong) > 1:
-            #             flash('For non-core sites, please merge files prior ' +\
-            #                 'to upload.', 'alert-danger')
-            #             [os.remove(f) for f in fnlong]
-            #             return redirect(request.url)
-            #         x = sp_in_lev(fnlong[0])
-
-            #save combined input files to a temporary csv
-            # tmp_file = site[0].encode('ascii') + "_" +\
-            #     binascii.hexlify(os.urandom(6))
-            # out_file = os.path.join(upfold, tmp_file + ".csv")
-            # x.to_csv(out_file, index=False)
 
             #get data to pass on to confirm columns screen
             columns = x.columns.tolist() #col names
             columns = [c for c in columns if c not in
                 ['DateTime_UTC','Sitecode']]
-            # print 'columns'
-            # print columns
             ureg = filename.split('_')[0]
-            # ureg = filenameNoV[0].split('_')[0]
-            # print 'ureg'
-            # print ureg
             usites = list(x.Sitecode)
-            # print 'usites'
-            # print usites
             urs = [ureg + '_' + s for s in usites]
-            print 'urs'
-            print urs
-            # rr, ss = site[0].split("_") #region and site
-            # rr = 'CT'; ss = 'Eno'
             cdict = pd.read_sql("select * from grabcols where site in ('" +\
                 "', '".join(usites) + "') and region='" + ureg + "';",
                 db.engine)
-            # print 'cdict'
-            # print cdict
             cdict = dict(zip(cdict['rawcol'], cdict['dbcol'])) #varname mappings
-            print 'cdict'
-            print cdict
 
         except:
             msg = Markup('Error 002. Please <a href=' +\
@@ -1242,70 +1113,25 @@ def grab_upload():
                 'email Mike Vlah</a> with the error number and a copy of ' +\
                 'the file you tried to upload.')
             flash(msg, 'alert-danger')
-            # os.remove(fnlong)
             return redirect(request.url)
-
-        # print 'REDIRECT'
-        # return redirect(request.url)
 
         try:
 
             # get list of new sites
             allsites = pd.read_sql("select concat(region, '_', site) as" +\
                 " sitenm from site", db.engine).sitenm.tolist()
-            # print 'allsites'
-            # print allsites
             new = list(set([rs for rs in urs if rs not in allsites]))
-            # print 'new'
-            # print new
-
-            # if new:
-            #     flash('New sitecodes detected.  ' +\
-            #         '"Sitecode".', 'alert-danger')
-            #     return redirect(request.url)
 
             flash("Please double check your variable name matching.",
                 'alert-warning')
 
-            # print 'AAA'
-            # pp = 'a' * 100000
-            # import sys
-            # print sys.getsizeof(pp)
-            # # print sys.getsizeof(x)
-            # session['z'] = pp
-            # # usgst = pd.read_json(json.dumps(ts['values'][0]['value']))
-            # # session['z'] = jsonify(z=pp)
-            # ppp = session.get('z')
-            # print 'ppp'
-            # print len(ppp)
-
-            # globals()['uploaded_data'] = x
-            # x = uploaded_data
-            # print 'aaa'
-            # print x.head()
-
-            #save input csv locally; store filename in session
-            # print 'fnlong'
-            # print fnlong
-            # print 'ufile'
-            # print ufile
-            # # ufile.save(fnlong)
-            # print 'HERE'
-            # print 'x'
-            # print x
-
+            #write csv to disk; establish session variables to pass on
             x.to_csv(fnlong, index=False)
-            # xx = pd.read_csv(ufile, parse_dates=[0])
-            # xx = pd.read_csv(fnlong, parse_dates=[0])
-            # print 'xx'
-            # print xx
-            # raise Exception('a')
             session['fnlong'] = fnlong
             session['upload_complete'] = False
             session['filenameNoV'] = filenameNoV
 
-            #GOTTA PUT X IN SESSION OR SERIALIZE
-            #go to next webpage
+            #go to next screen
             return render_template('grab_upload_columns.html', filename=filename,
                 columns=columns, variables=grab_variables, cdict=cdict,
                 newsites=new, sitenames=allsites, replacing=replace)
@@ -1415,19 +1241,21 @@ def updatedb(xx, fnamelist, replace=False):
         db.session.bulk_insert_mappings(Data, xx)
 
 def grab_updatecdict(region, sitelist, cdict):
+
+    #get input variable name list
     rawcols = pd.read_sql("select * from grabcols where region='" + region +\
         "' and site in ('" + "', '".join(sitelist) + "')", db.engine)
     rawcols = set(rawcols['rawcol'].tolist())
+
+    #update or establish variable name mappings
     for c in cdict.keys():
         for s in sitelist:
             if c in rawcols: # update
                 cx = Grabcols.query.filter_by(rawcol=c, site=s).first()
                 cx.dbcol = cdict[c] # assign new dbcol value for this rawcol
-                # db.session.commit()
             else: # add
                 cx = Grabcols(region, s, c, cdict[c])
                 db.session.add(cx)
-                # db.session.commit()
 
 def grab_updatedb(xx, fnamelist, replace=False):
 
@@ -1437,14 +1265,11 @@ def grab_updatedb(xx, fnamelist, replace=False):
         upIDs = pd.read_sql("select id from grabupload where filename in ('" +\
             "', '".join(fnamelist) + "')", db.engine)
         upIDs = [str(i) for i in upIDs.id]
-        print 'in updatedb - upIDs'
-        print upIDs
         flagged_obs = pd.read_sql("select * from grabdata where upload_id in ('" +\
             "', '".join(upIDs) + "') and flag is not null", db.engine)
 
         #delete records that are being replaced (this could be sped up)
         if list(upIDs):
-            print 'DANGER - somethings getting deleted'
             d = Grabdata.query.filter(Grabdata.upload_id.in_(list(upIDs))).all()
             for rec in d:
                 db.session.delete(rec)
@@ -1469,7 +1294,6 @@ def grab_updatedb(xx, fnamelist, replace=False):
 
         #reconstitute flags
         for ind, r in flagged_obs.iterrows():
-            print 'inside flag reconstituter'
             try:
                 d = Grabdata.query.filter(Grabdata.region==r['region'], Grabdata.site==r['site'],
                     Grabdata.upload_id==r['upload_id'], Grabdata.variable==r['variable'],
@@ -1492,6 +1316,7 @@ def confirmcolumns():
     cdict = dict([(r['name'],r['value']) for r in cdict])
 
     try:
+
         #load and format dataframe
         xx = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'],
             tmpfile + ".csv"), parse_dates=[0])
@@ -1559,221 +1384,124 @@ def confirmcolumns():
 @app.route("/grab_upload_confirm", methods=["POST"])
 def grab_confirmcolumns():
 
-    #retrieve variables from request, session, and filesystem
-    cdict = json.loads(request.form['cdict'])
-    # print 'cdict'
-    # print cdict
-    fnlong = session.get('fnlong')
-    print ''
-    print ''
-    print ''
-    print ''
-    print 'fnlong'
-    print fnlong
-    xx = pd.read_csv(fnlong, parse_dates=[0])
-    filenameNoV = session.get('filenameNoV')
-    print 'filename'
-    print filenameNoV
-    region = filenameNoV.split('_')[0]
-    print 'region'
-    print region
-    # print 'upID'
-    # print upID
-    # filenameNoV = session.get('filenameNoV')[0]
+    try:
 
+        #retrieve variables from request, session, and filesystem
+        cdict = json.loads(request.form['cdict'])
+        fnlong = session.get('fnlong')
+        xx = pd.read_csv(fnlong, parse_dates=[0])
+        filenameNoV = session.get('filenameNoV')
+        region = filenameNoV.split('_')[0]
 
+        #get list of all filenames on record
+        all_fnames = list(pd.read_sql('select distinct filename from grabupload',
+            db.engine).filename)
 
+        #if this filename has not been seen before...
+        if filenameNoV not in all_fnames:
 
+            update_upload_table = True
 
-    #get list of all filenames on record
-    all_fnames = list(pd.read_sql('select distinct filename from grabupload',
-        db.engine).filename)
-    # print 'all_fnames'
-    # print all_fnames
+            #find out what next upload_id will be
+            last_upID = pd.read_sql("select max(id) as m from grabupload",
+                db.engine)
+            last_upID = list(last_upID.m)[0]
 
-    #see if this one is among them
-    # fn = re.sub(".*/(\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2})" +\
-        # "(?:v[0-9]+)?(\\.\\w{3})", "\\1\\2", fnlong)
+            if last_upID:
+                upID = last_upID + 1
+            else:
+                upID = 1
 
-    # if filenameNoV[0] not in all_fnames:
-    if filenameNoV not in all_fnames:
+                #reset auto increment for grabupload table
+                db.engine.execute('alter table grabupload auto_increment=1')
 
-        update_upload_table = True
-
-        #find out what next upload_id will be and update session variable
-        last_upID = pd.read_sql("select max(id) as m from grabupload",
-            db.engine)
-        last_upID = list(last_upID.m)[0]
-        # print 'last upid'
-        # print last_upID
-        if last_upID:
-            upID = last_upID + 1
-            # filenameNoV[1] = upID
         else:
-            upID = 1
+            update_upload_table = False
 
-            #reset auto increment for grabupload table if necessary
-            db.engine.execute('alter table grabupload auto_increment=1')
+            #retrieve upload_id
+            upID = pd.read_sql("select id from grabupload where filename='" +\
+                filenameNoV + "'", db.engine)
+            upID = list(upID.id)[0]
 
-            # filenameNoV[1] = upID
-        print 'upID'
-        print upID
+        #parse cdict into usable dictionary
+        cdict = dict([(r['name'], r['value']) for r in cdict])
 
-        #append column of upload_ids to df
-        # x['upload_id'] = upID
+        #replace user varnames with database varnames; attach upload_id column
+        xx_pre = xx.iloc[:,0:2]
+        xx_post = xx.iloc[:,2:]
+        xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
+        xx = pd.concat([xx_pre, xx_post], axis=1)
+        xx['upload_id'] = upID
 
-    else:
-        update_upload_table = False
+        #if there are new sites, process them
+        if request.form['new_sites'] == "true":
 
-        #retrieve upload_id
-        upID = pd.read_sql("select id from grabupload where filename='" +\
-            filenameNoV + "'", db.engine)
-        upID = list(upID.id)[0]
-        # filenameNoV[1] = upID
+            # automatically embargo for 1 year
+            embargo = 1
 
-        #append column of upload_ids to df
-        # x['upload_id'] = upID
+            #for each new site included in the uploaded csv...
+            for i in xrange(int(request.form['newlen'])):
 
+                #get the name, split into site and region components
+                newsite = request.form['newsite' + str(i)]
+                region, site = newsite.split('_')[0:2]
 
+                #get usgs number if applicable
+                usgss = request.form['usgs' + str(i)]
+                if usgss == '':
+                    usgss = None
 
+                # add new site to Site table
+                sx = Site(region=region, site=site, by=current_user.get_id(),
+                    name=request.form['sitename' + str(i)],
+                    latitude=request.form['lat' + str(i)],
+                    longitude=request.form['lng' + str(i)],
+                    usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
+                    contact=request.form['contactName' + str(i)],
+                    contactEmail=request.form['contactEmail' + str(i)])
+                db.session.add(sx)
 
+                # make a new text file with the metadata
+                metastring = request.form['metadata' + str(i)]
+                metafilepath = os.path.join(app.config['META_FOLDER'],
+                    region + "_" + site + "_metadata.txt")
 
+                with open(metafilepath, 'a') as metafile:
+                    metafile.write(metastring)
 
-    #parse cdict
-    cdict = dict([(r['name'], r['value']) for r in cdict])
-    print 'cdict'
-    print cdict
+        #format df for database entry
+        xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
+        xx.columns.name = 'variable'
+        xx = xx.stack() #one col each for vars and vals
+        xx.name = "value"
+        xx = xx.reset_index()
+        xx = xx.groupby(['DateTime_UTC', 'variable',
+            'Sitecode']).mean().reset_index() #dupes
+        xx['region'] = region
+        xx['flag'] = None
+        xx.rename(columns={'Sitecode':'site'}, inplace=True)
+        xx = xx[['region','site','DateTime_UTC','variable','value','flag',
+            'upload_id']]
 
-    # try:
+        replace = True if request.form['replacing']=='true' else False
 
-    #format dataframe
-    # print
-    # print xx.head()
-    xx_pre = xx.iloc[:,0:2]
-    xx_post = xx.iloc[:,2:]
-    # upid_col = xx['upload_id']
-    xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign canonical names
-    xx = pd.concat([xx_pre, xx_post], axis=1)
-    xx['upload_id'] = upID
-    print 'xx'
-    print xx.head()
-    # xx = pd.concat([xx, upid_col], axis=1) #reattach upload IDs
-    # region, site = tmpfile.split("_")[:-1]
+        if update_upload_table:
+            uq = Grabupload(filenameNoV)
+            db.session.add(uq)
 
-    print 'new_sites'
-    print request.form['new_sites']
-    if request.form['new_sites'] == "true":
-        print 'newlen'
-        print request.form['newlen']
-        # add new sites to database
-        embargo = 1 # automatically embargo for 1 year, can change later in database...
+        #add data and varname mappings to db tables
+        grab_updatedb(xx, [filenameNoV], replace)
+        sitelist = list(set(xx.site))
+        grab_updatecdict(region, sitelist, cdict)
 
+    except:
+        msg = Markup('Error 005. Please <a href=' +\
+            '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+            'email</a> Mike Vlah with the error number and a copy of ' +\
+            'the file you tried to upload.')
+        flash(msg, 'alert-danger')
+        return redirect(request.url)
 
-        for i in xrange(int(request.form['newlen'])):
-            print 'i'
-            print str(i)
-
-            newsite = request.form['newsite' + str(i)]
-            print 'newsite, reg, site'
-            print newsite
-            region, site = newsite.split('_')[0:2]
-            print 'regsite'
-            print region
-            print site
-
-            usgss = request.form['usgs' + str(i)]
-            if usgss == '':
-                usgss = None
-            print 'usgss'
-            print usgss
-
-            # print 'sitenms'
-            # print request.form['sitename0']
-            # print request.form['sitename1']
-            # print request.form['sitename2']
-            # raise Exception('DONE')
-
-            sx = Site(region=region, site=site, by=current_user.get_id(),
-                name=request.form['sitename' + str(i)],
-                latitude=request.form['lat' + str(i)],
-                longitude=request.form['lng' + str(i)],
-                usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
-                contact=request.form['contactName' + str(i)],
-                contactEmail=request.form['contactEmail' + str(i)])
-            db.session.add(sx)
-
-            # make a new text file with the metadata
-            metastring = request.form['metadata' + str(i)]
-            print 'metastring'
-            print metastring
-            metafilepath = os.path.join(app.config['META_FOLDER'],
-                region + "_" + site + "_metadata.txt")
-            with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring)
-
-    #format df for database entry
-    xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
-    # print ''
-    # print '1'
-    # print xx
-    xx.columns.name = 'variable'
-    # print ''
-    # print '2'
-    # print xx
-    xx = xx.stack() #one col each for vars and vals
-    # print ''
-    # print '3'
-    # print xx
-    xx.name = "value"
-    # print ''
-    # print '4'
-    # print xx
-    xx = xx.reset_index()
-    # print ''
-    # print '5'
-    # print xx
-    xx = xx.groupby(['DateTime_UTC', 'variable',
-        'Sitecode']).mean().reset_index() #dupes
-    # print ''
-    # print '6'
-    # print xx
-    xx['region'] = region
-    # xx['site'] = site
-    xx['flag'] = None
-    # print '6.5'
-    # print xx
-    xx.rename(columns={'Sitecode':'site'}, inplace=True)
-    xx = xx[['region','site','DateTime_UTC','variable','value','flag',
-        'upload_id']]
-    print '7'
-    print xx
-
-    replace = True if request.form['replacing']=='true' else False
-
-    #add new filenames to upload table in db
-    # filenamesNoV = session.get('filenamesNoV')
-    # fn_to_db = [i[0] for i in filenamesNoV]
-    # filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
-    # filenamesNoV = [i for i in filenamesNoV if i[1] is not None]
-    # if filenamesNoV:
-    #     for f in filenamesNoV:
-    #         uq = Upload(f[0])
-    #         db.session.add(uq)
-    if update_upload_table:
-        uq = Grabupload(filenameNoV)
-        db.session.add(uq)
-
-    # raise Exception('DONE')
-
-    #add data and mappings to db
-    grab_updatedb(xx, [filenameNoV], replace)
-    sitelist = list(set(xx.site))
-    grab_updatecdict(region, sitelist, cdict)
-    # except:
-    #     flash('There was an error, please try again.','alert-warning')
-    #     return redirect(request.url)
-
-    # os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) #rm tmp
     db.session.commit() #persist all db changes made during upload
     session['upload_complete'] = True
     flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
