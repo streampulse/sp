@@ -1537,7 +1537,7 @@ def download():
     dx.name = dx.region+" - "+dx.name
     dvv = dx[['regionsite','name','startdate','enddate','variable']].values
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
-    return render_template('download.html',sites=sitedict)
+    return render_template('download.html', sites=sitedict)
 
 # CODE FROM OLD Download, deprecated
 # xx = pd.read_sql("select distinct region, site from data", db.engine)
@@ -1571,14 +1571,18 @@ def getstats():
 
 @app.route('/_getcsv',methods=["POST"])
 def getcsv():
+
+    #retrieve form specifications
     sitenm = request.form['sites'].split(",")
     startDate = request.form['startDate']#.split("T")[0]
     endDate = request.form['endDate']
     variables = request.form['variables'].split(",")
     email = request.form.get('email')
+
+    #deal with user info and login creds
     if current_user.get_id() is None: # not logged in
         uid = None
-        if email is not None: # send email to aaron, add to csv
+        if email is not None: # record email address
             elist = open("static/email_list.csv","a")
             elist.write(email+"\n")
             elist.close()
@@ -1586,37 +1590,49 @@ def getcsv():
         uid = int(current_user.get_id())
         myuser = User.query.filter(User.id==uid).first()
         email = myuser.email
-    ## add download stats
+
+    # add download stats to db table
     dnld_stat = Downloads(timestamp=datetime.utcnow(), userID=uid, email=email,
         dnld_sites=request.form['sites'], dnld_date0=startDate,
         dnld_date1=endDate, dnld_vars=request.form['variables'])
     db.session.add(dnld_stat)
-    db.session.commit()
-    ## get data
+    db.session.commit() #should be at end of function
+
+    # get more form data; make temp directory to pass to user
     aggregate = request.form['aggregate']
-    dataform = request.form['dataform'] # wide or long
+    dataform = request.form['dataform'] # wide or long format
     tmp = tempfile.mkdtemp()
+
     # add the data policy to the folder
     shutil.copy2("static/streampulse_data_policy.txt", tmp)
+
     # loop through sites
     for s in sitenm:
-        # get data for site s
+
+        # get sensor data and flags for site s
         sqlq = "select data.*, flag.flag as flagtype, flag.comment as " +\
             "flagcomment from data " +\
             "left join flag on data.flag=flag.id where concat(data.region, " +\
             "'_', data.site)='" + s + "' and data.DateTime_UTC > '" +\
             startDate + "' and data.DateTime_UTC < '" + endDate + "' " +\
-            "and data.variable in ('"+"', '".join(variables)+"')"
+            "and data.variable in ('" + "', '".join(variables) + "');"
         xx = pd.read_sql(sqlq, db.engine)
-        if len(xx)<1:
-            continue
-        xx.loc[xx.flag==0,"value"] = None # set NA values
-        xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
+
+        if len(xx) < 1:
+            continue #why?
+
+        # set NA values, then drop them (currently not doing anything)
+        xx.loc[xx.flag == 0, "value"] = None
+        xx.dropna(subset=['value'], inplace=True)
+
+        #remove flag data if not desired by user
         if request.form.get('flag') is not None:
-            xx.drop(['id','flag','upload_id'], axis=1, inplace=True) # keep the flags
+            xx.drop(['id','flag','upload_id'], axis=1, inplace=True)
         else:
             xx.drop(['id','flag','flagtype','flagcomment','upload_id'], axis=1,
-                inplace=True) # get rid of them
+                inplace=True)
+
+        #acquire discharge and depth from USGS if desired
         if request.form.get('usgs') is not None:
             #xu = get_usgs([s],startDate,endDate)
             # print xx['DateTime_UTC'].min()
@@ -1625,25 +1641,47 @@ def getcsv():
             if len(xu) is not 0:
                 xx = pd.concat([xx,xu])
                 xx = xx.reindex_axis(df_index, axis=1)
+
+        #get grab (manually sampled) data if desired
+        if request.form.get('grab') is not None:
+            sqlq2 = "select region, site, DateTime_UTC, variable, value " +\
+                "from grabdata where concat(region, " +\
+                "'_', site)='" + s + "' and DateTime_UTC > '" +\
+                startDate + "' and DateTime_UTC < '" + endDate + "';"
+            grabdata = pd.read_sql(sqlq2, db.engine)
+
+            #write dataframe to CSV in temp directory
+            grabdata.to_csv(tmp + '/' + s + 'grabData_.csv', index=False)
+
         # check for doubles with same datetime, region, site, variable...
         xx = xx.set_index(["DateTime_UTC","region","site","variable"])
         xx = xx[~xx.index.duplicated(keep='last')].sort_index().reset_index()
-        if aggregate!="none":
-            xx = xx.set_index(['DateTime_UTC']).groupby(['region','site','variable']).resample(aggregate).mean().reset_index()
-        if dataform=="wide":
-            xx = xx.pivot_table("value",['region','site','DateTime_UTC'],'variable').reset_index()
-        xx.to_csv(tmp+'/'+s+'_data.csv', index=False)
-        # copy metadata, if it exists
-        mdfile = os.path.join(app.config['META_FOLDER'],s+"_metadata.txt")
+
+        #apply aggregation and format preferences for sensor data
+        if aggregate != "none":
+            xx = xx.set_index(['DateTime_UTC']).groupby(['region',
+                'site','variable']).resample(aggregate).mean().reset_index()
+        if dataform == "wide":
+            xx = xx.pivot_table("value", ['region','site','DateTime_UTC'],
+                'variable').reset_index()
+
+        #write sensor dataframes to CSV file in temp directory
+        xx.to_csv(tmp + '/' + s + '_sensorData.csv', index=False)
+
+        #put metadata in folder if metdata file exists
+        mdfile = os.path.join(app.config['META_FOLDER'], s + "_metadata.txt")
         if os.path.isfile(mdfile):
             shutil.copy2(mdfile, tmp)
-    #
-    writefiles = os.listdir(tmp) # list files in the tmp directory
-    zipname = 'SPdata_'+datetime.now().strftime("%Y-%m-%d")+'.zip'
-    with zipfile.ZipFile(tmp+'/'+zipname,'w') as zf:
-        [zf.write(tmp+'/'+f,f) for f in writefiles]
+
+    #zip all files in temp dir as new zip dir, pass on to user
+    writefiles = os.listdir(tmp) # list files in the temp directory
+    zipname = 'SPdata_' + datetime.now().strftime("%Y-%m-%d") + '.zip'
+    with zipfile.ZipFile(tmp + '/' + zipname, 'w') as zf:
+        [zf.write(tmp + '/' + f, f) for f in writefiles]
     #flash('File sent: '+zipname, 'alert-success')
-    return send_file(tmp+'/'+zipname, 'application/zip', as_attachment=True, attachment_filename=zipname)
+
+    return send_file(tmp + '/' + zipname, 'application/zip',
+        as_attachment=True, attachment_filename=zipname)
 
 @app.route('/visualize')
 # @login_required

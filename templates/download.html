@@ -3,8 +3,8 @@
 
 <div class="row"><div class="col-md-6 col-md-offset-3">
   <h1>Download Data</h1>
-  <p class="lead">Access all of the current data here for your own modeling and analysis.<p>
-
+  <p class="lead">Acquire CSVs of sensor and grab data for your own analysis.<p>
+  <p>Note that the StreamPULSE R package has a built-in download tool.<p>
 
   <form id="dnld" action="/_getcsv" method="POST" class="form-horizontal">
       <select placeholder="Choose site(s)" id="dsite" name="site" multiple>
@@ -18,16 +18,29 @@
     <input type="hidden" name="startDate" value="">
     <input type="hidden" name="endDate" value="">
     <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range"><br>
-    <p class="lead">Variables:</p>
+    <p class="lead">Sensor variables to include:</p>
     <div id="dnld_vars"></div><br>
     <div class="form-inline">
-      Include data flags: <input type="checkbox" id="flag" name="flag"> &nbsp; <small class="form-text text-muted">Unavailable if reformatting data.</small>
+      Include sensor data flags:
+      <input type="checkbox" id="flag" name="flag">
+      &nbsp;
+      <small class="form-text text-muted">
+        Unavailable if reformatting data.
+      </small>
       <br>
-      Include local USGS discharge and depth values: <input type="checkbox" name="usgs"><br>
-      <small class="form-text text-muted">Note: this feature can add considerable time for long timeseries due to querying the USGS server.</small>
-    </div><br>
+      Include time series of local discharge and depth from USGS if possible:
+      <input type="checkbox" name="usgs">
+      <br>
+      <small class="form-text text-muted">
+        Note: Querying the USGS server can take a while for long time series.
+      </small>
+      <br>
+      Include manually collected data in a separate CSV file:
+      <input type="checkbox" name="grab">
+    </div>
+    <br>
 
-    <p class="lead">Formatting:</p>
+    <p class="lead">Sensor data formatting:</p>
     <div class="form-inline">
       Temporal aggregation:
       <select id="aggregate" name="aggregate" class="form-control">
