@@ -401,7 +401,7 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'Light5_lux', 'Light5_PAR', 'Battery_V']
 
 grab_variables = ['TOC_ppm', 'TN_ppm', 'Ammonium',
-'Phosphate_leachate', 'Sodium', 'Potassium', 'Magnesium', 'Calcium', 'Chloride',
+'Phosphate_lachat', 'Sodium', 'Potassium', 'Magnesium', 'Calcium', 'Chloride',
 'Sulfate', 'Bromide', 'Nitrate', 'Phosphate_IC']
 
 #R code for outlier detection
@@ -1190,6 +1190,27 @@ def updatecdict(region, site, cdict):
             db.session.add(cx)
             # db.session.commit()
 
+def chunker_ingester(df, chunksize=100000):
+
+    #determine chunks based on number of records (chunksize)
+    n_full_chunks = df.shape[0] / chunksize
+    partial_chunk_len = df.shape[0] % chunksize
+
+    #convert directly to dict if small enough, otherwise do it chunkwise
+    if n_full_chunks == 0:
+        xdict = df.to_dict('records')
+        db.session.bulk_insert_mappings(Data, xdict) #ingest all records
+    else:
+        for i in xrange(n_full_chunks):
+            chunk = df.head(chunksize)
+            df = df.drop(df.head(chunksize).index)
+            chunk = chunk.to_dict('records')
+            db.session.bulk_insert_mappings(Data, chunk)
+
+        if partial_chunk_len:
+            lastchunk = df.to_dict('records')
+            db.session.bulk_insert_mappings(Data, lastchunk)
+
 def updatedb(xx, fnamelist, replace=False):
 
     if replace:
@@ -1208,22 +1229,7 @@ def updatedb(xx, fnamelist, replace=False):
                 db.session.delete(rec)
 
         #insert new (replacement) data (chunk it if > 100k records)
-        n_full_chunks = xx.shape[0] / 100000
-        partial_chunk_len = xx.shape[0] % 100000
-
-        if n_full_chunks == 0:
-            xx = xx.to_dict('records')
-            db.session.bulk_insert_mappings(Data, xx) #ingest all records
-        else:
-            for i in xrange(n_full_chunks): #ingest full (100k-record) chunks
-                chunk = xx.head(100000)
-                xx = xx.drop(xx.head(100000).index)
-                chunk = chunk.to_dict('records')
-                db.session.bulk_insert_mappings(Data, chunk)
-
-            if partial_chunk_len:
-                xx = xx.to_dict('records')
-                db.session.bulk_insert_mappings(Data, xx) #ingest remainder
+        chunker_ingester(xx)
 
         #reconstitute flags
         for ind, r in flagged_obs.iterrows():
@@ -1237,8 +1243,7 @@ def updatedb(xx, fnamelist, replace=False):
                 continue
 
     else: #if not replacing, just insert new data
-        xx = xx.to_dict('records')
-        db.session.bulk_insert_mappings(Data, xx)
+        chunker_ingester(xx)
 
 def grab_updatecdict(region, sitelist, cdict):
 
@@ -1606,7 +1611,8 @@ def getcsv():
     # add the data policy to the folder
     shutil.copy2("static/streampulse_data_policy.txt", tmp)
 
-    # loop through sites
+    #get data, metadata, etc for each site and put in temp directory
+    nograbsites = []
     for s in sitenm:
 
         # get sensor data and flags for site s
@@ -1650,8 +1656,11 @@ def getcsv():
                 startDate + "' and DateTime_UTC < '" + endDate + "';"
             grabdata = pd.read_sql(sqlq2, db.engine)
 
-            #write dataframe to CSV in temp directory
-            grabdata.to_csv(tmp + '/' + s + 'grabData_.csv', index=False)
+            #if data available, write dataframe to CSV in temp directory
+            if grabdata.shape[0] > 0:
+                grabdata.to_csv(tmp + '/' + s + '_grabData.csv', index=False)
+            else:
+                nograbsites.append(s)
 
         # check for doubles with same datetime, region, site, variable...
         xx = xx.set_index(["DateTime_UTC","region","site","variable"])
@@ -1679,6 +1688,10 @@ def getcsv():
     with zipfile.ZipFile(tmp + '/' + zipname, 'w') as zf:
         [zf.write(tmp + '/' + f, f) for f in writefiles]
     #flash('File sent: '+zipname, 'alert-success')
+
+    if nograbsites:
+        flash('No manually collected data available at specified time for ' +\
+            'site(s): ' + ', '.join(nograbsites) + '.', 'alert-warning')
 
     return send_file(tmp + '/' + zipname, 'application/zip',
         as_attachment=True, attachment_filename=zipname)

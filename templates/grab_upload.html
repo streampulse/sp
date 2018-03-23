@@ -39,21 +39,19 @@ drift.load('s2rst4h926mg');
 </span></div>
 
 <div class="row">
-  <div class="col-md-6 col-md-offset-3">
+  <div class="col-md-8 col-md-offset-2 text-center">
     <h1>Upload manually collected data</h1>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-6 col-md-offset-3 text-center">
     <h4 style='margin: 0'>(i.e. from periodic grab samples)</h4>
   </div>
 </div>
+<br><br>
 <div class="row">
-  <div class="col-md-6 col-md-offset-3">
-    <br>
-    <p class="lead">Only select files <b>from a single site</b> with each upload.</p>
-    <!-- See instructions below for more information.<p> -->
+  <div class="col-md-8 col-md-offset-2">
+    <p class='text-muted'>
+      Please see instructions below if this is your first time using this tool.
+    </p>
     <hr>
+    <br>
 
     <form action="" method=post enctype=multipart/form-data>
       <div class="form-group">
@@ -61,11 +59,21 @@ drift.load('s2rst4h926mg');
         <!-- <input type="file" class="form-control-file" name=file aria-describedby="fileHelp" multiple> -->
         <!-- <small id="fileHelp" class="form-text text-muted">Select files to upload.</small> -->
       </div>
-      Uploading replacement files? If so, check this box: <input type="checkbox" name="replaceG"><br>
+      <input type="checkbox" name="replaceG">
+      Check this box if replacing an existing file.
+      <br>
       <!-- <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small> -->
       <br><br>
-      <button id="upxG" type="submit" value=Upload class="btn btn-primary btn-block">Upload</button>
+      <div class="col-md-6 col-md-offset-3">
+        <button id="upxG" type="submit" value=Upload
+          class="btn btn-primary btn-block">
+          Upload
+        </button>
+      </div>
     </form>
+    <br><br><br>
+    <hr>
+
 <!--
 <br>
 <h2>File upload help</h2>
@@ -88,111 +96,150 @@ drift.load('s2rst4h926mg');
 <br>
 -->
 
-<!--
-<mark>Expand instructions:</mark>
-<button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">Core sites</button>
 
-<p class="text-muted">Core sites are those funded by the grant. Leveraged sites are those with a different sensor-datalogger array.</p>
+    <!-- <mark>Expand instructions:</mark> -->
+    <button data-toggle="collapse" class="btn btn-default"
+      data-target="#instr">
+      Show instructions
+    </button>
 
-<div id="coreinst" class="collapse">
-  <p class="lead"><b>StreamPULSE core sites</b> can upload raw datalogger files and/or pre-formatted data.</p>
+    <div id="instr" class="collapse">
 
-  <h3>File naming</h3>
-  <p>Name your upload file &ndash; <code>REGIONID_SITEID_YYYY-MM-DD_LOGGERID.xxx</code> &ndash; where</p>
-  <ul>
-  <li><code>REGIONID</code> is the name of your region (PR, FL, NC, WI, or AZ),</li>
-  <li><code>SITEID</code> is your unique site name,</li>
-  <li><code>YYYY-MM-DD</code> is the download date,</li>
-  <li><code>LOGGERID</code> is the logger routing code,
-  <ul>
-  <li><code>CS</code>: CR1000 data file</li>
-  <li><code>HD</code>: Hobo DO logger</li>
-  <li><code>HW</code>: Hobo water pressure logger</li>
-  <li><code>HA</code>: Hobo air pressure logger</li>
-  <li><code>HP</code>: Hobo light pendant logger</li>
-  <li><code>EM</code>: Eureka Manta logger</li>
-  <li><code>XX</code>: Calibrated and formatted data</li>
-  </ul></li>
-  <li>and <code>.xxx</code> is the file extension.
-  <ul>
-  <li>Extension must be <code>.dat</code> if <code>LOGGERID</code> is <code>CS</code>. Otherwise must be <code>.csv</code>.
-  </li></ul>
-  <li><b>Note:</b> <code>LOGGERID</code> may include numbers if you have several of the same logger type at one site. For example, <code>LOGGERID</code> could be <code>CS4</code> or <code>HA12</code>.</li>
-  <li><b>Example filename:</b> <code>NC_Eno_2017-12-06_HP.csv</code></li>
-  </ul>
+      <h3>File naming</h3>
+      <br>
+      <p>
+        Name your file <code>REGIONID_YYYY-MM-DD.csv</code>, where
+      </p>
 
-  <h3>Calibrated and formatted data</h3>
-  <p>You can upload raw data (from the datalogger) <em>and/or</em> calibrated data (e.g., turbidity in NTU, water level or discharge, etc.) at the same time.</p>
-  <p>If you modify a datalogger file to generate calibrated and derived variables, you must save it as a <code>.csv</code> with:</p>
-  <ul>
-  <li>the <code>_XX.csv</code> extension (see <code>LOGGERID</code> above),</li>
-  <li>one header row followed directly by data rows, one row per timestamp,</li>
-  <li>the <em>first column</em> as a Date-Time stamp converted to UTC standard time and formatted as: <code>YYYY-MM-DD HH:MM:SS</code>, and</li>
-  <li>additional columns for each data variable.</li>
-  </ul>
+      <ul>
+        <li>
+          <code>REGIONID</code> is a two-letter abbreviation for your state,
+          country, etc.
+        </li>
+        <ul>
+          <li>
+            e.g. AZ for Arizona, PR for Puerto Rico,
+            SE for Sweden
+          </li>
+        </ul>
+        <li>
+          <code>YYYY-MM-DD</code> is a date that distinguishes this file
+          from others.
+        </li>
+        <ul>
+          <li>
+            This may be the date of the first or last observation in the file,
+            the date the data were processed, or even an arbitrary date.
+          </li>
+        </ul>
+      </ul>
+      <p><b>Example filename:</b> <code>NC_2017-12-06.csv</code></p>
+      <br>
 
-  <h3>Variables</h3>
-  <p>Potential variables include:</p>
-  <ul>
-  <li>Date-Time (UTC)</li>
-  <li>DO (mg/L)</li>
-  <li>Saturation DO (mg/L)</li>
-  <li>Water Temperature (°C)</li>
-  <li>Water Pressure (kPa)</li>
-  <li>Air Temperature (°C)</li>
-  <li>Air Pressure (kPa)</li>
-  <li>Depth (m)</li>
-  <li>Discharge (m3/s)</li>
-  <li>Velocity (m/s)</li>
-  <li>Light, PAR (μmol/m2/s)</li>
-  <li>Light, lux</li>
-  <li>Specific Conductivity (mS/cm or μS/cm)</li>
-  <li>pH</li>
-  <li>fDOM (frac)</li>
-  <li>fDOM (mV from sensor)</li>
-  <li>Turbidity (NTU)</li>
-  <li>Turbidity (mV from sensor)</li>
-  <li>Nitrate (mg/L)</li>
-  <li>CO2 (ppm)</li>
-  </ul>
+      <h3>Data formatting</h3>
+      <p>Data must be in standard CSV format, i.e.</p>
+      <ol>
+        <li>Records separated by newlines</li>
+        <li>Fields separated by commas (not semicolons)</li>
+        <li>Decimals demarcated by periods (not commas)</li>
+        <li>Double quotes around fields with embedded commas, quotes, etc.</li>
+      </ol>
+      <p>The file must contain:</p>
+      <ol>
+        <li>One header row followed directly by data rows</li>
+        <li>
+          <ins>Column 1:</ins>
+          <ul>
+            <li>Must be named "DateTime_UTC"</li>
+            <li>
+              Must contain timestamps converted to
+              <strong>UTC standard time</strong>
+            </li>
+            <li>
+              Must be formatted as: <code>YYYY-MM-DD HH:MM:SS</code>.
+              <br>
+              See datetime formatting help below.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <ins>Column 2:</ins>
+          <ul>
+            <li>Must be named "Sitecode"</li>
+            <li>
+              Must contain unique abbreviations for the sites corresponding
+              to your observations. These should match the abbreviations used
+              to identify sensor sites (See the Sitelist tab.).
+            </li>
+          </ul>
+        </li>
+        <li>One row per timestamp</li>
+        <li>Additional columns for each data variable</li>
+      </ol>
+      <br>
 
-  <h3>Date formatting help for calibrated files</h3>
-  <p>Date-time stamps can be challenging to format.</p>
-  <p>In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an example converting a date-time string to the correct format:</p>
-<pre>datetimeorig &lt;- &quot;8/31/16 13:24:16&quot; # can also be a vector
-# In POSIX, 1. designate the format to match the original date time
-#  and 2. specify the timezone... a full list can be viewed by running OlsonNames()
-dtval &lt;- as.POSIXct(datetimeorig, format=&quot;%m/%d/%y %H:%M:%S&quot;, tz=&quot;EST&quot;)
-# Then, just switch the display to UTC
-attr(dtval,&quot;tzone&quot;) &lt;- &quot;UTC&quot;
-# The output will be 2016-08-31T18:24:16Z
+      <h3>Datetime formatting help</h3>
+      <p>Date-time stamps can be challenging to format.</p>
+      <p>
+        In <code>R</code> you can create a <code>POSIXct</code> object.
+        Below is an example of converting a date-time string to the correct format:
+      </p>
+<pre>
+  datetimeorig &lt;- &quot;8/31/16 13:24:16&quot; # can also be a vector
+
+  # In POSIX, 1. designate the format to match the original date time
+  #  and 2. specify the timezone... a full list can be viewed by running OlsonNames()
+  dtval &lt;- as.POSIXct(datetimeorig, format=&quot;%m/%d/%y %H:%M:%S&quot;, tz=&quot;EST&quot;)
+
+  # Then, just switch the display to UTC
+  attr(dtval,&quot;tzone&quot;) &lt;- &quot;UTC&quot;
+
+  # The output will be 2016-08-31T18:24:16Z
 </pre>
-  <p>The as.POSIXct function can convert any date-time format and any time zone. For details on all of the format structure codes, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/strptime.html">see the R documentation</a>.</p>
-  <p>In <code>matlab</code> you can create a date time string with the numeric values for your timestamp, accounting for the UTC offset:</p>
-<pre>time.UTC = -5; % UTC offset for EST
-timeVec = [time.year time.month time.day time.hour-time.UTC time.min time.sec];
-timeStr = datestr(timeVec,&#39;yyyy-mm-dd HH:MM:SS&#39;); % what you will save
+      <p>
+        The as.POSIXct function can convert any date-time format and any time zone.
+        For details on all of the format structure codes,
+        <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/strptime.html">
+          see the R documentation</a>.
+      </p>
+      <p>
+        In <code>matlab</code> you can create a date time string with the numeric values for your timestamp, accounting for the UTC offset:
+      </p>
+<pre>
+  time.UTC = -5; % UTC offset for EST
+  timeVec = [time.year time.month time.day time.hour-time.UTC time.min time.sec];
+  timeStr = datestr(timeVec,&#39;yyyy-mm-dd HH:MM:SS&#39;); % what you will save
 </pre>
-  <p>In <code>Excel</code> you can modify the timestamp with a formula based on the timezone offset:</p>
-  <pre>=TimeCell+(tzOffsetHours/24)</pre>
-  <p>Then modify the cell format of the new column with a &ldquo;custom&rdquo; type to match <code>YYYY-MM-DD HH:MM:SS</code> (<a href="https://support.office.com/en-us/article/Format-a-date-the-way-you-want-8e10019e-d5d8-47a1-ba95-db95123d273e">see documentation</a>).</p>
-  <p>Be sure to put the modified date-time stamp as the first column in your exported <code>.csv</code>.</p>
+      <p>
+        In <code>Excel</code> you can modify the timestamp with a formula based
+        on the timezone offset:
+      </p>
+      <pre>=TimeCell+(tzOffsetHours/24)</pre>
+      <p>
+        Then modify the cell format of the new column with a &ldquo;custom&rdquo;
+        type to match <code>YYYY-MM-DD HH:MM:SS</code>
+        (<a href="https://support.office.com/en-us/article/Format-a-date-the-way-you-want-8e10019e-d5d8-47a1-ba95-db95123d273e">
+          see documentation</a>).
+      </p>
+      <p>
+        Be sure to put the modified date-time stamp as the first column in your
+        exported <code>.csv</code> file.
+      </p>
+      <br>
 
-  <h3>Saving files</h3>
-  <p>Exporting a <code>.csv</code> from R is easy with the <code>readr</code> package, which saves files without row names and preserves the ISO date-time format:</p>
-<pre>library(readr)
-write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
+      <h3>Saving files</h3>
+      <p>Exporting a <code>.csv</code> file from R is easy with the <code>readr</code> package, which saves files without row names and preserves the ISO date-time format:</p>
+<pre>
+  library(readr)
+  write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
 </pre>
-</div>
-
-<hr>
--->
-
+    </div>
   </div>
 </div>
+<br>
 
 <script>
-function alertbox(alrt,msg){
+function alertbox(alrt, msg){
   return '<div class="alert alert-dismissible alert-'+alrt+'">\
     <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
     '+msg+'</div>'

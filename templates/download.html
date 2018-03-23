@@ -1,10 +1,13 @@
 {% extends "layout.html" %}
 {% block body %}
 
-<div class="row"><div class="col-md-6 col-md-offset-3">
-  <h1>Download Data</h1>
-  <p class="lead">Acquire CSVs of sensor and grab data for your own analysis.<p>
-  <p>Note that the StreamPULSE R package has a built-in download tool.<p>
+<div class="row"><div class="col-md-8 col-md-offset-2">
+  <h1 class='text-center'>Download StreamPULSE Data</h1>
+  <br>
+  <p class="lead">Choose sites and a date range to begin.<p>
+  <p class='text-muted'>
+    Note: sensor data can also be acquired via the StreamPULSE package for R.
+  </p>
 
   <form id="dnld" action="/_getcsv" method="POST" class="form-horizontal">
       <select placeholder="Choose site(s)" id="dsite" name="site" multiple>
@@ -17,27 +20,13 @@
     <input type="hidden" name="variables" value="">
     <input type="hidden" name="startDate" value="">
     <input type="hidden" name="endDate" value="">
-    <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range"><br>
+    <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range">
+    <hr>
+    <br>
+
     <p class="lead">Sensor variables to include:</p>
     <div id="dnld_vars"></div><br>
-    <div class="form-inline">
-      Include sensor data flags:
-      <input type="checkbox" id="flag" name="flag">
-      &nbsp;
-      <small class="form-text text-muted">
-        Unavailable if reformatting data.
-      </small>
-      <br>
-      Include time series of local discharge and depth from USGS if possible:
-      <input type="checkbox" name="usgs">
-      <br>
-      <small class="form-text text-muted">
-        Note: Querying the USGS server can take a while for long time series.
-      </small>
-      <br>
-      Include manually collected data in a separate CSV file:
-      <input type="checkbox" name="grab">
-    </div>
+    <hr>
     <br>
 
     <p class="lead">Sensor data formatting:</p>
@@ -48,13 +37,43 @@
         <option value="H">1 hour</option>
         <option value="D">1 day</option>
       </select>
-      <br>
+      <br><br>
       Data format:
       <select id="dataform" name="dataform" class="form-control">
         <option value="long" selected>Long</option>
         <option value="wide">Wide</option>
       </select> &nbsp; <a href="https://en.wikipedia.org/wiki/Wide_and_narrow_data" target="_new"><i class="fa fa-question-circle-o"></i></a>
-    </div><br>
+    </div>
+    <hr>
+    <br>
+
+    <p class="lead">Additional options:</p>
+    <div class="form-inline">
+      <input type="checkbox" id="flag" name="flag">
+      <!-- &nbsp; -->
+      Include flags (Questionable, Interesting, etc.) and user comments
+      for sensor data.
+      <br>
+      <small class="form-text text-muted">
+        Only available with 15-min temporal aggregation and long data format.
+      </small>
+      <br><br>
+      <input type="checkbox" name="usgs">
+      Include time series of local discharge and depth from USGS (if possible).
+      <br>
+      <small class="form-text text-muted">
+        Note: querying the USGS server can take a while for long time series.
+      </small>
+      <br><br>
+      <input type="checkbox" name="grab">
+      Include manually collected data if available.
+      <br>
+      <small class="form-text text-muted">
+        These will be contained in their own separate CSV file for each site.
+      </small>
+    </div>
+    <hr>
+    <br>
 
     <div class="form-inline">
       <label>
