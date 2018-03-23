@@ -1,0 +1,236 @@
+{% extends "layout.html" %}
+
+{% block chatbot %}
+<!-- Start of Async Drift Code -->
+<script>
+!function() {
+  var t;
+  if (t = window.driftt = window.drift = window.driftt || [], !t.init) return t.invoked ? void (window.console && console.error && console.error("Drift snippet included twice.")) : (t.invoked = !0,
+  t.methods = [ "identify", "config", "track", "reset", "debug", "show", "ping", "page", "hide", "off", "on" ],
+  t.factory = function(e) {
+    return function() {
+      var n;
+      return n = Array.prototype.slice.call(arguments), n.unshift(e), t.push(n), t;
+    };
+  }, t.methods.forEach(function(e) {
+    t[e] = t.factory(e);
+  }), t.load = function(t) {
+    var e, n, o, i;
+    e = 3e5, i = Math.ceil(new Date() / e) * e, o = document.createElement("script"),
+    o.type = "text/javascript", o.async = !0, o.crossorigin = "anonymous", o.src = "https://js.driftt.com/include/" + i + "/" + t + ".js",
+    n = document.getElementsByTagName("script")[0], n.parentNode.insertBefore(o, n);
+  });
+}();
+drift.SNIPPET_VERSION = '0.3.1';
+drift.load('s2rst4h926mg');
+</script>
+<!-- End of Async Drift Code -->
+{% endblock %}
+
+{% block body %}
+
+<form id="choosecolumns" class="form-horizontal" method="POST"
+  action="/grab_upload_confirm">
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+
+      <br>
+      <p>Uploading file: <strong>{{filename}}</strong><br>
+      <br>
+      <hr>
+
+      {% if replacing %}
+        <input type="hidden" name="replacing" value="true">
+      {% else %}
+        <input type="hidden" name="replacing" value="false">
+      {% endif %}
+
+      {% set newlen = newsites|length %}
+      <input type="hidden" name="newlen" value="{{newlen}}">
+      {% if newlen == 0 %}
+        <input type="hidden" name="new_sites" value="false">
+      {% else %}
+        <input type="hidden" name="new_sites" value="true">
+        {% for i in range(newlen) %}
+          <input type="hidden" name="newsite{{i}}" value="{{newsites[i]}}">
+          <p class="lead text-success">
+            Please supply the following metadata for new site
+            <strong>{{ newsites[i] }}</strong>:
+          </p>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Full site name</span>
+            <input type="text" class="form-control" name="sitename{{i}}"
+              aria-describedby="Site name" maxlength="50" required>
+          </div>
+          <br>
+          <em>Coordinates in decimal degrees:</em>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Latitude</span>
+            <input type="text" class="form-control" name="lat{{i}}"
+              placeholder="e.g. 36.00" aria-describedby="Latitude" required>
+            <span class="input-group-addon">Longitude</span>
+            <input type="text" class="form-control" name="lng{{i}}"
+              placeholder="e.g. -78.97" aria-describedby="Longitude" required>
+          </div>
+          <br>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Associated USGS gauge ID</span>
+            <input type="text" class="form-control" name="usgs{{i}}"
+              placeholder="e.g. 02085000 (if none, leave blank)"
+              aria-describedby="USGS site #" maxlength="20">
+          </div>
+          <br>
+          <div>
+            <p>
+              <strong>Describe site:</strong> characteristics, instruments,
+              dates, personnel, etc.
+            </p>
+            <textarea class="form-control" rows="5" name="metadata{{i}}"
+              required></textarea>
+          </div>
+          <br>
+          <em>Site contact person:</em>
+          <div class="input-group input-group-sm">
+            <span class="input-group-addon">Full name</span>
+            <input type="text" class="form-control" name="contactName{{i}}"
+              aria-describedby="Contact name" maxlength="50" required>
+              <span class="input-group-addon">email address</span>
+              <input type="text" class="form-control" name="contactEmail{{i}}"
+                aria-describedby="Contact email" maxlength="255" required>
+          </div>
+          <br><br>
+          <hr>
+        {% endfor %}
+      {% endif %}
+
+      <em>Data sharing policy:</em>
+      <div class="checkbox">
+        <label>
+          <input type="checkbox" name="policy" required>
+            I agree to the <a href="policy">StreamPULSE data policy</a> and confirm
+            that this data set will be shared under that policy.
+        </label>
+      </div>
+      <br>
+      <hr>
+
+        <!-- <div class="radio"><label>
+          <input type="radio" name="policy" id="streampulse" value="streampulse" checked> <u>StreamPULSE open data license</u>:
+            Others will be allowed to publicly share (copy, distribute, and use), create (produce works), and adapt (modify, transform, and build upon) this data with attribution given to the StreamPULSE project.
+        </label></div>
+        <div class="radio"><label>
+          <input type="radio" name="policy" id="embargo" value="embargo"> <u>Embargoed data license</u>:
+            This data will remain private (not publicly shared online or with other StreamPULSE members) for one year from the upload date (today). After one year, the embargo will lift and the StreamPULSE open data license will take effect.
+        </label></div> -->
+
+      <p class="lead">Variable name matching</p>
+      <p>
+        Match your variable names below with their official names in the database
+        (selected from the dropdown menus). To exclude a variable, leave its
+        dropdown blank. The dropdowns will automatically populate with your previous
+        selections.
+      </p>
+      <p>
+        <strong>Please double check all fields below</strong>, even if they were
+        populated automatically!
+      </p>
+      <br>
+      <p class="text-center">
+        Don't see your variable names?
+        <a href="mailto:vlahm13@gmail.com">Send us an email!</a>
+      </p>
+    </div>
+  </div>
+  <br>
+
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3">
+      <!-- <input type="hidden" name="tmpfile" value="{{tmpfile}}"> -->
+      <input type="hidden" name="cdict" value="">
+
+      <div class="col-md-5 col-md-offset-1 text-left">
+        <p><strong>Upload variable name</strong></p>
+      </div>
+      <div class="col-md-5 text-right">
+        <p><strong>Database variable name</strong></p>
+      </div>
+      <!-- <div class="col-md-2 text-left">
+        <p><strong>Unit</strong></p>
+      </div> -->
+      <div class="col-md-10 col-md-offset-1">
+        {% for c in columns %}
+          <div class="input-group">
+            <span class="input-group-addon">{{c}}</span>
+            <select class="form-control" name="{{c}}">
+              {% if c in cdict.keys() %}
+                <option value=""></option>
+                {% for v in variables %}
+                  {% if v == cdict[c] %}
+                    <option value="{{v}}" selected>{{v}}</option>
+                  {% else %}
+                    <option value="{{v}}">{{v}}</option>
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                <option selected value=""></option>
+                {% for v in variables %}
+                  <option value="{{v}}">{{v}}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </div>
+          <br>
+        {% endfor %}
+      </div>
+      <br>
+      <div class="col-md-4 col-md-offset-2">
+        <button name="columnin" type="submit" class="btn btn-primary btn-block">
+          Submit
+        </button>
+      </div>
+      <div class="col-md-4">
+        <input type='button' class="btn btn-danger btn-block"
+        value='Cancel' onclick="location.href = 'grab_upload';">
+      </div>
+    </div>
+  </div>
+</form>
+<br>
+<!-- <br>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <div class="col-md-4 col-md-offset-4">
+      <input type='button' class="btn btn-danger btn-block"
+      value='Cancel' onclick="location.href = 'grab_upload';">
+    </div>
+  </div>
+</div>
+<br> -->
+
+<script>
+
+function alertbox(alrt, msg){
+  return '<div class="alert alert-dismissible alert-' + alrt + '">\
+    <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
+    ' + msg + '</div>'
+}
+
+$(function(){
+  $('button[name=columnin]').click(function() {
+    cvals = [];
+    $("#choosecolumns").find("select").each(function(){
+      if($(this).val()!=""){
+        cvals.push( $(this).serializeArray()[0] )
+      }
+    });
+    //cdict = JSON.stringify($("#choosecolumns").find("select").serializeArray());
+    cdict = JSON.stringify(cvals);
+    console.log('OI')
+    console.log(cdict)
+    $('#choosecolumns input[name=cdict]').val( cdict );
+  });
+})
+
+</script>
+
+{% endblock %}

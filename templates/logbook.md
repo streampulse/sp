@@ -278,7 +278,7 @@ thu20180301
  + prepared git lecture for Phil, hopefully others
 
 ### fri20180309
- + configured automatic archiving of server logs
+ + configured automatic archiving of server logs (broke website, must revisit)
  + loading icon now appears whenever an ajax request is made
  + can now jump to any 4 week period in cleaning tool
  + cleaned up qaqc code
@@ -286,3 +286,40 @@ thu20180301
 
 ### sun20180311
  + selected date range in dropdown now updates as range changes
+
+### mon20180312
+ + met with Carolina about plotting series and spot sample data simultaneously
+ + met with Carl from USGS to talk about database structuring in preparation for data level implementation
+### tue20180313
+ + made new landing page for upload tools. "upload" is now "series upload." rewired everything accordingly
+### wed20180314
+ + ran Maria's SE sites. working out several issues with file formatting, variable units, datetime conversion
+ + met with NH/PR team about data levels, revision tracking
+### thu20180315
+ + modeled PR_prieta data for three years
+ + met with Corinna Gries to discuss database structuring for data level project
+ + started conversation with Bob, Alison, PR team about negative GPP, positive PR
+### fri20180316
+ + met with AZ team about data levels, revision tracking
+ + meeting and git tutorial for Phil
+ + made form for data leads to fill out, to account for existing variable levels
+### sat20180317
+ + we now have separate pages for series upload and grab sample upload. restructured the latter
+### sun20180318
+ + restructured variable name matching page for grab uploads
+   + can now add multiple new sites at once
+   + not saving intermediate temp files, so no possibility of derelict csvs accumulating
+   + clarified language
+### mon20180319
+ + met with Emily Stanley about data levels, revision tracking
+ + working through database updating and backend after variable matching
+### tue20180320
+ + met with Miguel Leon to discuss possibility of adopting ODM2 (Corinna Gries' suggestion)
+ + many small improvements to variable matching and the following machinery
+ + fixed SOP link on streampulse.org/products
+### wed20180321
+ + finished grab upload
+ + clarified cleaning tool terminology
+###thu20180322
+ + rewrote instructions for grab upload
+ + finished grab download
