@@ -323,3 +323,15 @@ thu20180301
 ###thu20180322
  + rewrote instructions for grab upload
  + finished grab download
+###mon20180326
+ + assembled list of grab variables, units, methods, associated series variables; sent to group for supplementation
+###tue20180327
+ + Powell Center Synthesis data and metadata review
+###wed20180328
+ + fixed issue with Manta data file parser
+ + reforged bond with CUAHSI HIS
+ + Powell review
+###thur20180329
+ + fixed issue with R package data download
+ + sent variable level accounting templates to WI group
+ + Powell review
