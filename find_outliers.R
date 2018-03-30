@@ -57,10 +57,10 @@ function(df){
 
         #if there are no such jumps to speak of, grab global outliers
         #(or nothing) and move on
-        if(length(pos_jumps) == 0 | length(neg_jumps) == 0){ 
+        if(length(pos_jumps) == 0 | length(neg_jumps) == 0){
             if(length(big_outliers)){
                 outlier_list[[col]] = big_outliers
-            } else { 
+            } else {
                 outlier_list[[col]] = 'NONE'
             }
             names(outlier_list)[col] = colnames(df)[col]
