@@ -19,7 +19,7 @@ As long as you:
 
 - Attribute: You must attribute any public use of the database, or works produced from the database, in the manner specified in the license. For any use or redistribution of the database, or works produced from it, you must make clear to others the license of the database and keep intact any notices on the original database.
 
-Citation: The StreamPULSE policy is that all data will be properly cited, with reference to StreamPULSE as well as the data set contributor. [Citation example here, coming soon. In the meantime, you can email aaron.berdanier@gmail.com]
+Citation: The StreamPULSE policy is that all data will be properly cited, with reference to StreamPULSE as well as the data set contributor. [Citation example here, coming soon. In the meantime, you can email vlahm13@gmail.com]
 
 Acknowledgement: If the data contributed significantly to the content of a publication, the user should also acknowledge the StreamPULSE network, the NSF Macrosystems program, and any additional institutional support or funding awards referenced in the metadata. For example:
 
@@ -29,4 +29,4 @@ Notification: The data user should notify the data contributor when any derivati
 
 
 ## For contributors:
-Contributed data will be made available under the above license. Individual contributing sites may request that sensor and manual field observations be embargoed for a period of time by contacting a project representative (e.g., aaron.berdanier@gmail.com) before uploading data. If this request is not received and confirmed, then all uploaded sensor and manual field observations will be made immediately publicly available. All metabolism model estimates will be publicly available under the above license.
+Contributed data will be made available under the above license. Individual contributing sites may request that sensor and manual field observations be embargoed for a period of time by contacting a project representative (e.g., vlahm13@gmail.com) before uploading data. If this request is not received and confirmed, then all uploaded sensor and manual field observations will be made immediately publicly available. All metabolism model estimates will be publicly available under the above license.

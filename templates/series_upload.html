@@ -41,46 +41,20 @@ drift.load('s2rst4h926mg');
 <div class="row">
 <div class="col-md-6 col-md-offset-3">
 <h1>Upload Sensor Data</h1>
-<p class="lead">Only select files <b>from a single site</b> with each upload. See instructions below for more information.<p>
+<p class="lead">
+  Only select files <b>from a single site</b> with each upload. See instructions
+  below for more information.
+  <p>
 <hr>
 
-<form action="" method=post enctype=multipart/form-data>
-  <div class="form-group">
-    <input type="file" class="form-control-file" name=file multiple>
-    <!-- <input type="file" class="form-control-file" name=file aria-describedby="fileHelp" multiple> -->
-    <!-- <small id="fileHelp" class="form-text text-muted">Select files to upload.</small> -->
-  </div>
-  Uploading replacement files? If so, check this box: <input type="checkbox" name="replace"><br>
-  <!-- <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small> -->
-  <br><br>
-  <button id="upx" type="submit" value=Upload class="btn btn-primary btn-block">Upload</button>
-</form>
 
-<br>
-<h2>File upload help</h2>
-<ul class="nav nav-tabs">
-  <li><a class="dropdown-toggle" data-toggle="tab" href="#fileformatting">File formatting</a></li>
-  <li class="active"><a class="dropdown-toggle" data-toggle="tab" href="#fileupload">File upload</a></li>
-</ul>
-<div class="tab-content">
-  <div id="fileformatting" class="tab-pane fade">
-    <div class="embed-responsive embed-responsive-16by9">
-      <!-- Formatting help -->
-      <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/howgqEyGIrA" frameborder="0" allowfullscreen></iframe>
-    </div>
-  </div>
-  <div id="fileupload" class="tab-pane fade in active">
-    <div class="embed-responsive embed-responsive-16by9">
-      <!-- File upload help -->
-      <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/LYJbGOx_4s0" frameborder="0" allowfullscreen></iframe>
-    </div>
-  </div>
-</div>
-<br>
-<mark>Expand instructions:</mark> <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">Core sites</button> <button data-toggle="collapse" class="btn btn-default" data-target="#levinst">Leveraged sites</button>
-<p class="text-muted">Core sites are those funded by the grant. Leveraged sites are those with a different sensor-datalogger array.</p>
+<mark>General instructions:</mark> <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">Core sites</button> <button data-toggle="collapse" class="btn btn-default" data-target="#levinst">Leveraged sites</button>
+<p class="text-muted">
+  Core sites are those funded by the StreamPULSE grant.
+  All other sites are known as leveraged sites.
+</p>
 
-<div id="coreinst" class="collapse">
+<div id="coreinst" class="collapse" style='background-color: #F8F8FF'>
   <p class="lead"><b>StreamPULSE core sites</b> can upload raw datalogger files and/or pre-formatted data.</p>
 
   <h3>File naming</h3>
@@ -144,13 +118,20 @@ drift.load('s2rst4h926mg');
 
   <h3>Date formatting help for calibrated files</h3>
   <p>Date-time stamps can be challenging to format.</p>
-  <p>In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an example converting a date-time string to the correct format:</p>
+  <p>
+    In <code>R</code> you can create a &#39;POSIXct&#39; object.
+    Below is an example of how to convert a date-time string to the
+    correct format:
+  </p>
 <pre>datetimeorig &lt;- &quot;8/31/16 13:24:16&quot; # can also be a vector
+
 # In POSIX, 1. designate the format to match the original date time
 #  and 2. specify the timezone... a full list can be viewed by running OlsonNames()
 dtval &lt;- as.POSIXct(datetimeorig, format=&quot;%m/%d/%y %H:%M:%S&quot;, tz=&quot;EST&quot;)
+
 # Then, just switch the display to UTC
 attr(dtval,&quot;tzone&quot;) &lt;- &quot;UTC&quot;
+
 # The output will be 2016-08-31T18:24:16Z
 </pre>
   <p>The as.POSIXct function can convert any date-time format and any time zone. For details on all of the format structure codes, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/strptime.html">see the R documentation</a>.</p>
@@ -169,8 +150,15 @@ timeStr = datestr(timeVec,&#39;yyyy-mm-dd HH:MM:SS&#39;); % what you will save
 <pre>library(readr)
 write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
 </pre>
+<br>
+<button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
+  Hide instructions
+</button>
+<hr>
 </div>
-<div id="levinst" class="collapse">
+
+
+<div id="levinst" class="collapse" style='background-color: #F8F8FF'>
   <p class="lead"><b>Leveraged sites</b> need to format the data prior to upload as a <code>.csv</code> file with:</p>
   <ul>
   <li>the specified file name (see below),</li>
@@ -220,13 +208,19 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
 
   <h3>Date formatting help</h3>
   <p>Date-time stamps can be challenging to format.</p>
-  <p>In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an example converting a date-time string to the correct format:</p>
+  <p>
+    In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an
+    example of how to convert a date-time string to the correct format:
+  </p>
 <pre>datetimeorig &lt;- &quot;8/31/16 13:24:16&quot; # can also be a vector
+
 # In POSIX, we 1. designate the format to match the original date time
 #     and 2. specify the timezone... a full list can be viewed by running OlsonNames()
 dtval &lt;- as.POSIXct(datetimeorig, format=&quot;%m/%d/%y %H:%M:%S&quot;, tz=&quot;EST&quot;)
+
 # Then, just switch the display to UTC
 attr(dtval,&quot;tzone&quot;) &lt;- &quot;UTC&quot;
+
 # The output will be 2016-08-31T18:24:16Z
 </pre>
   <p>The as.POSIXct function can convert any date-time format and any time zone. For details on all of the format structure codes, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/strptime.html">see the R documentation</a>.</p>
@@ -245,7 +239,93 @@ timeStr = datestr(timeVec,&#39;yyyy-mm-dd HH:MM:SS&#39;); % what you will save
 <pre>library(readr)
 write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
 </pre>
+<br>
+<button data-toggle="collapse" class="btn btn-default" data-target="#levinst">
+  Hide instructions
+</button>
+<hr>
 </div>
+<br>
+
+<mark>Please read the</mark>
+<button data-toggle="collapse" class="btn btn-default" data-target="#revision">
+  data revision instructions
+</button>
+<mark>before checking the box below.</mark>
+<br>
+<div id='revision' class='collapse' style='background-color: #F8F8FF'>
+  <br>
+  <p>
+    To revise previously uploaded data, you must upload a revised file with the
+    same name as the original. All data previously associated with that file
+    will be replaced.
+  </p>
+  <p><u>Here's how:</u></p>
+  <ol>
+    <li>Make a local copy of the CSV or DAT file that's being revised.</li>
+    <li>
+      Modify the name of the copy that will <strong>not</strong> receive data
+      edits. You may want to call it something like
+      <code>AA_BB_2017-01-01_XX_unrevised.csv</code>.
+    </li>
+    <li>
+      Change erroneous data in the other copy. Make sure its name is
+      identical to the originally uploaded file.
+    </li>
+    <li>Upload this revised copy. Make sure to check the box below.</li>
+  </ol>
+  <p>
+    <strong>NOTICE:</strong> Uploading multiple files that contain the same
+    variable at the same place and time currently has unintended consequences.
+  </p>
+  <p><strong>If you have any questions</strong>, please use the chatbox
+    in the bottom right, or
+    <a href="mailto:vlahm13@gmail.com">send us an email.</a>
+  </p>
+  <hr>
+</div>
+
+
+<br>
+<form action="" method=post enctype=multipart/form-data>
+  <div class="form-group">
+    Select file(s) here:
+    <input type="file" class="form-control-file" name=file multiple>
+    <!-- <input type="file" class="form-control-file" name=file aria-describedby="fileHelp" multiple> -->
+    <!-- <small id="fileHelp" class="form-text text-muted">Select files to upload.</small> -->
+  </div>
+  <br>
+  <input type="checkbox" name="replace">
+  Check this box if revising (i.e. replacing) an existing file.
+  <br>
+  <!-- <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small> -->
+  <br><br>
+  <button id="upx" type="submit" value=Upload class="btn btn-primary btn-block">Upload</button>
+</form>
+
+<hr>
+<br>
+<h2>Additional formatting and upload help</h2>
+<ul class="nav nav-tabs">
+  <li><a class="dropdown-toggle" data-toggle="tab" href="#fileformatting">File formatting</a></li>
+  <li class="active"><a class="dropdown-toggle" data-toggle="tab" href="#fileupload">File upload</a></li>
+</ul>
+<div class="tab-content">
+  <div id="fileformatting" class="tab-pane fade">
+    <div class="embed-responsive embed-responsive-16by9">
+      <!-- Formatting help -->
+      <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/howgqEyGIrA" frameborder="0" allowfullscreen></iframe>
+    </div>
+  </div>
+  <div id="fileupload" class="tab-pane fade in active">
+    <div class="embed-responsive embed-responsive-16by9">
+      <!-- File upload help -->
+      <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/LYJbGOx_4s0" frameborder="0" allowfullscreen></iframe>
+    </div>
+  </div>
+</div>
+<br>
+
 
 <hr>
 </div></div>

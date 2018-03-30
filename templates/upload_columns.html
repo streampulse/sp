@@ -33,7 +33,7 @@ drift.load('s2rst4h926mg');
 
   <div class="row"><div class="col-md-8 col-md-offset-2">
 
-  <p><i>Uploading {{filenames|length}} files:</i><br>
+  <p><i>Uploading {{filenames|length}} file(s):</i><br>
   {% for f in filenames %} {{f}} {% endfor %}</p>
 
   {% if replacing %}
@@ -94,12 +94,40 @@ drift.load('s2rst4h926mg');
     <br><hr>
   {% endif %}
 
-  <p class="lead">Variable matching</p>
-  <p>Match <u>your columns (on the left)</u> with the <u>database variables (in the dropdown)</u>. To exclude a column, leave the dropdown blank. The dropdowns will automatically populate with your last selection.</p>
-  <p><b>Please double check your column specifications!</b> If you duplicate variables in the dropdowns our database will consider those columns as the same variable (and average them by date).</p>
+  <p class="lead">Variable name matching</p>
+  <p>
+    Match your variable names below with their official names in the database
+    (selected from the dropdown menus). To exclude a variable, leave its
+    dropdown blank. The dropdowns will automatically populate with your previous
+    selections.
+  </p>
+  <p>
+    If you're revising an existing data file (or files),
+    remember that the previous version(s) will be replaced with whatever you
+    upload now, assuming the file name hasn't changed. So, to "delete" a
+    variable previously uploaded in error, you can simply leave its dropdown
+    blank when replacing the old file.
+  </p>
+  <p>
+    Note that all files remain stored
+    on our server, even if you replace their contents in the database.
+  </p>
+  <p>
+    Click <mark>Cancel</mark> below to go back to the previous page.
+  </p>
+  <p>
+    <strong>Please double check all fields below</strong>, even if they were
+    populated automatically!
+  </p>
+  <br>
+
+
   </div></div>
   <div class="row"><div class="col-md-6 col-md-offset-3">
-    <p class="text-right">Don't see your variables? <a href="mailto:aaron.berdanier@gmail.com">Send us an email!</a></p>
+    <p class="text-center">
+      Don't see your variable names?
+      <a href="mailto:vlahm13@gmail.com">Send us an email!</a>
+    </p>
     <input type="hidden" name="tmpfile" value="{{tmpfile}}">
     <input type="hidden" name="cdict" value="">
     {% for c in columns %}
@@ -124,18 +152,26 @@ drift.load('s2rst4h926mg');
       </select>
     </div><br>
     {% endfor %}
-    <button name="columnin" type="submit" class="btn btn-primary btn-block">Submit</button>
   </div></div>
+  <div class="row">
+    <div class="col-md-4 col-md-offset-4">
+      <button name="columnin" type="submit" class="btn btn-primary btn-block">
+        Submit
+      </button>
+    </div>
+  </div>
 </form>
 <br>
-<div class="row"><div class="col-md-6 col-md-offset-3">
-  <form id="cancelcols" class="form-horizontal" method="POST" action="/upload_cancel">
-    <input type="hidden" name="ofiles" value="{{ filenames|join(',') }}">
-    <input type="hidden" name="tmpfile" value="{{tmpfile}}">
-    <button name="cancel" class="btn btn-link btn-block">Cancel</button>
-  </form>
-</div></div>
-
+<div class="row">
+  <div class="col-md-4 col-md-offset-4">
+    <form id="cancelcols" class="form-horizontal" method="POST" action="/upload_cancel">
+      <input type="hidden" name="ofiles" value="{{ filenames|join(',') }}">
+      <input type="hidden" name="tmpfile" value="{{tmpfile}}">
+      <button name="cancel" class="btn btn-danger btn-block">Cancel</button>
+    </form>
+  </div>
+</div>
+<br><br>
 
 
 
