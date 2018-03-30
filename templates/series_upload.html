@@ -54,7 +54,7 @@ drift.load('s2rst4h926mg');
   All other sites are known as leveraged sites.
 </p>
 
-<div id="coreinst" class="collapse">
+<div id="coreinst" class="collapse" style='background-color: #F8F8FF'>
   <p class="lead"><b>StreamPULSE core sites</b> can upload raw datalogger files and/or pre-formatted data.</p>
 
   <h3>File naming</h3>
@@ -118,13 +118,20 @@ drift.load('s2rst4h926mg');
 
   <h3>Date formatting help for calibrated files</h3>
   <p>Date-time stamps can be challenging to format.</p>
-  <p>In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an example converting a date-time string to the correct format:</p>
+  <p>
+    In <code>R</code> you can create a &#39;POSIXct&#39; object.
+    Below is an example of how to convert a date-time string to the
+    correct format:
+  </p>
 <pre>datetimeorig &lt;- &quot;8/31/16 13:24:16&quot; # can also be a vector
+
 # In POSIX, 1. designate the format to match the original date time
 #  and 2. specify the timezone... a full list can be viewed by running OlsonNames()
 dtval &lt;- as.POSIXct(datetimeorig, format=&quot;%m/%d/%y %H:%M:%S&quot;, tz=&quot;EST&quot;)
+
 # Then, just switch the display to UTC
 attr(dtval,&quot;tzone&quot;) &lt;- &quot;UTC&quot;
+
 # The output will be 2016-08-31T18:24:16Z
 </pre>
   <p>The as.POSIXct function can convert any date-time format and any time zone. For details on all of the format structure codes, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/strptime.html">see the R documentation</a>.</p>
@@ -145,13 +152,13 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
 </pre>
 <br>
 <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
-  Collapse instructions
+  Hide instructions
 </button>
 <hr>
 </div>
 
 
-<div id="levinst" class="collapse">
+<div id="levinst" class="collapse" style='background-color: #F8F8FF'>
   <p class="lead"><b>Leveraged sites</b> need to format the data prior to upload as a <code>.csv</code> file with:</p>
   <ul>
   <li>the specified file name (see below),</li>
@@ -201,13 +208,19 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
 
   <h3>Date formatting help</h3>
   <p>Date-time stamps can be challenging to format.</p>
-  <p>In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an example converting a date-time string to the correct format:</p>
+  <p>
+    In <code>R</code> you can create a &#39;POSIXct&#39; object. Below is an
+    example of how to convert a date-time string to the correct format:
+  </p>
 <pre>datetimeorig &lt;- &quot;8/31/16 13:24:16&quot; # can also be a vector
+
 # In POSIX, we 1. designate the format to match the original date time
 #     and 2. specify the timezone... a full list can be viewed by running OlsonNames()
 dtval &lt;- as.POSIXct(datetimeorig, format=&quot;%m/%d/%y %H:%M:%S&quot;, tz=&quot;EST&quot;)
+
 # Then, just switch the display to UTC
 attr(dtval,&quot;tzone&quot;) &lt;- &quot;UTC&quot;
+
 # The output will be 2016-08-31T18:24:16Z
 </pre>
   <p>The as.POSIXct function can convert any date-time format and any time zone. For details on all of the format structure codes, <a href="https://stat.ethz.ch/R-manual/R-devel/library/base/html/strptime.html">see the R documentation</a>.</p>
@@ -228,19 +241,19 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
 </pre>
 <br>
 <button data-toggle="collapse" class="btn btn-default" data-target="#levinst">
-  Collapse instructions
+  Hide instructions
 </button>
 <hr>
 </div>
-
 <br>
+
 <mark>Please read the</mark>
 <button data-toggle="collapse" class="btn btn-default" data-target="#revision">
-  Data revision instructions
+  data revision instructions
 </button>
 <mark>before checking the box below.</mark>
 <br>
-<div id='revision' class='collapse'>
+<div id='revision' class='collapse' style='background-color: #F8F8FF'>
   <br>
   <p>
     To revise previously uploaded data, you must upload a revised file with the
@@ -276,7 +289,7 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
 <br>
 <form action="" method=post enctype=multipart/form-data>
   <div class="form-group">
-    Select file here:
+    Select file(s) here:
     <input type="file" class="form-control-file" name=file multiple>
     <!-- <input type="file" class="form-control-file" name=file aria-describedby="fileHelp" multiple> -->
     <!-- <small id="fileHelp" class="form-text text-muted">Select files to upload.</small> -->
