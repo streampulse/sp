@@ -1,5 +1,8 @@
 # Mike's Logbook
 
+###mon20180402
+ + raw data files are now archived on sciencebase. when a folder fills (100 files per folder, max), a new one is automatically created, for both metadata and data
+ + looking into possibility of direct connection to CUAHSI-HIS. retracing steps toward CUAHSI connection taken in 2016
 ###fri20180330
  + clarified sensor upload language to match new grab upload language, added instructions for data revision
 ###thur20180329
