@@ -4,8 +4,8 @@ library(sbtools)
 library(sourcetools)
 library(stringr)
 
-setwd('/home/mike/git/streampulse/server_copy/sp')
-# setwd('/home/aaron/sp')
+# setwd('/home/mike/git/streampulse/server_copy/sp')
+setwd('/home/aaron/sp')
 
 #load sb credentials and local directory locations
 conf = read_lines('config.py')
@@ -29,7 +29,7 @@ Sys.sleep(5)
 
 #get vector of metadata filenames on streampulse server
 meta_local = list.files(meta_folder, full.names=TRUE)
-cat(paste(length(meta_local), 'metadata files on server.'))
+cat(paste(length(meta_local), 'metadata files on server.\n'))
 
 #get objects in metadata folder on sb
 sb_meta_children = item_list_children(sb_meta_id, fields='id', limit=99999)
@@ -40,7 +40,7 @@ for(i in 1:length(sb_meta_children)){
         insb_meta = append(insb_meta, sb_meta_obj$files[[j]]$name)
     }
 }
-cat(paste(length(insb_meta), 'metadata files on SB.'))
+cat(paste(length(insb_meta), 'metadata files on SB.\n'))
 
 #get filenames that need to be uploaded
 to_upload_meta = vector()
@@ -51,7 +51,7 @@ for(i in 1:length(meta_local)){
         to_upload_meta = append(to_upload_meta, meta_local[i])
     }
 }
-cat(paste(length(to_upload_meta), 'metadata files to upload.'))
+cat(paste(length(to_upload_meta), 'metadata files to upload.\n'))
 
 #chunk metadata upload vector into a list of vectors
 working_item_id_meta = read('../logs_etc/working_sb_item_meta.txt')
@@ -59,48 +59,53 @@ nper = 10
 chunks = split(to_upload_meta, ceiling(seq_along(to_upload_meta) / nper))
 
 meta_loop_succeeded = FALSE
-for(i in 1:length(chunks)){
+if(length(to_upload_meta)){
+    for(i in 1:length(chunks)){
 
-    #try to upload chunk to current working item on sb
-    systime = as.character(Sys.time()) #for logging and item name (if creating)
-    metares = try(item_append_files(working_item_id_meta, chunks[[i]]))
-    if(class(metares) == 'try-error'){
-
-        #if that fails, try to create a new item, using datetime as name
-        new_item = try(item_create(title=systime, parent_id=sb_meta_id))
-        if(class(new_item) == 'try-error'){
-
-            #server likey down
-            write(paste('failed to create new meta item on', systime),
-                '../logs_etc/sb_upload.log', append=TRUE)
-            break
-        } else {
-
-            #if creation succeeds, update file that tracks working id
-            working_item_id_meta = new_item$id
-            write(working_item_id_meta, '../logs_etc/working_sb_item_meta.txt')
-            write(paste('created new meta item on', systime),
-                '../logs_etc/sb_upload.log', append=TRUE)
-        }
-
-        #try to upload again
-        metares = try(item_append_files(working_item_id_meta, chunks[[i]]))
+        #try to upload chunk to current working item on sb
+        systime = as.character(Sys.time()) #for logging and item name (if creating)
+        metares = try(item_append_files(working_item_id_meta, chunks[[i]]),
+            silent=TRUE)
         if(class(metares) == 'try-error'){
 
-            #server must be down
-            write(paste('meta upload failed after', i - 1, 'chunks on', systime),
-                '../logs_etc/sb_upload.log', append=TRUE)
-            break
+            #if that fails, try to create a new item, using datetime as name
+            new_item = try(item_create(title=systime, parent_id=sb_meta_id),
+                silent=TRUE)
+            if(class(new_item) == 'try-error'){
+
+                #server likey down
+                write(paste('failed to create new meta item on', systime),
+                    '../logs_etc/sb_upload.log', append=TRUE)
+                break
+            } else {
+
+                #if creation succeeds, update file that tracks working id
+                working_item_id_meta = new_item$id
+                write(working_item_id_meta, '../logs_etc/working_sb_item_meta.txt')
+                write(paste('created new meta item on', systime),
+                    '../logs_etc/sb_upload.log', append=TRUE)
+            }
+
+            #try to upload again
+            metares = try(item_append_files(working_item_id_meta, chunks[[i]]),
+                silent=TRUE)
+            if(class(metares) == 'try-error'){
+
+                #server must be down
+                write(paste('meta upload failed after', i - 1, 'chunks on', systime),
+                    '../logs_etc/sb_upload.log', append=TRUE)
+                break
+            } else {
+                cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+            }
         } else {
-            cat(paste('Uploaded', length(chunks[[i]]), 'files to', systime))
+            cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
         }
-    } else {
-        cat(paste('Uploaded', length(chunks[[i]]), 'files to ', systime))
+
+
+        Sys.sleep(10)
+        if(i == length(chunks)) meta_loop_succeeded = TRUE
     }
-
-
-    Sys.sleep(10)
-    if(i == length(chunks)) meta_loop_succeeded = TRUE
 }
 
 if(meta_loop_succeeded){
@@ -113,7 +118,7 @@ if(meta_loop_succeeded){
 
 # get vector of data filenames on server
 data_local = list.files(data_folder, full.names=TRUE) #data filenames on server
-cat(paste(length(data_local), 'data files on server.'))
+cat(paste(length(data_local), 'data files on server.\n'))
 
 #get objects in data folder on sb
 sb_data_children = item_list_children(sb_data_id, fields='id', limit=99999)
@@ -124,7 +129,7 @@ for(i in 1:length(sb_data_children)){
         insb_data = append(insb_data, sb_data_obj$files[[j]]$name)
     }
 }
-cat(paste(length(insb_data), 'data files on SB.'))
+cat(paste(length(insb_data), 'data files on SB.\n'))
 
 #get filenames in data folder on sb
 # insb_data = vector()
@@ -141,7 +146,7 @@ for(i in 1:length(data_local)){
         to_upload_data = append(to_upload_data, data_local[i])
     }
 }
-cat(paste(length(to_upload_data), 'data files to upload.'))
+cat(paste(length(to_upload_data), 'data files to upload.\n'))
 
 #chunk data upload vector into a list of vectors
 working_item_id_data = read('../logs_etc/working_sb_item_data.txt')
@@ -149,47 +154,52 @@ nper = 10
 chunks = split(to_upload_data, ceiling(seq_along(to_upload_data)/nper))
 
 data_loop_succeeded = FALSE
-for(i in 1:length(chunks)){
+if(length(to_upload_data){
+    for(i in 1:length(chunks)){
 
-    #try to upload chunk to current working item on sb
-    systime = as.character(Sys.time()) #for logging and item name (if creating)
-    datares = try(item_append_files(working_item_id_data, chunks[[i]]))
-    if(class(datares) == 'try-error'){
-
-        #if that fails, try to create a new item, using datetime as name
-        new_item = try(item_create(title=systime, parent_id=sb_data_id))
-        if(class(new_item) == 'try-error'){
-
-            #server likey down
-            write(paste('failed to create new data item on', systime),
-                '../logs_etc/sb_upload.log', append=TRUE)
-            break
-        } else {
-
-            #if that succeeds, update file that tracks working id
-            working_item_id_data = new_item$id
-            write(working_item_id_data, '../logs_etc/working_sb_item_data.txt')
-            write(paste('created new data item on', systime),
-                '../logs_etc/sb_upload.log', append=TRUE)
-        }
-
-        #try to upload again
-        datares = try(item_append_files(working_item_id_data, chunks[[i]]))
+        #try to upload chunk to current working item on sb
+        systime = as.character(Sys.time()) #for logging and item name (if creating)
+        datares = try(item_append_files(working_item_id_data, chunks[[i]]),
+            silent=TRUE)
         if(class(datares) == 'try-error'){
 
-            #server must be down
-            write(paste('data upload failed after', i - 1, 'chunks on', systime),
-                '../logs_etc/sb_upload.log', append=TRUE)
-            break
-        } else {
-            cat(paste('Uploaded', length(chunks[[i]]), 'files to', systime))
-        }
-    } else {
-        cat(paste('Uploaded', length(chunks[[i]]), 'files to ', systime))
-    }
+            #if that fails, try to create a new item, using datetime as name
+            new_item = try(item_create(title=systime, parent_id=sb_data_id),
+                silent=TRUE)
+            if(class(new_item) == 'try-error'){
 
-    Sys.sleep(10)
-    if(i == length(chunks)) data_loop_succeeded = TRUE
+                #server likey down
+                write(paste('failed to create new data item on', systime),
+                    '../logs_etc/sb_upload.log', append=TRUE)
+                break
+            } else {
+
+                #if that succeeds, update file that tracks working id
+                working_item_id_data = new_item$id
+                write(working_item_id_data, '../logs_etc/working_sb_item_data.txt')
+                write(paste('created new data item on', systime),
+                    '../logs_etc/sb_upload.log', append=TRUE)
+            }
+
+            #try to upload again
+            datares = try(item_append_files(working_item_id_data, chunks[[i]]),
+                silent=TRUE)
+            if(class(datares) == 'try-error'){
+
+                #server must be down
+                write(paste('data upload failed after', i - 1, 'chunks on', systime),
+                    '../logs_etc/sb_upload.log', append=TRUE)
+                break
+            } else {
+                cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+            }
+        } else {
+            cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+        }
+
+        Sys.sleep(10)
+        if(i == length(chunks)) data_loop_succeeded = TRUE
+    }
 }
 
 if(data_loop_succeeded){
