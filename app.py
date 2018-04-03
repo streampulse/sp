@@ -116,7 +116,7 @@ app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
 #app.config['PROPAGATE_EXCEPTIONS'] = True
 
 #error logging
-#handler = logging.FileHandler('/home/aaron/app.log')
+#handler = logging.FileHandler('/home/aaron/logs_etc/app.log')
 #handler.setLevel(logging.NOTSET)
 #app.logger.addHandler(handler)
 
