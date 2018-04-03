@@ -4,8 +4,8 @@ library(sbtools)
 library(sourcetools)
 library(stringr)
 
-# setwd('/home/mike/git/streampulse/server_copy/sp')
-setwd('/home/aaron/sp')
+setwd('/home/mike/git/streampulse/server_copy/sp')
+# setwd('/home/aaron/sp')
 
 #load sb credentials and local directory locations
 conf = read_lines('config.py')
@@ -25,17 +25,22 @@ data_folder = extract_from_config('UPLOAD_FOLDER')
 authenticate_sb(sb_usr, sb_pass)
 Sys.sleep(5)
 
-# check server files against sb files; upload new ones to sb ####
+# check server metadata files against sb metadata; upload new ones to sb ####
 
-# metadata
-meta_local = list.files(meta_folder, full.names=TRUE) #metadata filenames on server
-sb_mdata_obj = item_get(sb_meta_id) # objects in metadata folder on sb
+#get vector of metadata filenames on streampulse server
+meta_local = list.files(meta_folder, full.names=TRUE)
+cat(paste(length(meta_local), 'metadata files on server.'))
 
-#get filenames in metadata folder on sb
+#get objects in metadata folder on sb
+sb_meta_children = item_list_children(sb_meta_id, fields='id', limit=99999)
 insb_meta = vector()
-for(i in 1:length(sb_mdata_obj$files)){
-    insb_meta = append(insb_meta, sb_mdata_obj$files[[i]]$name)
+for(i in 1:length(sb_meta_children)){
+    sb_meta_obj = item_get(sb_meta_children[[i]]$id)
+    for(j in 1:length(sb_meta_obj$files)){
+        insb_meta = append(insb_meta, sb_meta_obj$files[[j]]$name)
+    }
 }
+cat(paste(length(insb_meta), 'metadata files on SB.'))
 
 #get filenames that need to be uploaded
 to_upload_meta = vector()
@@ -46,6 +51,7 @@ for(i in 1:length(meta_local)){
         to_upload_meta = append(to_upload_meta, meta_local[i])
     }
 }
+cat(paste(length(to_upload_meta), 'metadata files to upload.'))
 
 #chunk metadata upload vector into a list of vectors
 working_item_id_meta = read('../logs_etc/working_sb_item_meta.txt')
@@ -70,7 +76,7 @@ for(i in 1:length(chunks)){
             break
         } else {
 
-            #if that succeeds, update file that tracks working id
+            #if creation succeeds, update file that tracks working id
             working_item_id_meta = new_item$id
             write(working_item_id_meta, '../logs_etc/working_sb_item_meta.txt')
             write(paste('created new meta item on', systime),
@@ -85,8 +91,13 @@ for(i in 1:length(chunks)){
             write(paste('meta upload failed after', i - 1, 'chunks on', systime),
                 '../logs_etc/sb_upload.log', append=TRUE)
             break
+        } else {
+            cat(paste('Uploaded', length(chunks[[i]]), 'files to', systime))
         }
+    } else {
+        cat(paste('Uploaded', length(chunks[[i]]), 'files to ', systime))
     }
+
 
     Sys.sleep(10)
     if(i == length(chunks)) meta_loop_succeeded = TRUE
@@ -98,16 +109,28 @@ if(meta_loop_succeeded){
 }
 
 
+# check server data files against sb data files; upload new ones to sb ####
 
-# data
+# get vector of data filenames on server
 data_local = list.files(data_folder, full.names=TRUE) #data filenames on server
-sb_data_obj = item_get(sb_data_id) # objects in data folder on sb
+cat(paste(length(data_local), 'data files on server.'))
+
+#get objects in data folder on sb
+sb_data_children = item_list_children(sb_data_id, fields='id', limit=99999)
+insb_data = vector()
+for(i in 1:length(sb_data_children)){
+    sb_data_obj = item_get(sb_data_children[[i]]$id) # objects in data folder on sb
+    for(j in 1:length(sb_data_obj$files)){
+        insb_data = append(insb_data, sb_data_obj$files[[j]]$name)
+    }
+}
+cat(paste(length(insb_data), 'data files on SB.'))
 
 #get filenames in data folder on sb
-insb_data = vector()
-for(i in 1:length(sb_data_obj$files)){
-    insb_data = append(insb_data, sb_data_obj$files[[i]]$name)
-}
+# insb_data = vector()
+# for(i in 1:length(sb_data_obj$files)){
+#     insb_data = append(insb_data, sb_data_obj$files[[i]]$name)
+# }
 
 #get filenames that need to be uploaded
 to_upload_data = vector()
@@ -118,6 +141,7 @@ for(i in 1:length(data_local)){
         to_upload_data = append(to_upload_data, data_local[i])
     }
 }
+cat(paste(length(to_upload_data), 'data files to upload.'))
 
 #chunk data upload vector into a list of vectors
 working_item_id_data = read('../logs_etc/working_sb_item_data.txt')
@@ -157,7 +181,11 @@ for(i in 1:length(chunks)){
             write(paste('data upload failed after', i - 1, 'chunks on', systime),
                 '../logs_etc/sb_upload.log', append=TRUE)
             break
+        } else {
+            cat(paste('Uploaded', length(chunks[[i]]), 'files to', systime))
         }
+    } else {
+        cat(paste('Uploaded', length(chunks[[i]]), 'files to ', systime))
     }
 
     Sys.sleep(10)
