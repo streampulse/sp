@@ -1,5 +1,8 @@
-# Mike's Logbook
+#Mike's Logbook
 
+###tue20180403
+ + drafted 6 month work plan
+ + researched database speed and organizational improvements
 ###mon20180402
  + raw data files are now archived on sciencebase. when a folder fills (100 files per folder, max), a new one is automatically created, for both metadata and data
  + looking into possibility of direct connection to CUAHSI-HIS. retracing steps toward CUAHSI connection taken in 2016
@@ -70,6 +73,68 @@
  + added year to initial tickmark on cleaning tool
  + prepared git lecture for Phil, hopefully others
 
+###thu20180301
+ + added error handlers in request_data() for USGS maintenance and generic request failures.
+ + sent out PR results
+
+###wed20180228
+ + working on late-stage scheme for incorporating data levels
+
+###tue20180227
+ + wrote script for running all models in a loop
+ + finished SE model runs
+ + NCDC database fails when asked for FL airpressure data. NCEP succeeds, so geoknife method for airpressure retrieval is back in place, just secondary
+
+###mon20180226
+ + shipped individual model run results to all PIs
+ + worked out R package kinks and published
+
+###sat20180224
+ + finished StreamPULSE R package
+ + finished NC model runs
+
+###fri20180223
+ + "Show local night time" disabled by default on website plots. Small speed improvement.
+ + switched from geoknife to Cathy's code for air pressure acquisition
+ + cleaned up and added date axes to MetaboPlots
+ + replotted all round 1 model output (omitting all but one calendar year for each)
+
+###thu20180222
+ + turns out sweden discharge data were in the wrong units. redoing models
+ + pitched raw -> corrected -> derived data management solution. still needs work
+ + organizing meetings to discuss model output before all-hands presentation
+ + sent out temp version of current pipeline code for students that need it now. package should be done by monday.
+
+###wed20180221
+ + finished documentation for request_data
+ + working on documentation for prep_metabolism
+ + finished sweden model runs
+
+###tue20180220
+ + fixed sunrise/sunset error.
+ + tested pipeline after major changes of last week. fixed a few bugs; added a few messages and comments
+ + started running models for Sweden and NC (the ones that require rating curves)
+ + started making StreamPULSE R package
+ + changed Analytics tab to Sitelist tab on data portal. Now sorting sites by region and sitecode
+ + in request_data(), the variabes argument was not hooked up to anything. built this up so that user can select which variables to request from streampulse. if omitted, all vars necessary for metab modeling will be requested. also notifies the user of which requests were successful and which weren't.
+
+###mon20180219
+ + new Sweden data could not be viewed in cleaning tool. traced this back to an error in sunrise/sunset calculations that resulted in an invalid arccosine domain. probably relates to the fact that sun never sets on a few days each year at 68 latitude.
+
+###thu20180215
+ + added options for fitting ZQ curve as power, exponential, linear
+ + if interpolation by seasonal decomposition fails (e.g. because of too many NAs for a variable), automatically attemps linear interp
+ + new option to plot rating curve fit and discharge estimates
+ + new option to use depth_m from StreaamPULSE (which may represent many things), or estimate mean areal depth via discharge
+ + option to correct for sensor height above bed or not
+ + added more warnings, messages, errors, and tests
+
+###wed20180214
+ + turns out there's little consensus on what "stage", "level", and "depth" mean. seems likely that different sitegroups will be using these terms interchangeably, but they may refer either to depth at a point in the stream, average depth across the stream, or the vertical distance between sensor and surface. gotta add more checks and warnings for this.
+ + turns out pretty much any measure of depth or level, averaged or not, can be used to fit a rating curve with discharge. what streamMetabolizer expects though is average depth for an area defined by the width of the stream and the O2 turnover distance. This can be estimated from discharge.
+ + finished incorporating rating curves. can now estimate discharge using prefit curve parameters or just fit one on the fly using Z and Q data. still need to test.
+ + now estimating mean areal depth by default, rather than assuming Depth_m from StreamPULSE database is adequate. But the user can override and pass this value directly into the model. Looks like it will usually be something like depth-at-gage or, worse, level-at-gage, rather than areal depth as described above.
+
 ###tue20180213
  + modifying pipeline so that rating curves can be used to estimate discharge from level/depth/stage when available, and so that these can be estimated from air and water pressure (and sometimes ensor height) where necessary.
    + the user can supply a small sample of Z and Q data to build a rating curve, or can supply a and b of Q=aZ^b if they want to override that.
@@ -79,68 +144,6 @@
  + if the user specifies rating curve arguments, any discharge data available from StreamPULSE or USGS will be ignored and the user will be warned.
  + removed AZ_LV_2017-07-11_EM.csv from database (left name in upload table). these file had been marked with "do not send these data to aaron"
  + fixed issue with outlier detector when there are no outliers identified
-
-wed20180214
- + turns out there's little consensus on what "stage", "level", and "depth" mean. seems likely that different sitegroups will be using these terms interchangeably, but they may refer either to depth at a point in the stream, average depth across the stream, or the vertical distance between sensor and surface. gotta add more checks and warnings for this.
- + turns out pretty much any measure of depth or level, averaged or not, can be used to fit a rating curve with discharge. what streamMetabolizer expects though is average depth for an area defined by the width of the stream and the O2 turnover distance. This can be estimated from discharge.
- + finished incorporating rating curves. can now estimate discharge using prefit curve parameters or just fit one on the fly using Z and Q data. still need to test.
- + now estimating mean areal depth by default, rather than assuming Depth_m from StreamPULSE database is adequate. But the user can override and pass this value directly into the model. Looks like it will usually be something like depth-at-gage or, worse, level-at-gage, rather than areal depth as described above.
-
-thu20180215
- + added options for fitting ZQ curve as power, exponential, linear
- + if interpolation by seasonal decomposition fails (e.g. because of too many NAs for a variable), automatically attemps linear interp
- + new option to plot rating curve fit and discharge estimates
- + new option to use depth_m from StreaamPULSE (which may represent many things), or estimate mean areal depth via discharge
- + option to correct for sensor height above bed or not
- + added more warnings, messages, errors, and tests
-
-mon20180219
- + new Sweden data could not be viewed in cleaning tool. traced this back to an error in sunrise/sunset calculations that resulted in an invalid arccosine domain. probably relates to the fact that sun never sets on a few days each year at 68 latitude.
-
-tue20180220
- + fixed sunrise/sunset error.
- + tested pipeline after major changes of last week. fixed a few bugs; added a few messages and comments
- + started running models for Sweden and NC (the ones that require rating curves)
- + started making StreamPULSE R package
- + changed Analytics tab to Sitelist tab on data portal. Now sorting sites by region and sitecode
- + in request_data(), the variabes argument was not hooked up to anything. built this up so that user can select which variables to request from streampulse. if omitted, all vars necessary for metab modeling will be requested. also notifies the user of which requests were successful and which weren't.
-
-wed20180221
- + finished documentation for request_data
- + working on documentation for prep_metabolism
- + finished sweden model runs
-
-thu20180222
- + turns out sweden discharge data were in the wrong units. redoing models
- + pitched raw -> corrected -> derived data management solution. still needs work
- + organizing meetings to discuss model output before all-hands presentation
- + sent out temp version of current pipeline code for students that need it now. package should be done by monday.
-
-fri20180223
- + "Show local night time" disabled by default on website plots. Small speed improvement.
- + switched from geoknife to Cathy's code for air pressure acquisition
- + cleaned up and added date axes to MetaboPlots
- + replotted all round 1 model output (omitting all but one calendar year for each)
-
-sat20180224
- + finished StreamPULSE R package
- + finished NC model runs
-
-mon20180226
- + shipped individual model run results to all PIs
- + worked out R package kinks and published
-
-tue20180227
- + wrote script for running all models in a loop
- + finished SE model runs
- + NCDC database fails when asked for FL airpressure data. NCEP succeeds, so geoknife method for airpressure retrieval is back in place, just secondary
-
-wed20180228
- + working on late-stage scheme for incorporating data levels
-
-thu20180301
- + added error handlers in request_data() for USGS maintenance and generic request failures.
- + sent out PR results
 
 ###thu20180208
  + made more robust tests for valid LOGGERIDs
@@ -198,11 +201,11 @@ Miguel Leon wants to set up a direct database link between OSM2 Admin and Stream
 ### tue20180123
 sam was using safari and was able to upload both files (~2MB and ~4MB) after split
 
-nearest neighbors gap fill stuff is super messed up. probaby should do a full rewrite since the data going into those functions wasn't even sensible. 
+nearest neighbors gap fill stuff is super messed up. probaby should do a full rewrite since the data going into those functions wasn't even sensible.
 i commented a bock in fill_missing that disables the neighbors stuff
 some specifics in case i continue to use the existing code downstream of that block:
 linear_fill is no more, yet it's still called
-ive put comments and garbage everywhere. search for print, message, and <<- to find it all. 
+ive put comments and garbage everywhere. search for print, message, and <<- to find it all.
 
 ### mon20180122
  + wi_bec_2015-12-11_xx.csv seems too large to upload. still, it ended up in the database. asking Sam Blackburn to break it 60/40 and try to reupload. let's see if again the resultant data are fewer after reupload. upload size limit seems to be lower on chrome.there are 170219 records in the aforementioned file. removing them manually from database now
@@ -281,13 +284,13 @@ _XX filetypes must now be merged prior to upload
 ### mon20171120
  + exploring geoknife package made by Jordan (for querying usgs Geo Data Portal)
  + these variables available from UI daily meteorological data for continental us:
-[1] "precipitation_amount"                     
-[2] "max_relative_humidity"                    
-[3] "min_relative_humidity"                    
-[4] "specific_humidity"                        
+[1] "precipitation_amount"
+[2] "max_relative_humidity"
+[3] "min_relative_humidity"
+[4] "specific_humidity"
 [5] "surface_downwelling_shortwave_flux_in_air"
-[6] "min_air_temperature"                      
-[7] "max_air_temperature"                      
+[6] "min_air_temperature"
+[7] "max_air_temperature"
 [8] "wind_speed"
  + but that database yields errors when i try to pull 2016-17
    +   theres a line in metdata_job that includes "REQUIRE_FULL_COVERAGE"
@@ -324,7 +327,7 @@ _XX filetypes must now be merged prior to upload
 
 ### 20171115
  + changed server password properly (updating config file and restarting nginx server)
- + modified usgs api query on ~410 in app.py so that it asks for data in UTC, which then matches the time of our datasets and doesnt result in NAs for discharge and level for the first 15 rows of dd (post-spreading); formerly there would also be 20 rows that only contained discharge and level at the end of each dataset. 
+ + modified usgs api query on ~410 in app.py so that it asks for data in UTC, which then matches the time of our datasets and doesnt result in NAs for discharge and level for the first 15 rows of dd (post-spreading); formerly there would also be 20 rows that only contained discharge and level at the end of each dataset.
    + in so doing, fixed download issue
  + asked everyone to move over to the new slack
  + learned how to restart our web server after making changes and restart our digitalocean server to install updates
@@ -338,6 +341,8 @@ _XX filetypes must now be merged prior to upload
 ### 20171113
  + organized notes, meeting recordings, questions, and todo list
  + added Gordon's photo to the site
- + made Bob's document of considerations and instructions more prominent (now linked from the "participate" page, which is also linked from the home page body)  
+ + made Bob's document of considerations and instructions more prominent (now linked from the "participate" page, which is also linked from the home page body)
  + separated download step from format/run step in the model code
+
+#### Mike's Logbook
 

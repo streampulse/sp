@@ -29,7 +29,9 @@ Sys.sleep(5)
 
 #get vector of metadata filenames on streampulse server
 meta_local = list.files(meta_folder, full.names=TRUE)
-cat(paste(length(meta_local), 'metadata files on server.\n'))
+# cat(paste(length(meta_local), 'metadata files on server.\n'))
+write(paste(length(meta_local), 'metadata files on server.'),
+    '../logs_etc/sb_upload.log', append=TRUE)
 
 #get objects in metadata folder on sb
 sb_meta_children = item_list_children(sb_meta_id, fields='id', limit=99999)
@@ -40,7 +42,9 @@ for(i in 1:length(sb_meta_children)){
         insb_meta = append(insb_meta, sb_meta_obj$files[[j]]$name)
     }
 }
-cat(paste(length(insb_meta), 'metadata files on SB.\n'))
+# cat(paste(length(insb_meta), 'metadata files on SB.\n'))
+write(paste(length(insb_local), 'metadata files on SB.'),
+    '../logs_etc/sb_upload.log', append=TRUE)
 
 #get filenames that need to be uploaded
 to_upload_meta = vector()
@@ -51,7 +55,9 @@ for(i in 1:length(meta_local)){
         to_upload_meta = append(to_upload_meta, meta_local[i])
     }
 }
-cat(paste(length(to_upload_meta), 'metadata files to upload.\n'))
+# cat(paste(length(to_upload_meta), 'metadata files to upload.\n'))
+write(paste(length(to_upload_meta), 'metadata files to upload.'),
+    '../logs_etc/sb_upload.log', append=TRUE)
 
 #chunk metadata upload vector into a list of vectors
 working_item_id_meta = read('../logs_etc/working_sb_item_meta.txt')
@@ -96,10 +102,14 @@ if(length(to_upload_meta)){
                     '../logs_etc/sb_upload.log', append=TRUE)
                 break
             } else {
-                cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+                # cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+                write(paste('Uploaded', length(chunks[[i]]), 'files.'),
+                    '../logs_etc/sb_upload.log', append=TRUE)
             }
         } else {
-            cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+            # cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+            write(paste('Uploaded', length(chunks[[i]]), 'files.'),
+                '../logs_etc/sb_upload.log', append=TRUE)
         }
 
 
@@ -118,7 +128,9 @@ if(meta_loop_succeeded){
 
 # get vector of data filenames on server
 data_local = list.files(data_folder, full.names=TRUE) #data filenames on server
-cat(paste(length(data_local), 'data files on server.\n'))
+# cat(paste(length(data_local), 'data files on server.\n'))
+write(paste(length(data_local), 'data files on server.'),
+    '../logs_etc/sb_upload.log', append=TRUE)
 
 #get objects in data folder on sb
 sb_data_children = item_list_children(sb_data_id, fields='id', limit=99999)
@@ -129,13 +141,9 @@ for(i in 1:length(sb_data_children)){
         insb_data = append(insb_data, sb_data_obj$files[[j]]$name)
     }
 }
-cat(paste(length(insb_data), 'data files on SB.\n'))
-
-#get filenames in data folder on sb
-# insb_data = vector()
-# for(i in 1:length(sb_data_obj$files)){
-#     insb_data = append(insb_data, sb_data_obj$files[[i]]$name)
-# }
+# cat(paste(length(insb_data), 'data files on SB.\n'))
+write(paste(length(insb_data), 'data files on SB.'),
+    '../logs_etc/sb_upload.log', append=TRUE)
 
 #get filenames that need to be uploaded
 to_upload_data = vector()
@@ -146,7 +154,9 @@ for(i in 1:length(data_local)){
         to_upload_data = append(to_upload_data, data_local[i])
     }
 }
-cat(paste(length(to_upload_data), 'data files to upload.\n'))
+# cat(paste(length(to_upload_data), 'data files to upload.\n'))
+write(paste(length(to_upload_data), 'data files to upload.'),
+    '../logs_etc/sb_upload.log', append=TRUE)
 
 #chunk data upload vector into a list of vectors
 working_item_id_data = read('../logs_etc/working_sb_item_data.txt')
@@ -154,7 +164,7 @@ nper = 10
 chunks = split(to_upload_data, ceiling(seq_along(to_upload_data)/nper))
 
 data_loop_succeeded = FALSE
-if(length(to_upload_data){
+if(length(to_upload_data)){
     for(i in 1:length(chunks)){
 
         #try to upload chunk to current working item on sb
@@ -191,10 +201,14 @@ if(length(to_upload_data){
                     '../logs_etc/sb_upload.log', append=TRUE)
                 break
             } else {
-                cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+                # cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+                write(paste('Uploaded', length(chunks[[i]]), 'files.'),
+                    '../logs_etc/sb_upload.log', append=TRUE)
             }
         } else {
             cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
+            write(paste('Uploaded', length(chunks[[i]]), 'files.'),
+                '../logs_etc/sb_upload.log', append=TRUE)
         }
 
         Sys.sleep(10)
