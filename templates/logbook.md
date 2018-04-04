@@ -168,44 +168,40 @@
  + finished first round of model runs, not including WI
 
 ### thur20180201
-fixed phil's processing_func so that it works when model_type='bayes'
-wrote diagnostic for evaluating cor between daily K and ER
-air pressure automatically retrieved if necessary
+ + fixed phil's processing_func so that it works when model_type='bayes'
+ + wrote diagnostic for evaluating cor between daily K and ER
+ + air pressure automatically retrieved if necessary
 
 ### wed20180131
-updated site permissions for all users except a few unknowns
-api requests now return flag information
-r wrappers now hande flag information
-    request_data retrieves it if desired
-    prep_metab replaces vals with NA for specified flag types
-    error handling in place
+ + updated site permissions for all users except a few unknowns
+ + api requests now return flag information
+ + r wrappers now handle flag information
+   + request_data retrieves it if desired
+   + prep_metab replaces vals with NA for specified flag types
+   + error handling in place
 
 ### mon20180129
-restored flag data
-still waiting on florida for probem files
-updated two flag vaues so that they fit into the new standard of interesting/questionable/bad
-MAKE SURE TO TELL PEOPLE FLAG TYPE DEFAULTS TO "QUESTIONABLE"
+ + restored flag data
+ + still waiting on florida for probem files
+ + updated two flag vaues so that they fit into the new standard of interesting/questionable/bad
 
 ### fri20180126
-got rid of manua upload. it was only necessary because data were being lost. upload_id should solve that problem
-verified that the to_dict() chunker is working properly
-replaced qaqc demo with link to model considerations
-still waiting on FL probem file updates (who is their data person?)
+ + got rid of manua upload. it was only necessary because data were being lost. upload_id should solve that problem
+ + verified that the to_dict() chunker is working properly
+ + replaced qaqc demo with link to model considerations
 
 ### thur20180125
-fixed up app.py so that leveraged sites can be uploaded. realize now that the only core regions are NC, AZ, WI, and FL. deleted my requests to MD, CT, VT, RI that they update all their files to _XX extension and uploaded those files myself.
-there should no longer be a size limit (effectively) for uploads. to_dict() was the culprit, and it now uses chunking
-
-Miguel Leon wants to set up a direct database link between OSM2 Admin and StreamPULSE
+ + fixed up app.py so that leveraged sites can be uploaded. realize now that the only core regions are NC, AZ, WI, and FL. deleted my requests to MD, CT, VT, RI that they update all their files to _XX extension and uploaded those files myself.
+ + there should no longer be a size limit (effectively) for uploads. to_dict() was the culprit, and it now uses chunking
+ + Miguel Leon wants to set up a direct database link between OSM2 Admin and StreamPULSE
 
 ### tue20180123
-sam was using safari and was able to upload both files (~2MB and ~4MB) after split
-
-nearest neighbors gap fill stuff is super messed up. probaby should do a full rewrite since the data going into those functions wasn't even sensible.
-i commented a bock in fill_missing that disables the neighbors stuff
-some specifics in case i continue to use the existing code downstream of that block:
-linear_fill is no more, yet it's still called
-ive put comments and garbage everywhere. search for print, message, and <<- to find it all.
+ + sam was using safari and was able to upload both files (~2MB and ~4MB) after split
+ + nearest neighbors gap fill stuff is super messed up. probaby should do a full rewrite since the data going into those functions wasn't even sensible.
+ + commented a bock in fill_missing that disables the neighbors stuff
+ + some specifics in case i continue to use the existing code downstream of that block:
+   + linear_fill is no more, yet it's still called
+   + ive put comments and garbage everywhere. search for print, message, and <<- to find it all.
 
 ### mon20180122
  + wi_bec_2015-12-11_xx.csv seems too large to upload. still, it ended up in the database. asking Sam Blackburn to break it 60/40 and try to reupload. let's see if again the resultant data are fewer after reupload. upload size limit seems to be lower on chrome.there are 170219 records in the aforementioned file. removing them manually from database now
@@ -343,6 +339,4 @@ _XX filetypes must now be merged prior to upload
  + added Gordon's photo to the site
  + made Bob's document of considerations and instructions more prominent (now linked from the "participate" page, which is also linked from the home page body)
  + separated download step from format/run step in the model code
-
-#### Mike's Logbook
 
