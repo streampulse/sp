@@ -851,8 +851,14 @@ def series_upload():
             ufnms = [ufnms[f] for f in xrange(len(ufnms)) if new[f]]
 
             if not ufnms: #if no files left in list
-                flash('All of those files were already uploaded.',
-                    'alert-danger')
+                if len(existing) == 1:
+                    msgc = ['This file has', 'its']
+                else:
+                    msgc = ['These files have', 'their']
+
+                flash(msgc[0] + ' already been ' +\
+                    'uploaded. Check the box if you want to replace ' +\
+                    msgc[1] + ' contents in the database.', 'alert-danger')
                 return redirect(request.url)
 
             if existing: #if some uploaded files aready exist
@@ -1047,7 +1053,8 @@ def grab_upload():
 
             if not replace and ufnm in ld:
                 flash("This filename has already been uploaded. Check the " +\
-                    "box if you want to update this file's contents.",
+                    "box if you want to replace this file's contents in the" +\
+                    "database.",
                     'alert-danger')
                 return redirect(request.url)
 

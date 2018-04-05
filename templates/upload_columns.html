@@ -49,7 +49,8 @@ drift.load('s2rst4h926mg');
       We need to get some more information before we can process it (you only need to do this part once):</p>
     <div class="input-group input-group-sm">
       <span class="input-group-addon">Full site name</span>
-      <input type="text" class="form-control" name="sitename" aria-describedby="Site name" maxlength="50">
+      <input type="text" class="form-control" name="sitename"
+      aria-describedby="Site name" maxlength="50" required>
     </div><br>
     <i>Coordinates, decimal degrees:</i>
     <div class="input-group input-group-sm">
@@ -64,15 +65,21 @@ drift.load('s2rst4h926mg');
     </div><br>
 
     <div>
-      <p><b>Site metadata:</b> Characteristics, instruments, dates, personnel, any other information that you'd like to share with others about the data.</p>
-      <textarea class="form-control" rows="5" name="metadata" placeholder="Site characteristics, instruments, etc. Anything that you want to share with people when they download the data."></textarea>
-    </div><br>
+      <p>
+        <b>Site metadata:</b> characteristics, instruments, dates, personnel, etc.
+      </p>
+      <textarea class="form-control" rows="5" name="metadata"
+        required></textarea>
+    </div>
+    <br>
 
     <div class="input-group input-group-sm">
       <span class="input-group-addon">Data set contact name</span>
-      <input type="text" class="form-control" name="contactName" aria-describedby="Contact name" maxlength="50">
+      <input type="text" class="form-control" name="contactName"
+      aria-describedby="Contact name" maxlength="50" required>
       <span class="input-group-addon">Contact email</span>
-      <input type="text" class="form-control" name="contactEmail" aria-describedby="Contact email" maxlength="255">
+      <input type="text" class="form-control" name="contactEmail"
+      aria-describedby="Contact email" maxlength="255" required>
     </div><br>
 
     <i>Data sharing policy:</i>
@@ -123,33 +130,36 @@ drift.load('s2rst4h926mg');
 
 
 </div></div>
-  <div class="row"><div class="col-md-6 col-md-offset-3">
-    <p class="text-center">
-      Don't see your variable names?
-      <a href="mailto:vlahm13@gmail.com">Send us an email!</a>
-    </p>
-    <input type="hidden" name="tmpfile" value="{{tmpfile}}">
-    <input type="hidden" name="cdict" value="">
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3">
+      <p class="text-center">
+        Don't see your variable names?
+        <a href="mailto:vlahm13@gmail.com">Send us an email!</a>
+      </p>
+      <input type="hidden" name="tmpfile" value="{{tmpfile}}">
+      <input type="hidden" name="cdict" value="">
 
-    {% for c in columns %}
-    <div class="input-group input-group-sm">
+      {% for c in columns %}
+        <div class="input-group input-group-sm">
 
-    {% if c == columns[0] %}
-      <div data-toggle='tooltip' title='For files with loggerID "XX", it is
-      assumed that the first column in your CSV is a date-time stamp
-      converted to UTC.'
-      data-placement='left'>
-        <i class="fa fa-question-circle-o"></i>
-      </div>
-    {% endif %}
+        {% if c == columns[0] %}
+          <div data-toggle='tooltip' title="Remember, if you're not uploading an
+          automatically formatted logger file (i.e. if your LOGGERID isn't one of
+          CS, EM, HA, HD, HP, HW), it's assumed that the first column
+          in your CSV contains date-time stamps converted to UTC. That column's name
+          may have been changed here."
+          data-placement='left'>
+            <i class="fa fa-question-circle-o" style="color: blue"></i>
+          </div>
+        {% endif %}
 
-      <span class="input-group-addon">{{c}}</span>
-      <select class="form-control" name="{{c}}">
-        
-        {% if c == "DateTime_UTC" %}
-          <option value="{{c}}" selected>{{c}}</option>
+        <span class="input-group-addon">{{c}}</span>
+        <select class="form-control" name="{{c}}">
 
-        {% elif c in cdict.keys() %}
+        <!-- {#% if c == "DateTime_UTC" %#}
+          <option value="{{c}}" selected>{{c}}</option> -->
+
+        {% if c in cdict.keys() %}
           <option value=""></option>
           {% for v in variables %}
             {% if v == cdict[c] %}
