@@ -122,7 +122,7 @@ drift.load('s2rst4h926mg');
   <br>
 
 
-  </div></div>
+</div></div>
   <div class="row"><div class="col-md-6 col-md-offset-3">
     <p class="text-center">
       Don't see your variable names?
@@ -130,23 +130,38 @@ drift.load('s2rst4h926mg');
     </p>
     <input type="hidden" name="tmpfile" value="{{tmpfile}}">
     <input type="hidden" name="cdict" value="">
+
     {% for c in columns %}
     <div class="input-group input-group-sm">
+
+    {% if c == columns[0] %}
+      <div data-toggle='tooltip' title='For files with loggerID "XX", it is
+      assumed that the first column in your CSV is a date-time stamp
+      converted to UTC.'
+      data-placement='left'>
+        <i class="fa fa-question-circle-o"></i>
+      </div>
+    {% endif %}
+
       <span class="input-group-addon">{{c}}</span>
       <select class="form-control" name="{{c}}">
-        {% if c in cdict.keys() %}
+        
+        {% if c == "DateTime_UTC" %}
+          <option value="{{c}}" selected>{{c}}</option>
+
+        {% elif c in cdict.keys() %}
           <option value=""></option>
           {% for v in variables %}
             {% if v == cdict[c] %}
-            <option value="{{v}}" selected>{{v}}</option>
+              <option value="{{v}}" selected>{{v}}</option>
             {% else %}
-            <option value="{{v}}">{{v}}</option>
+              <option value="{{v}}">{{v}}</option>
             {% endif %}
           {% endfor %}
         {% else %}
           <option selected value=""></option>
           {% for v in variables %}
-          <option value="{{v}}">{{v}}</option>
+            <option value="{{v}}">{{v}}</option>
           {% endfor %}
         {% endif %}
       </select>
@@ -195,6 +210,12 @@ $(function(){
   });
 })
 
+</script>
+
+<script type="text/javascript">
+  $(document).ready(function(){
+      $('[data-toggle="tooltip"]').tooltip();
+  });
 </script>
 
 {% endblock %}
