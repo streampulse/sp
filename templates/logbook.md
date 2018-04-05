@@ -1,5 +1,9 @@
 #Mike's Logbook
 
+###wed20180404
+ + testing database improvements (additional indices, column type changes, foreign keys, etc.)
+ + explored ODM2. It's looking like the benefits of adopting the core schema of ODM2 will not be so great as to warrant the weeks (and potentially months) of effort necessary to implement a new database backend, modify all I/O, build a translation layer, etc. It's difficult to foresee all obstacles we might face by sticking with the current, flat schema, but after some research I feel more confident in my ability to adapt what we've got as needed. 
+ + fixed error that retults when people try to upload an _XX file with two datetime columns
 ###tue20180403
  + drafted 6 month work plan
  + researched database speed and organizational improvements

@@ -483,7 +483,7 @@ def load_file(f, gmtoff, logger):
         xtmp = read_hobo(f)
     elif "EM" in logger:
         xtmp = read_manta(f, gmtoff)
-    else:
+    else: #must be "XX"
         xtmp = pd.read_csv(f, parse_dates=[0])
         xtmp = xtmp.rename(columns={xtmp.columns.values[0]:'DateTimeUTC'})
 
@@ -851,8 +851,14 @@ def series_upload():
             ufnms = [ufnms[f] for f in xrange(len(ufnms)) if new[f]]
 
             if not ufnms: #if no files left in list
-                flash('All of those files were already uploaded.',
-                    'alert-danger')
+                if len(existing) == 1:
+                    msgc = ['This file has', 'its']
+                else:
+                    msgc = ['These files have', 'their']
+
+                flash(msgc[0] + ' already been ' +\
+                    'uploaded. Check the box if you want to replace ' +\
+                    msgc[1] + ' contents in the database.', 'alert-danger')
                 return redirect(request.url)
 
             if existing: #if some uploaded files aready exist
@@ -911,7 +917,9 @@ def series_upload():
                 flash(msg,'alert-danger')
                 return redirect(request.url)
 
-        session['filenamesNoV'] = filenamesNoV #persist across requests
+        #persist filenames across requests
+        session['filenamesNoV'] = filenamesNoV
+        session['fnlong'] = fnlong
 
         #make sure LOGGERID formats are valid
         for i in xrange(len(filenamesNoV)):
@@ -975,7 +983,7 @@ def series_upload():
 
         except: #thrown when there are unreadable symbols (like deg) in the csv
             msg = Markup('Error 004. Check for unusual characters in your column names (degree symbol, etc.). If problem persists, <a href="mailto:vlahm13@gmail.com" class="alert-link">Email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
-            flash(msg,'alert-danger')
+            flash(msg, 'alert-danger')
             [os.remove(f) for f in fnlong]
             return redirect(request.url)
 
@@ -1045,7 +1053,8 @@ def grab_upload():
 
             if not replace and ufnm in ld:
                 flash("This filename has already been uploaded. Check the " +\
-                    "box if you want to update this file's contents.",
+                    "box if you want to replace this file's contents in the" +\
+                    "database.",
                     'alert-danger')
                 return redirect(request.url)
 
@@ -1319,10 +1328,12 @@ def grab_updatedb(xx, fnamelist, replace=False):
 @app.route("/upload_confirm", methods=["POST"])
 def confirmcolumns():
 
-    #get combined inputs (tmpfile) and varname mappings (cdict)
+    #get combined inputs (tmpfile), varname mappings (cdict), and filenames
     cdict = json.loads(request.form['cdict'])
     tmpfile = request.form['tmpfile']
-    cdict = dict([(r['name'],r['value']) for r in cdict])
+    cdict = dict([(r['name'], r['value']) for r in cdict])
+    fnlong = session.get('fnlong')
+    filenamesNoV = session.get('filenamesNoV')
 
     try:
 
@@ -1331,6 +1342,14 @@ def confirmcolumns():
             tmpfile + ".csv"), parse_dates=[0])
         upid_col = xx['upload_id']
         xx = xx[cdict.keys()].rename(columns=cdict) #assign canonical names
+
+        datetimecollist = [1 for i in xx.columns if i == 'DateTime_UTC']
+        if len(datetimecollist) > 1:
+            flash('Only one DateTime_UTC column allowed.', 'alert-danger')
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+            [os.remove(f) for f in fnlong]
+            return redirect(url_for('series_upload'))
+
         xx = pd.concat([xx, upid_col], axis=1) #reattach upload IDs
         region, site = tmpfile.split("_")[:-1]
 
@@ -1347,7 +1366,8 @@ def confirmcolumns():
 
             # make a new text file with the metadata
             metastring = request.form['metadata']
-            metafilepath = os.path.join(app.config['META_FOLDER'],region+"_"+site+"_metadata.txt")
+            metafilepath = os.path.join(app.config['META_FOLDER'],
+                region + "_" + site + "_metadata.txt")
             with open(metafilepath, 'a') as metafile:
                 metafile.write(metastring)
 
@@ -1364,10 +1384,9 @@ def confirmcolumns():
         xx = xx[['region','site','DateTime_UTC','variable','value','flag',
             'upload_id']]
 
-        replace = True if request.form['replacing']=='yes' else False
+        replace = True if request.form['replacing'] == 'yes' else False
 
         #add new filenames to upload table in db
-        filenamesNoV = session.get('filenamesNoV')
         fn_to_db = [i[0] for i in filenamesNoV]
         filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
         filenamesNoV = [i for i in filenamesNoV if i[1] is not None]
@@ -1376,17 +1395,26 @@ def confirmcolumns():
                 uq = Upload(f[0])
                 db.session.add(uq)
 
+    except:
+        flash('Error 008. Please try again', 'alert-danger')
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        [os.remove(f) for f in fnlong]
+        return redirect(url_for('series_upload'))
+
+    try:
         #add data and mappings to db
         updatedb(xx, fn_to_db, replace)
         updatecdict(region, site, cdict)
 
     except:
-        flash('There was an error, please try again.','alert-warning')
-        return redirect(request.url)
+        msg = Markup('Error 009. This is a particularly nasty error. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file(s) you tried to upload.')
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        return redirect(url_for('series_upload'))
 
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'],tmpfile+".csv")) #rm tmp
+    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
     db.session.commit() #persist all db changes made during upload
-    flash('Uploaded '+str(len(xx.index))+' values, thank you!','alert-success')
+    flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
+        'alert-success')
 
     return redirect(url_for('series_upload'))
 
