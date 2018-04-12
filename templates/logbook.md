@@ -1,9 +1,23 @@
 #Mike's Logbook
 
+###thur20180412
+ + completed powell review
+###wed20180411
+ + powell review
+###tue20180410
+ + powell review
+###mon20180409
+ + powell review
+###fri20180406
+ + clarified CSV datetime formatting
+ + powell review
+###thu20180405
+ + added tooltip to reinforce the necessity of putting the datetime column in the first position for manually formatted files
+ + running model for AZ. streamMetabolizer works on as few as 4 days f data, but only returned one point estimate of GPP and ER in this case.
 ###wed20180404
  + testing database improvements (additional indices, column type changes, foreign keys, etc.)
  + explored ODM2. It's looking like the benefits of adopting the core schema of ODM2 will not be so great as to warrant the weeks (and potentially months) of effort necessary to implement a new database backend, modify all I/O, build a translation layer, etc. It's difficult to foresee all obstacles we might face by sticking with the current, flat schema, but after some research I feel more confident in my ability to adapt what we've got as needed. 
- + fixed error that retults when people try to upload an _XX file with two datetime columns
+ + fixed error that results from attempts to upload an _XX file with two datetime columns
 ###tue20180403
  + drafted 6 month work plan
  + researched database speed and organizational improvements
