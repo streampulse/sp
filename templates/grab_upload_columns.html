@@ -159,48 +159,104 @@ drift.load('s2rst4h926mg');
 
   <div class="row">
     <!-- <div class="col-md-12"> -->
-    <div class="col-md-6">
+    <div class="col-md-5">
       <!-- <input type="hidden" name="tmpfile" value="{{tmpfile}}"> -->
       <input type="hidden" name="cdict" value="">
 
-      <div class="col-md-5 col-md-offset-1 text-left">
+      <!-- <div class="col-md-5 col-md-offset-1 text-left"> -->
+      <div class="col-md-6 text-left">
         <p><strong>Upload variable name</strong></p>
       </div>
-      <div class="col-md-5 text-right">
+      <div class="col-md-6 text-right">
         <p><strong>Database variable name</strong></p>
       </div>
       <!-- <div class="col-md-2 text-left">
         <p><strong>Unit</strong></p>
       </div> -->
-      <div class="col-md-10 col-md-offset-1">
-        {% for c in range(columns|length) %}
-          <div class="input-group">
-            <span class="input-group-addon">{{columns[c]}}</span>
-            <select id="ddA{{c}}" class="form-control text-right" name="{{columns[c]}}">
-              {% if columns[c] in cdict.keys() %}
-                <option value=""></option>
-                {% for v in range(variables|length) %}
-                  {% if variables[v] == cdict[columns[c]] %}
-                    <option id="{{v}}" value="{{variables[v]}}" selected>
-                      {{varsWithUnits[v]}}
-                    </option>
-                  {% else %}
-                    <option value="{{variables[v]}}">
-                      {{varsWithUnits[v]}}
-                    </option>
-                  {% endif %}
-                {% endfor %}
-              {% else %}
-                <option selected value=""></option>
-                {% for v in range(variables|length) %}
-                  <option value="{{variables[v]}}">{{varsWithUnits[v]}}</option>
-                {% endfor %}
-              {% endif %}
-            </select>
-          </div>
-          <br>
-        {% endfor %}
-      </div>
+      <!-- <div class="col-md-12"> -->
+      {#% set gvars = gvars|dictsort %#}
+
+      {% set vars = gvars|map(attribute='var')|list %}
+      {% set units = gvars|map(attribute='unit')|list %}
+      {% set methods = gvars|map(attribute='method')|list %}
+      {% set addtl = gvars|map(attribute='addtl')|list %}
+      {% set vlen = gvars|length %}
+
+      {% for c in range(columns|length) %}
+        <div class="input-group">
+          <span class="input-group-addon">{{columns[c]}}</span>
+          <select id="ddA{{c}}" class="form-control text-right" name="{{columns[c]}}">
+            {% if columns[c] in cdict.keys() %}
+              <option value=""></option>
+              {% for v in range(vlen) %}
+                {% if vars[v] == cdict[columns[c]] %}
+                  <option value="{{vars[v]}}" selected>
+                    {{units[v]}}
+                  </option>
+                {% else %}
+                  <option value="{{vars[v]}}">
+                    {{units[v]}}
+                  </option>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <option selected value=""></option>
+              {% for v in range(vlen) %}
+                <option value="{{vars[v]}}">{{units[v]}}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <br>
+      {% endfor %}
+
+      <!-- </div> -->
+    </div>
+
+    <input type="hidden" name="mdict" value="">
+    <div class='col-md-3 col-md-offset-1 text-center'>
+      <!-- <div class="col-md-12 text-center"> -->
+      <p><strong>Method</strong></p>
+
+      {% for m in range(columns|length) %}
+        <div class="input-group">
+          <span class="input-group-addon"></span>
+          <select id="ddB{{m}}" class="form-control text-right" name="{{columns[m]}}">
+            {% if columns[m] in cdict.keys() %}
+              <!-- <option value=""></option> -->
+              {% for v in range(vlen) %}
+                {% if vars[v] == cdict[columns[m]] %}
+                  {% for mm in range(methods[v]|length) %}
+                    {% if methods[v][mm] == mdict[columns[m]] %}
+                      <option value="{{methods[v][mm]}}" selected>
+                        {{methods[v][mm]}}
+                      </option>
+                    {% else %}
+                      <option value="{{methods[v][mm]}}">
+                        {{methods[v][mm]}}
+                      </option>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <option value="" selected></option>
+            {% endif %}
+          </select>
+        </div>
+        <br>
+      {% endfor %}
+
+      <!-- </div> -->
+    </div>
+    <div class='col-md-2 col-md-offset-1' style='background-color: green'>
+      <p> chili </p>
+    </div>
+    <!-- </div> -->
+  </div>
+<br>
+
+
       <br>
       <div class="col-md-4 col-md-offset-2">
         <button name="columnin" type="submit" class="btn btn-primary btn-block">
@@ -211,11 +267,8 @@ drift.load('s2rst4h926mg');
         <input type='button' class="btn btn-danger btn-block"
         value='Cancel' onclick="location.href = 'grab_upload';">
       </div>
-    </div>
-    <!-- </div> -->
-  </div>
+
 </form>
-<br>
 <!-- <br>
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
@@ -271,16 +324,36 @@ $(function(){
 
 $(function(){
   $('button[name=columnin]').click(function() {
+
+    //accumulate user-selected variable names
     cvals = [];
     $("select[id^='ddA']").each(function(){
-    // $("#choosecolumns").find("select").each(function(){
-      if($(this).val()!=""){
+      if($(this).val() != ""){
         cvals.push( $(this).serializeArray()[0] )
       }
     });
-    //cdict = JSON.stringify($("#choosecolumns").find("select").serializeArray());
     cdict = JSON.stringify(cvals);
     $('#choosecolumns input[name=cdict]').val( cdict );
+
+    //accumulate user-selected methods
+    mvals = [];
+    $("select[id^='ddB']").each(function(){
+      if($(this).val() != ""){
+        mvals.push( $(this).serializeArray()[0] )
+      }
+    });
+    mdict = JSON.stringify(mvals);
+    $('#choosecolumns input[name=mdict]').val(mdict);
+
+    // //accumulate user-selected additional attributes
+    // avals = [];
+    // $("select[id^='ddC']").each(function(){
+    //   if($(this).val() != ""){
+    //     avals.push( $(this).serializeArray()[0] )
+    //   }
+    // });
+    // adict = JSON.stringify(avals);
+    // $('#choosecolumns input[name=adict]').val(adict);
   });
 })
 

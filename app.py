@@ -283,14 +283,19 @@ class Grabcols(db.Model):
     site = db.Column(db.String(50))
     rawcol = db.Column(db.String(100))
     dbcol = db.Column(db.String(100))
+    method = db.Column(db.String(40))
+    addtl = db.Column(db.String(40))
+
     def __init__(self, region, site, rawcol, dbcol):
         self.region = region
         self.site = site
         self.rawcol = rawcol
         self.dbcol = dbcol
+        self.method = method
+        self.addtl = addtl
+
     def __repr__(self):
         return '<Grabcols %r, %r, %r>' % (self.region, self.site, self.dbcol)
-
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -400,44 +405,145 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
 'Light5_lux', 'Light5_PAR', 'Battery_V']
 
-grab_variables = ['Br', 'Ca', 'Cl', 'K',
-'Mg', 'Na', 'NH4', 'NO3', 'PO4',
-'SiO2', 'SO4', 'Total_Fe',
-'Total_Mn', 'TOC', 'TN', 'TDP', 'DOC',
-'TSS', 'fDOM', 'CO2', 'CH4', 'N2O',
-'DO', 'DO_Sat', 'Chlorophyll-a', 'Alkalinity', 'pH',
-'Spec_Cond', 'Turbidity', 'Light_Atten',
-'Illuminance', 'PAR', 'UV_Absorbance',
-'Canopy_Cover', 'Width', 'Depth', 'Distance',
-'Discharge', 'k', 'Water_Temp',
-'Air_Temp', 'Water_Pres', 'Air_Pres']
+o = 'other'
+grab_variables = [
+{'var': 'Br', 'unit': 'Br (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Ca', 'unit': 'Ca (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Cl', 'unit': 'Cl (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'K', 'unit': 'K (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Mg', 'unit': 'Mg (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Na', 'unit': 'Na (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'NH4', 'unit': 'NH4 (molar)', 'method': ['FIA',o], 'addtl': 'a'},
+{'var': 'NO3', 'unit': 'NO3 (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
+{'var': 'PO4', 'unit': 'PO4 (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
+{'var': 'SiO2', 'unit': 'SiO2 (molar)', 'method': ['FIA','spectrophotometer',o], 'addtl': 'a'},
+{'var': 'SO4', 'unit': 'SO4 (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Total_Fe', 'unit': 'Total_Fe (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
+{'var': 'Total_Mn', 'unit': 'Total_Mn (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
+{'var': 'TOC', 'unit': 'TOC (ppm)', 'method': ['TOC-TN',o], 'addtl': 'a'},
+{'var': 'TN', 'unit': 'TN (ppm)', 'method': ['TOC-TN',o], 'addtl': 'a'},
+{'var': 'TDP', 'unit': 'TDP (mg/L)', 'method': ['Ascorbic Acid Method',o], 'addtl': 'a'},
+{'var': 'DOC', 'unit': 'DOC (ppm)', 'method': ['combustion','oxidation',o], 'addtl': 'a'},
+{'var': 'TSS', 'unit': 'TSS (ppm)', 'method': ['dry mass','backscatter',o], 'addtl': 'a'},
+{'var': 'fDOM', 'unit': 'fDOM (ppb)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'CO2', 'unit': 'CO2 (ppm)', 'method': ['sonde','GC',o], 'addtl': 'a'},
+{'var': 'CH4', 'unit': 'CH4 (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
+{'var': 'N2O', 'unit': 'N2O (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
+{'var': 'DO', 'unit': 'DO (mg/L)', 'method': ['sensor',o], 'addtl': 'a'},
+{'var': 'DO_Sat', 'unit': 'DO_Sat (%)', 'method': ['sensor',o], 'addtl': 'a'},
+{'var': 'Chlorophyll-a', 'unit': 'Chlorophyll-a (mg/L)', 'method': ['spectrophotometer',o], 'addtl': 'a'},
+{'var': 'Alkalinity', 'unit': 'Alkalinity (meq/L)', 'method': ['FIA','titration',o], 'addtl': 'a'},
+{'var': 'pH', 'unit': 'pH', 'method': ['ISFET',o], 'addtl': 'a'},
+{'var': 'Spec_Cond', 'unit': 'Spec_Cond (mS/cm)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Turbidity', 'unit': 'Turbidity (NTU)', 'method': ['turbidimeter',o], 'addtl': 'a'},
+{'var': 'Light_Atten', 'unit': 'Light_Atten (m^-1)', 'method': ['pyranometer',o], 'addtl': 'a'},
+{'var': 'Illuminance', 'unit': 'Illuminance (lux)', 'method': ['lux meter',o], 'addtl': 'a'},
+{'var': 'PAR', 'unit': 'PAR (W/m^2)', 'method': ['pyranometer',o], 'addtl': 'a'},
+{'var': 'UV_Absorbance', 'unit': 'UV_Absorbance (cm^-1)', 'method': ['spectrophotometer',o], 'addtl': 'a'},
+{'var': 'Canopy_Cover', 'unit': 'Canopy_Cover (LAI)', 'method': ['field measurement','remote sensing','model',o], 'addtl': 'a'},
+{'var': 'Width', 'unit': 'Width (m)', 'method': ['field measurement',o], 'addtl': 'a'},
+{'var': 'Depth', 'unit': 'Depth (m)', 'method': ['field measurement',o], 'addtl': 'a'},
+{'var': 'Distance', 'unit': 'Distance (m)', 'method': ['field measurement',o], 'addtl': 'a'},
+{'var': 'Discharge', 'unit': 'Discharge (m^3/s)', 'method': ['flow meter','salt slug',o], 'addtl': 'a'},
+{'var': 'k', 'unit': 'k (min^-1)', 'method': ['argon','propane','SF6','radon','floating chamber',o], 'addtl': 'a'},
+{'var': 'Water_Temp', 'unit': 'Water_Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Air_Temp', 'unit': 'Air_Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Water_Pres', 'unit': 'Water_Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Air_Pres', 'unit': 'Air_Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'}
+]
+# #'Substrate',  Bed_Cover?, Flow,
+
+# o = u'other'
+# grab_variables = {
+# 'Br': ('Br (molar)', ['IC',o]),
+# 'Ca': ('Ca (molar)', ['IC',o]),
+# 'Cl': ('Cl (molar)', ['IC',o]),
+# 'K': ('K (molar)', ['IC',o]),
+# 'Mg': ('Mg (molar)', ['IC',o]),
+# 'Na': ('Na (molar)', ['IC',o]),
+# 'NH4': ('NH4 (molar)', ['FIA',o]),
+# 'NO3': ('NO3 (molar)', ['IC','FIA',o]),
+# 'PO4': ('PO4 (molar)', ['IC','FIA',o]),
+# 'SiO2': ('SiO2 (molar)', ['FIA','spectrophotometer',o]),
+# 'SO4': ('SO4 (molar)', ['IC',o]),
+# 'Total_Fe': ('Total_Fe (molar)', ['spectroscopy','FIA',o]),
+# 'Total_Mn': ('Total_Mn (molar)', ['spectroscopy','FIA',o]),
+# 'TOC': ('TOC (ppm)', ['TOC-TN',o]),
+# 'TN': ('TN (ppm)', ['TOC-TN',o]),
+# 'TDP': ('TDP (mg/L)', ['Ascorbic Acid Method',o]),
+# 'DOC': ('DOC (ppm)', ['combustion','oxidation',o]),
+# 'TSS': ('TSS (ppm)', ['dry mass','backscatter',o]),
+# 'fDOM': ('fDOM (ppb)', ['sonde',o]),
+# 'CO2': ('CO2 (ppm)', ['sonde','GC',o]),
+# 'CH4': ('CH4 (ug/L)', ['GC',o]),
+# 'N2O': ('N2O (ug/L)', ['GC',o]),
+# 'DO': ('DO (mg/L)', ['sensor',o]),
+# 'DO_Sat': ('DO_Sat (%)', ['sensor',o]),
+# 'Chlorophyll-a': ('Chlorophyll-a (mg/L)', ['spectrophotometer',o]),
+# 'Alkalinity': ('Alkalinity (meq/L)', ['FIA','titration',o]),
+# 'pH': ('pH', ['ISFET',o]),
+# 'Spec_Cond': ('Spec_Cond (mS/cm)', ['sonde',o]),
+# 'Turbidity': ('Turbidity (NTU)', ['turbidimeter',o]),
+# 'Light_Atten': ('Light_Atten (m^-1)', ['pyranometer',o]),
+# 'Illuminance': ('Illuminance (lux)', ['lux meter',o]),
+# 'PAR': ('PAR (W/m^2)', ['pyranometer',o]),
+# 'UV_Absorbance': ('UV_Absorbance (cm^-1)', ['spectrophotometer',o]),
+# 'Canopy_Cover': ('Canopy_Cover (LAI)', ['field measurement','remote sensing','model',o]),
+# 'Width': ('Width (m)', ['field measurement',o]),
+# 'Depth': ('Depth (m)', ['field measurement',o]),
+# 'Distance': ('Distance (m)', ['field measurement',o]),
+# 'Discharge': ('Discharge (m^3/s)', ['flow meter','salt slug',o]),
+# 'k': ('k (min^-1)', ['argon','propane','SF6','radon','floating chamber',o]),
+# 'Water_Temp': ('Water_Temp (C)', ['sonde',o]),
+# 'Air_Temp': ('Air_Temp (C)', ['sonde',o]),
+# 'Water_Pres': ('Water_Pres (kPa)', ['sonde',o]),
+# 'Air_Pres': ('Air_Pres (kPa)', ['sonde',o])
+# }
 #'Substrate',  Bed_Cover?, Flow,
 
-grab_vars_with_units = ['Br (molar)', 'Ca (molar)', 'Cl (molar)', 'K (molar)',
-'Mg (molar)', 'Na (molar)', 'NH4 (molar)', 'NO3 (molar)', 'PO4 (molar)',
-'SiO2 (molar)', 'SO4 (molar)', 'Total_Fe (molar)',
-'Total_Mn (molar)', 'TOC (ppm)', 'TN (ppm)', 'TDP (mg/L)', 'DOC (ppm)',
-'TSS (ppm)', 'fDOM (ppb)', 'CO2 (ppm)', 'CH4 (ug/L)', 'N2O (ug/L)',
-'DO (mg/L)', 'DO_Sat (%)', 'Chlorophyll-a (mg/L)', 'Alkalinity (meq/L)', 'pH',
-'Spec_Cond (mS/cm)', 'Turbidity (NTU)', 'Light_Atten (m^-1)',
-'Illuminance (lux)', 'PAR (W/m^2)', 'UV_Absorbance (cm^-1)',
-'Canopy_Cover (LAI)', 'Width (m)', 'Depth (m)', 'Distance (m)',
-'Discharge (m^3/s)', 'k (min^-1)', 'Water_Temp (C)',
-'Air_Temp (C)', 'Water_Pres (kPa)', 'Air_Pres (kPa)']
-#'Substrate ()',  Bed_Cover? (), Flow (Laminar, etc.),
 
-grab_methods = ['IC', 'IC', 'IC', 'IC',
-'IC', 'IC', 'FIA', ['IC','FIA'], ['IC','FIA'],
-['FIA','spectrophotometer'], 'IC', ['spectroscopy','FIA'],
-['spectroscopy','FIA'], 'TOC-TN', 'TOC-TN', 'Ascorbic Acid Method', ['combustion','oxidation'],
-['dry mass','backscatter'], 'sonde', ['sonde','GC'], 'GC', 'GC',
-'sensor', 'sensor', 'spectrophotometer', ['FIA','titration'], 'ISFET',
-'sonde', 'turbidimeter', 'pyranometer',
-'lux meter', 'pyranometer', 'spectrophotometer',
-['field measurement','remote sensing','model'], 'field measurement', 'field measurement', 'field measurement',
-['flow meter','salt slug'], ['argon','propane','SF6','radon','floating chamber'], 'sonde',
-'sonde', 'sonde', 'sonde']
-#'Substrate',  Bed_Cover?, Flow,
+# #corresponding elements of grab_variables, grab_vars_with_units, grab_methods,
+# #and grab_filters must remain aligned. If you add a new variable, update all
+# #four lists with a new element and put it at the same index for each.
+# grab_variables = ['Br', 'Ca', 'Cl', 'K',
+# 'Mg', 'Na', 'NH4', 'NO3', 'PO4',
+# 'SiO2', 'SO4', 'Total_Fe',
+# 'Total_Mn', 'TOC', 'TN', 'TDP', 'DOC',
+# 'TSS', 'fDOM', 'CO2', 'CH4', 'N2O',
+# 'DO', 'DO_Sat', 'Chlorophyll-a', 'Alkalinity', 'pH',
+# 'Spec_Cond', 'Turbidity', 'Light_Atten',
+# 'Illuminance', 'PAR', 'UV_Absorbance',
+# 'Canopy_Cover', 'Width', 'Depth', 'Distance',
+# 'Discharge', 'k', 'Water_Temp',
+# 'Air_Temp', 'Water_Pres', 'Air_Pres']
+# #'Substrate',  Bed_Cover?, Flow,
+#
+# grab_vars_with_units = ['Br (molar)', 'Ca (molar)', 'Cl (molar)', 'K (molar)',
+# 'Mg (molar)', 'Na (molar)', 'NH4 (molar)', 'NO3 (molar)', 'PO4 (molar)',
+# 'SiO2 (molar)', 'SO4 (molar)', 'Total_Fe (molar)',
+# 'Total_Mn (molar)', 'TOC (ppm)', 'TN (ppm)', 'TDP (mg/L)', 'DOC (ppm)',
+# 'TSS (ppm)', 'fDOM (ppb)', 'CO2 (ppm)', 'CH4 (ug/L)', 'N2O (ug/L)',
+# 'DO (mg/L)', 'DO_Sat (%)', 'Chlorophyll-a (mg/L)', 'Alkalinity (meq/L)', 'pH',
+# 'Spec_Cond (mS/cm)', 'Turbidity (NTU)', 'Light_Atten (m^-1)',
+# 'Illuminance (lux)', 'PAR (W/m^2)', 'UV_Absorbance (cm^-1)',
+# 'Canopy_Cover (LAI)', 'Width (m)', 'Depth (m)', 'Distance (m)',
+# 'Discharge (m^3/s)', 'k (min^-1)', 'Water_Temp (C)',
+# 'Air_Temp (C)', 'Water_Pres (kPa)', 'Air_Pres (kPa)']
+# #'Substrate ()',  Bed_Cover? (), Flow (Laminar, etc.),
+#
+# o = 'other'
+# grab_methods = [['IC',o], ['IC',o], ['IC',o], ['IC',o],
+# ['IC',o], ['IC',o], ['FIA',o], ['IC','FIA',o], ['IC','FIA',o],
+# ['FIA','spectrophotometer',o], ['IC',o], ['spectroscopy','FIA',o],
+# ['spectroscopy','FIA',o], ['TOC-TN',o], ['TOC-TN',o], ['Ascorbic Acid Method',o], ['combustion','oxidation',o],
+# ['dry mass','backscatter',o], ['sonde',o], ['sonde','GC',o], ['GC',o], ['GC',o],
+# ['sensor',o], ['sensor',o], ['spectrophotometer',o], ['FIA','titration',o], ['ISFET',o],
+# ['sonde',o], ['turbidimeter',o], ['pyranometer',o],
+# ['lux meter',o], ['pyranometer',o], ['spectrophotometer',o],
+# ['field measurement','remote sensing','model',o], ['field measurement',o], ['field measurement',o], ['field measurement',o],
+# ['flow meter','salt slug',o], ['argon','propane','SF6','radon','floating chamber',o], ['sonde',o],
+# ['sonde',o], ['sonde',o], ['sonde',o]]
+# #'Substrate',  Bed_Cover?, Flow,
 
 #R code for outlier detection
 with open('find_outliers.R', 'r') as f:
@@ -1150,10 +1256,12 @@ def grab_upload():
             ureg = filename.split('_')[0]
             usites = list(x.Sitecode)
             urs = [ureg + '_' + s for s in usites]
-            cdict = pd.read_sql("select * from grabcols where site in ('" +\
+            coldict = pd.read_sql("select * from grabcols where site in ('" +\
                 "', '".join(usites) + "') and region='" + ureg + "';",
                 db.engine)
-            cdict = dict(zip(cdict['rawcol'], cdict['dbcol'])) #varname mappings
+            cdict = dict(zip(coldict['rawcol'], coldict['dbcol'])) #varname mappings
+            mdict = dict(zip(coldict['rawcol'], coldict['method'])) #method mappings
+            adict = dict(zip(coldict['rawcol'], coldict['addtl'])) #additional mappings
 
         except:
             msg = Markup('Error 002. Please <a href=' +\
@@ -1163,40 +1271,41 @@ def grab_upload():
             flash(msg, 'alert-danger')
             return redirect(request.url)
 
-        try:
+        # try:
 
-            # get list of new sites
-            allsites = pd.read_sql("select concat(region, '_', site) as" +\
-                " sitenm from site", db.engine).sitenm.tolist()
-            new = list(set([rs for rs in urs if rs not in allsites]))
+        # get list of new sites
+        allsites = pd.read_sql("select concat(region, '_', site) as" +\
+            " sitenm from site", db.engine).sitenm.tolist()
+        new = list(set([rs for rs in urs if rs not in allsites]))
 
-            flash("Please double check your variable name matching.",
-                'alert-warning')
+        flash("Please double check your variable name matching.",
+            'alert-warning')
 
-            #write csv to disk; establish session variables to pass on
-            x.to_csv(fnlong, index=False)
-            session['fnlong'] = fnlong
-            session['upload_complete'] = False
-            session['filenameNoV'] = filenameNoV
+        #write csv to disk; establish session variables to pass on
+        x.to_csv(fnlong, index=False)
+        session['fnlong'] = fnlong
+        session['upload_complete'] = False
+        session['filenameNoV'] = filenameNoV
 
-            #go to next screen
-            return render_template('grab_upload_columns.html', filename=filename,
-                columns=columns, variables=grab_variables,
-                varsWithUnits=grab_vars_with_units, cdict=cdict,
-                newsites=new, sitenames=allsites, replacing=replace)
+        #go to next screen
+        return render_template('grab_upload_columns.html', filename=filename,
+            columns=columns, gvars=grab_variables,
+            # variables=grab_variables, varsWithUnits=grab_vars_with_units, methods=grab_methods,
+            cdict=cdict, mdict=mdict, adict=adict,
+            newsites=new, sitenames=allsites, replacing=replace)
 
-        except:
-            msg = Markup('Error 003. Please <a href=' +\
-                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-                'email Mike Vlah</a> with the error number and a copy of ' +\
-                'the file you tried to upload.')
-            flash(msg, 'alert-danger')
-            try:
-                os.remove(fnlong)
-            except:
-                pass
-            finally:
-                return redirect(request.url)
+        # except:
+        #     msg = Markup('Error 003. Please <a href=' +\
+        #         '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+        #         'email Mike Vlah</a> with the error number and a copy of ' +\
+        #         'the file you tried to upload.')
+        #     flash(msg, 'alert-danger')
+        #     try:
+        #         os.remove(fnlong)
+        #     except:
+        #         pass
+        #     finally:
+        #         return redirect(request.url)
 
 @app.route("/upload_cancel",methods=["POST"])
 def cancelcolumns(): #only used when cancelling series_upload
@@ -1294,21 +1403,25 @@ def updatedb(xx, fnamelist, replace=False):
     else: #if not replacing, just insert new data
         chunker_ingester(xx)
 
-def grab_updatecdict(region, sitelist, cdict):
+def grab_updatecdict(region, sitelist, cdict, mdict):
+
+    #3 adict updates
 
     #get input variable name list
     rawcols = pd.read_sql("select * from grabcols where region='" + region +\
         "' and site in ('" + "', '".join(sitelist) + "')", db.engine)
     rawcols = set(rawcols['rawcol'].tolist())
 
-    #update or establish variable name mappings
+    #update or establish varname, method, addtl mappings
     for c in cdict.keys():
         for s in sitelist:
             if c in rawcols: # update
                 cx = Grabcols.query.filter_by(rawcol=c, site=s).first()
                 cx.dbcol = cdict[c] # assign new dbcol value for this rawcol
+                cx.method = mdict[c] # assign new method
+                # cx.addtl = adict[c] # assign new additional attributes
             else: # add
-                cx = Grabcols(region, s, c, cdict[c])
+                cx = Grabcols(region, s, c, cdict[c], mdict[c])#, adict[c])
                 db.session.add(cx)
 
 def grab_updatedb(xx, fnamelist, replace=False):
@@ -1461,6 +1574,8 @@ def grab_confirmcolumns():
 
         #retrieve variables from request, session, and filesystem
         cdict = json.loads(request.form['cdict'])
+        mdict = json.loads(request.form['mdict'])
+        # mdict = json.loads(request.form['mdict'])
         fnlong = session.get('fnlong')
         xx = pd.read_csv(fnlong, parse_dates=[0])
         filenameNoV = session.get('filenameNoV')
@@ -1496,8 +1611,10 @@ def grab_confirmcolumns():
                 filenameNoV + "'", db.engine)
             upID = list(upID.id)[0]
 
-        #parse cdict into usable dictionary
+        #parse input dict objects into usable dictionaries
         cdict = dict([(r['name'], r['value']) for r in cdict])
+        mdict = dict([(r['name'], r['value']) for r in mdict])
+        # adict = dict([(r['name'], r['value']) for r in adict])
 
         #replace user varnames with database varnames; attach upload_id column
         xx_pre = xx.iloc[:,0:2]
@@ -1565,7 +1682,7 @@ def grab_confirmcolumns():
         #add data and varname mappings to db tables
         grab_updatedb(xx, [filenameNoV], replace)
         sitelist = list(set(xx.site))
-        grab_updatecdict(region, sitelist, cdict)
+        grab_updatecdict(region, sitelist, cdict, mdict)#, adict)
 
     except:
         msg = Markup('Error 005. Please <a href=' +\
