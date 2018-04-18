@@ -158,7 +158,8 @@ drift.load('s2rst4h926mg');
   <br>
 
   <div class="row">
-    <div class="col-md-6 col-md-offset-3">
+    <!-- <div class="col-md-12"> -->
+    <div class="col-md-6">
       <!-- <input type="hidden" name="tmpfile" value="{{tmpfile}}"> -->
       <input type="hidden" name="cdict" value="">
 
@@ -172,23 +173,27 @@ drift.load('s2rst4h926mg');
         <p><strong>Unit</strong></p>
       </div> -->
       <div class="col-md-10 col-md-offset-1">
-        {% for c in columns %}
+        {% for c in range(columns|length) %}
           <div class="input-group">
-            <span class="input-group-addon">{{c}}</span>
-            <select class="form-control" name="{{c}}">
-              {% if c in cdict.keys() %}
+            <span class="input-group-addon">{{columns[c]}}</span>
+            <select id="ddA{{c}}" class="form-control text-right" name="{{columns[c]}}">
+              {% if columns[c] in cdict.keys() %}
                 <option value=""></option>
-                {% for v in variables %}
-                  {% if v == cdict[c] %}
-                    <option value="{{v}}" selected>{{v}}</option>
+                {% for v in range(variables|length) %}
+                  {% if variables[v] == cdict[columns[c]] %}
+                    <option id="{{v}}" value="{{variables[v]}}" selected>
+                      {{varsWithUnits[v]}}
+                    </option>
                   {% else %}
-                    <option value="{{v}}">{{v}}</option>
+                    <option value="{{variables[v]}}">
+                      {{varsWithUnits[v]}}
+                    </option>
                   {% endif %}
                 {% endfor %}
               {% else %}
                 <option selected value=""></option>
-                {% for v in variables %}
-                  <option value="{{v}}">{{v}}</option>
+                {% for v in range(variables|length) %}
+                  <option value="{{variables[v]}}">{{varsWithUnits[v]}}</option>
                 {% endfor %}
               {% endif %}
             </select>
@@ -207,6 +212,7 @@ drift.load('s2rst4h926mg');
         value='Cancel' onclick="location.href = 'grab_upload';">
       </div>
     </div>
+    <!-- </div> -->
   </div>
 </form>
 <br>
@@ -230,17 +236,50 @@ function alertbox(alrt, msg){
 }
 
 $(function(){
+  // $('#ddA0').change(function(){console.log('g')});
+  // for(var i = 0; i < columns.length){
+    // $('#').click(console.log('fart'));
+  // }
+  $("select[id^='ddA']").each(function(){
+    $(this).change(function(){
+      if($(this).val() === 'TOC'){
+        console.log('a')
+      }
+    });
+    // if($(this).val() === "shit"){
+      // console.log('f');
+    // }
+  });
+});
+
+// function populateMethods(){
+//   var e = document.getElementById('dd1');
+//   // for(var i = 0; i < columns.length)
+//   if('TOC' === e.options[0].value){
+//     console.log("yo")
+//   }
+// }
+// document.getElementById("dd1").addEventListener("click", populateMethods);
+
+// function populateMethods2(){
+//   var e = document.getElementById('TOC');
+//   if('TOC' === e.value){
+//     console.log("yo2")
+//   }
+// }
+// document.getElementById("TOC").addEventListener("click", populateMethods2);
+
+$(function(){
   $('button[name=columnin]').click(function() {
     cvals = [];
-    $("#choosecolumns").find("select").each(function(){
+    $("select[id^='ddA']").each(function(){
+    // $("#choosecolumns").find("select").each(function(){
       if($(this).val()!=""){
         cvals.push( $(this).serializeArray()[0] )
       }
     });
     //cdict = JSON.stringify($("#choosecolumns").find("select").serializeArray());
     cdict = JSON.stringify(cvals);
-    console.log('OI')
-    console.log(cdict)
     $('#choosecolumns input[name=cdict]').val( cdict );
   });
 })

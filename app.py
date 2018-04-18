@@ -400,9 +400,44 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
 'Light5_lux', 'Light5_PAR', 'Battery_V']
 
-grab_variables = ['TOC_ppm', 'TN_ppm', 'Ammonium',
-'Phosphate_lachat', 'Sodium', 'Potassium', 'Magnesium', 'Calcium', 'Chloride',
-'Sulfate', 'Bromide', 'Nitrate', 'Phosphate_IC']
+grab_variables = ['Br', 'Ca', 'Cl', 'K',
+'Mg', 'Na', 'NH4', 'NO3', 'PO4',
+'SiO2', 'SO4', 'Total_Fe',
+'Total_Mn', 'TOC', 'TN', 'TDP', 'DOC',
+'TSS', 'fDOM', 'CO2', 'CH4', 'N2O',
+'DO', 'DO_Sat', 'Chlorophyll-a', 'Alkalinity', 'pH',
+'Spec_Cond', 'Turbidity', 'Light_Atten',
+'Illuminance', 'PAR', 'UV_Absorbance',
+'Canopy_Cover', 'Width', 'Depth', 'Distance',
+'Discharge', 'k', 'Water_Temp',
+'Air_Temp', 'Water_Pres', 'Air_Pres']
+#'Substrate',  Bed_Cover?, Flow,
+
+grab_vars_with_units = ['Br (molar)', 'Ca (molar)', 'Cl (molar)', 'K (molar)',
+'Mg (molar)', 'Na (molar)', 'NH4 (molar)', 'NO3 (molar)', 'PO4 (molar)',
+'SiO2 (molar)', 'SO4 (molar)', 'Total_Fe (molar)',
+'Total_Mn (molar)', 'TOC (ppm)', 'TN (ppm)', 'TDP (mg/L)', 'DOC (ppm)',
+'TSS (ppm)', 'fDOM (ppb)', 'CO2 (ppm)', 'CH4 (ug/L)', 'N2O (ug/L)',
+'DO (mg/L)', 'DO_Sat (%)', 'Chlorophyll-a (mg/L)', 'Alkalinity (meq/L)', 'pH',
+'Spec_Cond (mS/cm)', 'Turbidity (NTU)', 'Light_Atten (m^-1)',
+'Illuminance (lux)', 'PAR (W/m^2)', 'UV_Absorbance (cm^-1)',
+'Canopy_Cover (LAI)', 'Width (m)', 'Depth (m)', 'Distance (m)',
+'Discharge (m^3/s)', 'k (min^-1)', 'Water_Temp (C)',
+'Air_Temp (C)', 'Water_Pres (kPa)', 'Air_Pres (kPa)']
+#'Substrate ()',  Bed_Cover? (), Flow (Laminar, etc.),
+
+grab_methods = ['IC', 'IC', 'IC', 'IC',
+'IC', 'IC', 'FIA', ['IC','FIA'], ['IC','FIA'],
+['FIA','spectrophotometer'], 'IC', ['spectroscopy','FIA'],
+['spectroscopy','FIA'], 'TOC-TN', 'TOC-TN', 'Ascorbic Acid Method', ['combustion','oxidation'],
+['dry mass','backscatter'], 'sonde', ['sonde','GC'], 'GC', 'GC',
+'sensor', 'sensor', 'spectrophotometer', ['FIA','titration'], 'ISFET',
+'sonde', 'turbidimeter', 'pyranometer',
+'lux meter', 'pyranometer', 'spectrophotometer',
+['field measurement','remote sensing','model'], 'field measurement', 'field measurement', 'field measurement',
+['flow meter','salt slug'], ['argon','propane','SF6','radon','floating chamber'], 'sonde',
+'sonde', 'sonde', 'sonde']
+#'Substrate',  Bed_Cover?, Flow,
 
 #R code for outlier detection
 with open('find_outliers.R', 'r') as f:
@@ -1146,7 +1181,8 @@ def grab_upload():
 
             #go to next screen
             return render_template('grab_upload_columns.html', filename=filename,
-                columns=columns, variables=grab_variables, cdict=cdict,
+                columns=columns, variables=grab_variables,
+                varsWithUnits=grab_vars_with_units, cdict=cdict,
                 newsites=new, sitenames=allsites, replacing=replace)
 
         except:

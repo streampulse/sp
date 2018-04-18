@@ -1,6 +1,11 @@
 #Mike's Logbook
 
-###thur20180412
+###tue20180417
+ + building new interface for grab upload. got units incorporated; working on methods dropdowns.
+###mon20180416
+ + created site, variable, and metadata report for all locations
+ + investigating HBEF site issues in preparation for new wave of development 
+###thu20180412
  + completed powell review
 ###wed20180411
  + powell review
