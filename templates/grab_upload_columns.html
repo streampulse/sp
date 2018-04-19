@@ -216,14 +216,14 @@ drift.load('s2rst4h926mg');
     <input type="hidden" name="mdict" value="">
     <div class='col-md-3 col-md-offset-1 text-center'>
       <!-- <div class="col-md-12 text-center"> -->
-      <p><strong>Method</strong></p>
+      <p><strong>Method/Instrument</strong></p>
 
       {% for m in range(columns|length) %}
         <div class="input-group">
           {% if columns[m] in cdict.keys() %}
-            <span class="input-group-addon"></span>
+            <!-- <span id='sB{{m}}' class="input-group-addon" style='visibility:visible'></span> -->
             <select id="ddB{{m}}" class="form-control text-right"
-            name="{{columns[m]}}">
+            name="{{columns[m]}}" style='visibility:visible'>
               <!-- <option value=""></option> -->
               {% for v in range(vlen) %}
                 {% if vars[v] == cdict[columns[m]] %}
@@ -242,7 +242,7 @@ drift.load('s2rst4h926mg');
               {% endfor %}
             </select>
           {% else %}
-            <span id='sB{{m}}' class="input-group-addon" style='visibility:hidden'></span>
+            <!-- <span id='sB{{m}}' class="input-group-addon" style='visibility:hidden'></span> -->
             <select id="ddB{{m}}" class="form-control text-right"
             name="{{columns[m]}}" style='visibility:hidden'>
               <option value=""></option>
@@ -295,27 +295,33 @@ function alertbox(alrt, msg){
 
 $(function(){
 
-  // var columns = {{ columns|safe }}
-  // var vlen = {{ vlen|safe }}
   var vars = {{ vars|safe }}
   var methods = {{ methods|safe }}
   var addtl = {{ addtl|safe }}
 
   $("select[id^='ddA']").each(function(i){
     $(this).change(function(){
-      // for(var i = 0, i <
-      var ind = vars.indexOf( $(this).val() );
-      var newmethods = methods[ind]
-      console.log(newmethods)
+
       var ddB = $("select[id='ddB" + i + "']");
-      ddB.empty();
-      $.each(newmethods, function(i, m){
-        ddB.append($("<option></option>").attr("value", m).text(m));
-      });
-      ddB.val('other');
-      //set first element as default, then make stuff visible,
-      //then do the same stuff for addtl column, then fix col widths,
-      //then respace submit and cancel buttons
+
+      if($(this).val() != ''){
+
+        var ind = vars.indexOf( $(this).val() );
+        var newmethods = methods[ind]
+
+        ddB.empty();
+        $.each(newmethods, function(i, m){
+          ddB.append($("<option></option>").attr("value", m).text(m));
+        });
+        ddB.val(newmethods[0]);
+        // $("select[id='sB" + i + "']").css('visibility', 'visible');
+        ddB.attr('style', 'visibility: visible');
+      } else {
+        ddB.empty();
+        // $("select[id='sB" + i + "']").css('visibility', 'hidden');
+        ddB.attr('style', 'visibility: hidden');
+      };
+
     });
   });
 });

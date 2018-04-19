@@ -1,5 +1,8 @@
 #Mike's Logbook
 
+###thu20180419
+ + visibility toggle done
+ + fixed old bug in API that produced error when there was no USGS discharge or level data for a requested date range
 ###wed20180418
  + done with method auto-population for previous selections
  + done with responsive method auto-selection as users make choices

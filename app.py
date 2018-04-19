@@ -407,49 +407,49 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 
 o = 'other'
 grab_variables = [
-{'var': 'Br', 'unit': 'Br (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Ca', 'unit': 'Ca (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Cl', 'unit': 'Cl (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'K', 'unit': 'K (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Mg', 'unit': 'Mg (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Na', 'unit': 'Na (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'NH4', 'unit': 'NH4 (molar)', 'method': ['FIA',o], 'addtl': 'a'},
-{'var': 'NO3', 'unit': 'NO3 (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
-{'var': 'PO4', 'unit': 'PO4 (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
-{'var': 'SiO2', 'unit': 'SiO2 (molar)', 'method': ['FIA','spectrophotometer',o], 'addtl': 'a'},
-{'var': 'SO4', 'unit': 'SO4 (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Total_Fe', 'unit': 'Total_Fe (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
-{'var': 'Total_Mn', 'unit': 'Total_Mn (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
+{'var': 'Br', 'unit': 'Bromide (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Ca', 'unit': 'Calcium (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Cl', 'unit': 'Chloride (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'K', 'unit': 'Potassium (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Mg', 'unit': 'Magnesium (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Na', 'unit': 'Sodium (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'NH4', 'unit': 'Ammonium (molar)', 'method': ['FIA',o], 'addtl': 'a'},
+{'var': 'NO3', 'unit': 'Nitrate (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
+{'var': 'PO4', 'unit': 'Phosphate (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
+{'var': 'SiO2', 'unit': 'Silica (molar)', 'method': ['FIA','spectrophotometer',o], 'addtl': 'a'},
+{'var': 'SO4', 'unit': 'Sulfate (molar)', 'method': ['IC',o], 'addtl': 'a'},
+{'var': 'Total_Fe', 'unit': 'Total Fe (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
+{'var': 'Total_Mn', 'unit': 'Total Mn (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
 {'var': 'TOC', 'unit': 'TOC (ppm)', 'method': ['TOC-TN',o], 'addtl': 'a'},
 {'var': 'TN', 'unit': 'TN (ppm)', 'method': ['TOC-TN',o], 'addtl': 'a'},
 {'var': 'TDP', 'unit': 'TDP (mg/L)', 'method': ['Ascorbic Acid Method',o], 'addtl': 'a'},
 {'var': 'DOC', 'unit': 'DOC (ppm)', 'method': ['combustion','oxidation',o], 'addtl': 'a'},
 {'var': 'TSS', 'unit': 'TSS (ppm)', 'method': ['dry mass','backscatter',o], 'addtl': 'a'},
 {'var': 'fDOM', 'unit': 'fDOM (ppb)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'CO2', 'unit': 'CO2 (ppm)', 'method': ['sonde','GC',o], 'addtl': 'a'},
-{'var': 'CH4', 'unit': 'CH4 (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
-{'var': 'N2O', 'unit': 'N2O (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
+{'var': 'CO2', 'unit': 'Carbon dioxide (ppm)', 'method': ['sonde','GC',o], 'addtl': 'a'},
+{'var': 'CH4', 'unit': 'Methane (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
+{'var': 'N2O', 'unit': 'Nitrous oxide (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
 {'var': 'DO', 'unit': 'DO (mg/L)', 'method': ['sensor',o], 'addtl': 'a'},
-{'var': 'DO_Sat', 'unit': 'DO_Sat (%)', 'method': ['sensor',o], 'addtl': 'a'},
+{'var': 'DO_Sat', 'unit': 'DO Sat (%)', 'method': ['sensor',o], 'addtl': 'a'},
 {'var': 'Chlorophyll-a', 'unit': 'Chlorophyll-a (mg/L)', 'method': ['spectrophotometer',o], 'addtl': 'a'},
 {'var': 'Alkalinity', 'unit': 'Alkalinity (meq/L)', 'method': ['FIA','titration',o], 'addtl': 'a'},
 {'var': 'pH', 'unit': 'pH', 'method': ['ISFET',o], 'addtl': 'a'},
-{'var': 'Spec_Cond', 'unit': 'Spec_Cond (mS/cm)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Spec_Cond', 'unit': 'Spec Cond (mS/cm)', 'method': ['sonde',o], 'addtl': 'a'},
 {'var': 'Turbidity', 'unit': 'Turbidity (NTU)', 'method': ['turbidimeter',o], 'addtl': 'a'},
-{'var': 'Light_Atten', 'unit': 'Light_Atten (m^-1)', 'method': ['pyranometer',o], 'addtl': 'a'},
+{'var': 'Light_Atten', 'unit': 'Light Atten. (m^-1)', 'method': ['pyranometer',o], 'addtl': 'a'},
 {'var': 'Illuminance', 'unit': 'Illuminance (lux)', 'method': ['lux meter',o], 'addtl': 'a'},
 {'var': 'PAR', 'unit': 'PAR (W/m^2)', 'method': ['pyranometer',o], 'addtl': 'a'},
-{'var': 'UV_Absorbance', 'unit': 'UV_Absorbance (cm^-1)', 'method': ['spectrophotometer',o], 'addtl': 'a'},
-{'var': 'Canopy_Cover', 'unit': 'Canopy_Cover (LAI)', 'method': ['field measurement','remote sensing','model',o], 'addtl': 'a'},
+{'var': 'UV_Absorbance', 'unit': 'UV Absorbance (cm^-1)', 'method': ['spectrophotometer',o], 'addtl': 'a'},
+{'var': 'Canopy_Cover', 'unit': 'Canopy Cover (LAI)', 'method': ['field measurement','remote sensing','model',o], 'addtl': 'a'},
 {'var': 'Width', 'unit': 'Width (m)', 'method': ['field measurement',o], 'addtl': 'a'},
 {'var': 'Depth', 'unit': 'Depth (m)', 'method': ['field measurement',o], 'addtl': 'a'},
 {'var': 'Distance', 'unit': 'Distance (m)', 'method': ['field measurement',o], 'addtl': 'a'},
 {'var': 'Discharge', 'unit': 'Discharge (m^3/s)', 'method': ['flow meter','salt slug',o], 'addtl': 'a'},
 {'var': 'k', 'unit': 'k (min^-1)', 'method': ['argon','propane','SF6','radon','floating chamber',o], 'addtl': 'a'},
-{'var': 'Water_Temp', 'unit': 'Water_Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'Air_Temp', 'unit': 'Air_Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'Water_Pres', 'unit': 'Water_Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'Air_Pres', 'unit': 'Air_Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'}
+{'var': 'Water_Temp', 'unit': 'Water Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Air_Temp', 'unit': 'Air Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Water_Pres', 'unit': 'Water Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'},
+{'var': 'Air_Pres', 'unit': 'Air Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'}
 ]
 # #'Substrate',  Bed_Cover?, Flow,
 
@@ -777,14 +777,31 @@ def panda_usgs(x,jsof):
     ts = jsof['value']['timeSeries'][x]
     usgst = pd.read_json(json.dumps(ts['values'][0]['value']))
     vcode = ts['variable']['variableCode'][0]['value']
+
     if vcode=='00060': # discharge
-        usgst.value = usgst.value/35.3147
         colnm = 'USGSDischarge_m3s'
+        if usgst.empty: #return empty df in dict
+            out = {ts['sourceInfo']['siteCode'][0]['value']:
+                pd.DataFrame({'DateTime_UTC':[],
+                colnm:[]}).set_index(["DateTime_UTC"])}
+            return out
+        else:
+            usgst.value = usgst.value / 35.3147
     else:
-        usgst.value = usgst.value/3.28084
         colnm = 'USGSLevel_m'
-    usgst['site'] = ts['sourceInfo']['siteCode'][0]['value'] # site code
-    return {ts['sourceInfo']['siteCode'][0]['value']:usgst[['dateTime','value']].rename(columns={'dateTime':'DateTime_UTC','value':colnm}).set_index(["DateTime_UTC"])}
+        if usgst.empty:
+            out = {ts['sourceInfo']['siteCode'][0]['value']:
+                pd.DataFrame({'DateTime_UTC':[],
+                colnm:[]}).set_index(["DateTime_UTC"])}
+            return out
+        else:
+            usgst.value = usgst.value / 3.28084
+
+    # usgst['site'] = ts['sourceInfo']['siteCode'][0]['value'] # site code
+    out = {ts['sourceInfo']['siteCode'][0]['value']:usgst[['dateTime',
+        'value']].rename(columns={'dateTime':'DateTime_UTC',
+        'value':colnm}).set_index(["DateTime_UTC"])}
+    return out
 
 def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
     # regionsite is a list
@@ -798,11 +815,13 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
     sitex = [x for x in sitex if x is not None]
     usgs = ",".join(sitex)
     #lat,lng = sitex.loc[:,['latitude','longitude']].values.tolist()[0]
-    if(len(sitex)==0 or usgs is None):
+    if(len(sitex) == 0 or usgs is None):
         return []
     vcds = '00060,00065'#",".join(vvv)
     #request usgs water service data in universal time (T01:15 makes it line up with our datasets)
-    url = "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&sites="+usgs+"&startDT="+startDate+"T01:15Z&endDT="+endDate+"T23:59Z&parameterCd="+vcds+"&siteStatus=all"
+    url = "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&sites=" + \
+        usgs + "&startDT=" + startDate + "T01:15Z&endDT=" + endDate + \
+        "T23:59Z&parameterCd=" + vcds + "&siteStatus=all"
     r = requests.get(url)
     print r.status_code
     if r.status_code != 200:
@@ -824,8 +843,14 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
     xx.name="value"
     xx = xx.reset_index()
     xx[['region','site']] = xx['site'].str.split("_",expand=True)
-    xx.head()
+    # xx.head()
+
     return xx[['DateTime_UTC','region','site','variable','value']]
+
+    # else:
+        # xx = pd.DataFrame({'DateTime_UTC':[], 'region':[], 'site':[],
+        #     'variable':[], 'value':[]})
+        # return xx
 
 def authenticate_sites(sites,user=None,token=None):
     ss = []
