@@ -174,7 +174,7 @@ drift.load('s2rst4h926mg');
         <p><strong>Unit</strong></p>
       </div> -->
       <!-- <div class="col-md-12"> -->
-      {#% set gvars = gvars|dictsort %#}
+      <!-- {#% set gvars = gvars|dictsort %#} -->
 
       {% set vars = gvars|map(attribute='var')|list %}
       {% set units = gvars|map(attribute='unit')|list %}
@@ -220,9 +220,10 @@ drift.load('s2rst4h926mg');
 
       {% for m in range(columns|length) %}
         <div class="input-group">
-          <span class="input-group-addon"></span>
-          <select id="ddB{{m}}" class="form-control text-right" name="{{columns[m]}}">
-            {% if columns[m] in cdict.keys() %}
+          {% if columns[m] in cdict.keys() %}
+            <span class="input-group-addon"></span>
+            <select id="ddB{{m}}" class="form-control text-right"
+            name="{{columns[m]}}">
               <!-- <option value=""></option> -->
               {% for v in range(vlen) %}
                 {% if vars[v] == cdict[columns[m]] %}
@@ -239,10 +240,14 @@ drift.load('s2rst4h926mg');
                   {% endfor %}
                 {% endif %}
               {% endfor %}
-            {% else %}
-              <option value="" selected></option>
-            {% endif %}
-          </select>
+            </select>
+          {% else %}
+            <span id='sB{{m}}' class="input-group-addon" style='visibility:hidden'></span>
+            <select id="ddB{{m}}" class="form-control text-right"
+            name="{{columns[m]}}" style='visibility:hidden'>
+              <option value=""></option>
+            </select>
+          {% endif %}
         </div>
         <br>
       {% endfor %}
@@ -289,19 +294,29 @@ function alertbox(alrt, msg){
 }
 
 $(function(){
-  // $('#ddA0').change(function(){console.log('g')});
-  // for(var i = 0; i < columns.length){
-    // $('#').click(console.log('fart'));
-  // }
-  $("select[id^='ddA']").each(function(){
+
+  // var columns = {{ columns|safe }}
+  // var vlen = {{ vlen|safe }}
+  var vars = {{ vars|safe }}
+  var methods = {{ methods|safe }}
+  var addtl = {{ addtl|safe }}
+
+  $("select[id^='ddA']").each(function(i){
     $(this).change(function(){
-      if($(this).val() === 'TOC'){
-        console.log('a')
-      }
+      // for(var i = 0, i <
+      var ind = vars.indexOf( $(this).val() );
+      var newmethods = methods[ind]
+      console.log(newmethods)
+      var ddB = $("select[id='ddB" + i + "']");
+      ddB.empty();
+      $.each(newmethods, function(i, m){
+        ddB.append($("<option></option>").attr("value", m).text(m));
+      });
+      ddB.val('other');
+      //set first element as default, then make stuff visible,
+      //then do the same stuff for addtl column, then fix col widths,
+      //then respace submit and cancel buttons
     });
-    // if($(this).val() === "shit"){
-      // console.log('f');
-    // }
   });
 });
 

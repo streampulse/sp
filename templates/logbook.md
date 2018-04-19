@@ -1,5 +1,9 @@
 #Mike's Logbook
 
+###wed20180418
+ + done with method auto-population for previous selections
+ + done with responsive method auto-selection as users make choices
+ + halfway done with dropdown visibility toggle
 ###tue20180417
  + building new interface for grab upload. got units incorporated; working on methods dropdowns.
 ###mon20180416
