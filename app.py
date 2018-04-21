@@ -284,14 +284,16 @@ class Grabcols(db.Model):
     rawcol = db.Column(db.String(100))
     dbcol = db.Column(db.String(100))
     method = db.Column(db.String(40))
+    write_in = db.Column(db.String(40))
     addtl = db.Column(db.String(40))
 
-    def __init__(self, region, site, rawcol, dbcol):
+    def __init__(self, region, site, rawcol, dbcol, method, write_in, addtl):
         self.region = region
         self.site = site
         self.rawcol = rawcol
         self.dbcol = dbcol
         self.method = method
+        self.write_in = write_in
         self.addtl = addtl
 
     def __repr__(self):
@@ -405,51 +407,54 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
 'Light5_lux', 'Light5_PAR', 'Battery_V']
 
+
 o = 'other'
+# fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer']
+# fltr_opts = ['filtered-45mm', 'filtered-other', 'unfiltered']
 grab_variables = [
-{'var': 'Br', 'unit': 'Bromide (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Ca', 'unit': 'Calcium (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Cl', 'unit': 'Chloride (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'K', 'unit': 'Potassium (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Mg', 'unit': 'Magnesium (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Na', 'unit': 'Sodium (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'NH4', 'unit': 'Ammonium (molar)', 'method': ['FIA',o], 'addtl': 'a'},
-{'var': 'NO3', 'unit': 'Nitrate (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
-{'var': 'PO4', 'unit': 'Phosphate (molar)', 'method': ['IC','FIA',o], 'addtl': 'a'},
-{'var': 'SiO2', 'unit': 'Silica (molar)', 'method': ['FIA','spectrophotometer',o], 'addtl': 'a'},
-{'var': 'SO4', 'unit': 'Sulfate (molar)', 'method': ['IC',o], 'addtl': 'a'},
-{'var': 'Total_Fe', 'unit': 'Total Fe (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
-{'var': 'Total_Mn', 'unit': 'Total Mn (molar)', 'method': ['spectroscopy','FIA',o], 'addtl': 'a'},
-{'var': 'TOC', 'unit': 'TOC (ppm)', 'method': ['TOC-TN',o], 'addtl': 'a'},
-{'var': 'TN', 'unit': 'TN (ppm)', 'method': ['TOC-TN',o], 'addtl': 'a'},
-{'var': 'TDP', 'unit': 'TDP (mg/L)', 'method': ['Ascorbic Acid Method',o], 'addtl': 'a'},
-{'var': 'DOC', 'unit': 'DOC (ppm)', 'method': ['combustion','oxidation',o], 'addtl': 'a'},
-{'var': 'TSS', 'unit': 'TSS (ppm)', 'method': ['dry mass','backscatter',o], 'addtl': 'a'},
-{'var': 'fDOM', 'unit': 'fDOM (ppb)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'CO2', 'unit': 'Carbon dioxide (ppm)', 'method': ['sonde','GC',o], 'addtl': 'a'},
-{'var': 'CH4', 'unit': 'Methane (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
-{'var': 'N2O', 'unit': 'Nitrous oxide (ug/L)', 'method': ['GC',o], 'addtl': 'a'},
-{'var': 'DO', 'unit': 'DO (mg/L)', 'method': ['sensor',o], 'addtl': 'a'},
-{'var': 'DO_Sat', 'unit': 'DO Sat (%)', 'method': ['sensor',o], 'addtl': 'a'},
-{'var': 'Chlorophyll-a', 'unit': 'Chlorophyll-a (mg/L)', 'method': ['spectrophotometer',o], 'addtl': 'a'},
-{'var': 'Alkalinity', 'unit': 'Alkalinity (meq/L)', 'method': ['FIA','titration',o], 'addtl': 'a'},
-{'var': 'pH', 'unit': 'pH', 'method': ['ISFET',o], 'addtl': 'a'},
-{'var': 'Spec_Cond', 'unit': 'Spec Cond (mS/cm)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'Turbidity', 'unit': 'Turbidity (NTU)', 'method': ['turbidimeter',o], 'addtl': 'a'},
-{'var': 'Light_Atten', 'unit': 'Light Atten. (m^-1)', 'method': ['pyranometer',o], 'addtl': 'a'},
-{'var': 'Illuminance', 'unit': 'Illuminance (lux)', 'method': ['lux meter',o], 'addtl': 'a'},
-{'var': 'PAR', 'unit': 'PAR (W/m^2)', 'method': ['pyranometer',o], 'addtl': 'a'},
-{'var': 'UV_Absorbance', 'unit': 'UV Absorbance (cm^-1)', 'method': ['spectrophotometer',o], 'addtl': 'a'},
-{'var': 'Canopy_Cover', 'unit': 'Canopy Cover (LAI)', 'method': ['field measurement','remote sensing','model',o], 'addtl': 'a'},
-{'var': 'Width', 'unit': 'Width (m)', 'method': ['field measurement',o], 'addtl': 'a'},
-{'var': 'Depth', 'unit': 'Depth (m)', 'method': ['field measurement',o], 'addtl': 'a'},
-{'var': 'Distance', 'unit': 'Distance (m)', 'method': ['field measurement',o], 'addtl': 'a'},
-{'var': 'Discharge', 'unit': 'Discharge (m^3/s)', 'method': ['flow meter','salt slug',o], 'addtl': 'a'},
-{'var': 'k', 'unit': 'k (min^-1)', 'method': ['argon','propane','SF6','radon','floating chamber',o], 'addtl': 'a'},
-{'var': 'Water_Temp', 'unit': 'Water Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'Air_Temp', 'unit': 'Air Temp (C)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'Water_Pres', 'unit': 'Water Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'},
-{'var': 'Air_Pres', 'unit': 'Air Pres (kPa)', 'method': ['sonde',o], 'addtl': 'a'}
+{'var': 'Br', 'unit': 'Bromide (molar)', 'method': ['IC',o]},
+{'var': 'Ca', 'unit': 'Calcium (molar)', 'method': ['IC',o]},
+{'var': 'Cl', 'unit': 'Chloride (molar)', 'method': ['IC',o]},
+{'var': 'K', 'unit': 'Potassium (molar)', 'method': ['IC',o]},
+{'var': 'Mg', 'unit': 'Magnesium (molar)', 'method': ['IC',o]},
+{'var': 'Na', 'unit': 'Sodium (molar)', 'method': ['IC',o]},
+{'var': 'NH4', 'unit': 'Ammonium (molar)', 'method': ['FIA',o]},
+{'var': 'NO3', 'unit': 'Nitrate (molar)', 'method': ['IC','FIA',o]},
+{'var': 'PO4', 'unit': 'Phosphate (molar)', 'method': ['IC','FIA',o]},
+{'var': 'SiO2', 'unit': 'Silica (molar)', 'method': ['FIA','spectrophotometer',o]},
+{'var': 'SO4', 'unit': 'Sulfate (molar)', 'method': ['IC',o]},
+{'var': 'Total_Fe', 'unit': 'Total Fe (molar)', 'method': ['spectroscopy','FIA',o]},
+{'var': 'Total_Mn', 'unit': 'Total Mn (molar)', 'method': ['spectroscopy','FIA',o]},
+{'var': 'TOC', 'unit': 'TOC (ppm)', 'method': ['TOC-TN',o]},
+{'var': 'TN', 'unit': 'TN (ppm)', 'method': ['TOC-TN',o]},
+{'var': 'TDP', 'unit': 'TDP (mg/L)', 'method': ['Ascorbic Acid Method',o]},
+{'var': 'DOC', 'unit': 'DOC (ppm)', 'method': ['combustion','oxidation',o]},
+{'var': 'TSS', 'unit': 'TSS (ppm)', 'method': ['dry mass','backscatter',o]},
+{'var': 'fDOM', 'unit': 'fDOM (ppb)', 'method': ['sonde',o]},
+{'var': 'CO2', 'unit': 'Carbon dioxide (ppm)', 'method': ['sonde','GC',o]},
+{'var': 'CH4', 'unit': 'Methane (ug/L)', 'method': ['GC',o]},
+{'var': 'N2O', 'unit': 'Nitrous oxide (ug/L)', 'method': ['GC',o]},
+{'var': 'DO', 'unit': 'DO (mg/L)', 'method': ['sensor',o]},
+{'var': 'DO_Sat', 'unit': 'DO Sat (%)', 'method': ['sensor',o]},
+{'var': 'Chlorophyll-a', 'unit': 'Chlorophyll-a (mg/L)', 'method': ['spectrophotometer',o]},
+{'var': 'Alkalinity', 'unit': 'Alkalinity (meq/L)', 'method': ['FIA','titration',o]},
+{'var': 'pH', 'unit': 'pH', 'method': ['ISFET',o]},
+{'var': 'Spec_Cond', 'unit': 'Spec Cond (mS/cm)', 'method': ['sonde',o]},
+{'var': 'Turbidity', 'unit': 'Turbidity (NTU)', 'method': ['turbidimeter',o]},
+{'var': 'Light_Atten', 'unit': 'Light Atten. (m^-1)', 'method': ['pyranometer',o]},
+{'var': 'Illuminance', 'unit': 'Illuminance (lux)', 'method': ['lux meter',o]},
+{'var': 'PAR', 'unit': 'PAR (W/m^2)', 'method': ['pyranometer',o]},
+{'var': 'UV_Absorbance', 'unit': 'UV Absorbance (cm^-1)', 'method': ['spectrophotometer',o]},
+{'var': 'Canopy_Cover', 'unit': 'Canopy Cover (LAI)', 'method': ['field measurement','remote sensing','model',o]},
+{'var': 'Width', 'unit': 'Width (m)', 'method': ['field measurement',o]},
+{'var': 'Depth', 'unit': 'Depth (m)', 'method': ['field measurement',o]},
+{'var': 'Distance', 'unit': 'Distance (m)', 'method': ['field measurement',o]},
+{'var': 'Discharge', 'unit': 'Discharge (m^3/s)', 'method': ['flow meter','salt slug',o]},
+{'var': 'k', 'unit': 'k (min^-1)', 'method': ['argon','propane','SF6','radon','floating chamber',o]},
+{'var': 'Water_Temp', 'unit': 'Water Temp (C)', 'method': ['sonde',o]},
+{'var': 'Air_Temp', 'unit': 'Air Temp (C)', 'method': ['sonde',o]},
+{'var': 'Water_Pres', 'unit': 'Water Pres (kPa)', 'method': ['sonde',o]},
+{'var': 'Air_Pres', 'unit': 'Air Pres (kPa)', 'method': ['sonde',o]}
 ]
 # #'Substrate',  Bed_Cover?, Flow,
 
@@ -1286,6 +1291,7 @@ def grab_upload():
                 db.engine)
             cdict = dict(zip(coldict['rawcol'], coldict['dbcol'])) #varname mappings
             mdict = dict(zip(coldict['rawcol'], coldict['method'])) #method mappings
+            wdict = dict(zip(coldict['rawcol'], coldict['write_in'])) #more method mappings
             adict = dict(zip(coldict['rawcol'], coldict['addtl'])) #additional mappings
 
         except:
@@ -1316,7 +1322,7 @@ def grab_upload():
         return render_template('grab_upload_columns.html', filename=filename,
             columns=columns, gvars=grab_variables,
             # variables=grab_variables, varsWithUnits=grab_vars_with_units, methods=grab_methods,
-            cdict=cdict, mdict=mdict, adict=adict,
+            cdict=cdict, mdict=mdict, wdict=wdict, adict=adict,
             newsites=new, sitenames=allsites, replacing=replace)
 
         # except:
@@ -1428,9 +1434,7 @@ def updatedb(xx, fnamelist, replace=False):
     else: #if not replacing, just insert new data
         chunker_ingester(xx)
 
-def grab_updatecdict(region, sitelist, cdict, mdict):
-
-    #3 adict updates
+def grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict):
 
     #get input variable name list
     rawcols = pd.read_sql("select * from grabcols where region='" + region +\
@@ -1444,9 +1448,10 @@ def grab_updatecdict(region, sitelist, cdict, mdict):
                 cx = Grabcols.query.filter_by(rawcol=c, site=s).first()
                 cx.dbcol = cdict[c] # assign new dbcol value for this rawcol
                 cx.method = mdict[c] # assign new method
-                # cx.addtl = adict[c] # assign new additional attributes
+                cx.write_in = wdict[c] # assign new write-in method
+                cx.addtl = adict[c] # assign new additional attributes
             else: # add
-                cx = Grabcols(region, s, c, cdict[c], mdict[c])#, adict[c])
+                cx = Grabcols(region, s, c, cdict[c], mdict[c], wdict[c], adict[c])
                 db.session.add(cx)
 
 def grab_updatedb(xx, fnamelist, replace=False):
@@ -1595,127 +1600,129 @@ def confirmcolumns():
 @app.route("/grab_upload_confirm", methods=["POST"])
 def grab_confirmcolumns():
 
-    try:
+    # try:
 
-        #retrieve variables from request, session, and filesystem
-        cdict = json.loads(request.form['cdict'])
-        mdict = json.loads(request.form['mdict'])
-        # mdict = json.loads(request.form['mdict'])
-        fnlong = session.get('fnlong')
-        xx = pd.read_csv(fnlong, parse_dates=[0])
-        filenameNoV = session.get('filenameNoV')
-        region = filenameNoV.split('_')[0]
+    #retrieve variables from request, session, and filesystem
+    cdict = json.loads(request.form['cdict'])
+    mdict = json.loads(request.form['mdict'])
+    wdict = json.loads(request.form['wdict'])
+    adict = json.loads(request.form['adict'])
+    fnlong = session.get('fnlong')
+    xx = pd.read_csv(fnlong, parse_dates=[0])
+    filenameNoV = session.get('filenameNoV')
+    region = filenameNoV.split('_')[0]
 
-        #get list of all filenames on record
-        all_fnames = list(pd.read_sql('select distinct filename from grabupload',
-            db.engine).filename)
+    #get list of all filenames on record
+    all_fnames = list(pd.read_sql('select distinct filename from grabupload',
+        db.engine).filename)
 
-        #if this filename has not been seen before...
-        if filenameNoV not in all_fnames:
+    #if this filename has not been seen before...
+    if filenameNoV not in all_fnames:
 
-            update_upload_table = True
+        update_upload_table = True
 
-            #find out what next upload_id will be
-            last_upID = pd.read_sql("select max(id) as m from grabupload",
-                db.engine)
-            last_upID = list(last_upID.m)[0]
+        #find out what next upload_id will be
+        last_upID = pd.read_sql("select max(id) as m from grabupload",
+            db.engine)
+        last_upID = list(last_upID.m)[0]
 
-            if last_upID:
-                upID = last_upID + 1
-            else:
-                upID = 1
-
-                #reset auto increment for grabupload table
-                db.engine.execute('alter table grabupload auto_increment=1')
-
+        if last_upID:
+            upID = last_upID + 1
         else:
-            update_upload_table = False
+            upID = 1
 
-            #retrieve upload_id
-            upID = pd.read_sql("select id from grabupload where filename='" +\
-                filenameNoV + "'", db.engine)
-            upID = list(upID.id)[0]
+            #reset auto increment for grabupload table
+            db.engine.execute('alter table grabupload auto_increment=1')
 
-        #parse input dict objects into usable dictionaries
-        cdict = dict([(r['name'], r['value']) for r in cdict])
-        mdict = dict([(r['name'], r['value']) for r in mdict])
-        # adict = dict([(r['name'], r['value']) for r in adict])
+    else:
+        update_upload_table = False
 
-        #replace user varnames with database varnames; attach upload_id column
-        xx_pre = xx.iloc[:,0:2]
-        xx_post = xx.iloc[:,2:]
-        xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
-        xx = pd.concat([xx_pre, xx_post], axis=1)
-        xx['upload_id'] = upID
+        #retrieve upload_id
+        upID = pd.read_sql("select id from grabupload where filename='" +\
+            filenameNoV + "'", db.engine)
+        upID = list(upID.id)[0]
 
-        #if there are new sites, process them
-        if request.form['new_sites'] == "true":
+    #parse input dict objects into usable dictionaries
+    cdict = dict([(r['name'], r['value']) for r in cdict])
+    mdict = dict([(r['name'], r['value']) for r in mdict])
+    wdict = dict([(r['name'], r['value']) for r in wdict])
+    adict = dict([(r['name'], r['value']) for r in adict])
 
-            # automatically embargo for 1 year
-            embargo = 1
+    #replace user varnames with database varnames; attach upload_id column
+    xx_pre = xx.iloc[:,0:2]
+    xx_post = xx.iloc[:,2:]
+    xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
+    xx = pd.concat([xx_pre, xx_post], axis=1)
+    xx['upload_id'] = upID
 
-            #for each new site included in the uploaded csv...
-            for i in xrange(int(request.form['newlen'])):
+    #if there are new sites, process them
+    if request.form['new_sites'] == "true":
 
-                #get the name, split into site and region components
-                newsite = request.form['newsite' + str(i)]
-                region, site = newsite.split('_')[0:2]
+        # automatically embargo for 1 year
+        embargo = 1
 
-                #get usgs number if applicable
-                usgss = request.form['usgs' + str(i)]
-                if usgss == '':
-                    usgss = None
+        #for each new site included in the uploaded csv...
+        for i in xrange(int(request.form['newlen'])):
 
-                # add new site to Site table
-                sx = Site(region=region, site=site, by=current_user.get_id(),
-                    name=request.form['sitename' + str(i)],
-                    latitude=request.form['lat' + str(i)],
-                    longitude=request.form['lng' + str(i)],
-                    usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
-                    contact=request.form['contactName' + str(i)],
-                    contactEmail=request.form['contactEmail' + str(i)])
-                db.session.add(sx)
+            #get the name, split into site and region components
+            newsite = request.form['newsite' + str(i)]
+            region, site = newsite.split('_')[0:2]
 
-                # make a new text file with the metadata
-                metastring = request.form['metadata' + str(i)]
-                metafilepath = os.path.join(app.config['META_FOLDER'],
-                    region + "_" + site + "_metadata.txt")
+            #get usgs number if applicable
+            usgss = request.form['usgs' + str(i)]
+            if usgss == '':
+                usgss = None
 
-                with open(metafilepath, 'a') as metafile:
-                    metafile.write(metastring)
+            # add new site to Site table
+            sx = Site(region=region, site=site, by=current_user.get_id(),
+                name=request.form['sitename' + str(i)],
+                latitude=request.form['lat' + str(i)],
+                longitude=request.form['lng' + str(i)],
+                usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
+                contact=request.form['contactName' + str(i)],
+                contactEmail=request.form['contactEmail' + str(i)])
+            db.session.add(sx)
 
-        #format df for database entry
-        xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
-        xx.columns.name = 'variable'
-        xx = xx.stack() #one col each for vars and vals
-        xx.name = "value"
-        xx = xx.reset_index()
-        xx = xx.groupby(['DateTime_UTC', 'variable',
-            'Sitecode']).mean().reset_index() #dupes
-        xx['region'] = region
-        xx['flag'] = None
-        xx.rename(columns={'Sitecode':'site'}, inplace=True)
-        xx = xx[['region','site','DateTime_UTC','variable','value','flag',
-            'upload_id']]
+            # make a new text file with the metadata
+            metastring = request.form['metadata' + str(i)]
+            metafilepath = os.path.join(app.config['META_FOLDER'],
+                region + "_" + site + "_metadata.txt")
 
-        replace = True if request.form['replacing']=='true' else False
+            with open(metafilepath, 'a') as metafile:
+                metafile.write(metastring)
 
-        if update_upload_table:
-            uq = Grabupload(filenameNoV)
-            db.session.add(uq)
+    #format df for database entry
+    xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
+    xx.columns.name = 'variable'
+    xx = xx.stack() #one col each for vars and vals
+    xx.name = "value"
+    xx = xx.reset_index()
+    xx = xx.groupby(['DateTime_UTC', 'variable',
+        'Sitecode']).mean().reset_index() #dupes
+    xx['region'] = region
+    xx['flag'] = None
+    xx.rename(columns={'Sitecode':'site'}, inplace=True)
+    xx = xx[['region','site','DateTime_UTC','variable','value','flag',
+        'upload_id']]
 
-        #add data and varname mappings to db tables
-        grab_updatedb(xx, [filenameNoV], replace)
-        sitelist = list(set(xx.site))
-        grab_updatecdict(region, sitelist, cdict, mdict)#, adict)
+    replace = True if request.form['replacing']=='true' else False
 
-    except:
-        msg = Markup('Error 005. Please <a href=' +\
-            '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-            'email</a> Mike Vlah with the error number and a copy of ' +\
-            'the file you tried to upload.')
-        flash(msg, 'alert-danger')
-        return redirect(request.url)
+    if update_upload_table:
+        uq = Grabupload(filenameNoV)
+        db.session.add(uq)
+
+    #add data and varname mappings to db tables
+    grab_updatedb(xx, [filenameNoV], replace)
+    sitelist = list(set(xx.site))
+    grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict)
+
+    # except:
+    #     msg = Markup('Error 005. Please <a href=' +\
+    #         '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+    #         'email</a> Mike Vlah with the error number and a copy of ' +\
+    #         'the file you tried to upload.')
+    #     flash(msg, 'alert-danger')
+    #     return redirect(request.url)
 
     db.session.commit() #persist all db changes made during upload
     session['upload_complete'] = True

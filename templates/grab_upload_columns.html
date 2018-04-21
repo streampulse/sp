@@ -179,7 +179,7 @@ drift.load('s2rst4h926mg');
       {% set vars = gvars|map(attribute='var')|list %}
       {% set units = gvars|map(attribute='unit')|list %}
       {% set methods = gvars|map(attribute='method')|list %}
-      {% set addtl = gvars|map(attribute='addtl')|list %}
+      <!-- {#% set addtl = gvars|map(attribute='addtl')|list %#} -->
       {% set vlen = gvars|length %}
 
       {% for c in range(columns|length) %}
@@ -214,16 +214,17 @@ drift.load('s2rst4h926mg');
     </div>
 
     <input type="hidden" name="mdict" value="">
-    <div class='col-md-3 col-md-offset-1 text-center'>
+    <div class='col-md-3 text-center'>
       <!-- <div class="col-md-12 text-center"> -->
       <p><strong>Method/Instrument</strong></p>
 
       {% for m in range(columns|length) %}
-        <div class="input-group">
-          {% if columns[m] in cdict.keys() %}
+        <!-- <div class="input-group"> -->
+          {% if columns[m] in mdict.keys() %}
             <!-- <span id='sB{{m}}' class="input-group-addon" style='visibility:visible'></span> -->
-            <select id="ddB{{m}}" class="form-control text-right"
-            name="{{columns[m]}}" style='visibility:visible'>
+            <!-- class="form-control text-right" -->
+            <select id="ddB{{m}}" name="{{columns[m]}}" style='visibility:visible'
+            class="form-control text-center">
               <!-- <option value=""></option> -->
               {% for v in range(vlen) %}
                 {% if vars[v] == cdict[columns[m]] %}
@@ -243,20 +244,67 @@ drift.load('s2rst4h926mg');
             </select>
           {% else %}
             <!-- <span id='sB{{m}}' class="input-group-addon" style='visibility:hidden'></span> -->
-            <select id="ddB{{m}}" class="form-control text-right"
-            name="{{columns[m]}}" style='visibility:hidden'>
+            <select id="ddB{{m}}" name="{{columns[m]}}" style='visibility:hidden'
+            class="form-control text-center">
               <option value=""></option>
             </select>
           {% endif %}
-        </div>
+        <!-- </div> -->
         <br>
       {% endfor %}
 
       <!-- </div> -->
     </div>
-    <div class='col-md-2 col-md-offset-1' style='background-color: green'>
-      <p> chili </p>
+
+    <input type="hidden" name="wdict" value="">
+    <div class='col-md-2 text-center'>
+      <p><strong>Write-in option</strong></p>
+      {% for w in range(columns|length) %}
+        {% if columns[w] in cdict.keys() and mdict[columns[w]] == 'other' %}
+          <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:visible'
+          class="form-control text-left" value={{wdict[columns[w]]}} required>
+          </input>
+        {% else %}
+          <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:hidden'
+          class="form-control text-left">
+          </input>
+        {% endif %}
+        <br>
+      {% endfor %}
     </div>
+
+    {% set fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer', 'other'] %}
+    {% set fltr_opts = ['filtered-45mm', 'filtered-other', 'unfiltered', 'unknown/NA'] %}
+
+    <input type="hidden" name="adict" value="">
+    <div class='col-md-2 text-center'>
+      <p><strong>Addtl</strong></p>
+      {% for a in range(columns|length) %}
+        {% if columns[a] in adict.keys() and mdict[columns[a]] in fltr_methods %}
+          <select id="ddD{{a}}" name="{{columns[a]}}" style='visibility:visible'
+          class="form-control text-center">
+            {% for o in fltr_opts %}
+              {% if o == adict[columns[a]] %}
+                <option value="{{o}}" selected>{{o}}</option>
+              {% else %}
+                <option value="{{o}}">{{o}}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        {% else %}
+          <!-- {#% if mdict[columns[a]] in filtr_methods %#} -->
+          <select id="ddD{{a}}" name="{{columns[a]}}" style='visibility:hidden'
+          class="form-control text-center">
+            <option value=""></option>
+          </select>
+          <!-- {#% endif %#} -->
+        {% endif %}
+        <br>
+      {% endfor %}
+
+      <!-- </div> -->
+    </div>
+
     <!-- </div> -->
   </div>
 <br>
@@ -274,6 +322,7 @@ drift.load('s2rst4h926mg');
       </div>
 
 </form>
+<br><br>
 <!-- <br>
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
@@ -284,6 +333,7 @@ drift.load('s2rst4h926mg');
   </div>
 </div>
 <br> -->
+<!-- <input type='button' id='test'> -->
 
 <script>
 
@@ -293,16 +343,28 @@ function alertbox(alrt, msg){
     ' + msg + '</div>'
 }
 
+// $("select[id^='ddB']").selectize({
+//   delimiter: ',',
+//   persist: false,
+//   create: function(input){
+//     return {value: input, text: input}
+//   }
+// });
+
+//handlers for first column of dropdowns
 $(function(){
 
   var vars = {{ vars|safe }}
   var methods = {{ methods|safe }}
-  var addtl = {{ addtl|safe }}
+  // var addtl = {{ addtl|safe }}
 
   $("select[id^='ddA']").each(function(i){
     $(this).change(function(){
 
       var ddB = $("select[id='ddB" + i + "']");
+      var iC = $("input[id='iC" + i + "']");
+      var ddD = $("select[id='ddD" + i + "']");
+      // var ddB = $("select[id='ddB" + i + "']")[0].selectize;
 
       if($(this).val() != ''){
 
@@ -310,21 +372,89 @@ $(function(){
         var newmethods = methods[ind]
 
         ddB.empty();
+        // ddB.clear();
+        // ddB.clearOptions();
+
         $.each(newmethods, function(i, m){
           ddB.append($("<option></option>").attr("value", m).text(m));
+            // ddB.addOption([{value:m, text:m}]);
+            // ddB.refreshOptions();
         });
         ddB.val(newmethods[0]);
+
+        var fltr_methods = {{ fltr_methods|safe }}
+        var fltr_opts = {{ fltr_opts|safe }}
+
+        ddD.empty();
+        if( fltr_methods.includes(ddB.val()) ){
+          $.each(fltr_opts, function(i, f){
+            ddD.append($("<option></option>").attr("value", f).text(f));
+          });
+          ddD.val(fltr_opts[0]);
+          ddD.attr('style', 'visibility: visible');
+        } else {
+          ddD.attr('style', 'visibility: hidden');
+        }
+
+        // ddB.select(newmethods[0]);
         // $("select[id='sB" + i + "']").css('visibility', 'visible');
         ddB.attr('style', 'visibility: visible');
+
       } else {
+
         ddB.empty();
+        // ddB.clear();
+        // ddB.clearOptions();
         // $("select[id='sB" + i + "']").css('visibility', 'hidden');
         ddB.attr('style', 'visibility: hidden');
+        ddD.empty();
+        ddD.attr('style', 'visibility: hidden');
       };
+
+      iC.val('');
+      iC.attr('style', 'visibility: hidden');
+      iC.prop('required', false);
 
     });
   });
 });
+
+//handlers for methods column of dropdowns
+$(function(){
+  $("select[id^='ddB']").each(function(i){
+    $(this).change(function(){
+
+      var iC = $("input[id='iC" + i + "']");
+      var ddD = $("select[id='ddD" + i + "']");
+
+      if($(this).val() == 'other'){
+        iC.val('');
+        iC.attr('style', 'visibility: visible');
+        iC.prop('required', true);
+      } else {
+        iC.val('');
+        iC.attr('style', 'visibility: hidden');
+        iC.prop('required', false);
+      };
+
+      var fltr_methods = {{ fltr_methods|safe }}
+      var fltr_opts = {{ fltr_opts|safe }}
+
+      ddD.empty();
+      if( fltr_methods.includes($(this).val()) ){
+        $.each(fltr_opts, function(i, f){
+          ddD.append($("<option></option>").attr("value", f).text(f));
+        });
+        ddD.val(fltr_opts[0]);
+        ddD.attr('style', 'visibility: visible');
+      } else {
+        ddD.attr('style', 'visibility: hidden');
+      }
+
+    });
+  });
+});
+
 
 // function populateMethods(){
 //   var e = document.getElementById('dd1');
@@ -343,10 +473,23 @@ $(function(){
 // }
 // document.getElementById("TOC").addEventListener("click", populateMethods2);
 
+// $(function(){
+//   $('#test').click(function() {
+//     avals = [];
+//     $("select[id^='ddD']").each(function(){
+//       if($(this).val() != ""){
+//         avals.push( $(this).serializeArray()[0] )
+//       }
+//     });
+//     adict = JSON.stringify(avals);
+//     console.log(adict);
+//   });
+// });
+
 $(function(){
   $('button[name=columnin]').click(function() {
 
-    //accumulate user-selected variable names
+    //accumulate user-specified variable names
     cvals = [];
     $("select[id^='ddA']").each(function(){
       if($(this).val() != ""){
@@ -356,25 +499,44 @@ $(function(){
     cdict = JSON.stringify(cvals);
     $('#choosecolumns input[name=cdict]').val( cdict );
 
-    //accumulate user-selected methods
+    //accumulate user-specified methods (including write-in methods)
     mvals = [];
-    $("select[id^='ddB']").each(function(){
+    wvals = [];
+    avals = [];
+    $("select[id^='ddB']").each(function(i){
       if($(this).val() != ""){
-        mvals.push( $(this).serializeArray()[0] )
+        mvals.push( $(this).serializeArray()[0] );
+        // if($('#iC' + i).val() != ""){
+        wvals.push( $('#iC' + i).serializeArray()[0] );
+
+        var ddD = $('#ddD' + i)
+        if(ddD.val() != null){
+          avals.push( ddD.serializeArray()[0] );
+        } else {
+          var emptyval = ddD.serializeArray()[0];
+          emptyval.value = '';
+          avals.push(emptyval);
+        }
+        // }
       }
     });
     mdict = JSON.stringify(mvals);
     $('#choosecolumns input[name=mdict]').val(mdict);
+    wdict = JSON.stringify(wvals);
+    $('#choosecolumns input[name=wdict]').val(wdict);
+    adict = JSON.stringify(avals);
+    $('#choosecolumns input[name=adict]').val(adict);
 
-    // //accumulate user-selected additional attributes
+    //accumulate user-selected additional attributes
     // avals = [];
-    // $("select[id^='ddC']").each(function(){
+    // $("select[id^='ddD']").each(function(){
     //   if($(this).val() != ""){
     //     avals.push( $(this).serializeArray()[0] )
     //   }
     // });
     // adict = JSON.stringify(avals);
     // $('#choosecolumns input[name=adict]').val(adict);
+
   });
 })
 
