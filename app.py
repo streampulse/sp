@@ -159,21 +159,29 @@ class Grabdata(db.Model):
     DateTime_UTC = db.Column(db.DateTime)
     variable = db.Column(db.String(50))
     value = db.Column(db.Float)
+    method = db.Column(db.String(40))
+    write_in = db.Column(db.String(40))
+    addtl = db.Column(db.String(40))
     flag = db.Column(db.Integer)
     upload_id = db.Column(db.Integer)
 
-    def __init__(self, region, site, DateTime_UTC, variable, value, flag, upid):
+    def __init__(self, region, site, DateTime_UTC, variable, value, method,
+        write_in, addtl, flag, upid):
         self.region = region
         self.site = site
         self.DateTime_UTC = DateTime_UTC
         self.variable = variable
         self.value = value
+        self.method = method
+        self.write_in = write_in
+        self.addtl = addtl
         self.flag = flag
         self.upload_id = upid
 
     def __repr__(self):
         return '<Grabdata %r, %r, %r, %r, %r>' % (self.region, self.site,
-        self.DateTime_UTC, self.variable, self.upload_id)
+            self.DateTime_UTC, self.variable, self.method, self.write_in,
+            self.addtl, self.upload_id)
 
 # class Manual(db.Model):
 #     id = db.Column(db.Integer, primary_key=True)
@@ -1494,7 +1502,8 @@ def grab_updatedb(xx, fnamelist, replace=False):
             try:
                 d = Grabdata.query.filter(Grabdata.region==r['region'], Grabdata.site==r['site'],
                     Grabdata.upload_id==r['upload_id'], Grabdata.variable==r['variable'],
-                    Grabdata.DateTime_UTC==r['DateTime_UTC']).first()
+                    Grabdata.method==r['method'], Grabdata.write_in==r['write_in'],
+                    Grabdata.addtl==r['addtl'], Grabdata.DateTime_UTC==r['DateTime_UTC']).first()
                 d.flag = r['flag']
                 db.session.add(d)
             except:
@@ -1603,17 +1612,12 @@ def grab_confirmcolumns():
     # try:
 
     #retrieve variables from request, session, and filesystem
-    from pprint import pprint
     cdict = json.loads(request.form['cdict'])
-    pprint(cdict)
     mdict = json.loads(request.form['mdict'])
-    #remove Nones introduced when setting a prepopuated variable to blank
+    #remove Nones introduced when setting a prepopulated variable to blank
     mdict = [m for m in mdict if m is not None]
-    pprint(mdict)
     wdict = json.loads(request.form['wdict'])
-    pprint(wdict)
     adict = json.loads(request.form['adict'])
-    pprint(adict)
     fnlong = session.get('fnlong')
     xx = pd.read_csv(fnlong, parse_dates=[0])
     filenameNoV = session.get('filenameNoV')
@@ -1652,15 +1656,9 @@ def grab_confirmcolumns():
     #parse input dict objects into usable dictionaries
     cdict = dict([(r['name'], r['value']) for r in cdict])
     mdict = dict([(r['name'], r['value']) for r in mdict])
+    print mdict
     wdict = dict([(r['name'], r['value']) for r in wdict])
     adict = dict([(r['name'], r['value']) for r in adict])
-
-    #replace user varnames with database varnames; attach upload_id column
-    xx_pre = xx.iloc[:,0:2]
-    xx_post = xx.iloc[:,2:]
-    xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
-    xx = pd.concat([xx_pre, xx_post], axis=1)
-    xx['upload_id'] = upID
 
     #if there are new sites, process them
     if request.form['new_sites'] == "true":
@@ -1698,19 +1696,57 @@ def grab_confirmcolumns():
             with open(metafilepath, 'a') as metafile:
                 metafile.write(metastring)
 
+    #replace user varnames with database varnames; attach upload_id column
+    # xx_pre = xx.iloc[:,0:2]
+    # xx_post = xx.iloc[:,2:]
+    # xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
+    # xx = pd.concat([xx_pre, xx_post], axis=1)
+    cols_to_drop = [i for i in xx.columns[2:] if i not in cdict.keys()]
+    xx = xx.drop(cols_to_drop, axis=1)
+    xx['upload_id'] = upID
+    # print 'upid added'
+    # print xx.head()
+    # print xx
+
     #format df for database entry
     xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
+    # print 'ind set'
+    # print xx.head()
     xx.columns.name = 'variable'
     xx = xx.stack() #one col each for vars and vals
     xx.name = "value"
     xx = xx.reset_index()
-    xx = xx.groupby(['DateTime_UTC', 'variable',
-        'Sitecode']).mean().reset_index() #dupes
+    # print 'reset ind'
+    # print xx.head()
+
+    # print cdict
+    # print mdict
+    # print wdict
+    # print adict
+    # print cdict.keys()
+    for i in cdict.keys():
+        # print i
+        # print xx.loc[xx.variable == i]
+        # print cdict[i]
+        xx.loc[xx.variable == i, 'method'] = mdict[i]
+        xx.loc[xx.variable == i, 'write_in'] = wdict[i]
+        xx.loc[xx.variable == i, 'addtl'] = adict[i]
+        xx.loc[xx.variable == i, 'variable'] = cdict[i]
+    print 'rename'
+    print xx.head()
+    print set(xx.variable)
+
+
+
+    xx = xx.groupby(['DateTime_UTC', 'variable', 'Sitecode', 'method',
+        'write_in', 'addtl']).mean().reset_index() #average dupes
     xx['region'] = region
     xx['flag'] = None
     xx.rename(columns={'Sitecode':'site'}, inplace=True)
-    xx = xx[['region','site','DateTime_UTC','variable','value','flag',
-        'upload_id']]
+    xx = xx[['region','site','DateTime_UTC','variable','value','method',
+        'flag','write_in','addtl','upload_id']]
+    print 'done'
+    print xx
 
     replace = True if request.form['replacing']=='true' else False
 
