@@ -125,8 +125,9 @@ drift.load('s2rst4h926mg');
 
       <p class="lead">Variable name matching</p>
       <p>
-        Match your variable names below with their official names in the database
-        (selected from the dropdown menus). To exclude a variable, leave its
+        Match your uploaded variable names below with their official names in the database
+        (selected from the first column of dropdown menus). Then specify the
+        method used to acquire data for each variable. To exclude a variable, leave its
         dropdown blank. The dropdowns will automatically populate with your previous
         selections.
       </p>
@@ -258,7 +259,7 @@ drift.load('s2rst4h926mg');
 
     <input type="hidden" name="wdict" value="">
     <div class='col-md-2 text-center'>
-      <p><strong>Write-in option</strong></p>
+      <p><strong>Specify "other"</strong></p>
       {% for w in range(columns|length) %}
         {% if columns[w] in cdict.keys() and mdict[columns[w]] == 'other' %}
           <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:visible'
@@ -274,11 +275,11 @@ drift.load('s2rst4h926mg');
     </div>
 
     {% set fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer', 'other'] %}
-    {% set fltr_opts = ['filtered-45mm', 'filtered-other', 'unfiltered', 'unknown/NA'] %}
+    {% set fltr_opts = ['filtered 0.7um', 'filtered other', 'unfiltered', 'unknown/NA'] %}
 
     <input type="hidden" name="adict" value="">
     <div class='col-md-2 text-center'>
-      <p><strong>Addtl</strong></p>
+      <p><strong>Filter?</strong></p>
       {% for a in range(columns|length) %}
         {% if columns[a] in adict.keys() and mdict[columns[a]] in fltr_methods %}
           <select id="ddD{{a}}" name="{{columns[a]}}" style='visibility:visible'
@@ -309,20 +310,20 @@ drift.load('s2rst4h926mg');
   </div>
 <br>
 
-
-      <br>
-      <div class="col-md-4 col-md-offset-2">
-        <button name="columnin" type="submit" class="btn btn-primary btn-block">
-          Submit
-        </button>
-      </div>
-      <div class="col-md-4">
-        <input type='button' class="btn btn-danger btn-block"
-        value='Cancel' onclick="location.href = 'grab_upload';">
-      </div>
+<br>
+<div class="col-md-4 col-md-offset-2">
+  <button name="columnin" type="submit" class="btn btn-primary btn-block">
+    Submit
+  </button>
+</div>
+<div class="col-md-4">
+  <input type='button' class="btn btn-danger btn-block"
+  value='Cancel' onclick="location.href = 'grab_upload';">
+</div>
+<br><br>
 
 </form>
-<br><br>
+
 <!-- <br>
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
@@ -476,7 +477,7 @@ $(function(){
 // $(function(){
 //   $('#test').click(function() {
 //     avals = [];
-//     $("select[id^='ddD']").each(function(){
+//     $("select[id^='ddB']").each(function(){
 //       if($(this).val() != ""){
 //         avals.push( $(this).serializeArray()[0] )
 //       }
@@ -512,11 +513,10 @@ $(function(){
         var ddD = $('#ddD' + i)
         if(ddD.val() != null){
           avals.push( ddD.serializeArray()[0] );
-        } else {
-          var emptyval = ddD.serializeArray()[0];
-          emptyval.value = '';
-          avals.push(emptyval);
-        }
+        } else if ( $('#ddA' + i).val() != null ){
+          input_colname = $('#ddA' + i).serializeArray()[0]['name']
+          avals.push( {"name":input_colname, "value":""} )
+        } else {}
         // }
       }
     });
@@ -526,6 +526,11 @@ $(function(){
     $('#choosecolumns input[name=wdict]').val(wdict);
     adict = JSON.stringify(avals);
     $('#choosecolumns input[name=adict]').val(adict);
+
+    // console.log(cdict);
+    // console.log(mdict);
+    // console.log(wdict);
+    // console.log(adict);
 
     //accumulate user-selected additional attributes
     // avals = [];

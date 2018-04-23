@@ -1603,10 +1603,17 @@ def grab_confirmcolumns():
     # try:
 
     #retrieve variables from request, session, and filesystem
+    from pprint import pprint
     cdict = json.loads(request.form['cdict'])
+    pprint(cdict)
     mdict = json.loads(request.form['mdict'])
+    #remove Nones introduced when setting a prepopuated variable to blank
+    mdict = [m for m in mdict if m is not None]
+    pprint(mdict)
     wdict = json.loads(request.form['wdict'])
+    pprint(wdict)
     adict = json.loads(request.form['adict'])
+    pprint(adict)
     fnlong = session.get('fnlong')
     xx = pd.read_csv(fnlong, parse_dates=[0])
     filenameNoV = session.get('filenameNoV')

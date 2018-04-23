@@ -1,5 +1,11 @@
 #Mike's Logbook
 
+###mon20180423
+ + finished and tested grab upload interface
+###fri20180420
+ + added comment boxes for user-specified methods
+ + added dropdowns for filters
+ + grabsamp interface front and back ends are hooked up
 ###thu20180419
  + visibility toggle done
  + fixed old bug in API that produced error when there was no USGS discharge or level data for a requested date range
