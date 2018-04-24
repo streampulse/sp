@@ -355,13 +355,15 @@ function alertbox(alrt, msg){
 //handlers for first column of dropdowns
 $(function(){
 
+  //read jinja variables into js
   var vars = {{ vars|safe }}
   var methods = {{ methods|safe }}
-  // var addtl = {{ addtl|safe }}
 
+  //for all first-column dropdowns...
   $("select[id^='ddA']").each(function(i){
-    $(this).change(function(){
+    $(this).change(function(){ //when they change...
 
+      //get the corresponding dropdowns from the other cols
       var ddB = $("select[id='ddB" + i + "']");
       var iC = $("input[id='iC" + i + "']");
       var ddD = $("select[id='ddD" + i + "']");
@@ -376,6 +378,7 @@ $(function(){
         // ddB.clear();
         // ddB.clearOptions();
 
+        //repopulate the options in the methods column
         $.each(newmethods, function(i, m){
           ddB.append($("<option></option>").attr("value", m).text(m));
             // ddB.addOption([{value:m, text:m}]);
@@ -386,6 +389,7 @@ $(function(){
         var fltr_methods = {{ fltr_methods|safe }}
         var fltr_opts = {{ fltr_opts|safe }}
 
+        //for certain default methods selections, unhide and populate the 4th column
         ddD.empty();
         if( fltr_methods.includes(ddB.val()) ){
           $.each(fltr_opts, function(i, f){
@@ -412,6 +416,7 @@ $(function(){
         ddD.attr('style', 'visibility: hidden');
       };
 
+      //hide and empty the 3rd column dropdowns
       iC.val('');
       iC.attr('style', 'visibility: hidden');
       iC.prop('required', false);
@@ -500,14 +505,13 @@ $(function(){
     cdict = JSON.stringify(cvals);
     $('#choosecolumns input[name=cdict]').val( cdict );
 
-    //accumulate user-specified methods (including write-in methods)
-    mvals = [];
-    wvals = [];
-    avals = [];
+    //accumulate user-specified methods (including write-in methods and addtl info)
+    mvals = []; //will contain methods selections
+    wvals = []; //|| for write_ins
+    avals = []; //|| for addtl
     $("select[id^='ddB']").each(function(i){
       if($(this).val() != ""){
         mvals.push( $(this).serializeArray()[0] );
-        // if($('#iC' + i).val() != ""){
         wvals.push( $('#iC' + i).serializeArray()[0] );
 
         var ddD = $('#ddD' + i)
@@ -517,30 +521,15 @@ $(function(){
           input_colname = $('#ddA' + i).serializeArray()[0]['name']
           avals.push( {"name":input_colname, "value":""} )
         } else {}
-        // }
       }
     });
+
     mdict = JSON.stringify(mvals);
     $('#choosecolumns input[name=mdict]').val(mdict);
     wdict = JSON.stringify(wvals);
     $('#choosecolumns input[name=wdict]').val(wdict);
     adict = JSON.stringify(avals);
     $('#choosecolumns input[name=adict]').val(adict);
-
-    // console.log(cdict);
-    // console.log(mdict);
-    // console.log(wdict);
-    // console.log(adict);
-
-    //accumulate user-selected additional attributes
-    // avals = [];
-    // $("select[id^='ddD']").each(function(){
-    //   if($(this).val() != ""){
-    //     avals.push( $(this).serializeArray()[0] )
-    //   }
-    // });
-    // adict = JSON.stringify(avals);
-    // $('#choosecolumns input[name=adict]').val(adict);
 
   });
 })

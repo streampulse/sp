@@ -2,6 +2,8 @@
 
 ###mon20180423
  + finished and tested grab upload interface
+ + hooked interface up to database and added columns for methods, write-in methods, and additional methods details (so far just filter pore size)
+ + grab variable dropdown on viz page refreshes when site and daterange change
 ###fri20180420
  + added comment boxes for user-specified methods
  + added dropdowns for filters

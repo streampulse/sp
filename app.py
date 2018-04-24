@@ -1982,18 +1982,62 @@ def visualize():
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
     return render_template('visualize.html',sites=sitedict)
 
-# OLD CODE FROM VISUALIZE, deprecated
-# return "success"
-#
-# # xx = pd.read_sql("select distinct concat(region,'_',site) as sites from data", db.engine)
-# # sites = xx['sites'].tolist()
-# xx = pd.read_sql("select distinct region, site from data", db.engine)
-# sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
-# if current_user.is_authenticated:
-#     sites = authenticate_sites(sites, user=current_user.get_id())
-# else:
-#     sites = authenticate_sites(sites)
-# sitedict = sorted([getsitenames(x) for x in sites], key=lambda tup: tup[1])
+@app.route('/_getgrabvars', methods=["POST"])
+def getgrabvars():
+
+    #get data from ajax call
+    data = request.json
+    region, site = data[0].split('_')
+    startdate = data[1]
+    enddate = data[2]
+
+    #get list of grab vars from grabdata table
+    sqlq = "select distinct variable as d from grabdata where region='" +\
+        region + "' and site='" + site + "' " + "and DateTime_UTC>'" +\
+        startdate + "' " + "and DateTime_UTC<'" + enddate + "';"
+    grabvars = list(pd.read_sql(sqlq, db.engine)['d'])
+
+    return jsonify(variables=grabvars)
+
+@app.route('/_getgrabviz', methods=["POST"])
+def getvgrabviz():
+    region, site = request.json['site'].split(",")[0].split("_")
+    startDate = request.json['startDate']
+    endDate = request.json['endDate']#.split("T")[0]
+    variables = request.json['variables']
+    # print region, site, startDate, endDate, variables
+    sqlq = "select * from data where region='"+region+"' and site='"+site+"' "+\
+        "and DateTime_UTC>'"+startDate+"' "+\
+        "and DateTime_UTC<'"+endDate+"' "+\
+        "and variable in ('"+"', '".join(variables)+"')"
+    xx = pd.read_sql(sqlq, db.engine)
+    xx.loc[xx.flag==0,"value"] = None # set NaNs
+    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
+    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
+      .set_index(["DateTime_UTC","variable"])\
+      .drop(['region','site','flag'],axis=1)
+    xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
+    xx.columns = xx.columns.droplevel()
+    xx = xx.reset_index()
+    # Get sunrise sunset data
+    sxx = pd.read_sql("select * from site where region='"+region+"' and site='"+site+"'",db.engine)
+    sdt = datetime.strptime(startDate,"%Y-%m-%d")
+    edt = datetime.strptime(endDate,"%Y-%m-%d")
+    ddt = edt-sdt
+    lat = sxx.latitude[0]
+    lng = sxx.longitude[0]
+    rss = []
+    for i in range(ddt.days + 1):
+        rise, sets = list(suns(sdt+timedelta(days=i-1), latitude=lat, longitude=lng).calculate())
+        if rise>sets:
+            sets = sets + timedelta(days=1) # account for UTC
+        rss.append([rise, sets])
+    #
+    rss = pd.DataFrame(rss, columns=("rise","set"))
+    rss.set = rss.set.shift(1)
+    sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
+    return jsonify(variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
+
 
 @app.route('/_getviz',methods=["POST"])
 def getviz():
