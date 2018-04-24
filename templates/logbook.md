@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###tue20180424
+ + built functions for responsively requesting grab data when grabvar overlay dropdown changes
 ###mon20180423
  + finished and tested grab upload interface
  + hooked interface up to database and added columns for methods, write-in methods, and additional methods details (so far just filter pore size)

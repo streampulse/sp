@@ -337,12 +337,36 @@ $(function(){
 
 $(function(){
   $("select[name=backgraphlist_grab]").change(function(){
-    var dat = {}
-    dat['site'] = $('select[name=site]').val();
-    dat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
-    dat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
-    dat['grabvar'] = $(this).val();
-    // console.log(dat);
+
+    if($(this).val() != 'None'){
+
+      var grabdat = {}
+      grabdat['regionsite'] = $('select[name=site]').val();
+      grabdat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
+      grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
+      grabdat['grabvars'] = [$(this).val()];
+
+      console.log(grabdat);
+
+      $.ajax({
+        type: 'POST',
+        url:'/_getgrabviz',
+        data: JSON.stringify(grabdat),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response){
+          grabdat = JSON.parse(response.grabdat);
+
+          console.log(grabdat);
+          $('.backgraph').empty();
+
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
+    };
+
+    return false
   });
 });
 

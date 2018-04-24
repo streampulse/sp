@@ -2001,42 +2001,32 @@ def getgrabvars():
 
 @app.route('/_getgrabviz', methods=["POST"])
 def getvgrabviz():
-    region, site = request.json['site'].split(",")[0].split("_")
+
+    # region, site = request.json['regionsite'].split(",")[0].split("_")
+    region, site = request.json['regionsite'].split("_")
     startDate = request.json['startDate']
-    endDate = request.json['endDate']#.split("T")[0]
-    variables = request.json['variables']
-    # print region, site, startDate, endDate, variables
-    sqlq = "select * from data where region='"+region+"' and site='"+site+"' "+\
-        "and DateTime_UTC>'"+startDate+"' "+\
-        "and DateTime_UTC<'"+endDate+"' "+\
-        "and variable in ('"+"', '".join(variables)+"')"
+    endDate = request.json['endDate']
+    variables = request.json['grabvars']
+    # variables = variables] if len(variables)
+    print region, site, startDate, endDate, variables
+
+    #query partly set up for when this function will need to handle multiple vars
+    sqlq = "select DateTime_UTC, value from grabdata where region='" +\
+        region + "' and site='" +\
+        site + "' " + "and DateTime_UTC>'" + startDate + "' "+\
+        "and DateTime_UTC<'" + endDate + "' "+\
+        "and variable in ('" + "', '".join(variables) + "');"
     xx = pd.read_sql(sqlq, db.engine)
-    xx.loc[xx.flag==0,"value"] = None # set NaNs
-    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
-    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
-      .set_index(["DateTime_UTC","variable"])\
-      .drop(['region','site','flag'],axis=1)
-    xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
-    xx.columns = xx.columns.droplevel()
-    xx = xx.reset_index()
-    # Get sunrise sunset data
-    sxx = pd.read_sql("select * from site where region='"+region+"' and site='"+site+"'",db.engine)
-    sdt = datetime.strptime(startDate,"%Y-%m-%d")
-    edt = datetime.strptime(endDate,"%Y-%m-%d")
-    ddt = edt-sdt
-    lat = sxx.latitude[0]
-    lng = sxx.longitude[0]
-    rss = []
-    for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt+timedelta(days=i-1), latitude=lat, longitude=lng).calculate())
-        if rise>sets:
-            sets = sets + timedelta(days=1) # account for UTC
-        rss.append([rise, sets])
-    #
-    rss = pd.DataFrame(rss, columns=("rise","set"))
-    rss.set = rss.set.shift(1)
-    sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
-    return jsonify(variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
+    # xx.loc[xx.flag==0,"value"] = None # set NaNs
+    # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
+    #     axis=1).to_json(orient='records',date_format='iso') # flag data
+    # xx = xx.drop_duplicates().set_index(["DateTime_UTC","variable"])
+
+    # xx = xx.loc[xx.variable.isin(variables)]
+    xx = xx.groupby(xx.DateTime_UTC).mean().reset_index()
+    xx = xx.to_json(orient='records', date_format='iso')
+
+    return jsonify(grabdat=xx)
 
 
 @app.route('/_getviz',methods=["POST"])

@@ -80,6 +80,8 @@ function Plots(variables, data, flags, outliers, page){
     svg.append("g")
         .attr("class", "backgraph");
     svg.append("g")
+        .attr("class", "backgraph_grab");
+    svg.append("g")
         .attr("class", "sunriseset");
     dff = {} // flagged values
     flags.forEach(function(e){
