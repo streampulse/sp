@@ -1781,25 +1781,6 @@ def download():
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
     return render_template('download.html', sites=sitedict)
 
-# CODE FROM OLD Download, deprecated
-# xx = pd.read_sql("select distinct region, site from data", db.engine)
-# sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
-# # xx = pd.read_sql("select distinct concat(region,'_',site) as sites from data", db.engine)
-# # sites = xx['sites'].tolist()
-# # check login status... allow download without login for certain sites.
-# if current_user.is_authenticated:
-#     sites = authenticate_sites(sites, user=current_user.get_id())
-# else:
-#     sites = authenticate_sites(sites)
-# # sites = [(x.split("_")[0],x) for x in xx.sites.tolist()]
-# # sitedict = {'0ALL':'ALL'}
-# # for x in sites:
-# #     if x[0] not in sitedict:
-# #         sitedict[x[0]] = []
-# #     sitedict[x[0]].append(x[1])
-# sitedict = sorted([getsitenames(x) for x in sites], key=lambda tup: tup[1])
-# return render_template('download.html',sites=sitedict)
-
 @app.route('/_getstats',methods=['POST'])
 def getstats():
     sitenm = request.json['site']
@@ -1886,12 +1867,15 @@ def getcsv():
                 xx = xx.reindex_axis(df_index, axis=1)
 
         #get grab (manually sampled) data if desired
+        print 'oi'
         if request.form.get('grab') is not None:
-            sqlq2 = "select region, site, DateTime_UTC, variable, value " +\
+            sqlq2 = "select region, site, DateTime_UTC, variable, value, " +\
+                "method, write_in, addtl " +\
                 "from grabdata where concat(region, " +\
                 "'_', site)='" + s + "' and DateTime_UTC > '" +\
                 startDate + "' and DateTime_UTC < '" + endDate + "';"
             grabdata = pd.read_sql(sqlq2, db.engine)
+            print grabdata
 
             #if data available, write dataframe to CSV in temp directory
             if grabdata.shape[0] > 0:
