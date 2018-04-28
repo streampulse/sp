@@ -3,6 +3,7 @@
 
 <div class="row"><div class="col-md-6 col-md-offset-3">
   <h1>Visualize Data</h1>
+  <br>
   <!-- <p class="lead">Use this interface to rapidly preview data and view provisional model estimates.<p> -->
 
   <form id="viz">
@@ -61,10 +62,10 @@
     <option value="15m" selected>15 minutes (default)</option>
     <option value="1h">1 hour</option>
     <option value="1d">1 day</option></select> &nbsp; -->
-  Overlay sensor variable:
+  Compare sensor variable:
   <select class="form-control" id="backgraphlist" name="backgraphlist">
   </select> &nbsp
-  Overlay grab variable:
+  Compare other variable:
   <select class="form-control" id="backgraphlist_grab" name="backgraphlist_grab">
   </select>
 </div>
@@ -316,6 +317,7 @@ $(function(){
         $("#graphs").empty();
         $('#graphcontrol').show();
         data = JSON.parse(response.dat);
+        // window.data = JSON.parse(response.dat);
         variables = response.variables;
         sundat = JSON.parse(response.sunriseset);
         sundat.forEach(function(d){
@@ -338,6 +340,9 @@ $(function(){
 $(function(){
   $("select[name=backgraphlist_grab]").change(function(){
 
+    //reset the other dropdown
+    $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
+
     if($(this).val() != 'None'){
 
       var grabdat = {}
@@ -346,18 +351,23 @@ $(function(){
       grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
       grabdat['grabvars'] = [$(this).val()];
 
-      console.log(grabdat);
-
       $.ajax({
         type: 'POST',
         url:'/_getgrabviz',
         data: JSON.stringify(grabdat),
         contentType: 'application/json;charset=UTF-8',
         success: function(response){
-          grabdat = JSON.parse(response.grabdat);
 
-          console.log(grabdat);
-          $('.backgraph').empty();
+          visdata = JSON.parse(response.grabdat);
+          visdata.forEach(function(d){ d.date = parseDate(d['date']) });
+
+          var variables = $('#variables:checked').map(function(){
+            return this.value;
+          }).get();
+
+          for (var i = 0; i < variables.length; ++i) {
+            BackGraph('value', variables[i], visdata);
+          }
 
         },
         error: function(error){

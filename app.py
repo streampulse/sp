@@ -1656,7 +1656,6 @@ def grab_confirmcolumns():
     #parse input dict objects into usable dictionaries
     cdict = dict([(r['name'], r['value']) for r in cdict])
     mdict = dict([(r['name'], r['value']) for r in mdict])
-    print mdict
     wdict = dict([(r['name'], r['value']) for r in wdict])
     adict = dict([(r['name'], r['value']) for r in adict])
 
@@ -1704,39 +1703,19 @@ def grab_confirmcolumns():
     cols_to_drop = [i for i in xx.columns[2:] if i not in cdict.keys()]
     xx = xx.drop(cols_to_drop, axis=1)
     xx['upload_id'] = upID
-    # print 'upid added'
-    # print xx.head()
-    # print xx
 
     #format df for database entry
     xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
-    # print 'ind set'
-    # print xx.head()
     xx.columns.name = 'variable'
     xx = xx.stack() #one col each for vars and vals
     xx.name = "value"
     xx = xx.reset_index()
-    # print 'reset ind'
-    # print xx.head()
 
-    # print cdict
-    # print mdict
-    # print wdict
-    # print adict
-    # print cdict.keys()
     for i in cdict.keys():
-        # print i
-        # print xx.loc[xx.variable == i]
-        # print cdict[i]
         xx.loc[xx.variable == i, 'method'] = mdict[i]
         xx.loc[xx.variable == i, 'write_in'] = wdict[i]
         xx.loc[xx.variable == i, 'addtl'] = adict[i]
         xx.loc[xx.variable == i, 'variable'] = cdict[i]
-    print 'rename'
-    print xx.head()
-    print set(xx.variable)
-
-
 
     xx = xx.groupby(['DateTime_UTC', 'variable', 'Sitecode', 'method',
         'write_in', 'addtl']).mean().reset_index() #average dupes
@@ -1745,8 +1724,6 @@ def grab_confirmcolumns():
     xx.rename(columns={'Sitecode':'site'}, inplace=True)
     xx = xx[['region','site','DateTime_UTC','variable','value','method',
         'flag','write_in','addtl','upload_id']]
-    print 'done'
-    print xx
 
     replace = True if request.form['replacing']=='true' else False
 
@@ -2008,10 +1985,10 @@ def getvgrabviz():
     endDate = request.json['endDate']
     variables = request.json['grabvars']
     # variables = variables] if len(variables)
-    print region, site, startDate, endDate, variables
+    # print region, site, startDate, endDate, variables
 
     #query partly set up for when this function will need to handle multiple vars
-    sqlq = "select DateTime_UTC, value from grabdata where region='" +\
+    sqlq = "select DateTime_UTC as date, value from grabdata where region='" +\
         region + "' and site='" +\
         site + "' " + "and DateTime_UTC>'" + startDate + "' "+\
         "and DateTime_UTC<'" + endDate + "' "+\
@@ -2023,7 +2000,7 @@ def getvgrabviz():
     # xx = xx.drop_duplicates().set_index(["DateTime_UTC","variable"])
 
     # xx = xx.loc[xx.variable.isin(variables)]
-    xx = xx.groupby(xx.DateTime_UTC).mean().reset_index()
+    xx = xx.groupby(xx.date).mean().reset_index()
     xx = xx.to_json(orient='records', date_format='iso')
 
     return jsonify(grabdat=xx)

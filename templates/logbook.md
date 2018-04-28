@@ -1,5 +1,11 @@
 #Mike's Logbook
 
+###fri20180427
+ + added secondary axes for overlaid variables
+ + series and grab overlay dropdowns communicate with each other
+ + made outline of SFS poster
+###thu20180426
+ + grab data can now be overlaid on sensor data
 ###tue20180424
  + built functions for responsively requesting grab data when grabvar overlay dropdown changes
 ###mon20180423

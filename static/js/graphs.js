@@ -21,7 +21,7 @@ var flags;
 var datna;
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
-var dott_undef //for disabling popup if no points selected
+var dott_undef //for disabling popup options if no points selected
 
 function Plots(variables, data, flags, outliers, page){
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -29,8 +29,6 @@ function Plots(variables, data, flags, outliers, page){
 
   //set x domain to extent of dates
   x.domain(d3.extent(data, function(d) { return d.date; }));
-  // console.log(xAxis.tickValues());
-  // console.log(xAxis.ticks())
 
   for (var i = 0; i < variables.length; ++i) {
     vvv = variables[i];
@@ -68,19 +66,23 @@ function Plots(variables, data, flags, outliers, page){
     svg.append("g")
         .attr("class", "axis axis--y")
         .call(d3.axisLeft().scale(y).ticks(3))
+        // .selectAll('.line')
+        //   .attr('stroke', 'red')
       .append("text")
         .attr("fill", "#000")
         .attr("dy", "-0.71em")
         .attr("dx", "0.71em")
-
         .attr('class', vvv + '_txt')
-
         .style("text-anchor", "start")
         .text(vvv);
+
+    svg.append("g") //secondary axis for overlays (technically underlays)
+        .attr('id', vvv + 'rightaxis')
+        .attr("class", "axis axis--y")
+        .attr("transform", "translate(" + width + ", 0)");
+
     svg.append("g")
         .attr("class", "backgraph");
-    svg.append("g")
-        .attr("class", "backgraph_grab");
     svg.append("g")
         .attr("class", "sunriseset");
     dff = {} // flagged values
@@ -166,15 +168,22 @@ $(function(){
 })
 
 function BackGraph(vvv, graph, data){
+
+  //make new y axis scale and select graph
   var ynew = d3.scaleLinear().range([height, 0]);
-  svg = d3.select("."+graph).select(".backgraph")
-  svg.select("path").remove() // remove previous graph
-  // ynew.domain(d3.extent(data, function(d) { return d[vvv]; }));
+  cur_backgraph = d3.select("." + graph).select(".backgraph")
+
+  // remove previous graph and secondary axis if it exists
+  cur_backgraph.select("path").remove()
+  d3.select('#' + graph + 'rightaxis').empty();
+
   if(datna != null){
     ynew.domain(d3.extent(datna, function(d) { return d[vvv]; }));
   }else{
-    ynew.domain(d3.extent(data, function(d) { return d[vvv]; }));
+    ynew.domain(d3.extent(data, function(d) {
+      return d[vvv]; }));
   }
+
   var area = d3.area()
       .defined(function(d){
         if(d[vvv]==null || d.date < x.domain()[0] || d.date > x.domain()[1]){
@@ -183,16 +192,29 @@ function BackGraph(vvv, graph, data){
           rrr = true
         }
         return rrr
-      })
-      .x(function(d) { return x(d.date); })
-      .y0(height).y1(function(d) { return ynew(d[vvv]); });
-  svg.append("path")
-      .datum(data)
-      .attr("class", "backarea")
-      .attr("d", area);
+      });
+  area.x(function(d) {
+         return x(d.date); });
+  area.y0(height).y1(function(d) {
+        return ynew(d[vvv]); });
+
+  cur_backgraph.append("path")
+    .datum(data)
+    .attr("class", "backarea")
+    .attr("d", area);
+
+  // refresh right-hand axis
+  d3.select("#" + graph + 'rightaxis')
+      .call(d3.axisRight().scale(ynew).ticks(3))
+      .attr('class', 'backarea backarea_axis');
 }
+
 $(function(){
   $("#backgraphlist").change(function () {
+
+    //reset the other dropdown
+    $('#backgraphlist_grab').val('None'); //why doesn't this set off a feedback loop?
+
     var backfill = this.value;
     for (var i = 0; i < variables.length; ++i) {
       BackGraph(backfill, variables[i], data);
@@ -385,8 +407,13 @@ function redrawPoints(zoom_in, sbrush, reset){
           is_inplot = extent[0] > d.rise || d.set > extent[1];
           return is_inplot;
         });
-      // redraw backfill
+
+      // redraw backfill (commented parts will be relevant when brushing is added)
       var backfill = $("#backgraphlist").val();
+      // var bf1 = $("#backgraphlist").val();
+      // var bf2 = $("#backgraphlist_grab").val();
+      // var bf_val = [bf1, bf2].find( function(x){ x != 'None' } );
+      // var backfill = (bf_val != 'none' && bf_val != null) ? bf_val : 'None';
       BackGraph(backfill, vvv, data);
     }
   }
