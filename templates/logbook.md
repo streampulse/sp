@@ -4,6 +4,7 @@
  + added secondary axes for overlaid variables
  + series and grab overlay dropdowns communicate with each other
  + made outline of SFS poster
+ + downloaded grab data now include methods details
 ###thu20180426
  + grab data can now be overlaid on sensor data
 ###tue20180424
