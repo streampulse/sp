@@ -125,8 +125,9 @@ drift.load('s2rst4h926mg');
 
       <p class="lead">Variable name matching</p>
       <p>
-        Match your variable names below with their official names in the database
-        (selected from the dropdown menus). To exclude a variable, leave its
+        Match your uploaded variable names below with their official names in the database
+        (selected from the first column of dropdown menus). Then specify the
+        method used to acquire data for each variable. To exclude a variable, leave its
         dropdown blank. The dropdowns will automatically populate with your previous
         selections.
       </p>
@@ -158,58 +159,171 @@ drift.load('s2rst4h926mg');
   <br>
 
   <div class="row">
-    <div class="col-md-6 col-md-offset-3">
+    <!-- <div class="col-md-12"> -->
+    <div class="col-md-5">
       <!-- <input type="hidden" name="tmpfile" value="{{tmpfile}}"> -->
       <input type="hidden" name="cdict" value="">
 
-      <div class="col-md-5 col-md-offset-1 text-left">
+      <!-- <div class="col-md-5 col-md-offset-1 text-left"> -->
+      <div class="col-md-6 text-left">
         <p><strong>Upload variable name</strong></p>
       </div>
-      <div class="col-md-5 text-right">
+      <div class="col-md-6 text-right">
         <p><strong>Database variable name</strong></p>
       </div>
       <!-- <div class="col-md-2 text-left">
         <p><strong>Unit</strong></p>
       </div> -->
-      <div class="col-md-10 col-md-offset-1">
-        {% for c in columns %}
-          <div class="input-group">
-            <span class="input-group-addon">{{c}}</span>
-            <select class="form-control" name="{{c}}">
-              {% if c in cdict.keys() %}
-                <option value=""></option>
-                {% for v in variables %}
-                  {% if v == cdict[c] %}
-                    <option value="{{v}}" selected>{{v}}</option>
-                  {% else %}
-                    <option value="{{v}}">{{v}}</option>
-                  {% endif %}
-                {% endfor %}
-              {% else %}
-                <option selected value=""></option>
-                {% for v in variables %}
-                  <option value="{{v}}">{{v}}</option>
-                {% endfor %}
-              {% endif %}
-            </select>
-          </div>
-          <br>
-        {% endfor %}
-      </div>
-      <br>
-      <div class="col-md-4 col-md-offset-2">
-        <button name="columnin" type="submit" class="btn btn-primary btn-block">
-          Submit
-        </button>
-      </div>
-      <div class="col-md-4">
-        <input type='button' class="btn btn-danger btn-block"
-        value='Cancel' onclick="location.href = 'grab_upload';">
-      </div>
+      <!-- <div class="col-md-12"> -->
+      <!-- {#% set gvars = gvars|dictsort %#} -->
+
+      {% set vars = gvars|map(attribute='var')|list %}
+      {% set units = gvars|map(attribute='unit')|list %}
+      {% set methods = gvars|map(attribute='method')|list %}
+      <!-- {#% set addtl = gvars|map(attribute='addtl')|list %#} -->
+      {% set vlen = gvars|length %}
+
+      {% for c in range(columns|length) %}
+        <div class="input-group">
+          <span class="input-group-addon">{{columns[c]}}</span>
+          <select id="ddA{{c}}" class="form-control text-right" name="{{columns[c]}}">
+            {% if columns[c] in cdict.keys() %}
+              <option value=""></option>
+              {% for v in range(vlen) %}
+                {% if vars[v] == cdict[columns[c]] %}
+                  <option value="{{vars[v]}}" selected>
+                    {{units[v]}}
+                  </option>
+                {% else %}
+                  <option value="{{vars[v]}}">
+                    {{units[v]}}
+                  </option>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <option selected value=""></option>
+              {% for v in range(vlen) %}
+                <option value="{{vars[v]}}">{{units[v]}}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <br>
+      {% endfor %}
+
+      <!-- </div> -->
     </div>
+
+    <input type="hidden" name="mdict" value="">
+    <div class='col-md-3 text-center'>
+      <!-- <div class="col-md-12 text-center"> -->
+      <p><strong>Method/Instrument</strong></p>
+
+      {% for m in range(columns|length) %}
+        <!-- <div class="input-group"> -->
+          {% if columns[m] in mdict.keys() %}
+            <!-- <span id='sB{{m}}' class="input-group-addon" style='visibility:visible'></span> -->
+            <!-- class="form-control text-right" -->
+            <select id="ddB{{m}}" name="{{columns[m]}}" style='visibility:visible'
+            class="form-control text-center">
+              <!-- <option value=""></option> -->
+              {% for v in range(vlen) %}
+                {% if vars[v] == cdict[columns[m]] %}
+                  {% for mm in range(methods[v]|length) %}
+                    {% if methods[v][mm] == mdict[columns[m]] %}
+                      <option value="{{methods[v][mm]}}" selected>
+                        {{methods[v][mm]}}
+                      </option>
+                    {% else %}
+                      <option value="{{methods[v][mm]}}">
+                        {{methods[v][mm]}}
+                      </option>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% endfor %}
+            </select>
+          {% else %}
+            <!-- <span id='sB{{m}}' class="input-group-addon" style='visibility:hidden'></span> -->
+            <select id="ddB{{m}}" name="{{columns[m]}}" style='visibility:hidden'
+            class="form-control text-center">
+              <option value=""></option>
+            </select>
+          {% endif %}
+        <!-- </div> -->
+        <br>
+      {% endfor %}
+
+      <!-- </div> -->
+    </div>
+
+    <input type="hidden" name="wdict" value="">
+    <div class='col-md-2 text-center'>
+      <p><strong>Specify "other"</strong></p>
+      {% for w in range(columns|length) %}
+        {% if columns[w] in cdict.keys() and mdict[columns[w]] == 'other' %}
+          <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:visible'
+          class="form-control text-left" value={{wdict[columns[w]]}} required>
+          </input>
+        {% else %}
+          <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:hidden'
+          class="form-control text-left">
+          </input>
+        {% endif %}
+        <br>
+      {% endfor %}
+    </div>
+
+    {% set fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer', 'other'] %}
+    {% set fltr_opts = ['filtered 0.7um', 'filtered other', 'unfiltered', 'unknown/NA'] %}
+
+    <input type="hidden" name="adict" value="">
+    <div class='col-md-2 text-center'>
+      <p><strong>Filter?</strong></p>
+      {% for a in range(columns|length) %}
+        {% if columns[a] in adict.keys() and mdict[columns[a]] in fltr_methods %}
+          <select id="ddD{{a}}" name="{{columns[a]}}" style='visibility:visible'
+          class="form-control text-center">
+            {% for o in fltr_opts %}
+              {% if o == adict[columns[a]] %}
+                <option value="{{o}}" selected>{{o}}</option>
+              {% else %}
+                <option value="{{o}}">{{o}}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        {% else %}
+          <!-- {#% if mdict[columns[a]] in filtr_methods %#} -->
+          <select id="ddD{{a}}" name="{{columns[a]}}" style='visibility:hidden'
+          class="form-control text-center">
+            <option value=""></option>
+          </select>
+          <!-- {#% endif %#} -->
+        {% endif %}
+        <br>
+      {% endfor %}
+
+      <!-- </div> -->
+    </div>
+
+    <!-- </div> -->
   </div>
-</form>
 <br>
+
+<br>
+<div class="col-md-4 col-md-offset-2">
+  <button name="columnin" type="submit" class="btn btn-primary btn-block">
+    Submit
+  </button>
+</div>
+<div class="col-md-4">
+  <input type='button' class="btn btn-danger btn-block"
+  value='Cancel' onclick="location.href = 'grab_upload';">
+</div>
+<br><br>
+
+</form>
+
 <!-- <br>
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
@@ -220,6 +334,7 @@ drift.load('s2rst4h926mg');
   </div>
 </div>
 <br> -->
+<!-- <input type='button' id='test'> -->
 
 <script>
 
@@ -229,19 +344,193 @@ function alertbox(alrt, msg){
     ' + msg + '</div>'
 }
 
+// $("select[id^='ddB']").selectize({
+//   delimiter: ',',
+//   persist: false,
+//   create: function(input){
+//     return {value: input, text: input}
+//   }
+// });
+
+//handlers for first column of dropdowns
+$(function(){
+
+  //read jinja variables into js
+  var vars = {{ vars|safe }}
+  var methods = {{ methods|safe }}
+
+  //for all first-column dropdowns...
+  $("select[id^='ddA']").each(function(i){
+    $(this).change(function(){ //when they change...
+
+      //get the corresponding dropdowns from the other cols
+      var ddB = $("select[id='ddB" + i + "']");
+      var iC = $("input[id='iC" + i + "']");
+      var ddD = $("select[id='ddD" + i + "']");
+      // var ddB = $("select[id='ddB" + i + "']")[0].selectize;
+
+      if($(this).val() != ''){
+
+        var ind = vars.indexOf( $(this).val() );
+        var newmethods = methods[ind]
+
+        ddB.empty();
+        // ddB.clear();
+        // ddB.clearOptions();
+
+        //repopulate the options in the methods column
+        $.each(newmethods, function(i, m){
+          ddB.append($("<option></option>").attr("value", m).text(m));
+            // ddB.addOption([{value:m, text:m}]);
+            // ddB.refreshOptions();
+        });
+        ddB.val(newmethods[0]);
+
+        var fltr_methods = {{ fltr_methods|safe }}
+        var fltr_opts = {{ fltr_opts|safe }}
+
+        //for certain default methods selections, unhide and populate the 4th column
+        ddD.empty();
+        if( fltr_methods.includes(ddB.val()) ){
+          $.each(fltr_opts, function(i, f){
+            ddD.append($("<option></option>").attr("value", f).text(f));
+          });
+          ddD.val(fltr_opts[0]);
+          ddD.attr('style', 'visibility: visible');
+        } else {
+          ddD.attr('style', 'visibility: hidden');
+        }
+
+        // ddB.select(newmethods[0]);
+        // $("select[id='sB" + i + "']").css('visibility', 'visible');
+        ddB.attr('style', 'visibility: visible');
+
+      } else {
+
+        ddB.empty();
+        // ddB.clear();
+        // ddB.clearOptions();
+        // $("select[id='sB" + i + "']").css('visibility', 'hidden');
+        ddB.attr('style', 'visibility: hidden');
+        ddD.empty();
+        ddD.attr('style', 'visibility: hidden');
+      };
+
+      //hide and empty the 3rd column dropdowns
+      iC.val('');
+      iC.attr('style', 'visibility: hidden');
+      iC.prop('required', false);
+
+    });
+  });
+});
+
+//handlers for methods column of dropdowns
+$(function(){
+  $("select[id^='ddB']").each(function(i){
+    $(this).change(function(){
+
+      var iC = $("input[id='iC" + i + "']");
+      var ddD = $("select[id='ddD" + i + "']");
+
+      if($(this).val() == 'other'){
+        iC.val('');
+        iC.attr('style', 'visibility: visible');
+        iC.prop('required', true);
+      } else {
+        iC.val('');
+        iC.attr('style', 'visibility: hidden');
+        iC.prop('required', false);
+      };
+
+      var fltr_methods = {{ fltr_methods|safe }}
+      var fltr_opts = {{ fltr_opts|safe }}
+
+      ddD.empty();
+      if( fltr_methods.includes($(this).val()) ){
+        $.each(fltr_opts, function(i, f){
+          ddD.append($("<option></option>").attr("value", f).text(f));
+        });
+        ddD.val(fltr_opts[0]);
+        ddD.attr('style', 'visibility: visible');
+      } else {
+        ddD.attr('style', 'visibility: hidden');
+      }
+
+    });
+  });
+});
+
+
+// function populateMethods(){
+//   var e = document.getElementById('dd1');
+//   // for(var i = 0; i < columns.length)
+//   if('TOC' === e.options[0].value){
+//     console.log("yo")
+//   }
+// }
+// document.getElementById("dd1").addEventListener("click", populateMethods);
+
+// function populateMethods2(){
+//   var e = document.getElementById('TOC');
+//   if('TOC' === e.value){
+//     console.log("yo2")
+//   }
+// }
+// document.getElementById("TOC").addEventListener("click", populateMethods2);
+
+// $(function(){
+//   $('#test').click(function() {
+//     avals = [];
+//     $("select[id^='ddB']").each(function(){
+//       if($(this).val() != ""){
+//         avals.push( $(this).serializeArray()[0] )
+//       }
+//     });
+//     adict = JSON.stringify(avals);
+//     console.log(adict);
+//   });
+// });
+
 $(function(){
   $('button[name=columnin]').click(function() {
+
+    //accumulate user-specified variable names
     cvals = [];
-    $("#choosecolumns").find("select").each(function(){
-      if($(this).val()!=""){
+    $("select[id^='ddA']").each(function(){
+      if($(this).val() != ""){
         cvals.push( $(this).serializeArray()[0] )
       }
     });
-    //cdict = JSON.stringify($("#choosecolumns").find("select").serializeArray());
     cdict = JSON.stringify(cvals);
-    console.log('OI')
-    console.log(cdict)
     $('#choosecolumns input[name=cdict]').val( cdict );
+
+    //accumulate user-specified methods (including write-in methods and addtl info)
+    mvals = []; //will contain methods selections
+    wvals = []; //|| for write_ins
+    avals = []; //|| for addtl
+    $("select[id^='ddB']").each(function(i){
+      if($(this).val() != ""){
+        mvals.push( $(this).serializeArray()[0] );
+        wvals.push( $('#iC' + i).serializeArray()[0] );
+
+        var ddD = $('#ddD' + i)
+        if(ddD.val() != null){
+          avals.push( ddD.serializeArray()[0] );
+        } else if ( $('#ddA' + i).val() != null ){
+          input_colname = $('#ddA' + i).serializeArray()[0]['name']
+          avals.push( {"name":input_colname, "value":""} )
+        } else {}
+      }
+    });
+
+    mdict = JSON.stringify(mvals);
+    $('#choosecolumns input[name=mdict]').val(mdict);
+    wdict = JSON.stringify(wvals);
+    $('#choosecolumns input[name=wdict]').val(wdict);
+    adict = JSON.stringify(avals);
+    $('#choosecolumns input[name=adict]').val(adict);
+
   });
 })
 

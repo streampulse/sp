@@ -3,7 +3,8 @@
 
 <div class="row"><div class="col-md-6 col-md-offset-3">
   <h1>Visualize Data</h1>
-  <p class="lead">Use this interface to rapidly preview data and view provisional model estimates.<p>
+  <br>
+  <!-- <p class="lead">Use this interface to rapidly preview data and view provisional model estimates.<p> -->
 
   <form id="viz">
     <select placeholder="Choose a site" id="dsite" name="site">
@@ -61,7 +62,12 @@
     <option value="15m" selected>15 minutes (default)</option>
     <option value="1h">1 hour</option>
     <option value="1d">1 day</option></select> &nbsp; -->
-  Backfill area variable: <select class="form-control" id="backgraphlist" name="backgraphlist"></select>
+  Compare sensor variable:
+  <select class="form-control" id="backgraphlist" name="backgraphlist">
+  </select> &nbsp
+  Compare other variable:
+  <select class="form-control" id="backgraphlist_grab" name="backgraphlist_grab">
+  </select>
 </div>
 </div>
 
@@ -85,7 +91,6 @@ var sitedict = {}
 {% for sv, sn, sd, ed, va in sites %}
   sitedict['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
 {% endfor %}
-
 $('#dsite').change(function(){
   //http://www.daterangepicker.com/
   $('#graphcontrol').hide();
@@ -118,7 +123,49 @@ $('#dsite').change(function(){
       $('#backgraphlist').append('<option value="'+sitevars[i]+'">'+sitevars[i]+'</option>');
   }
 
+  update_grabvars(regionsite=$('select[name=site]').val(),
+    startdate=sitedates[0], enddate=sitedates[1])
+
 });
+
+function update_grabvars (regionsite, startdate, enddate) {
+
+  // $.getJSON('/_getgrabvars',
+  //   {regionsite: regionsite, startdate: startdate, enddate: enddate},
+  //   function(data) {
+  //   data.result;
+  // });
+
+  $.ajax({
+    type: 'POST',
+    url:'/_getgrabvars',
+    data: JSON.stringify([regionsite, startdate, enddate]),
+    contentType: 'application/json;charset=UTF-8',
+    success: function(response){
+      sitevars_grab = response.variables;
+
+      //empty grabvar dropdown and replace the None option
+      $('#backgraphlist_grab')
+          .find('option').remove().end()
+          .append('<option value="None" selected>None</option>');
+
+      for (var i = 0; i < sitevars_grab.length; ++i) {
+          // $('#viz_vars_grab').append('<input type="checkbox" id="variables_grab" value="' +
+          //   sitevars_grab[i] + '" checked> ' + sitevars_grab[i] + '<br>');
+
+          // add variables to grab dropdown
+          $('#backgraphlist_grab').append('<option value="' + sitevars_grab[i] +
+            '">' + sitevars_grab[i] + '</option>');
+      };
+
+    },
+    error: function(error){
+      console.log(error);
+    }
+  });
+
+  return false
+};
 
 $('#datepicker').on('apply.daterangepicker', function(ev, picker) {
   $('#start_date').text( '"'+picker.startDate.format('YYYY-MM-DD')+'"' );
@@ -270,6 +317,7 @@ $(function(){
         $("#graphs").empty();
         $('#graphcontrol').show();
         data = JSON.parse(response.dat);
+        // window.data = JSON.parse(response.dat);
         variables = response.variables;
         sundat = JSON.parse(response.sunriseset);
         sundat.forEach(function(d){
@@ -287,6 +335,49 @@ $(function(){
     });
     return false;
   })
+});
+
+$(function(){
+  $("select[name=backgraphlist_grab]").change(function(){
+
+    //reset the other dropdown
+    $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
+
+    if($(this).val() != 'None'){
+
+      var grabdat = {}
+      grabdat['regionsite'] = $('select[name=site]').val();
+      grabdat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
+      grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
+      grabdat['grabvars'] = [$(this).val()];
+
+      $.ajax({
+        type: 'POST',
+        url:'/_getgrabviz',
+        data: JSON.stringify(grabdat),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response){
+
+          visdata = JSON.parse(response.grabdat);
+          visdata.forEach(function(d){ d.date = parseDate(d['date']) });
+
+          var variables = $('#variables:checked').map(function(){
+            return this.value;
+          }).get();
+
+          for (var i = 0; i < variables.length; ++i) {
+            BackGraph('value', variables[i], visdata);
+          }
+
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
+    };
+
+    return false
+  });
 });
 
 // function Sunlight(variables, sundat){
