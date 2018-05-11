@@ -48,11 +48,15 @@ shinyUI(
                 tabPanel('O2 Fit',
                     sidebarLayout(
                         sidebarPanel(
-                            p(strong("Additional Options:"))
+                            p(strong("Additional Options:")),
+                            sliderInput("range",
+                                label='Range of interest:',
+                                min=0, max=366, value=c(0, 366), ticks=TRUE)
                         ),
                         mainPanel(
+                            plotOutput('O2', brush='triplot_brush'),
                             plotOutput('triplot'),
-                            plotOutput('O2')
+                            verbatimTextOutput("info")
                         )
                     )
                 )
