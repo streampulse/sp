@@ -51,7 +51,7 @@ shinyUI(
                             p(strong("Additional Options:")),
                             sliderInput("range",
                                 label='Range of interest:',
-                                min=0, max=366, value=c(0, 366), ticks=TRUE)
+                                min=1, max=366, value=c(1, 366), ticks=TRUE)
                         ),
                         mainPanel(
                             plotOutput('O2', brush='triplot_brush'),

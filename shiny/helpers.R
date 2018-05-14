@@ -153,48 +153,44 @@ diag_plots = function (ts, main, suppress_NEP=FALSE){
 }
 
 O2_plot = function(mod_out, st, en){
-    # st = 4800; en = 5800
-    st = 5; en = 100
-    DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$date, format="%j")))
-    # DOY_range = range(DOY)
-    rescale(mod_out$data$)
-    # dt = as.Date(mod_out$data$date[st:en])
-    DOY_ind = match(unique(DOY)[seq(1, length(unique(DOY)), 2)], DOY)
-    plot(mod_out$data$DO.obs, mod_out$data$DO.obs, xlim=c(st,en), xaxt='n', las=1,
-        type='n', xlab='', ylab='', ylim=c(8,14), lwd=4, col='salmon4', bty='l')
-    polygon(x=c(1:366, 366:1),
-        x=c(mod_out$data$DO.obs, rep(0, length(mod_out$data$DO.obs))),
-        col='red')
+
+    #convert POSIX time to DOY and UNIX time
+    DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
+        format="%j")))
+    ustamp = as.numeric(as.POSIXct(mod_out$data$solar.time, tz='UTC'))
+
+    #get bounds
+    xmin_ind = match(st, DOY)
+    if(is.na(xmin_ind)) xmin_ind = 1
+    xmin = ustamp[xmin_ind]
+
+    xmax_ind = length(DOY) - match(en, rev(DOY)) + 1
+    if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
+    xmax = ustamp[xmax_ind]
+
+    slice = mod_out$data[xmin_ind:xmax_ind, c('DO.obs', 'DO.mod')]
+    yrng = range(c(slice$DO.obs, slice$DO.mod), na.rm=TRUE)
+
+    #window, series, axis labels
+    plot(mod_out$data$solar.time, mod_out$data$DO.obs, xaxt='n', las=1,
+        type='n', xlab='', ylab='', bty='l', ylim=c(yrng[1], yrng[2]),
+        xaxs='i', yaxs='i', xlim=c(xmin, xmax))
+    polygon(x=c(mod_out$data$solar.time, rev(mod_out$data$solar.time)),
+        y=c(mod_out$data$DO.obs, rep(0, length(mod_out$data$DO.obs))),
+        co='gray70', border='gray70')
     mtext('DOY', 1, font=2, line=2.5)
     mtext('DO (mg/L)', 2, font=2, line=2.5)
-    # lines(mod_out$data$DO.mod, xlim=c(st,en), col='darkred')
-    points(1:366, mod_out$data$DO.mod, xlim=c(st,en), col='royalblue3',
-        pch=1, cex=0.3)
-    axis(1, DOY_ind[-1] + st - 1, DOY[DOY_ind[-1]])
-    legend(x=5450, y=15.8, xpd=TRUE, legend=c('Obs', 'Pred'), cex=0.8,
-        col=c('gray70', 'darkred'), lty=1, bty='n', horiz=TRUE,
+    lines(mod_out$data$solar.time, mod_out$data$DO.mod,
+        xlim=c(st,en), col='royalblue4')
+    legend(x='topright', inset=c(0,-0.2), xpd=TRUE, legend=c('Obs', 'Pred'),
+        cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='n', horiz=TRUE,
         lwd=c(3,1))
-}
 
-# O2_plot = function(mod_out, st, en){
-#     # st = 4800; en = 5800
-#     dt = as.Date(mod_out$data$date[st:en])
-#     DOY = gsub('^0+', '', strftime(dt, format="%j"))
-#     DOY_ind = match(unique(DOY)[seq(1, length(unique(DOY)), 2)], DOY)
-#     plot.ts(mod_out$data$DO.obs, xlim=c(st,en), xaxt='n', las=1,
-#         type='n', xlab='', ylab='', ylim=c(8,14), lwd=4, col='salmon4', bty='l')
-#     polygon(#x=c(mod_out$data$date, rev(mod_out$data$date)),
-#         x=c(mod_out$data$DO.obs, rep(0, length(mod_out$data$DO.obs))),
-#         col='red')
-#     mtext('DOY', 1, font=2, line=2.5)
-#     mtext('DO (mg/L)', 2, font=2, line=2.5)
-#     # lines(mod_out$data$DO.mod, xlim=c(st,en), col='darkred')
-#     points(mod_out$data$DO.mod, xlim=c(st,en), col='royalblue3', pch=1, cex=0.3)
-#     axis(1, DOY_ind[-1] + st - 1, DOY[DOY_ind[-1]])
-#     legend(x=5450, y=15.8, xpd=TRUE, legend=c('Obs', 'Pred'), cex=0.8,
-#         col=c('gray70', 'darkred'), lty=1, bty='n', horiz=TRUE,
-#         lwd=c(3,1))
-# }
+    #get seq of 10 UNIX timestamps and use their corresponding DOYs as ticks
+    tcs = seq(xmin, xmax, length.out=10)
+    near_ind = findInterval(tcs, ustamp)
+    axis(1, ustamp[near_ind], DOY[near_ind])
+}
 
 KvQvER_plot = function(mod_out){
     par(mfrow=c(1,2))
