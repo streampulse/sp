@@ -55,22 +55,50 @@ shinyServer(
             KvQvER_plot(mod_out=mod_out)
         })
 
-        output$O2 = renderPlot({
-            O2_plot(mod_out=mod_out, st=input$range[1], en=input$range[2])
+        # output$O2_plot = renderPlot({
+        #     O2_plot(mod_out=mod_out, st=input$range[1], en=input$range[2],
+        #         input$O2_brush)
+        # }, height=250)
+
+        output$kernel_plot = renderPlot({
+            ts_full = processing_func(predictions, st=input$range[1],
+                en=input$range[2])
+            kernel_func(ts_full, 'Name and Year')
         })
 
-        output$triplot = renderPlot({
-            diag_plots(predictions, 'Name Here')
+        # output$metab_plot = renderPlot({
+        #     ts_full = processing_func(predictions, st=input$range[1],
+        #         en=input$range[2])
+        #     season_ts_func(ts_full, TRUE, st=input$range[1],
+        #         en=input$range[2])
+        # }, height=250)
+
+        output$series_plots = renderPlot({
+            ts_full = processing_func(predictions, st=input$range[1],
+                en=input$range[2])
+            series_plots(ts_full, TRUE, st=input$range[1], en=input$range[2],
+                input$O2_brush)
         })
 
-        output$info = renderText({
-            brush_coords = function(e) {
-                if(is.null(e)) return("NULL\n")
-                paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1),
-                    " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
-            }
-            paste0('brush: ', brush_coords(input$triplot_brush))
+        output$cumul_plot = renderPlot({
+            ts_full = processing_func(predictions, st=input$range[1],
+                en=input$range[2])
+            cumulative_func(ts_full, st=input$range[1],
+                en=input$range[2])
         })
+        # output$triplot = renderPlot({
+        #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],
+        #         en=input$range[2])
+        # })
+
+        # output$info = renderText({
+        #     brush_coords = function(e) {
+        #         if(is.null(e)) return("NULL\n")
+        #         paste0("xmin=", round(e$xmin, 1), " xmax=", round(e$xmax, 1),
+        #             " ymin=", round(e$ymin, 1), " ymax=", round(e$ymax, 1))
+        #     }
+        #     paste0('brush: ', brush_coords(input$O2_brush))
+        # })
 
     })
 

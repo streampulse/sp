@@ -46,19 +46,36 @@ shinyUI(
                     )
                 ),
                 tabPanel('O2 Fit',
-                    sidebarLayout(
-                        sidebarPanel(
-                            p(strong("Additional Options:")),
+                    # splitLayout(
+                    # sidebarLayout(
+
+                    fluidRow(
+                        column(8, offset=2, align='center',
+                            # p(strong("Additional Options:")),
                             sliderInput("range",
                                 label='Range of interest:',
-                                min=1, max=366, value=c(1, 366), ticks=TRUE)
-                        ),
-                        mainPanel(
-                            plotOutput('O2', brush='triplot_brush'),
-                            plotOutput('triplot'),
-                            verbatimTextOutput("info")
-                        )
-                    )
+                                min=1, max=366, value=c(1, 366), ticks=TRUE))),
+                    fluidRow(
+                        column(5, offset=1, align='center',
+                            plotOutput('kernel_plot')),
+                        column(5, align='center',
+                            plotOutput('cumul_plot'))),
+                    fluidRow(
+                        column(12, align='center',
+                            plotOutput('series_plots', brush='O2_brush')))
+
+                        # sidebarPanel(
+                        #     p(strong("Additional Options:")),
+                        #     sliderInput("range",
+                        #         label='Range of interest:',
+                        #         min=1, max=366, value=c(1, 366), ticks=TRUE)
+                        # ),
+                        # mainPanel(
+                        #     plotOutput('O2_plot', brush='O2_brush', height=250),
+                        #     plotOutput('triplot')
+                        #     # verbatimTextOutput("info")
+                        # )
+                    # )
                 )
             )
         # )
