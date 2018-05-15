@@ -48,13 +48,19 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
     sd_trajectory = aggregate(ts_full, by=list(ts_full$DOY),
         FUN=sd, na.rm=TRUE)
 
+    #get bounds
     llim = min(c(gpplo, erlo), na.rm=TRUE)
     ulim = max(c(gppup, erup), na.rm=TRUE)
+    maxmin_day = range(doy, na.rm=TRUE)
+
     # plot(avg_trajectory[, gpp_var],
-    plot(doy, avg_trajectory$GPP,
-        type="l", col="red", xlab='', ylab=expression(paste("gO"[2] *
-                " m"^"-2" * " d"^"-1")), ylim=c(llim, ulim), lwd=2,
-        xaxt='n', xlim=c(st, en))
+    plot(doy, avg_trajectory$GPP, type="l", col="red", xlab='', las=1,
+        # ylab=expression(paste("gO"[2] * " m"^"-2" * " d"^"-1")),
+        ylab='', xaxs='i', yaxs='i',
+        ylim=c(llim, ulim), lwd=2, xaxt='n', bty='l',
+        xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
+    mtext(expression(paste("gO"[2] * " m"^"-2" * " d"^"-1")), side=2,
+        line=2.5, font=2)
     polygon(x=c(doy, rev(doy)),
         y=c(gpplo, rev(gppup)), col=adjustcolor('red', alpha.f=0.3),
         border=NA)
@@ -69,7 +75,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
     polygon(x=c(doy, rev(doy)),
         y=c(erlo, rev(erup)), col=adjustcolor('blue', alpha.f=0.3),
         border=NA)
-    abline(h=0)
+    abline(h=0, lty=3, col='gray50')
     if(suppress_NEP){
         # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
         legend("topleft", inset=c(0, -0.13), ncol=2, xpd=TRUE,
@@ -95,9 +101,9 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
             inset=c(0, -0.13))
         # x.intersp=c(.5,.5,.5,.3,1.3), text.width=.05)
     }
-    month_labs = month.abb
-    month_labs[seq(2, 12, 2)] = ''
-    axis(1, seq(1, 365, length.out=12), month_labs)
+    # month_labs = month.abb
+    # month_labs[seq(2, 12, 2)] = ''
+    # axis(1, seq(1, 365, length.out=12), month_labs)
 }
 
 cumulative_func = function (ts_full, st, en){
@@ -173,11 +179,19 @@ kernel_func = function (ts_full, main){
 #     par(mar=c(0, 4, 0, 0.1))
 #     cumulative_func(ts_full, st, en)
 # }
+
 series_plots = function(ts, suppress_NEP, st, en, brush){
-    par(mfcol=c(2, 1))
-    O2_plot(mod_out, st, en, brush)
+    par(mfcol=c(2,1), mar=c(0,4,2,1), oma=rep(0,4))
     season_ts_func(ts, suppress_NEP, st, en)
+    par(mar=c(3,4,2,1))
+    O2_plot(mod_out, st, en, brush)
 }
+
+# quadplot = function(ts, suppress_NEP, st, en, brush){
+#     par(mfcol=c(2, 1))
+#     O2_plot(mod_out, st, en, brush)
+#     season_ts_func(ts, suppress_NEP, st, en)
+# }
 
 O2_plot = function(mod_out, st, en, brush){
     # st=0; en=366
@@ -209,8 +223,8 @@ O2_plot = function(mod_out, st, en, brush){
     polygon(x=c(ustamp, rev(ustamp)),
         y=c(mod_out$data$DO.obs, rep(0, length(mod_out$data$DO.obs))),
         co='gray70', border='gray70')
-    mtext('DOY', 1, font=2, line=2.5)
-    mtext('DO (mg/L)', 2, font=2, line=2.5)
+    mtext('DOY', 1, font=1, line=1.5)
+    mtext('DO (mg/L)', 2, font=1, line=2.5)
     # lines(mod_out$data$solar.time, mod_out$data$DO.mod,
     lines(ustamp, mod_out$data$DO.mod,
         col='royalblue4')
@@ -221,7 +235,7 @@ O2_plot = function(mod_out, st, en, brush){
     #get seq of 10 UNIX timestamps and use their corresponding DOYs as ticks
     tcs = seq(xmin, xmax, length.out=10)
     near_ind = findInterval(tcs, ustamp)
-    axis(1, ustamp[near_ind], DOY[near_ind])
+    axis(1, ustamp[near_ind], DOY[near_ind], tcl=-0.2, padj=-1)
 
     #highlight brushed points
     hl_log_ind = which(mod_out$data$DO.mod < brush$ymax &

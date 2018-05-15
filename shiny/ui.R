@@ -50,19 +50,21 @@ shinyUI(
                     # sidebarLayout(
 
                     fluidRow(
-                        column(8, offset=2, align='center',
+                        column(12, align='center',
+                            HTML("<div style='height: 300px;'>"),
+                            plotOutput('series_plots', brush='O2_brush'),
+                            HTML("</div>"))),
+                    fluidRow(
+                        column(4, align='center',
                             # p(strong("Additional Options:")),
                             sliderInput("range",
                                 label='Range of interest:',
-                                min=1, max=366, value=c(1, 366), ticks=TRUE))),
-                    fluidRow(
-                        column(5, offset=1, align='center',
+                                min=1, max=366, value=c(1, 366), ticks=TRUE)),
+                    # fluidRow(
+                        column(4, align='center',
                             plotOutput('kernel_plot')),
-                        column(5, align='center',
-                            plotOutput('cumul_plot'))),
-                    fluidRow(
-                        column(12, align='center',
-                            plotOutput('series_plots', brush='O2_brush')))
+                        column(4, align='center',
+                            plotOutput('cumul_plot')))
 
                         # sidebarPanel(
                         #     p(strong("Additional Options:")),

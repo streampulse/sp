@@ -19,13 +19,13 @@
 mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
 predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
 
-library(dplyr)
-library(dygraphs)
-library(ggplot2)
+# library(dplyr)
+# library(dygraphs)
+# library(ggplot2)
 library(shiny)
 library(Cairo)
 library(ks)
-library(RColorBrewer)
+# library(RColorBrewer)
 library(scales)
 options(shiny.usecairo=TRUE)
 
@@ -64,7 +64,7 @@ shinyServer(
             ts_full = processing_func(predictions, st=input$range[1],
                 en=input$range[2])
             kernel_func(ts_full, 'Name and Year')
-        })
+        }, height=300, width=300)
 
         # output$metab_plot = renderPlot({
         #     ts_full = processing_func(predictions, st=input$range[1],
@@ -78,14 +78,16 @@ shinyServer(
                 en=input$range[2])
             series_plots(ts_full, TRUE, st=input$range[1], en=input$range[2],
                 input$O2_brush)
-        })
+        # })
+        }, height=300)
 
         output$cumul_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
                 en=input$range[2])
             cumulative_func(ts_full, st=input$range[1],
                 en=input$range[2])
-        })
+        }, height=300, width=300)
+
         # output$triplot = renderPlot({
         #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],
         #         en=input$range[2])
