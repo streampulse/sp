@@ -107,6 +107,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
 }
 
 cumulative_func = function (ts_full, st, en){
+    par(mar=c(3,3,1,1), oma=rep(0,4))
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
     na_rm = na.omit(ts_full)
     na_rm$csum_gpp = ave(na_rm$GPP, na_rm$Year, FUN=cumsum)
@@ -124,41 +125,56 @@ cumulative_func = function (ts_full, st, en){
     #     "Year"]))]), c("Year", "color"))
     # csum_merge = merge(na_rm, cols, by="Year", type="left")
 
-    plot(na_rm$DOY, na_rm$csum_gpp, pch=20, xlab='Time',
+    plot(na_rm$DOY, na_rm$csum_gpp, pch=20, xlab='',
         # cex=1.5, col=paste(csum_merge$color), type='p', las=1,
-        cex=1.5, col='red', type='p', las=1, ylim=c(lim[1], lim[2]),
-        xaxt="n", xlim=c(st, en), ylab="Cumulative Metabolism")
+        cex=1, col='red', type='p', las=1, ylim=c(lim[1], lim[2]),
+        xaxt='n', yaxt='n', xlim=c(st, en), ylab='')
     # legend("topleft", paste(c(cols$Year)), lwd=c(1, 1),
     #     col=paste(cols$color), cex=0.9)
-    points(na_rm$DOY, na_rm$csum_er, pch=20, cex=1.5, col='blue')
+    points(na_rm$DOY, na_rm$csum_er, pch=20, cex=1, col='blue')
         # type='p', las=1,
         # ylim=c(lim_er[1], lim_er[2]), xaxt="n", xlim=c(st, en), ylab="Cumulative ER")
-    points(na_rm$DOY, na_rm$csum_npp, pch=20, cex=1.5, col='purple')
+    points(na_rm$DOY, na_rm$csum_npp, pch=20, cex=1, col='purple')
         # las=1, ylim=c(lim_npp[1], lim_npp[2]),
         # ylab="Cumulative NEP", xlim=c(st, en), xlab='', type='p', xaxt='n')
     legend("topleft", legend=c('GPP', 'ER', 'NEP'),
         col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n')
-    month_labs = month.abb
-    month_labs[seq(2, 12, 2)] = ''
-    axis(1, seq(1, 365, length.out=12), month_labs)
+
+    mtext('Time', 1, line=1.8)
+    mtext('Cumulative Metabolism', 2, line=2)
+
+    axis(2, tcl=-0.2, hadj=0.5, las=1)
+    month_labs = substr(month.abb, 0, 1)
+    # month_labs[seq(2, 12, 2)] = ''
+    axis(1, seq(1, 365, length.out=12), month_labs, tcl=-0.2, padj=-1,
+        cex.axis=1)
     abline(h=0, col="grey60", lty=2)
 }
 
 kernel_func = function (ts_full, main){
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
+    par(mar=c(3,3.5,1,4), oma=rep(0,4))
 
     kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
-    k_lims = max(abs(c(min(ts_full$ER, na.rm=TRUE),
-        max(ts_full$GPP, na.rm=TRUE))))
-    plot(kernel, xlab=expression(paste("GPP (gO"[2] * " m"^"-2" *
-            " d"^"-1" * ")")),
-        ylab=expression(paste("ER (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),
-        ylim=c(-k_lims, 0), xlim=c(0, k_lims), display="filled.contour2",
-        col=c(NA, "gray80", "gray60", "gray40"))
-    mtext(main, 3, line=-2)
-    abline(0, -1)
-    legend("topright", c("75%", "50%", "25%"), bty="n", lty=c(1,
-        1, 1), lwd=2, col=c("gray80", "gray60", "gray40"))
+    # kk <<- kernel
+    k_lim = max(kernel$estimate, na.rm=TRUE)
+    # k_lims = max(abs(c(min(ts_full$ER, na.rm=TRUE),
+    #     max(ts_full$GPP, na.rm=TRUE))))
+    plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
+        ylim=c(-k_lim, 0), xlim=c(0, k_lim), display='filled.contour',
+        col=c(NA, "purple1", "purple3", "purple4"), alpha=1)
+        # col=c(NA, "gray80", "gray60", "gray40"))
+    axis(1, tcl=-0.2, padj=-1)
+    axis(2, tcl=-0.2, hadj=0.5, las=1)
+    mtext(expression(paste("GPP (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),
+        1, line=1.8)
+    mtext(expression(paste("ER (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),
+        2, line=2)
+    # mtext(main, 3, line=-2)
+    abline(0, -1, col='black', lty=3)
+    legend("right", c("75%", "50%", "25%"), bty="n", xpd=TRUE,
+        lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
+        inset=c(-0.3,0), seg.len=1)
 }
 
 # diag_plots = function (ts, main, suppress_NEP=FALSE, st, en){

@@ -64,7 +64,7 @@ shinyServer(
             ts_full = processing_func(predictions, st=input$range[1],
                 en=input$range[2])
             kernel_func(ts_full, 'Name and Year')
-        }, height=300, width=300)
+        })#, height='auto', width='auto')
 
         # output$metab_plot = renderPlot({
         #     ts_full = processing_func(predictions, st=input$range[1],
@@ -79,14 +79,14 @@ shinyServer(
             series_plots(ts_full, TRUE, st=input$range[1], en=input$range[2],
                 input$O2_brush)
         # })
-        }, height=300)
+        })#, height='auto', width='auto')
 
         output$cumul_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
                 en=input$range[2])
             cumulative_func(ts_full, st=input$range[1],
                 en=input$range[2])
-        }, height=300, width=300)
+        })#, height='auto', width='auto')
 
         # output$triplot = renderPlot({
         #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],

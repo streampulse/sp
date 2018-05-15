@@ -50,21 +50,30 @@ shinyUI(
                     # sidebarLayout(
 
                     fluidRow(
-                        column(12, align='center',
-                            HTML("<div style='height: 300px;'>"),
-                            plotOutput('series_plots', brush='O2_brush'),
-                            HTML("</div>"))),
-                    fluidRow(
+                        column(8, align='center',
+                            # HTML("<div style='height: 400px;'>"),
+                            # HTML("<div style='height: 50%;'>"),
+                            plotOutput('series_plots', brush='O2_brush',
+                                # height='25%', width='100%'),
+                                height='400px')),
+                            # HTML("</div>")),
+                    # fluidRow(
                         column(4, align='center',
+                            # HTML("<div style='height: 25%;'>"),
+                            plotOutput('cumul_plot', height='200px'),
+                                # height='25%', width='100%'),
+                            # HTML("</div>"),
+                        # column(4, align='center',
+                            # HTML("<div style='height: 25%;'>"),
+                            plotOutput('kernel_plot', height='200px'))),
+                                # height='25%', width='100%'),
+                            # HTML("</div>"))),
+                    fluidRow(
+                        column(8, offset=2, align='center',
                             # p(strong("Additional Options:")),
                             sliderInput("range",
                                 label='Range of interest:',
-                                min=1, max=366, value=c(1, 366), ticks=TRUE)),
-                    # fluidRow(
-                        column(4, align='center',
-                            plotOutput('kernel_plot')),
-                        column(4, align='center',
-                            plotOutput('cumul_plot')))
+                                min=1, max=366, value=c(1, 366), ticks=TRUE)))
 
                         # sidebarPanel(
                         #     p(strong("Additional Options:")),
