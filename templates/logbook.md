@@ -1,5 +1,21 @@
 #Mike's Logbook
 
+###tue20180515
+ + app page 2 plots now arranged and enhanced
+###mon20180514
+ + got page 2 time sider connected, enabed brushing and point highlighting on O2 plot
+###fri20180511
+ + built shell of Shiny app and got plots inside, static currently
+###thu20180510
+ + buiding new viz app for model diagnostics and iterative fitting
+###wed20180509
+ + finished SFS poster
+###tue20180508
+ + worked on StreamPULSE SFS poster
+###mon20180507
+ + made new diagnostic plots: K v Q, K v ER, obs O2 v modeled O2
+###20180428-0505
+ + Durham visit
 ###fri20180427
  + added secondary axes for overlaid variables
  + series and grab overlay dropdowns communicate with each other

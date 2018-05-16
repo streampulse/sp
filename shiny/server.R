@@ -55,10 +55,11 @@ shinyServer(
             KvQvER_plot(mod_out=mod_out)
         })
 
-        # output$O2_plot = renderPlot({
-        #     O2_plot(mod_out=mod_out, st=input$range[1], en=input$range[2],
-        #         input$O2_brush)
-        # }, height=250)
+        output$O2_plot = renderPlot({
+            par(mar=c(3,4,2,1), oma=rep(0,4))
+            O2_plot(mod_out=mod_out, st=input$range[1], en=input$range[2],
+                input$O2_brush)
+        })
 
         output$kernel_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
@@ -66,20 +67,21 @@ shinyServer(
             kernel_func(ts_full, 'Name and Year')
         })#, height='auto', width='auto')
 
-        # output$metab_plot = renderPlot({
-        #     ts_full = processing_func(predictions, st=input$range[1],
-        #         en=input$range[2])
-        #     season_ts_func(ts_full, TRUE, st=input$range[1],
-        #         en=input$range[2])
-        # }, height=250)
-
-        output$series_plots = renderPlot({
+        output$metab_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
                 en=input$range[2])
-            series_plots(ts_full, TRUE, st=input$range[1], en=input$range[2],
-                input$O2_brush)
-        # })
-        })#, height='auto', width='auto')
+            par(mar=c(1,4,2,1), oma=rep(0,4))
+            season_ts_func(ts_full, TRUE, st=input$range[1],
+                en=input$range[2])
+        })
+
+        # output$series_plots = renderPlot({
+        #     ts_full = processing_func(predictions, st=input$range[1],
+        #         en=input$range[2])
+        #     series_plots(ts_full, TRUE, st=input$range[1], en=input$range[2],
+        #         input$O2_brush)
+        # # })
+        # })#, height='auto', width='auto')
 
         output$cumul_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],

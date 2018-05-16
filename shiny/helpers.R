@@ -83,7 +83,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
             lwd=2, col=c("red", "blue"),
             x.intersp=c(.5,.5))#, text.width=.05)
         legend('topright', inset=c(0.1, -0.13), ncol=2, xpd=TRUE,
-            bty="n", lty=1, legend=c('','95CI'),
+            bty="n", lty=1, legend=c('','95% CIs'),
             col=c(adjustcolor('red', alpha.f=0.3),
                 adjustcolor('blue', alpha.f=0.3)),
             x.intersp=c(-.1,.5), text.width=.05, lwd=3)
@@ -137,7 +137,7 @@ cumulative_func = function (ts_full, st, en){
     points(na_rm$DOY, na_rm$csum_npp, pch=20, cex=1, col='purple')
         # las=1, ylim=c(lim_npp[1], lim_npp[2]),
         # ylab="Cumulative NEP", xlim=c(st, en), xlab='', type='p', xaxt='n')
-    legend("topleft", legend=c('GPP', 'ER', 'NEP'),
+    legend("topleft", legend=c('GPP', 'ER', 'NEP'), seg.len=1,
         col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n')
 
     mtext('Time', 1, line=1.8)
@@ -196,12 +196,12 @@ kernel_func = function (ts_full, main){
 #     cumulative_func(ts_full, st, en)
 # }
 
-series_plots = function(ts, suppress_NEP, st, en, brush){
-    par(mfcol=c(2,1), mar=c(0,4,2,1), oma=rep(0,4))
-    season_ts_func(ts, suppress_NEP, st, en)
-    par(mar=c(3,4,2,1))
-    O2_plot(mod_out, st, en, brush)
-}
+# series_plots = function(ts, suppress_NEP, st, en, brush){
+#     par(mfcol=c(2,1), mar=c(0,4,2,1), oma=rep(0,4))
+#     season_ts_func(ts, suppress_NEP, st, en)
+#     par(mar=c(3,4,2,1))
+#     O2_plot(mod_out, st, en, brush)
+# }
 
 # quadplot = function(ts, suppress_NEP, st, en, brush){
 #     par(mfcol=c(2, 1))
