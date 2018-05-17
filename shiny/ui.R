@@ -3,14 +3,18 @@ source("helpers.R")
 
 get_plotheight = "
 shinyjs.init = function() {
-  $(window).resize(shinyjs.calcHeight);
+  $(window).resize(shinyjs.getHeight50);
 }
-shinyjs.calcHeight = function(propHeight) {
-  var h = $(window).height() * propHeight;
-  Shiny.onInputChange('plotHeight', Number(h.toFixed(0)));
-//shinyjs.calcHeight = function() {
-//  Shiny.onInputChange('plotHeight', $(window).height() - 30);
-//  console.log($(window).height());
+
+//shinyjs.calcHeight = function(propHeight) {
+//  var h = $(window).height() * propHeight;
+//  Shiny.onInputChange('plotHeight', Number(h.toFixed(0)));
+
+shinyjs.getHeight50 = function() {
+  Shiny.onInputChange('height50', $(window).height() * .5);
+}
+shinyjs.getHeight40 = function() {
+  Shiny.onInputChange('height40', $(window).height() * .4);
 }
 "
 
@@ -55,7 +59,8 @@ shinyUI(
                         #         downloadButton("PRINT1", "Print Graph"),
                         #         class='rightAlign')),
                         # hr(),
-                        plotOutput('KvQvER')#, height='300px')
+                        plotOutput('KvQvER', height='300px')
+                        # plotOutput('KvQvER', height='auto')
                         # dygraphOutput("GRAPH1")
                     )
                 )
@@ -63,12 +68,16 @@ shinyUI(
             tabPanel(HTML('O<sub>2</sub> and Metabolism'),
                 fluidRow(
                     column(8, align='center',
-                        plotOutput('metab_plot', height='30%'),
+                        plotOutput('metab_plot', height='200px'),
+                        # plotOutput('metab_plot', height='auto'),
                         plotOutput('O2_plot', brush='O2_brush',
-                            height='30%')),
+                            height='200px')),
+                            # height='auto')),
                     column(4, align='center',
                         plotOutput('cumul_plot', height='200px'),
+                        # plotOutput('cumul_plot', height='auto'),
                         plotOutput('kernel_plot', height='200px'))),
+                        # plotOutput('kernel_plot', height='auto'))),
                 fluidRow(
                     column(12, align='left',
                         div(align='center', style=paste0(

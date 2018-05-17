@@ -175,7 +175,7 @@ kernel_func = function (ts_full, main){
     abline(0, -1, col='black', lty=3)
     legend("right", c("75%", "50%", "25%"), bty="n", xpd=TRUE,
         lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
-        inset=c(-0.3,0), seg.len=1)
+        inset=c(-0.2.5,0), seg.len=1)
 }
 
 # diag_plots = function (ts, main, suppress_NEP=FALSE, st, en){

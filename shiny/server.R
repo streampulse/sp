@@ -54,27 +54,37 @@ shinyServer(
           # dygraph1()
         # })
 
-        plotHeight = reactive({
-            ifelse(is.null(input$plotHeight), 0, input$plotHeight)
+        height50 = reactive({
+            ifelse(is.null(input$height50), 0, input$height50)
+        })
+        height40 = reactive({
+            ifelse(is.null(input$height40), 0, input$height40)
         })
 
-        js$calcHeight(0.5)
+        js$getHeight50()
+        js$getHeight40()
 
         output$KvQvER = renderPlot({
             KvQvER_plot(mod_out=mod_out)
-        }, height=plotHeight)
+        # }, height=150)
+        # }, height=height50)
+        })
 
         output$O2_plot = renderPlot({
             par(mar=c(3,4,2,1), oma=rep(0,4))
             O2_plot(mod_out=mod_out, st=input$range[1], en=input$range[2],
                 input$O2_brush)
+        # }, height=150)
+        # }, height=height40)
         })
 
         output$kernel_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
                 en=input$range[2])
             kernel_func(ts_full, 'Name and Year')
-        })#, height='auto', width='auto')
+        # }, height=150)
+        # }, height=height40)
+        })
 
         output$metab_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
@@ -82,6 +92,8 @@ shinyServer(
             par(mar=c(1,4,2,1), oma=rep(0,4))
             season_ts_func(ts_full, TRUE, st=input$range[1],
                 en=input$range[2])
+        # }, height=150)
+        # }, height=height40)
         })
 
         # output$series_plots = renderPlot({
@@ -97,7 +109,9 @@ shinyServer(
                 en=input$range[2])
             cumulative_func(ts_full, st=input$range[1],
                 en=input$range[2])
-        })#, height='auto', width='auto')
+        # }, height=150)
+        # }, height=height40)
+        })
 
         # output$triplot = renderPlot({
         #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],
