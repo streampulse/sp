@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+
+      <section class = "shiny_app_container">
+        <iframe id="form-iframe" src="http://127.0.0.1:3838"
+          style="position:fixed; top:50px; left:0px; bottom:0px; right:0px; width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden;">
+        </iframe>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+{% endblock %}
