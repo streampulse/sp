@@ -27,6 +27,8 @@ library(Cairo)
 library(ks)
 # library(RColorBrewer)
 library(scales)
+library(shinyjs)
+
 options(shiny.usecairo=TRUE)
 
 shinyServer(
@@ -51,9 +53,16 @@ shinyServer(
           # ylabel = paste(ylabel1())
           # dygraph1()
         # })
+
+        plotHeight = reactive({
+            ifelse(is.null(input$plotHeight), 0, input$plotHeight)
+        })
+
+        js$calcHeight(0.5)
+
         output$KvQvER = renderPlot({
             KvQvER_plot(mod_out=mod_out)
-        })
+        }, height=plotHeight)
 
         output$O2_plot = renderPlot({
             par(mar=c(3,4,2,1), oma=rep(0,4))

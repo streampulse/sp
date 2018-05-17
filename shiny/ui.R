@@ -1,35 +1,51 @@
 #load plot functions
 source("helpers.R")
-# source("~/git/streampulse/server_copy/sp/shiny/helpers.R")
+
+get_plotheight = "
+shinyjs.init = function() {
+  $(window).resize(shinyjs.calcHeight);
+}
+shinyjs.calcHeight = function(propHeight) {
+  var h = $(window).height() * propHeight;
+  Shiny.onInputChange('plotHeight', Number(h.toFixed(0)));
+//shinyjs.calcHeight = function() {
+//  Shiny.onInputChange('plotHeight', $(window).height() - 30);
+//  console.log($(window).height());
+}
+"
 
 shinyUI(
     fluidPage(
-        navbarPage(p(strong('Diagnostics')),
+        shinyjs::useShinyjs(),
+        shinyjs::extendShinyjs(text=get_plotheight),
+        navbarPage(p(strong('Diagnostics')), inverse=TRUE,
             tabPanel('Model Performance',
                 sidebarLayout(
                     sidebarPanel(
-                        selectInput(
-                            "SOLUTES1",
-                            label = "Solute",
-                            choices = c('d','e','f'),
-                            selected = "Ca"),
-                        helpText(
-                            textOutput("LIMITS1"),
-                            style = "color:#fc9272; font-size:85%;"),
-                        hr(),
-                        p(strong("Additional Options:")),
-                        checkboxInput("HYDROLOGY1",
-                            label = "Hydrology",
-                            value = FALSE),
-                        conditionalPanel(
-                            condition = "input.HYDROLOGY1 == true",
-                            p(radioButtons("GAGEHT_or_Q1",
-                                "Select data source:",
-                                choices = c("Gage Height (mm)" = "GageHt",
-                                    "Q (L/s)" = "Q"),
-                                selected = "GageHt",
-                                inline = FALSE)),
-                            style = "color:#3182bd;"),
+                        # selectInput(
+                        #     "SOLUTES1",
+                        #     label = "Solute",
+                        #     choices = c('d','e','f'),
+                        #     selected = "Ca"),
+                        # helpText(
+                        #     textOutput("LIMITS1"),
+                        #     style = "color:#fc9272; font-size:85%;"),
+                        # hr(),
+                        # p(strong("Additional Options:")),
+                        p('Sampe plots. This app still under development.',
+                            style='color:gray'),
+                        # checkboxInput("HYDROLOGY1",
+                        #     label = "Hydrology",
+                        #     value = FALSE),
+                        # conditionalPanel(
+                        #     condition = "input.HYDROLOGY1 == true",
+                        #     p(radioButtons("GAGEHT_or_Q1",
+                        #         "Select data source:",
+                        #         choices = c("Gage Height (mm)" = "GageHt",
+                        #             "Q (L/s)" = "Q"),
+                        #         selected = "GageHt",
+                        #         inline = FALSE)),
+                        #     style = "color:#3182bd;"),
                         width = 3
                     ),
                     mainPanel(
@@ -39,20 +55,17 @@ shinyUI(
                         #         downloadButton("PRINT1", "Print Graph"),
                         #         class='rightAlign')),
                         # hr(),
-                        plotOutput('KvQvER')
+                        plotOutput('KvQvER')#, height='300px')
                         # dygraphOutput("GRAPH1")
                     )
                 )
             ),
-            tabPanel('O2 Fit',
-                # splitLayout(
-                # sidebarLayout(
-
+            tabPanel(HTML('O<sub>2</sub> and Metabolism'),
                 fluidRow(
                     column(8, align='center',
-                        plotOutput('metab_plot', height='200px'),
+                        plotOutput('metab_plot', height='30%'),
                         plotOutput('O2_plot', brush='O2_brush',
-                            height='200px')),
+                            height='30%')),
                     column(4, align='center',
                         plotOutput('cumul_plot', height='200px'),
                         plotOutput('kernel_plot', height='200px'))),
@@ -72,9 +85,10 @@ shinyUI(
                         div(align='left', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;'),
-                            sliderInput("range", animate=TRUE, label=NULL,
+                            sliderInput("range", label=NULL,
                                 min=1, max=366, value=c(1, 366),
-                                ticks=TRUE))
+                                ticks=TRUE,
+                                animate=animationOptions(interval=1000)))
                     )
                 )
             )

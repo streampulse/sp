@@ -59,7 +59,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
         ylab='', xaxs='i', yaxs='i',
         ylim=c(llim, ulim), lwd=2, xaxt='n', bty='l',
         xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
-    mtext(expression(paste("gO"[2] * " m"^"-2" * " d"^"-1")), side=2,
+    mtext(expression(paste("O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')), side=2,
         line=2.5, font=2)
     polygon(x=c(doy, rev(doy)),
         y=c(gpplo, rev(gppup)), col=adjustcolor('red', alpha.f=0.3),
@@ -107,7 +107,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
 }
 
 cumulative_func = function (ts_full, st, en){
-    par(mar=c(3,3,1,1), oma=rep(0,4))
+    par(mar=c(3,3.5,1,1), oma=rep(0,4))
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
     na_rm = na.omit(ts_full)
     na_rm$csum_gpp = ave(na_rm$GPP, na_rm$Year, FUN=cumsum)
@@ -125,7 +125,7 @@ cumulative_func = function (ts_full, st, en){
     #     "Year"]))]), c("Year", "color"))
     # csum_merge = merge(na_rm, cols, by="Year", type="left")
 
-    plot(na_rm$DOY, na_rm$csum_gpp, pch=20, xlab='',
+    plot(na_rm$DOY, na_rm$csum_gpp, pch=20, xlab='', bty='l',
         # cex=1.5, col=paste(csum_merge$color), type='p', las=1,
         cex=1, col='red', type='p', las=1, ylim=c(lim[1], lim[2]),
         xaxt='n', yaxt='n', xlim=c(st, en), ylab='')
@@ -141,13 +141,14 @@ cumulative_func = function (ts_full, st, en){
         col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n')
 
     mtext('Time', 1, line=1.8)
-    mtext('Cumulative Metabolism', 2, line=2)
+    mtext(expression(paste("Cumulative O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')),
+        2, line=2.3)
 
     axis(2, tcl=-0.2, hadj=0.5, las=1)
     month_labs = substr(month.abb, 0, 1)
     # month_labs[seq(2, 12, 2)] = ''
     axis(1, seq(1, 365, length.out=12), month_labs, tcl=-0.2, padj=-1,
-        cex.axis=1)
+        cex.axis=0.9)
     abline(h=0, col="grey60", lty=2)
 }
 
@@ -162,7 +163,7 @@ kernel_func = function (ts_full, main){
     #     max(ts_full$GPP, na.rm=TRUE))))
     plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
         ylim=c(-k_lim, 0), xlim=c(0, k_lim), display='filled.contour',
-        col=c(NA, "purple1", "purple3", "purple4"), alpha=1)
+        col=c(NA, "purple1", "purple3", "purple4"))
         # col=c(NA, "gray80", "gray60", "gray40"))
     axis(1, tcl=-0.2, padj=-1)
     axis(2, tcl=-0.2, hadj=0.5, las=1)

@@ -1,9 +1,11 @@
 #Mike's Logbook
 
+###wed20180516
+ + page 1 arranged; app embedded in data portal
 ###tue20180515
  + app page 2 plots now arranged and enhanced
 ###mon20180514
- + got page 2 time sider connected, enabed brushing and point highlighting on O2 plot
+ + got page 2 time sider connected, enabled brushing and point highlighting on O2 plot
 ###fri20180511
  + built shell of Shiny app and got plots inside, static currently
 ###thu20180510

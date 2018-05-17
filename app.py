@@ -990,6 +990,14 @@ def sitelist():
 def upload_choice():
     return render_template('upload_choice.html')
 
+@app.route('/viz_choice')
+def viz_choice():
+    return render_template('viz_choice.html')
+
+@app.route('/viz_diag')
+def viz_diag():
+    return render_template('viz_diag.html')
+
 @app.route('/series_upload', methods=['GET', 'POST'])
 @login_required
 def series_upload():
