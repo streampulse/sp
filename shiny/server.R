@@ -115,6 +115,10 @@ shinyServer(
         }, height=height40)
         # })
 
+        output$cumul_legend = renderPlot({
+            cumul_legend()
+        })
+
         # output$triplot = renderPlot({
         #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],
         #         en=input$range[2])

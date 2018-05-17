@@ -78,27 +78,31 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
     abline(h=0, lty=3, col='gray50')
     if(suppress_NEP){
         # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
-        legend("topleft", inset=c(0, -0.13), ncol=2, xpd=TRUE,
+        legend("bottomleft", ncol=2, xpd=FALSE,
             legend=c("GPP", "ER"), bty="n", lty=1,
             lwd=2, col=c("red", "blue"),
-            x.intersp=c(.5,.5))#, text.width=.05)
-        legend('topright', inset=c(0.1, -0.13), ncol=2, xpd=TRUE,
-            bty="n", lty=1, legend=c('','95% CIs'),
+            x.intersp=c(.5,.5))#, inset=c(0, -0.13), text.width=.05)
+        legend('bottomright', horiz=TRUE, seg.len=1,
+            bty="n", lty=1, title='95% CIs', legend=c('',''),
             col=c(adjustcolor('red', alpha.f=0.3),
                 adjustcolor('blue', alpha.f=0.3)),
-            x.intersp=c(-.1,.5), text.width=.05, lwd=3)
+            lwd=6)
+        # legend('bottomright', ncol=2, xpd=FALSE, #inset=c(0.1, 0),#-0.13),
+        #     bty="n", lty=1, title='95% CIs', legend=c('',''),#'95% CIs'),
+        #     col=c(adjustcolor('red', alpha.f=0.3),
+        #         adjustcolor('blue', alpha.f=0.3)),
+        #     x.intersp=c(-.1,.5), text.width=.05, lwd=6, xjust=0)
 
     } else {
         lines(avg_trajectory$DOY, avg_trajectory$NPP, col="purple", lwd=2)
         # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
-        legend("topleft", ncol=3, xpd=TRUE,
+        legend("bottomleft", ncol=3, xpd=FALSE,
         # legend("topleft", ncol=5, xpd=TRUE,
             c("GPP", "NEP", "ER"), bty="n", lty=1,
             # c("GPP", "NEP", "ER", '', '95CI'), bty="n", lty=1,
-            lwd=2, col=c("red", "purple", "blue"),
+            lwd=2, col=c("red", "purple", "blue"))#, inset=c(0, -0.13))
                 # adjustcolor('red', alpha.f=0.3),
                 # adjustcolor('steelblue', alpha.f=0.3)),
-            inset=c(0, -0.13))
         # x.intersp=c(.5,.5,.5,.3,1.3), text.width=.05)
     }
     # month_labs = month.abb
@@ -107,7 +111,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
 }
 
 cumulative_func = function (ts_full, st, en){
-    par(mar=c(3,3.5,1,4), oma=rep(0,4))
+    par(mar=c(2,3.5,0,0.5), oma=rep(0,4))
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
     na_rm = na.omit(ts_full)
     na_rm$csum_gpp = ave(na_rm$GPP, na_rm$Year, FUN=cumsum)
@@ -140,10 +144,12 @@ cumulative_func = function (ts_full, st, en){
         # col=adjustcolor('purple', alpha.f=0.4))
         # las=1, ylim=c(lim_npp[1], lim_npp[2]),
         # ylab="Cumulative NEP", xlim=c(st, en), xlab='', type='p', xaxt='n')
-    legend("right", legend=c('GPP', 'ER', 'NEP'), seg.len=1, inset=c(-0.3,0),
-        col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=TRUE)
 
-    mtext('Time', 1, line=1.8)
+    # legend("top", legend=c('GPP', 'ER', 'NEP'), seg.len=1, inset=c(0,-0.0),
+    #     col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=TRUE,
+    #     horiz=TRUE)
+
+    # mtext('Time', 1, line=1.8)
     mtext(expression(paste("Cumulative O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')),
         2, line=2.3)
 
@@ -155,9 +161,18 @@ cumulative_func = function (ts_full, st, en){
     abline(h=0, col="grey50", lty=3)
 }
 
-kernel_func = function (ts_full, main){
+cumul_legend = function(){
+    par(mar = rep(0,4), oma = rep(0,4))
+    plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
+    legend("bottomright", legend=c('GPP', 'ER', 'NEP'), seg.len=1,
+        col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=FALSE,
+        horiz=TRUE)
+}
+
+
+kernel_func = function(ts_full, main){
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
-    par(mar=c(3,3.5,1,4), oma=rep(0,4))
+    par(mar=c(3,3.5,1,.5), oma=rep(0,4))
 
     kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
     # kk <<- kernel
@@ -176,9 +191,9 @@ kernel_func = function (ts_full, main){
         2, line=2)
     # mtext(main, 3, line=-2)
     abline(0, -1, col='black', lty=3)
-    legend("right", c("75%", "50%", "25%"), bty="n", xpd=TRUE,
+    legend("bottomright", c("75%", "50%", "25%"), bty="o", bg='white',
         lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
-        inset=c(-0.3,0), seg.len=1)
+        seg.len=1, box.col='transparent')#, xpd=TRUE, inset=c(-0.3,0))
 }
 
 # diag_plots = function (ts, main, suppress_NEP=FALSE, st, en){
@@ -248,9 +263,9 @@ O2_plot = function(mod_out, st, en, brush){
     # lines(mod_out$data$solar.time, mod_out$data$DO.mod,
     lines(ustamp, mod_out$data$DO.mod,
         col='royalblue4')
-    legend(x='topright', inset=c(0,-0.2), xpd=TRUE, legend=c('Obs', 'Pred'),
-        cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='n', horiz=TRUE,
-        lwd=c(3,1))
+    legend(x='bottomleft', legend=c('Obs', 'Pred'), bg='white',
+        cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='o', horiz=TRUE,
+        lwd=c(6,1), box.col='transparent')#, inset=c(0,-0.0), xpd=TRUE)
 
     #get seq of 10 UNIX timestamps and use their corresponding DOYs as ticks
     tcs = seq(xmin, xmax, length.out=10)
