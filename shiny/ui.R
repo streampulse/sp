@@ -71,43 +71,20 @@ shinyUI(
             ),
             tabPanel(HTML('O<sub>2</sub> and Metabolism'),
                 fluidRow(
-                    column(12, align='center',
-                        div(align='center', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align: middle;',
-                                'width: 65%; margin-right: 3%'),
-                    # column(8, align='center',
+                    column(8, align='center',
                         # plotOutput('metab_plot', height='200px'),
-                        plotOutput('metab_plot', height='auto', width='auto')
-                        ),
-                        div(align='center', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align: middle;',
-                                'width: 31%'),
-                        plotOutput('cumul_plot', height='auto', width='auto')
-                        # plotOutput('cumul_plot', height='200px'),
-                        )
-                    )
-                ),
-                fluidRow(
-                    column(12, align='center',
-                        div(align='center', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align: middle;',
-                                'width: 65%; margin-right: 3%'),
-                    # ),
-                    # column(4, align='center',
+                        plotOutput('metab_plot', height='auto', width='auto'),
                         plotOutput('O2_plot', brush='O2_brush',
                         #     # height='200px')),
                             height='auto', width='auto')
-                        ),
-                        div(align='center', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align: middle;',
-                                'width: 31%'),
-                        # plotOutput('kernel_plot', height='200px'))),
+                    ),
+                # ),
+                # fluidRow(
+                    column(4, align='center',
+                        plotOutput('cumul_plot', height='auto', width='auto'),
+                        # plotOutput('cumul_plot', height='200px'),
                         plotOutput('kernel_plot', height='auto', width='auto')
-                        )
+                        # plotOutput('kernel_plot', height='200px'))),
                     )
                 ),
                 fluidRow(
