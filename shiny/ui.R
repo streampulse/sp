@@ -59,25 +59,57 @@ shinyUI(
                         #         downloadButton("PRINT1", "Print Graph"),
                         #         class='rightAlign')),
                         # hr(),
-                        plotOutput('KvQvER', height='300px')
-                        # plotOutput('KvQvER', height='auto')
+                        # plotOutput('KvQvER', height='300px')
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align:middle;'),
+                        plotOutput('KvQvER', height='auto', width='60%')
+                        )
                         # dygraphOutput("GRAPH1")
                     )
                 )
             ),
             tabPanel(HTML('O<sub>2</sub> and Metabolism'),
                 fluidRow(
-                    column(8, align='center',
-                        plotOutput('metab_plot', height='200px'),
-                        # plotOutput('metab_plot', height='auto'),
+                    column(12, align='center',
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align: middle;',
+                                'width: 65%; margin-right: 3%'),
+                    # column(8, align='center',
+                        # plotOutput('metab_plot', height='200px'),
+                        plotOutput('metab_plot', height='auto', width='auto')
+                        ),
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align: middle;',
+                                'width: 31%'),
+                        plotOutput('cumul_plot', height='auto', width='auto')
+                        # plotOutput('cumul_plot', height='200px'),
+                        )
+                    )
+                ),
+                fluidRow(
+                    column(12, align='center',
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align: middle;',
+                                'width: 65%; margin-right: 3%'),
+                    # ),
+                    # column(4, align='center',
                         plotOutput('O2_plot', brush='O2_brush',
-                            height='200px')),
-                            # height='auto')),
-                    column(4, align='center',
-                        plotOutput('cumul_plot', height='200px'),
-                        # plotOutput('cumul_plot', height='auto'),
-                        plotOutput('kernel_plot', height='200px'))),
-                        # plotOutput('kernel_plot', height='auto'))),
+                        #     # height='200px')),
+                            height='auto', width='auto')
+                        ),
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align: middle;',
+                                'width: 31%'),
+                        # plotOutput('kernel_plot', height='200px'))),
+                        plotOutput('kernel_plot', height='auto', width='auto')
+                        )
+                    )
+                ),
                 fluidRow(
                     column(12, align='left',
                         div(align='center', style=paste0(
@@ -90,14 +122,17 @@ shinyUI(
                                     'color:gray; font-size:60%;',
                                     'padding:0; margin:0')),
                             p('Press play to autoscroll',
-                                style='color:gray; font-size:60%')),
+                                style='color:gray; font-size:60%')
+                        ),
                         div(align='left', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;'),
                             sliderInput("range", label=NULL,
                                 min=1, max=366, value=c(1, 366),
                                 ticks=TRUE,
-                                animate=animationOptions(interval=1000)))
+                                animate=animationOptions(interval=1000)
+                            )
+                        )
                     )
                 )
             )

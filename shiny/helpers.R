@@ -107,7 +107,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
 }
 
 cumulative_func = function (ts_full, st, en){
-    par(mar=c(3,3.5,1,1), oma=rep(0,4))
+    par(mar=c(3,3.5,1,4), oma=rep(0,4))
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
     na_rm = na.omit(ts_full)
     na_rm$csum_gpp = ave(na_rm$GPP, na_rm$Year, FUN=cumsum)
@@ -127,29 +127,32 @@ cumulative_func = function (ts_full, st, en){
 
     plot(na_rm$DOY, na_rm$csum_gpp, pch=20, xlab='', bty='l',
         # cex=1.5, col=paste(csum_merge$color), type='p', las=1,
-        cex=1, col='red', type='p', las=1, ylim=c(lim[1], lim[2]),
-        xaxt='n', yaxt='n', xlim=c(st, en), ylab='')
+        cex=1, type='p', las=1, ylim=c(lim[1], lim[2]),
+        xaxt='n', yaxt='n', xlim=c(st, en), ylab='', col='red')
+        # col=adjustcolor('red', alpha.f=0.4))
     # legend("topleft", paste(c(cols$Year)), lwd=c(1, 1),
     #     col=paste(cols$color), cex=0.9)
     points(na_rm$DOY, na_rm$csum_er, pch=20, cex=1, col='blue')
+        # col=adjustcolor('blue', alpha.f=0.4))
         # type='p', las=1,
         # ylim=c(lim_er[1], lim_er[2]), xaxt="n", xlim=c(st, en), ylab="Cumulative ER")
     points(na_rm$DOY, na_rm$csum_npp, pch=20, cex=1, col='purple')
+        # col=adjustcolor('purple', alpha.f=0.4))
         # las=1, ylim=c(lim_npp[1], lim_npp[2]),
         # ylab="Cumulative NEP", xlim=c(st, en), xlab='', type='p', xaxt='n')
-    legend("topleft", legend=c('GPP', 'ER', 'NEP'), seg.len=1,
-        col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n')
+    legend("right", legend=c('GPP', 'ER', 'NEP'), seg.len=1, inset=c(-0.3,0),
+        col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=TRUE)
 
     mtext('Time', 1, line=1.8)
     mtext(expression(paste("Cumulative O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')),
         2, line=2.3)
 
-    axis(2, tcl=-0.2, hadj=0.5, las=1)
+    axis(2, tcl=-0.2, hadj=0.7, las=1, cex.axis=0.7)
     month_labs = substr(month.abb, 0, 1)
     # month_labs[seq(2, 12, 2)] = ''
     axis(1, seq(1, 365, length.out=12), month_labs, tcl=-0.2, padj=-1,
-        cex.axis=0.9)
-    abline(h=0, col="grey60", lty=2)
+        cex.axis=0.7)
+    abline(h=0, col="grey50", lty=3)
 }
 
 kernel_func = function (ts_full, main){
@@ -158,11 +161,11 @@ kernel_func = function (ts_full, main){
 
     kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
     # kk <<- kernel
-    k_lim = max(kernel$estimate, na.rm=TRUE)
-    # k_lims = max(abs(c(min(ts_full$ER, na.rm=TRUE),
-    #     max(ts_full$GPP, na.rm=TRUE))))
+    # k_lim = max(kernel$estimate, na.rm=TRUE)
+    k_lims = max(abs(c(min(ts_full$ER, na.rm=TRUE),
+        max(ts_full$GPP, na.rm=TRUE))))
     plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
-        ylim=c(-k_lim, 0), xlim=c(0, k_lim), display='filled.contour',
+        ylim=c(-k_lims, 0), xlim=c(0, k_lims), display='filled.contour',
         col=c(NA, "purple1", "purple3", "purple4"))
         # col=c(NA, "gray80", "gray60", "gray40"))
     axis(1, tcl=-0.2, padj=-1)
@@ -175,7 +178,7 @@ kernel_func = function (ts_full, main){
     abline(0, -1, col='black', lty=3)
     legend("right", c("75%", "50%", "25%"), bty="n", xpd=TRUE,
         lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
-        inset=c(-0.2.5,0), seg.len=1)
+        inset=c(-0.3,0), seg.len=1)
 }
 
 # diag_plots = function (ts, main, suppress_NEP=FALSE, st, en){

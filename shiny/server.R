@@ -16,8 +16,10 @@
 #     'predictions_WI_BEC_2017-01-26_2018-01-25_bayes_binned_obsproc_trapezoid_',
 #     'DO-mod_stan.rds'))
 
-mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+# mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+# predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
 
 # library(dplyr)
 # library(dygraphs)
@@ -67,24 +69,24 @@ shinyServer(
         output$KvQvER = renderPlot({
             KvQvER_plot(mod_out=mod_out)
         # }, height=150)
-        # }, height=height50)
-        })
+        }, height=height50)
+        # })
 
         output$O2_plot = renderPlot({
             par(mar=c(3,4,2,1), oma=rep(0,4))
             O2_plot(mod_out=mod_out, st=input$range[1], en=input$range[2],
                 input$O2_brush)
         # }, height=150)
-        # }, height=height40)
-        })
+        }, height=height40)
+        # })
 
         output$kernel_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
                 en=input$range[2])
             kernel_func(ts_full, 'Name and Year')
         # }, height=150)
-        # }, height=height40)
-        })
+        }, height=height40)
+        # })
 
         output$metab_plot = renderPlot({
             ts_full = processing_func(predictions, st=input$range[1],
@@ -93,8 +95,8 @@ shinyServer(
             season_ts_func(ts_full, TRUE, st=input$range[1],
                 en=input$range[2])
         # }, height=150)
-        # }, height=height40)
-        })
+        }, height=height40)
+        # })
 
         # output$series_plots = renderPlot({
         #     ts_full = processing_func(predictions, st=input$range[1],
@@ -110,8 +112,8 @@ shinyServer(
             cumulative_func(ts_full, st=input$range[1],
                 en=input$range[2])
         # }, height=150)
-        # }, height=height40)
-        })
+        }, height=height40)
+        # })
 
         # output$triplot = renderPlot({
         #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],
