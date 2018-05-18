@@ -21,7 +21,9 @@ shinyjs.getHeight40 = function() {
 shinyUI(
     fluidPage(
         shinyjs::useShinyjs(),
-        shinyjs::extendShinyjs(text=get_plotheight),
+        shinyjs::extendShinyjs(text=get_plotheight,
+            functions=c('shinyjs.getHeight50', 'shinyjs.getHeight40',
+                'shinyjs.init')),
         navbarPage(p(strong('Diagnostics')), inverse=TRUE,
             tabPanel('Model Performance',
                 sidebarLayout(
@@ -36,8 +38,10 @@ shinyUI(
                         #     style = "color:#fc9272; font-size:85%;"),
                         # hr(),
                         # p(strong("Additional Options:")),
-                        p('Sample plots. This app still under development.',
-                            style='color:gray'),
+                        p(paste("Sample plots from streamMetabolizer model of",
+                            "StreamPULSE's Black Earth",
+                            "Creek site in Wisconsin. This app still under",
+                            "development."), style='color:gray'),
                         # checkboxInput("HYDROLOGY1",
                         #     label = "Hydrology",
                         #     value = FALSE),
@@ -91,10 +95,10 @@ shinyUI(
                         )
                     ),
                     column(3, align='right',
-                        div(align='left', style=paste0(
+                        div(align='right', style=paste0(
                             # 'display: inline-block;',
                             'vertical-align:bottom;'),
-                            plotOutput('cumul_legend', height='50px')
+                            plotOutput('cumul_legend', height='80px')
                         )
                     )
                 ),
