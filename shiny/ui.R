@@ -21,7 +21,9 @@ shinyjs.getHeight40 = function() {
 shinyUI(
     fluidPage(
         shinyjs::useShinyjs(),
-        shinyjs::extendShinyjs(text=get_plotheight),
+        shinyjs::extendShinyjs(text=get_plotheight,
+            functions=c('shinyjs.getHeight50', 'shinyjs.getHeight40',
+                'shinyjs.init')),
         navbarPage(p(strong('Diagnostics')), inverse=TRUE,
             tabPanel('Model Performance',
                 sidebarLayout(
@@ -36,8 +38,10 @@ shinyUI(
                         #     style = "color:#fc9272; font-size:85%;"),
                         # hr(),
                         # p(strong("Additional Options:")),
-                        p('Sampe plots. This app still under development.',
-                            style='color:gray'),
+                        p(paste("Sample plots from streamMetabolizer model of",
+                            "StreamPULSE's Black Earth",
+                            "Creek site in Wisconsin. This app still under",
+                            "development."), style='color:gray'),
                         # checkboxInput("HYDROLOGY1",
                         #     label = "Hydrology",
                         #     value = FALSE),
@@ -59,27 +63,15 @@ shinyUI(
                         #         downloadButton("PRINT1", "Print Graph"),
                         #         class='rightAlign')),
                         # hr(),
-                        plotOutput('KvQvER', height='300px')
-                        # plotOutput('KvQvER', height='auto')
+                        # plotOutput('KvQvER', height='300px')
+                        plotOutput('KvQvER', height='auto')
                         # dygraphOutput("GRAPH1")
                     )
                 )
             ),
             tabPanel(HTML('O<sub>2</sub> and Metabolism'),
                 fluidRow(
-                    column(8, align='center',
-                        plotOutput('metab_plot', height='200px'),
-                        # plotOutput('metab_plot', height='auto'),
-                        plotOutput('O2_plot', brush='O2_brush',
-                            height='200px')),
-                            # height='auto')),
-                    column(4, align='center',
-                        plotOutput('cumul_plot', height='200px'),
-                        # plotOutput('cumul_plot', height='auto'),
-                        plotOutput('kernel_plot', height='200px'))),
-                        # plotOutput('kernel_plot', height='auto'))),
-                fluidRow(
-                    column(12, align='left',
+                    column(9, align='left',
                         div(align='center', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;',
@@ -87,17 +79,44 @@ shinyUI(
                             p(strong('Select DOY range:')),
                             p('Drag blue bar to move fixed range',
                                 style=paste0(
-                                    'color:gray; font-size:60%;',
+                                    'color:gray; font-size:80%;',
                                     'padding:0; margin:0')),
                             p('Press play to autoscroll',
-                                style='color:gray; font-size:60%')),
+                                style='color:gray; font-size:80%')
+                        ),
                         div(align='left', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;'),
                             sliderInput("range", label=NULL,
                                 min=1, max=366, value=c(1, 366),
                                 ticks=TRUE,
-                                animate=animationOptions(interval=1000)))
+                                animate=animationOptions(interval=1000)
+                            )
+                        )
+                    ),
+                    column(3, align='right',
+                        div(align='right', style=paste0(
+                            # 'display: inline-block;',
+                            'vertical-align:bottom;'),
+                            plotOutput('cumul_legend', height='80px')
+                        )
+                    )
+                ),
+                fluidRow(
+                    column(9, align='center',
+                        # plotOutput('metab_plot', height='200px'),
+                        plotOutput('metab_plot', height='auto', width='auto'),
+                        plotOutput('O2_plot', brush='O2_brush',
+                        #     # height='200px')),
+                            height='auto', width='auto')
+                    ),
+                # ),
+                # fluidRow(
+                    column(3, align='center',
+                        plotOutput('cumul_plot', height='auto', width='auto'),
+                        # plotOutput('cumul_plot', height='200px'),
+                        plotOutput('kernel_plot', height='auto', width='auto')
+                        # plotOutput('kernel_plot', height='200px'))),
                     )
                 )
             )
