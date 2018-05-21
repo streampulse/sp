@@ -22,9 +22,14 @@ shinyUI(
     fluidPage(
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
-            functions=c('shinyjs.getHeight50', 'shinyjs.getHeight40',
-                'shinyjs.init')),
-        navbarPage(p(strong('Diagnostics')), inverse=TRUE,
+            functions=c('getHeight50', 'getHeight40', 'init')),
+        # navbarPage(title=tags$a(href='https://data.streampulse.org/',
+        #     'StreamPULSE'),
+        #     tabPanel(HTML("<a href=\"https://data.streampulse.org/sitelist\">Sitelist</a>"))
+        #     # tabPanel(tags$a(href='https://data.streampulse.org/upload_choice/',
+        #     # 'Upload'))
+        # ),
+        navbarPage(title=p(strong('Diagnostics')), inverse=TRUE,
             tabPanel('Model Performance',
                 sidebarLayout(
                     sidebarPanel(
@@ -98,7 +103,7 @@ shinyUI(
                         div(align='right', style=paste0(
                             # 'display: inline-block;',
                             'vertical-align:bottom;'),
-                            plotOutput('cumul_legend', height='80px')
+                            plotOutput('cumul_legend', height='60px')
                         )
                     )
                 ),
