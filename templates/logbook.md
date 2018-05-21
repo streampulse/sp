@@ -1,7 +1,13 @@
 #Mike's Logbook
 
+###mon20180521
+ + rather than embedding the app in a data portal template page, looking into solutions that would let it remain a standalone app, while still fitting the styles and themes of the data portal
+###fri20180518
+ + can't embed shiny app (unencrypted unless we get absurdly expensive pro version) in site, which is encrypted. attempting workarounds involving web server config
+###thu20180517
+ + app improvements, site config
 ###wed20180516
- + page 1 arranged; app embedded in data portal
+ + page 1 arranged; app embedded in data portal locally
 ###tue20180515
  + app page 2 plots now arranged and enhanced
 ###mon20180514
