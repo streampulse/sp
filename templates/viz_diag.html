@@ -1,3 +1,6 @@
+<!-- this template was intended to house a shiny app as an iframe, but the fact that the site is https and the app http means
+the app can't be rendered. as such, this template is not in use, and the app is rendered by itself, without a parent page-->
+
 {% extends "layout.html" %}
 
 {% block body %}
@@ -8,7 +11,7 @@
 
       <section class = "shiny_app_container">
         <iframe id="form-iframe" src="http://127.0.0.1:3838"
-          style="position:fixed; top:50px; left:0px; bottom:0px; right:0px; width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden;">
+          style="position:fixed; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden;">
         </iframe>
       </section>
 
