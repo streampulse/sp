@@ -94,8 +94,8 @@ shinyUI(
                                 'vertical-align:middle;'),
                             sliderInput("range", label=NULL,
                                 min=1, max=366, value=c(1, 366),
-                                ticks=TRUE,
-                                animate=animationOptions(interval=1000)
+                                ticks=TRUE, step=6,
+                                animate=animationOptions(interval=2000)
                             )
                         )
                     ),
