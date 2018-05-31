@@ -1001,6 +1001,7 @@ def viz_diag():
 @app.route('/series_upload', methods=['GET', 'POST'])
 @login_required
 def series_upload():
+
     if request.method == 'POST':
 
         replace = False if request.form.get('replace') is None else True
@@ -1517,7 +1518,7 @@ def grab_updatedb(xx, fnamelist, replace=False):
             except:
                 continue
 
-    else: #if not replacing, just insert new data
+    else: #if not replacing, just insert new data (this should be chunked too)
         xx = xx.to_dict('records')
         db.session.bulk_insert_mappings(Grabdata, xx)
 
@@ -1559,6 +1560,9 @@ def confirmcolumns():
                 by=current_user.get_id(), contact=request.form['contactName'],
                 contactEmail=request.form['contactEmail'])
             db.session.add(sx)
+
+            #give uploading user access to this site
+            add_site_permission(current_user, region, site)
 
             # make a new text file with the metadata
             metastring = request.form['metadata']
@@ -1617,140 +1621,145 @@ def confirmcolumns():
 @app.route("/grab_upload_confirm", methods=["POST"])
 def grab_confirmcolumns():
 
-    try:
+    # try:
 
-        #retrieve variables from request, session, and filesystem
-        cdict = json.loads(request.form['cdict'])
-        mdict = json.loads(request.form['mdict'])
-        #remove Nones introduced when setting a prepopulated variable to blank
-        mdict = [m for m in mdict if m is not None]
-        wdict = json.loads(request.form['wdict'])
-        adict = json.loads(request.form['adict'])
-        fnlong = session.get('fnlong')
-        xx = pd.read_csv(fnlong, parse_dates=[0])
-        filenameNoV = session.get('filenameNoV')
-        region = filenameNoV.split('_')[0]
+    #retrieve variables from request, session, and filesystem
+    cdict = json.loads(request.form['cdict'])
+    mdict = json.loads(request.form['mdict'])
+    #remove Nones introduced when setting a prepopulated variable to blank
+    mdict = [m for m in mdict if m is not None]
+    wdict = json.loads(request.form['wdict'])
+    adict = json.loads(request.form['adict'])
+    fnlong = session.get('fnlong')
+    xx = pd.read_csv(fnlong, parse_dates=[0])
+    filenameNoV = session.get('filenameNoV')
+    region = filenameNoV.split('_')[0]
 
-        #get list of all filenames on record
-        all_fnames = list(pd.read_sql('select distinct filename from grabupload',
-            db.engine).filename)
+    #get list of all filenames on record
+    all_fnames = list(pd.read_sql('select distinct filename from grabupload',
+        db.engine).filename)
 
-        #if this filename has not been seen before...
-        if filenameNoV not in all_fnames:
+    #if this filename has not been seen before...
+    if filenameNoV not in all_fnames:
 
-            update_upload_table = True
+        update_upload_table = True
 
-            #find out what next upload_id will be
-            last_upID = pd.read_sql("select max(id) as m from grabupload",
-                db.engine)
-            last_upID = list(last_upID.m)[0]
+        #find out what next upload_id will be
+        last_upID = pd.read_sql("select max(id) as m from grabupload",
+            db.engine)
+        last_upID = list(last_upID.m)[0]
 
-            if last_upID:
-                upID = last_upID + 1
-            else:
-                upID = 1
-
-                #reset auto increment for grabupload table
-                db.engine.execute('alter table grabupload auto_increment=1')
-
+        if last_upID:
+            upID = last_upID + 1
         else:
-            update_upload_table = False
+            upID = 1
 
-            #retrieve upload_id
-            upID = pd.read_sql("select id from grabupload where filename='" +\
-                filenameNoV + "'", db.engine)
-            upID = list(upID.id)[0]
+            #reset auto increment for grabupload table
+            db.engine.execute('alter table grabupload auto_increment=1')
 
-        #parse input dict objects into usable dictionaries
-        cdict = dict([(r['name'], r['value']) for r in cdict])
-        mdict = dict([(r['name'], r['value']) for r in mdict])
-        wdict = dict([(r['name'], r['value']) for r in wdict])
-        adict = dict([(r['name'], r['value']) for r in adict])
+    else:
+        update_upload_table = False
 
-        #if there are new sites, process them
-        if request.form['new_sites'] == "true":
+        #retrieve upload_id
+        upID = pd.read_sql("select id from grabupload where filename='" +\
+            filenameNoV + "'", db.engine)
+        upID = list(upID.id)[0]
 
-            # automatically embargo for 1 year
-            embargo = 1
+    #parse input dict objects into usable dictionaries
+    cdict = dict([(r['name'], r['value']) for r in cdict])
+    mdict = dict([(r['name'], r['value']) for r in mdict])
+    wdict = dict([(r['name'], r['value']) for r in wdict])
+    adict = dict([(r['name'], r['value']) for r in adict])
 
-            #for each new site included in the uploaded csv...
-            for i in xrange(int(request.form['newlen'])):
+    #if there are new sites, process them
+    if request.form['new_sites'] == "true":
 
-                #get the name, split into site and region components
-                newsite = request.form['newsite' + str(i)]
-                region, site = newsite.split('_')[0:2]
+        # automatically embargo for 1 year
+        embargo = 1
 
-                #get usgs number if applicable
-                usgss = request.form['usgs' + str(i)]
-                if usgss == '':
-                    usgss = None
+        #for each new site included in the uploaded csv...
+        newsitelist = []
+        for i in xrange(int(request.form['newlen'])):
 
-                # add new site to Site table
-                sx = Site(region=region, site=site, by=current_user.get_id(),
-                    name=request.form['sitename' + str(i)],
-                    latitude=request.form['lat' + str(i)],
-                    longitude=request.form['lng' + str(i)],
-                    usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
-                    contact=request.form['contactName' + str(i)],
-                    contactEmail=request.form['contactEmail' + str(i)])
-                db.session.add(sx)
+            #get the name, split into site and region components
+            newsite = request.form['newsite' + str(i)]
+            region, site = newsite.split('_')[0:2]
+            newsitelist.append(site)
 
-                # make a new text file with the metadata
-                metastring = request.form['metadata' + str(i)]
-                metafilepath = os.path.join(app.config['META_FOLDER'],
-                    region + "_" + site + "_metadata.txt")
+            #get usgs number if applicable
+            usgss = request.form['usgs' + str(i)]
+            if usgss == '':
+                usgss = None
 
-                with open(metafilepath, 'a') as metafile:
-                    metafile.write(metastring)
+            # add new site to Site table
+            sx = Site(region=region, site=site, by=current_user.get_id(),
+                name=request.form['sitename' + str(i)],
+                latitude=request.form['lat' + str(i)],
+                longitude=request.form['lng' + str(i)],
+                usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
+                contact=request.form['contactName' + str(i)],
+                contactEmail=request.form['contactEmail' + str(i)])
+            db.session.add(sx)
 
-        #replace user varnames with database varnames; attach upload_id column
-        # xx_pre = xx.iloc[:,0:2]
-        # xx_post = xx.iloc[:,2:]
-        # xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
-        # xx = pd.concat([xx_pre, xx_post], axis=1)
-        cols_to_drop = [i for i in xx.columns[2:] if i not in cdict.keys()]
-        xx = xx.drop(cols_to_drop, axis=1)
-        xx['upload_id'] = upID
+            # make a new text file with the metadata
+            metastring = request.form['metadata' + str(i)]
+            metafilepath = os.path.join(app.config['META_FOLDER'],
+                region + "_" + site + "_metadata.txt")
 
-        #format df for database entry
-        xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
-        xx.columns.name = 'variable'
-        xx = xx.stack() #one col each for vars and vals
-        xx.name = "value"
-        xx = xx.reset_index()
+            with open(metafilepath, 'a') as metafile:
+                metafile.write(metastring)
 
-        for i in cdict.keys():
-            xx.loc[xx.variable == i, 'method'] = mdict[i]
-            xx.loc[xx.variable == i, 'write_in'] = wdict[i]
-            xx.loc[xx.variable == i, 'addtl'] = adict[i]
-            xx.loc[xx.variable == i, 'variable'] = cdict[i]
+        #give uploading user access to these new sites
+        add_site_permission(current_user, region, newsitelist)
 
-        xx = xx.groupby(['DateTime_UTC', 'variable', 'Sitecode', 'method',
-            'write_in', 'addtl']).mean().reset_index() #average dupes
-        xx['region'] = region
-        xx['flag'] = None
-        xx.rename(columns={'Sitecode':'site'}, inplace=True)
-        xx = xx[['region','site','DateTime_UTC','variable','value','method',
-            'flag','write_in','addtl','upload_id']]
+    #replace user varnames with database varnames; attach upload_id column
+    # xx_pre = xx.iloc[:,0:2]
+    # xx_post = xx.iloc[:,2:]
+    # xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
+    # xx = pd.concat([xx_pre, xx_post], axis=1)
+    cols_to_drop = [i for i in xx.columns[2:] if i not in cdict.keys()]
+    xx = xx.drop(cols_to_drop, axis=1)
+    xx['upload_id'] = upID
 
-        replace = True if request.form['replacing']=='true' else False
+    #format df for database entry
+    xx = xx.set_index(["DateTime_UTC", "upload_id", "Sitecode"])
+    xx.columns.name = 'variable'
+    xx = xx.stack() #one col each for vars and vals
+    xx.name = "value"
+    xx = xx.reset_index()
 
-        if update_upload_table:
-            uq = Grabupload(filenameNoV)
-            db.session.add(uq)
+    for i in cdict.keys():
+        xx.loc[xx.variable == i, 'method'] = mdict[i]
+        xx.loc[xx.variable == i, 'write_in'] = wdict[i]
+        xx.loc[xx.variable == i, 'addtl'] = adict[i]
+        xx.loc[xx.variable == i, 'variable'] = cdict[i]
 
-        #add data and varname mappings to db tables
-        grab_updatedb(xx, [filenameNoV], replace)
-        sitelist = list(set(xx.site))
-        grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict)
+    xx = xx.groupby(['DateTime_UTC', 'variable', 'Sitecode', 'method',
+        'write_in', 'addtl']).mean().reset_index() #average dupes
+    xx['region'] = region
+    xx['flag'] = None
+    xx.rename(columns={'Sitecode':'site'}, inplace=True)
+    xx = xx[['region','site','DateTime_UTC','variable','value','method',
+        'flag','write_in','addtl','upload_id']]
 
-    except:
-        msg = Markup('Error 005. Please <a href=' +\
-            '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-            'email</a> Mike Vlah with the error number and a copy of ' +\
-            'the file you tried to upload.')
-        flash(msg, 'alert-danger')
-        return redirect(request.url)
+    replace = True if request.form['replacing']=='true' else False
+
+    if update_upload_table:
+        uq = Grabupload(filenameNoV)
+        db.session.add(uq)
+
+    #add data and varname mappings to db tables
+    grab_updatedb(xx, [filenameNoV], replace)
+    sitelist = list(set(xx.site))
+    grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict)
+
+    # except:
+        # msg = Markup('Error 005. Please <a href=' +\
+        #     '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+        #     'email</a> Mike Vlah with the error number and a copy of ' +\
+        #     'the file you tried to upload.')
+        # flash(msg, 'alert-danger')
+        # return redirect(request.url)
 
     db.session.commit() #persist all db changes made during upload
     session['upload_complete'] = True
@@ -1758,6 +1767,20 @@ def grab_confirmcolumns():
         'alert-success')
 
     return redirect(url_for('grab_upload'))
+
+def add_site_permission(user, region, site_list):
+
+    #get string of comma separated region_site combo(s) from user input
+    if type(site_list) is not list:
+        site_list = [site_list]
+    regsites = ','.join([region + '_' + x for x in site_list])
+
+    #update the existing user permissions string with new region_site combo(s)
+    site_permiss = list(pd.read_sql('select qaqc from user where username="' +\
+        user.username + '";', db.engine).qaqc)
+    site_permiss = site_permiss[0] + ',' + regsites
+    cx = User.query.filter_by(username=user.username).first()
+    cx.qaqc = site_permiss
 
 def getsitenames(regionsite):
     region, site = regionsite.split("_")
