@@ -1,5 +1,16 @@
 #Mike's Logbook
 
+###20180602
+ + rerunning models for all sites, for all years, separated into calendar year chunks. done in preparation for new visualization app.
+###20180601
+ + got season start and end from eMODIS NDVI data for all Powell Center sites in 2016
+###20180531
+ + user credentials now automatically updated with new sites as they are uploaded, so that users can immediately download, clean, and visualize their data.
+ + hbef app connected to database on server
+###20180530
+ + hbef app migrated to server
+###20180522-29
+ + vacation
 ###mon20180521
  + rather than embedding the app in a data portal template page, looking into solutions that would let it remain a standalone app, while still fitting the styles and themes of the data portal
 ###fri20180518
