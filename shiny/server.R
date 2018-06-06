@@ -16,10 +16,10 @@
 #     'predictions_WI_BEC_2017-01-26_2018-01-25_bayes_binned_obsproc_trapezoid_',
 #     'DO-mod_stan.rds'))
 
-mod_out = readRDS(paste0('/home/aaron/sp/shiny/data/modOut_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-predictions = readRDS(paste0('/home/aaron/sp/shiny/data/predictions_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-#mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-#predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+# mod_out = readRDS(paste0('/home/aaron/sp/shiny/data/modOut_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+# predictions = readRDS(paste0('/home/aaron/sp/shiny/data/predictions_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
 
 # library(dplyr)
 # library(dygraphs)
