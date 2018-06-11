@@ -1,4 +1,4 @@
-var margin = {top: 40, right: 40, bottom: 40, left: 40},
+var margin = {top: 40, right: 60, bottom: 40, left: 40},
     width = $("#graphs").width() - margin.left - margin.right,
     height = 250 - margin.top - margin.bottom;
 var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");

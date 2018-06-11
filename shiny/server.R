@@ -1,40 +1,15 @@
-# fit = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/fit_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-# library(streamMetabolizer)
-# library(StreamPULSE)
-# predictions = predict_metabolism(fit)
-# data_daily = fit@data_daily
-# data = fit@data
-# fit = fit@fit
-# mod_out = list('data_daily'=data_daily, 'data'=data, 'fit'=fit)
-# saveRDS(mod_out, paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-# saveRDS(predictions, paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_MD_DRKR_2016-02-18_2016-11-19_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
+# setwd('~/git/streampulse/server_copy/sp/shiny/')
 
-# mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/',
-#     'modOut_WI_BEC_2017-01-26_2018-01-25_bayes_binned_obsproc_trapezoid_',
-#     'DO-mod_stan.rds'))
-# predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/',
-#     'predictions_WI_BEC_2017-01-26_2018-01-25_bayes_binned_obsproc_trapezoid_',
-#     'DO-mod_stan.rds'))
-
-mod_out = readRDS(paste0('/home/aaron/sp/shiny/data/modOut_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-predictions = readRDS(paste0('/home/aaron/sp/shiny/data/predictions_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-#mod_out = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/modOut_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-#predictions = readRDS(paste0('~/git/streampulse/server_copy/sp/shiny/data/predictions_WI_BEC_2017-01-26_2017-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds'))
-
-# library(dplyr)
-# library(dygraphs)
-# library(ggplot2)
 library(shiny)
 library(Cairo)
 library(ks)
-# library(RColorBrewer)
 library(scales)
 library(shinyjs)
 
 options(shiny.usecairo=TRUE)
 
 shinyServer(
-    function(input, output) {
+    function(input, output, session) {
 
         # buildDy = function(i){
         #     dygraph(ts$data, group = "powstreams",
@@ -62,38 +37,129 @@ shinyServer(
         height40 = reactive({
             ifelse(is.null(input$height40), 0, input$height40)
         })
+        height35 = reactive({
+            ifelse(is.null(input$height35), 0, input$height35)
+        })
+        height10 = reactive({
+            ifelse(is.null(input$height10), 0, input$height10)
+        })
 
         js$getHeight50()
         js$getHeight40()
+        js$getHeight35()
+        js$getHeight10()
+
+        observe({
+            updateSelectizeInput(session, 'input_year',
+                choices=siteyears[sitenames == input$input_site])
+            # updateSelectizeInput(session, 'input_year2',
+            #     choices=siteyears[sitenames == input$input_site],
+            #     selected=input$input_year)
+            # updateSelectizeInput(session, 'input_site2',
+            #     choices=unique(sitenames),
+            #     selected=input$input_site)
+        })
+        observe({
+            updateSelectizeInput(session, 'input_year2',
+                choices=siteyears[sitenames == input$input_site2])
+        })
+
+
+        # output$select_time = renderUI({
+        #     selectInput('input_year', label='Select year',
+        #         choices=siteyears[sitenames == input$input_site],
+        #         selectize=TRUE)
+        # })
+
+        update_pg1 = reactive({
+            regionsite = input$input_site
+            year = input$input_year
+            #input_year depends on input_site, but server must call to ui and
+            #hear back before year can update, so the following is needed:
+            legit_year = year %in% siteyears[sitenames == input$input_site]
+            if(regionsite != '' && year != '' && legit_year){
+                modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
+                    '.*'), fnames)
+                # predictions_ind = grep(paste0('predictions_', regionsite,
+                #     '_', year, '.*'), fnames)
+                modOut = readRDS(paste0('data/', fnames[modOut_ind[1]]))
+                # preds = readRDS(paste0('data/', fnames[predictions_ind[1]]))
+                # out = list(mod_out=modOut, predictions=preds)
+            } else {
+                modOut = NULL
+                # out = NULL
+            }
+            return(modOut)
+            # return(out)
+        })
+
+        update_pg2 = reactive({
+            regionsite = input$input_site2
+            year = input$input_year2
+            #input_year depends on input_site, but server must call to ui and
+            #hear back before year can update, so the following is needed:
+            legit_year = year %in% siteyears[sitenames == input$input_site2]
+            if(regionsite != '' && year != '' && legit_year){
+                modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
+                    '.*'), fnames)
+                predictions_ind = grep(paste0('predictions_', regionsite,
+                    '_', year, '.*'), fnames)
+                modOut = readRDS(paste0('data/', fnames[modOut_ind[1]]))
+                preds = readRDS(paste0('data/', fnames[predictions_ind[1]]))
+                out = list(mod_out=modOut, predictions=preds)
+            } else {
+                out = NULL
+            }
+            return(out)
+        })
 
         output$KvQvER = renderPlot({
-            KvQvER_plot(mod_out=mod_out)
+            mod_out = update_pg1()
+            # mod_out = modpred$mod_out
+            if(!is.null(mod_out)){
+                KvQvER_plot(mod_out=mod_out)
+            }
         # }, height=150)
         }, height=height50)
         # })
 
         output$O2_plot = renderPlot({
-            par(mar=c(3,4,2,1), oma=rep(0,4))
-            O2_plot(mod_out=mod_out, st=input$range[1], en=input$range[2],
-                input$O2_brush)
+            modpred = update_pg2()
+            mod_out = modpred$mod_out
+            # mod_out = mod_out()
+            if(!is.null(mod_out)){
+                par(mar=c(3,4,2,1), oma=rep(0,4))
+                O2_plot(mod_out=mod_out, st=input$range[
+                    1], en=input$range[2],
+                    input$O2_brush)
+            }
         # }, height=150)
         }, height=height40)
         # })
 
         output$kernel_plot = renderPlot({
-            ts_full = processing_func(predictions, st=input$range[1],
-                en=input$range[2])
-            kernel_func(ts_full, 'Name and Year')
+            modpred = update_pg2()
+            predictions = modpred$predictions
+            # predictions = predictions()
+            if(!is.null(predictions)){
+                ts_full = processing_func(predictions, st=input$range[1],
+                    en=input$range[2])
+                kernel_func(ts_full, 'Name and Year')
+            }
         # }, height=150)
-        }, height=height40)
+        }, height=height35)
         # })
 
         output$metab_plot = renderPlot({
-            ts_full = processing_func(predictions, st=input$range[1],
-                en=input$range[2])
-            par(mar=c(1,4,2,1), oma=rep(0,4))
-            season_ts_func(ts_full, TRUE, st=input$range[1],
-                en=input$range[2])
+            modpred = update_pg2()
+            predictions = modpred$predictions
+            if(!is.null(predictions)){
+                ts_full = processing_func(predictions, st=input$range[1],
+                    en=input$range[2])
+                par(mar=c(1,4,2,1), oma=rep(0,4))
+                season_ts_func(ts_full, TRUE, st=input$range[1],
+                    en=input$range[2])
+            }
         # }, height=150)
         }, height=height40)
         # })
@@ -107,17 +173,21 @@ shinyServer(
         # })#, height='auto', width='auto')
 
         output$cumul_plot = renderPlot({
-            ts_full = processing_func(predictions, st=input$range[1],
-                en=input$range[2])
-            cumulative_func(ts_full, st=input$range[1],
-                en=input$range[2])
+            modpred = update_pg2()
+            predictions = modpred$predictions
+            if(!is.null(predictions)){
+                ts_full = processing_func(predictions, st=input$range[1],
+                    en=input$range[2])
+                cumulative_func(ts_full, st=input$range[1],
+                    en=input$range[2])
+            }
         # }, height=150)
-        }, height=height40)
+        }, height=height35)
         # })
 
         output$cumul_legend = renderPlot({
             cumul_legend()
-        })
+        }, height=height10)
 
         # output$triplot = renderPlot({
         #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],
