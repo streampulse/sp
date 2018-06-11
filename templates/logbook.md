@@ -1,13 +1,31 @@
 #Mike's Logbook
 
-###20180602
+###mon2018011
+ + added units to grab sample overlay dropdown on input viz page
+ + widened right plot margins so that large labels don't get cut off
+ + .
+###sat20180609
+ + tested and revised R package update
+ + rerunning NC models now
+###fri20180608
+ + added warnings about matching units to grab sample uploader
+ + updated R package so that out-of-bounds depth or level values (i.e. beyond the rating curve maximum) can be replaced with NA if desired
+###thu20180607
+ + fine-tuning diagnostic app backend connections and appearance
+###wed20180606
+ + still rerunning models. added completed outputs to diagnostic app and built user inputs for selecting sites, years to view
+###tue20180605
+ + set up slack digest, will soon go out to streampulse team every friday
+###mon20180604
+ + added protocols for upload, clean, model to streampulse.org (works in progress)
+###sat20180602
  + rerunning models for all sites, for all years, separated into calendar year chunks. done in preparation for new visualization app.
-###20180601
+###fri20180601
  + got season start and end from eMODIS NDVI data for all Powell Center sites in 2016
-###20180531
+###thu20180531
  + user credentials now automatically updated with new sites as they are uploaded, so that users can immediately download, clean, and visualize their data.
  + hbef app connected to database on server
-###20180530
+###wed20180530
  + hbef app migrated to server
 ###20180522-29
  + vacation
@@ -77,7 +95,7 @@
  + powell review
 ###thu20180405
  + added tooltip to reinforce the necessity of putting the datetime column in the first position for manually formatted files
- + running model for AZ. streamMetabolizer works on as few as 4 days f data, but only returned one point estimate of GPP and ER in this case.
+ + running model for AZ. streamMetabolizer works on as few as 4 days of data, but only returned one point estimate of GPP and ER in this case.
 ###wed20180404
  + testing database improvements (additional indices, column type changes, foreign keys, etc.)
  + explored ODM2. It's looking like the benefits of adopting the core schema of ODM2 will not be so great as to warrant the weeks (and potentially months) of effort necessary to implement a new database backend, modify all I/O, build a translation layer, etc. It's difficult to foresee all obstacles we might face by sticking with the current, flat schema, but after some research I feel more confident in my ability to adapt what we've got as needed. 

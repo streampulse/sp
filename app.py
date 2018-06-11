@@ -1987,7 +1987,15 @@ def getgrabvars():
         startdate + "' " + "and DateTime_UTC<'" + enddate + "';"
     grabvars = list(pd.read_sql(sqlq, db.engine)['d'])
 
-    return jsonify(variables=grabvars)
+    grabvarunits = []
+    for g in grabvars:
+        for v in grab_variables:
+            if v['var'] == g:
+                grabvarunits.append(v['unit'])
+                continue
+
+    print grabvarunits
+    return jsonify(variables=grabvars, varsandunits=grabvarunits)
 
 @app.route('/_getgrabviz', methods=["POST"])
 def getvgrabviz():
@@ -2017,7 +2025,6 @@ def getvgrabviz():
     xx = xx.to_json(orient='records', date_format='iso')
 
     return jsonify(grabdat=xx)
-
 
 @app.route('/_getviz',methods=["POST"])
 def getviz():

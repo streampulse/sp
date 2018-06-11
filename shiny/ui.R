@@ -29,6 +29,7 @@ shinyjs.getHeight10 = function() {
 
 shinyUI(
     fluidPage(
+        # tags$style(type='text/css', ".selectize-input:nth-child(3) { padding: 0px; min-height: 0;}"),
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
             functions=c('getHeight50', 'getHeight40', 'init')),
@@ -108,7 +109,8 @@ shinyUI(
                         ),
                         div(align='left', style=paste0(
                                 'display: inline-block;',
-                                'vertical-align:middle;'),
+                                'vertical-align:middle;',
+                                'margin-right:2em'),
                             sliderInput("range", label=NULL,
                                 min=1, max=366, value=c(1, 366),
                                 ticks=TRUE, step=6,
@@ -118,20 +120,27 @@ shinyUI(
                         div(align='center', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;'),
+
+                            # div(align='left', style=paste0(
+                            #     'margin:0; padding:0; top:0px; left:0px; bottom:0px; right:0px;'),
+
                             selectInput('input_site2', label='Select site',
                                 choices=c('No site selected' = '',
                                     unique(sitenames)),
-                                selected='', selectize=TRUE, width='100%')
+                                selected='', selectize=TRUE, width='150px')
                         ),
+                            # div(align='left', style=paste0(
+                            #     'margin:0; padding:0; top:0px; left:0px; bottom:0px; right:0px;'),
+
                         div(align='center', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;'),
                             conditionalPanel(
-                                condition = "input.input_site != ''",
+                                condition = "input.input_site2 != ''",
                                 # htmlOutput('select_time')
                                 selectInput('input_year2', label='Select year',
                                     choices=c('No year selected' = ''),
-                                    selected='', selectize=TRUE, width='100%')
+                                    selected='', selectize=TRUE, width='150px')
                             )
                         )
                     )
@@ -154,7 +163,11 @@ shinyUI(
                 # ),
                 # fluidRow(
                     column(3, align='center',
-                        plotOutput('cumul_legend', height='auto', width='auto'),
+                        conditionalPanel(
+                            condition = "input.input_site2 != ''",
+                            plotOutput('cumul_legend', height='auto',
+                                width='auto')
+                        ),
                         plotOutput('cumul_plot', height='auto', width='auto'),
                         # plotOutput('cumul_plot', height='200px'),
                         plotOutput('kernel_plot', height='auto', width='auto')

@@ -52,10 +52,18 @@ shinyServer(
         observe({
             updateSelectizeInput(session, 'input_year',
                 choices=siteyears[sitenames == input$input_site])
-            updateSelectizeInput(session, 'input_year2',
-                choices=siteyears[sitenames == input$input_site],
-                selected=input$input_year)
+            # updateSelectizeInput(session, 'input_year2',
+            #     choices=siteyears[sitenames == input$input_site],
+            #     selected=input$input_year)
+            # updateSelectizeInput(session, 'input_site2',
+            #     choices=unique(sitenames),
+            #     selected=input$input_site)
         })
+        observe({
+            updateSelectizeInput(session, 'input_year2',
+                choices=siteyears[sitenames == input$input_site2])
+        })
+
 
         # output$select_time = renderUI({
         #     selectInput('input_year', label='Select year',
@@ -63,12 +71,34 @@ shinyServer(
         #         selectize=TRUE)
         # })
 
-        update_mod = reactive({
+        update_pg1 = reactive({
             regionsite = input$input_site
             year = input$input_year
             #input_year depends on input_site, but server must call to ui and
             #hear back before year can update, so the following is needed:
             legit_year = year %in% siteyears[sitenames == input$input_site]
+            if(regionsite != '' && year != '' && legit_year){
+                modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
+                    '.*'), fnames)
+                # predictions_ind = grep(paste0('predictions_', regionsite,
+                #     '_', year, '.*'), fnames)
+                modOut = readRDS(paste0('data/', fnames[modOut_ind[1]]))
+                # preds = readRDS(paste0('data/', fnames[predictions_ind[1]]))
+                # out = list(mod_out=modOut, predictions=preds)
+            } else {
+                modOut = NULL
+                # out = NULL
+            }
+            return(modOut)
+            # return(out)
+        })
+
+        update_pg2 = reactive({
+            regionsite = input$input_site2
+            year = input$input_year2
+            #input_year depends on input_site, but server must call to ui and
+            #hear back before year can update, so the following is needed:
+            legit_year = year %in% siteyears[sitenames == input$input_site2]
             if(regionsite != '' && year != '' && legit_year){
                 modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
                     '.*'), fnames)
@@ -84,8 +114,8 @@ shinyServer(
         })
 
         output$KvQvER = renderPlot({
-            modpred = update_mod()
-            mod_out = modpred$mod_out
+            mod_out = update_pg1()
+            # mod_out = modpred$mod_out
             if(!is.null(mod_out)){
                 KvQvER_plot(mod_out=mod_out)
             }
@@ -94,7 +124,7 @@ shinyServer(
         # })
 
         output$O2_plot = renderPlot({
-            modpred = update_mod()
+            modpred = update_pg2()
             mod_out = modpred$mod_out
             # mod_out = mod_out()
             if(!is.null(mod_out)){
@@ -108,7 +138,7 @@ shinyServer(
         # })
 
         output$kernel_plot = renderPlot({
-            modpred = update_mod()
+            modpred = update_pg2()
             predictions = modpred$predictions
             # predictions = predictions()
             if(!is.null(predictions)){
@@ -121,7 +151,7 @@ shinyServer(
         # })
 
         output$metab_plot = renderPlot({
-            modpred = update_mod()
+            modpred = update_pg2()
             predictions = modpred$predictions
             if(!is.null(predictions)){
                 ts_full = processing_func(predictions, st=input$range[1],
@@ -143,7 +173,7 @@ shinyServer(
         # })#, height='auto', width='auto')
 
         output$cumul_plot = renderPlot({
-            modpred = update_mod()
+            modpred = update_pg2()
             predictions = modpred$predictions
             if(!is.null(predictions)){
                 ts_full = processing_func(predictions, st=input$range[1],
