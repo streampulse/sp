@@ -157,7 +157,7 @@ cumulative_func = function (ts_full, st, en){
     month_labs = substr(month.abb, 0, 1)
     # month_labs[seq(2, 12, 2)] = ''
     axis(1, seq(1, 365, length.out=12), month_labs, tcl=-0.2, padj=-1,
-        cex.axis=0.7)
+        cex.axis=0.6)
     abline(h=0, col="grey50", lty=3)
 }
 

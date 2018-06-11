@@ -143,6 +143,7 @@ function update_grabvars (regionsite, startdate, enddate) {
     contentType: 'application/json;charset=UTF-8',
     success: function(response){
       sitevars_grab = response.variables;
+      sitevarsunits_grab = response.varsandunits;
 
       //empty grabvar dropdown and replace the None option
       $('#backgraphlist_grab')
@@ -155,7 +156,7 @@ function update_grabvars (regionsite, startdate, enddate) {
 
           // add variables to grab dropdown
           $('#backgraphlist_grab').append('<option value="' + sitevars_grab[i] +
-            '">' + sitevars_grab[i] + '</option>');
+            '">' + sitevarsunits_grab[i] + '</option>');
       };
 
     },
