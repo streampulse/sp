@@ -24,6 +24,9 @@ shinyjs.getHeight35 = function() {
 shinyjs.getHeight10 = function() {
   Shiny.onInputChange('height10', $(window).height() * .1);
 }
+shinyjs.getHeight05 = function() {
+  Shiny.onInputChange('height05', $(window).height() * .05);
+}
 "
 
 shinyUI(
@@ -32,7 +35,7 @@ shinyUI(
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
             functions=c('getHeight50', 'getHeight40', 'getHeight35',
-                'getHeight10', 'init')),
+                'getHeight10', 'getHeight10', 'init')),
         # navbarPage(title=tags$a(href='https://data.streampulse.org/',
         #     'StreamPULSE'),
         #     tabPanel(HTML("<a href=\"https://data.streampulse.org/sitelist\">Sitelist</a>"))
@@ -110,7 +113,7 @@ shinyUI(
                             # div(align='left', style=paste0(
                             #     'margin:0; padding:0; top:0px; left:0px; bottom:0px; right:0px;'),
 
-                        div(align='left', style=paste0(
+                        div(align='center', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;',
                                 'margin-right:2em'),
@@ -143,7 +146,8 @@ shinyUI(
                                 ticks=TRUE, step=6,
                                 animate=animationOptions(interval=2000)
                             )
-                        )
+                        ),
+                        hr()
                     )
                     # column(3, align='right',
                     #     div(align='right', style=paste0(
@@ -155,8 +159,19 @@ shinyUI(
                 ),
                 fluidRow(
                     column(9, align='center',
+                        conditionalPanel(
+                            condition = "input.input_site2 != ''",
+                            plotOutput('metab_legend', height='auto',
+                                width='auto')
+                        ),
                         # plotOutput('metab_plot', height='200px'),
                         plotOutput('metab_plot', height='auto', width='auto'),
+                        # hr(),
+                        conditionalPanel(
+                            condition = "input.input_site2 != ''",
+                            plotOutput('O2_legend', height='auto',
+                                width='auto')
+                        ),
                         plotOutput('O2_plot', brush='O2_brush',
                         #     # height='200px')),
                             height='auto', width='auto')
@@ -170,7 +185,13 @@ shinyUI(
                                 width='auto')
                         ),
                         plotOutput('cumul_plot', height='auto', width='auto'),
+                        # hr(),
                         # plotOutput('cumul_plot', height='200px'),
+                        conditionalPanel(
+                            condition = "input.input_site2 != ''",
+                            plotOutput('kernel_legend', height='auto',
+                                width='auto')
+                        ),
                         plotOutput('kernel_plot', height='auto', width='auto')
                         # plotOutput('kernel_plot', height='200px'))),
                     )

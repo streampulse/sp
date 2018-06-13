@@ -76,42 +76,56 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
         y=c(erlo, rev(erup)), col=adjustcolor('blue', alpha.f=0.3),
         border=NA)
     abline(h=0, lty=3, col='gray50')
-    if(suppress_NEP){
-        # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
-        legend("bottomleft", ncol=2, xpd=FALSE,
-            legend=c("GPP", "ER"), bty="n", lty=1,
-            lwd=2, col=c("red", "blue"),
-            x.intersp=c(.5,.5))#, inset=c(0, -0.13), text.width=.05)
-        legend('bottomright', horiz=TRUE, seg.len=1,
-            bty="n", lty=1, title='95% CIs', legend=c('',''),
-            col=c(adjustcolor('red', alpha.f=0.3),
-                adjustcolor('blue', alpha.f=0.3)),
-            lwd=6)
-        # legend('bottomright', ncol=2, xpd=FALSE, #inset=c(0.1, 0),#-0.13),
-        #     bty="n", lty=1, title='95% CIs', legend=c('',''),#'95% CIs'),
-        #     col=c(adjustcolor('red', alpha.f=0.3),
-        #         adjustcolor('blue', alpha.f=0.3)),
-        #     x.intersp=c(-.1,.5), text.width=.05, lwd=6, xjust=0)
-
-    } else {
-        lines(avg_trajectory$DOY, avg_trajectory$NPP, col="purple", lwd=2)
-        # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
-        legend("bottomleft", ncol=3, xpd=FALSE,
-        # legend("topleft", ncol=5, xpd=TRUE,
-            c("GPP", "NEP", "ER"), bty="n", lty=1,
-            # c("GPP", "NEP", "ER", '', '95CI'), bty="n", lty=1,
-            lwd=2, col=c("red", "purple", "blue"))#, inset=c(0, -0.13))
-                # adjustcolor('red', alpha.f=0.3),
-                # adjustcolor('steelblue', alpha.f=0.3)),
-        # x.intersp=c(.5,.5,.5,.3,1.3), text.width=.05)
-    }
+    # if(suppress_NEP){
+    #     # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
+    #     # legend("bottomleft", ncol=2, xpd=FALSE,
+    #     #     legend=c("GPP", "ER"), bty="n", lty=1,
+    #     #     lwd=2, col=c("red", "blue"),
+    #     #     x.intersp=c(.5,.5))#, inset=c(0, -0.13), text.width=.05)
+    #     # legend('bottomright', horiz=TRUE, seg.len=1,
+    #     #     bty="n", lty=1, title='95% CIs', legend=c('',''),
+    #     #     col=c(adjustcolor('red', alpha.f=0.3),
+    #     #         adjustcolor('blue', alpha.f=0.3)),
+    #     #     lwd=6)
+    #     # legend('bottomright', ncol=2, xpd=FALSE, #inset=c(0.1, 0),#-0.13),
+    #     #     bty="n", lty=1, title='95% CIs', legend=c('',''),#'95% CIs'),
+    #     #     col=c(adjustcolor('red', alpha.f=0.3),
+    #     #         adjustcolor('blue', alpha.f=0.3)),
+    #     #     x.intersp=c(-.1,.5), text.width=.05, lwd=6, xjust=0)
+    #
+    # } else {
+    #     lines(avg_trajectory$DOY, avg_trajectory$NPP, col="purple", lwd=2)
+    #     # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
+    #     legend("bottomleft", ncol=3, xpd=FALSE,
+    #     # legend("topleft", ncol=5, xpd=TRUE,
+    #         c("GPP", "NEP", "ER"), bty="n", lty=1,
+    #         # c("GPP", "NEP", "ER", '', '95CI'), bty="n", lty=1,
+    #         lwd=2, col=c("red", "purple", "blue"))#, inset=c(0, -0.13))
+    #             # adjustcolor('red', alpha.f=0.3),
+    #             # adjustcolor('steelblue', alpha.f=0.3)),
+    #     # x.intersp=c(.5,.5,.5,.3,1.3), text.width=.05)
+    # }
     # month_labs = month.abb
     # month_labs[seq(2, 12, 2)] = ''
     # axis(1, seq(1, 365, length.out=12), month_labs)
 }
 
+metab_legend = function(){
+    par(mar=c(0,4,0,1), oma=rep(0,4))
+    plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
+    legend("bottomleft", ncol=2, xpd=FALSE,
+        legend=c("GPP", "ER"), bty="n", lty=1,
+        lwd=2, col=c("red", "blue"),
+        x.intersp=c(.5,.5))
+    legend('bottomright', horiz=TRUE, seg.len=1,
+        bty="n", lty=1, legend=c('95% CIs',''),
+        col=c(adjustcolor('red', alpha.f=0.3),
+            adjustcolor('blue', alpha.f=0.3)),
+        lwd=6)
+}
+
 cumulative_func = function (ts_full, st, en){
-    par(mar=c(2,3.5,0,0.5), oma=rep(0,4))
+
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
     na_rm = na.omit(ts_full)
     na_rm$csum_gpp = ave(na_rm$GPP, na_rm$Year, FUN=cumsum)
@@ -171,7 +185,6 @@ cumul_legend = function(){
 
 kernel_func = function(ts_full, main){
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
-    par(mar=c(3,3.5,1,.5), oma=rep(0,4))
 
     kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
     # kk <<- kernel
@@ -190,42 +203,18 @@ kernel_func = function(ts_full, main){
         2, line=2)
     # mtext(main, 3, line=-2)
     abline(0, -1, col='black', lty=3)
-    legend("bottomright", c("75%", "50%", "25%"), bty="o", bg='white',
-        lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
-        seg.len=1, box.col='transparent')#, xpd=TRUE, inset=c(-0.3,0))
+    # legend("bottomright", c("75%", "50%", "25%"), bty="o", bg='white',
+    #     lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
+    #     seg.len=1, box.col='transparent')#, xpd=TRUE, inset=c(-0.3,0))
 }
 
-# diag_plots = function (ts, main, suppress_NEP=FALSE, st, en){
-#     # st=0; en=366
-#     # ts = predictions; main='oi'
-#     # brush = list(xmin=1460617508, xmax=1464058124, ymin=8.816155, ymax=14.45195)
-#
-#     ts_full = processing_func(ts)
-#     ts_full = ts_full[ts_full$DOY > st & ts_full$DOY < en,]
-#
-#     layout(matrix(c(1, 1, 3, 1, 1, 4, 2, 2, 5), 3, 3, byrow=TRUE),
-#         widths=c(1, 1, 2))
-#     par(cex=0.6, mar=c(3, 4, 0.1, 0.1), oma=c(3, 0.5, 0.5, 0.5), tcl=-0.25,
-#         mgp=c(2, 0.6, 0))
-#     kernel_func(ts_full, main)
-#     par(mar=c(0, 4, 2, 0.1))
-#     season_ts_func(ts_full, suppress_NEP, st, en)
-#     par(mar=c(0, 4, 0, 0.1))
-#     cumulative_func(ts_full, st, en)
-# }
-
-# series_plots = function(ts, suppress_NEP, st, en, brush){
-#     par(mfcol=c(2,1), mar=c(0,4,2,1), oma=rep(0,4))
-#     season_ts_func(ts, suppress_NEP, st, en)
-#     par(mar=c(3,4,2,1))
-#     O2_plot(mod_out, st, en, brush)
-# }
-
-# quadplot = function(ts, suppress_NEP, st, en, brush){
-#     par(mfcol=c(2, 1))
-#     O2_plot(mod_out, st, en, brush)
-#     season_ts_func(ts, suppress_NEP, st, en)
-# }
+kernel_legend = function(){
+    par(mar = rep(0,4), oma = rep(0,4))
+    plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
+    legend("bottomright", c("75%", "50%", "25%"), bty="o", bg='white',
+        lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
+        seg.len=1, box.col='transparent', horiz=TRUE)
+}
 
 O2_plot = function(mod_out, st, en, brush){
     # st=0; en=366
@@ -268,9 +257,9 @@ O2_plot = function(mod_out, st, en, brush){
     # lines(mod_out$data$solar.time, mod_out$data$DO.mod,
     lines(ustamp, mod_out$data$DO.mod,
         col='royalblue4')
-    legend(x='bottomleft', legend=c('Obs', 'Pred'), bg='white',
-        cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='o', horiz=TRUE,
-        lwd=c(6,1), box.col='transparent')#, inset=c(0,-0.0), xpd=TRUE)
+    # legend(x='bottomleft', legend=c('Obs', 'Pred'), bg='white',
+    #     cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='o', horiz=TRUE,
+    #     lwd=c(6,1), box.col='transparent')#, inset=c(0,-0.0), xpd=TRUE)
 
     #get seq of 10 UNIX timestamps and use their corresponding DOYs as ticks
     tcs = seq(xmin, xmax, length.out=10)
@@ -285,6 +274,14 @@ O2_plot = function(mod_out, st, en, brush){
     hl_y = mod_out$data$DO.mod[hl_log_ind]
     points(hl_x, hl_y, col='goldenrod1', cex=0.3, pch=20)
 
+}
+
+O2_legend = function(){
+    par(mar=c(0,4,0,1), oma=rep(0,4))
+    plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
+    legend(x='bottomleft', legend=c('Obs', 'Pred'), bg='white',
+        cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='o', horiz=TRUE,
+        lwd=c(6,1), box.col='transparent')
 }
 
 KvQvER_plot = function(mod_out){
