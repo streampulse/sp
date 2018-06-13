@@ -35,7 +35,7 @@ shinyUI(
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
             functions=c('getHeight50', 'getHeight40', 'getHeight35',
-                'getHeight10', 'getHeight10', 'init')),
+                'getHeight10', 'getHeight10', 'getHeight05', 'init')),
         # navbarPage(title=tags$a(href='https://data.streampulse.org/',
         #     'StreamPULSE'),
         #     tabPanel(HTML("<a href=\"https://data.streampulse.org/sitelist\">Sitelist</a>"))
@@ -134,7 +134,7 @@ shinyUI(
                                 style=paste0(
                                     'color:gray; font-size:80%;',
                                     'padding:0; margin:0')),
-                            p('Press play to autoscroll',
+                            p('Press play to autoscroll*',
                                 style='color:gray; font-size:80%')
                         ),
                         div(align='left', style=paste0(
@@ -195,7 +195,11 @@ shinyUI(
                         plotOutput('kernel_plot', height='auto', width='auto')
                         # plotOutput('kernel_plot', height='200px'))),
                     )
-                )
+                ),
+                br(),
+                p(paste("*If something doesn't look right, try",
+                    "adjusting your browser's zoom level."),
+                    style='color:gray; font-size:80%')
             )
         )
     )
