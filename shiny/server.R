@@ -43,11 +43,15 @@ shinyServer(
         height10 = reactive({
             ifelse(is.null(input$height10), 0, input$height10)
         })
+        height05 = reactive({
+            ifelse(is.null(input$height05), 0, input$height05)
+        })
 
         js$getHeight50()
         js$getHeight40()
         js$getHeight35()
         js$getHeight10()
+        js$getHeight05()
 
         observe({
             updateSelectizeInput(session, 'input_year',
@@ -128,7 +132,7 @@ shinyServer(
             mod_out = modpred$mod_out
             # mod_out = mod_out()
             if(!is.null(mod_out)){
-                par(mar=c(3,4,2,1), oma=rep(0,4))
+                par(mar=c(3,4,0,1), oma=rep(0,4))
                 O2_plot(mod_out=mod_out, st=input$range[
                     1], en=input$range[2],
                     input$O2_brush)
@@ -144,6 +148,7 @@ shinyServer(
             if(!is.null(predictions)){
                 ts_full = processing_func(predictions, st=input$range[1],
                     en=input$range[2])
+                par(mar=c(3,3.5,0,.5), oma=rep(0,4))
                 kernel_func(ts_full, 'Name and Year')
             }
         # }, height=150)
@@ -156,12 +161,12 @@ shinyServer(
             if(!is.null(predictions)){
                 ts_full = processing_func(predictions, st=input$range[1],
                     en=input$range[2])
-                par(mar=c(1,4,2,1), oma=rep(0,4))
+                par(mar=c(1,4,0,1), oma=rep(0,4))
                 season_ts_func(ts_full, TRUE, st=input$range[1],
                     en=input$range[2])
             }
         # }, height=150)
-        }, height=height40)
+        }, height=height35)
         # })
 
         # output$series_plots = renderPlot({
@@ -178,6 +183,7 @@ shinyServer(
             if(!is.null(predictions)){
                 ts_full = processing_func(predictions, st=input$range[1],
                     en=input$range[2])
+                par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
                 cumulative_func(ts_full, st=input$range[1],
                     en=input$range[2])
             }
@@ -187,7 +193,19 @@ shinyServer(
 
         output$cumul_legend = renderPlot({
             cumul_legend()
-        }, height=height10)
+        }, height=height05)
+
+        output$metab_legend = renderPlot({
+            metab_legend()
+        }, height=height05)
+
+        output$kernel_legend = renderPlot({
+            kernel_legend()
+        }, height=height05)
+
+        output$O2_legend = renderPlot({
+            O2_legend()
+        }, height=height05)
 
         # output$triplot = renderPlot({
         #     diag_plots(predictions, 'Name and Year', TRUE, st=input$range[1],

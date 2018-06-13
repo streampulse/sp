@@ -1,9 +1,13 @@
 #Mike's Logbook
 
-###mon2018011
+###tue20180612
+ + fixed issue with occasional "wedges" appearing in O2 diagnostic plots
+ + system now ready to receive NC Cole Mill logger files
+ + 
+###mon20180611
  + added units to grab sample overlay dropdown on input viz page
  + widened right plot margins so that large labels don't get cut off
- + .
+ + diagnostic plots with site and year selector dropdowns now at data.streampulse.org:3838/streampulse_diagnostic_plots
 ###sat20180609
  + tested and revised R package update
  + rerunning NC models now

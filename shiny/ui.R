@@ -1,5 +1,4 @@
 
-library(stringr)
 
 #load plot functions
 source("helpers.R")
@@ -25,6 +24,9 @@ shinyjs.getHeight35 = function() {
 shinyjs.getHeight10 = function() {
   Shiny.onInputChange('height10', $(window).height() * .1);
 }
+shinyjs.getHeight05 = function() {
+  Shiny.onInputChange('height05', $(window).height() * .05);
+}
 "
 
 shinyUI(
@@ -32,7 +34,8 @@ shinyUI(
         # tags$style(type='text/css', ".selectize-input:nth-child(3) { padding: 0px; min-height: 0;}"),
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
-            functions=c('getHeight50', 'getHeight40', 'init')),
+            functions=c('getHeight50', 'getHeight40', 'getHeight35',
+                'getHeight10', 'getHeight10', 'init')),
         # navbarPage(title=tags$a(href='https://data.streampulse.org/',
         #     'StreamPULSE'),
         #     tabPanel(HTML("<a href=\"https://data.streampulse.org/sitelist\">Sitelist</a>"))
@@ -97,28 +100,6 @@ shinyUI(
                     column(12, align='left',
                         div(align='center', style=paste0(
                                 'display: inline-block;',
-                                'vertical-align:middle;',
-                                'margin-right:2em'),
-                            p(strong('Select DOY range:')),
-                            p('Drag blue bar to move fixed range',
-                                style=paste0(
-                                    'color:gray; font-size:80%;',
-                                    'padding:0; margin:0')),
-                            p('Press play to autoscroll',
-                                style='color:gray; font-size:80%')
-                        ),
-                        div(align='left', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align:middle;',
-                                'margin-right:2em'),
-                            sliderInput("range", label=NULL,
-                                min=1, max=366, value=c(1, 366),
-                                ticks=TRUE, step=6,
-                                animate=animationOptions(interval=2000)
-                            )
-                        ),
-                        div(align='center', style=paste0(
-                                'display: inline-block;',
                                 'vertical-align:middle;'),
 
                             # div(align='left', style=paste0(
@@ -134,7 +115,8 @@ shinyUI(
 
                         div(align='center', style=paste0(
                                 'display: inline-block;',
-                                'vertical-align:middle;'),
+                                'vertical-align:middle;',
+                                'margin-right:2em'),
                             conditionalPanel(
                                 condition = "input.input_site2 != ''",
                                 # htmlOutput('select_time')
@@ -142,7 +124,30 @@ shinyUI(
                                     choices=c('No year selected' = ''),
                                     selected='', selectize=TRUE, width='150px')
                             )
-                        )
+                        ),
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align:middle;',
+                                'margin-right:1em'),
+                            p(strong('Select DOY range:')),
+                            p('Drag blue bar to move fixed range',
+                                style=paste0(
+                                    'color:gray; font-size:80%;',
+                                    'padding:0; margin:0')),
+                            p('Press play to autoscroll',
+                                style='color:gray; font-size:80%')
+                        ),
+                        div(align='left', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align:middle;'),
+                                # 'margin-right:2em'),
+                            sliderInput("range", label=NULL,
+                                min=1, max=366, value=c(1, 366),
+                                ticks=TRUE, step=6,
+                                animate=animationOptions(interval=2000)
+                            )
+                        ),
+                        hr()
                     )
                     # column(3, align='right',
                     #     div(align='right', style=paste0(
@@ -154,8 +159,19 @@ shinyUI(
                 ),
                 fluidRow(
                     column(9, align='center',
+                        conditionalPanel(
+                            condition = "input.input_site2 != ''",
+                            plotOutput('metab_legend', height='auto',
+                                width='auto')
+                        ),
                         # plotOutput('metab_plot', height='200px'),
                         plotOutput('metab_plot', height='auto', width='auto'),
+                        # hr(),
+                        conditionalPanel(
+                            condition = "input.input_site2 != ''",
+                            plotOutput('O2_legend', height='auto',
+                                width='auto')
+                        ),
                         plotOutput('O2_plot', brush='O2_brush',
                         #     # height='200px')),
                             height='auto', width='auto')
@@ -169,7 +185,13 @@ shinyUI(
                                 width='auto')
                         ),
                         plotOutput('cumul_plot', height='auto', width='auto'),
+                        # hr(),
                         # plotOutput('cumul_plot', height='200px'),
+                        conditionalPanel(
+                            condition = "input.input_site2 != ''",
+                            plotOutput('kernel_legend', height='auto',
+                                width='auto')
+                        ),
                         plotOutput('kernel_plot', height='auto', width='auto')
                         # plotOutput('kernel_plot', height='200px'))),
                     )
