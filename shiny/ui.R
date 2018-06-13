@@ -1,5 +1,4 @@
 
-library(stringr)
 
 #load plot functions
 source("helpers.R")
@@ -32,7 +31,8 @@ shinyUI(
         # tags$style(type='text/css', ".selectize-input:nth-child(3) { padding: 0px; min-height: 0;}"),
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
-            functions=c('getHeight50', 'getHeight40', 'init')),
+            functions=c('getHeight50', 'getHeight40', 'getHeight35',
+                'getHeight10', 'init')),
         # navbarPage(title=tags$a(href='https://data.streampulse.org/',
         #     'StreamPULSE'),
         #     tabPanel(HTML("<a href=\"https://data.streampulse.org/sitelist\">Sitelist</a>"))
@@ -97,28 +97,6 @@ shinyUI(
                     column(12, align='left',
                         div(align='center', style=paste0(
                                 'display: inline-block;',
-                                'vertical-align:middle;',
-                                'margin-right:2em'),
-                            p(strong('Select DOY range:')),
-                            p('Drag blue bar to move fixed range',
-                                style=paste0(
-                                    'color:gray; font-size:80%;',
-                                    'padding:0; margin:0')),
-                            p('Press play to autoscroll',
-                                style='color:gray; font-size:80%')
-                        ),
-                        div(align='left', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align:middle;',
-                                'margin-right:2em'),
-                            sliderInput("range", label=NULL,
-                                min=1, max=366, value=c(1, 366),
-                                ticks=TRUE, step=6,
-                                animate=animationOptions(interval=2000)
-                            )
-                        ),
-                        div(align='center', style=paste0(
-                                'display: inline-block;',
                                 'vertical-align:middle;'),
 
                             # div(align='left', style=paste0(
@@ -132,15 +110,38 @@ shinyUI(
                             # div(align='left', style=paste0(
                             #     'margin:0; padding:0; top:0px; left:0px; bottom:0px; right:0px;'),
 
-                        div(align='center', style=paste0(
+                        div(align='left', style=paste0(
                                 'display: inline-block;',
-                                'vertical-align:middle;'),
+                                'vertical-align:middle;',
+                                'margin-right:2em'),
                             conditionalPanel(
                                 condition = "input.input_site2 != ''",
                                 # htmlOutput('select_time')
                                 selectInput('input_year2', label='Select year',
                                     choices=c('No year selected' = ''),
                                     selected='', selectize=TRUE, width='150px')
+                            )
+                        ),
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align:middle;',
+                                'margin-right:1em'),
+                            p(strong('Select DOY range:')),
+                            p('Drag blue bar to move fixed range',
+                                style=paste0(
+                                    'color:gray; font-size:80%;',
+                                    'padding:0; margin:0')),
+                            p('Press play to autoscroll',
+                                style='color:gray; font-size:80%')
+                        ),
+                        div(align='left', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align:middle;'),
+                                # 'margin-right:2em'),
+                            sliderInput("range", label=NULL,
+                                min=1, max=366, value=c(1, 366),
+                                ticks=TRUE, step=6,
+                                animate=animationOptions(interval=2000)
                             )
                         )
                     )

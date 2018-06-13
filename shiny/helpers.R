@@ -54,7 +54,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
     maxmin_day = range(doy, na.rm=TRUE)
 
     # plot(avg_trajectory[, gpp_var],
-    plot(doy, avg_trajectory$GPP, type="l", col="red", xlab='', las=1,
+    plot(doy, avg_trajectory$GPP, type="l", col="red", xlab='', las=0,
         # ylab=expression(paste("gO"[2] * " m"^"-2" * " d"^"-1")),
         ylab='', xaxs='i', yaxs='i',
         ylim=c(llim, ulim), lwd=2, xaxt='n', bty='l',
@@ -169,7 +169,6 @@ cumul_legend = function(){
         horiz=TRUE)
 }
 
-
 kernel_func = function(ts_full, main){
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
     par(mar=c(3,3.5,1,.5), oma=rep(0,4))
@@ -237,6 +236,11 @@ O2_plot = function(mod_out, st, en, brush){
         format="%j")))
     ustamp = as.numeric(as.POSIXct(mod_out$data$solar.time, tz='UTC'))
 
+    #replace initial DOYs of 366 (solar date in previous calendar year) with 1
+    if(DOY[1] == 366){
+        DOY[DOY == 366 & 1:length(DOY) < length(DOY)/2] = 1
+    }
+
     #get bounds
     xmin_ind = match(st, DOY)
     if(is.na(xmin_ind)) xmin_ind = 1
@@ -251,15 +255,16 @@ O2_plot = function(mod_out, st, en, brush){
 
     #window, series, axis labels
     # plot(mod_out$data$solar.time, mod_out$data$DO.obs, xaxt='n', las=1,
-    plot(ustamp, mod_out$data$DO.obs, xaxt='n', las=1,
+    plot(ustamp, mod_out$data$DO.obs, xaxt='n', las=0,
         type='n', xlab='', ylab='', bty='l', ylim=c(yrng[1], yrng[2]),
         xaxs='i', yaxs='i', xlim=c(xmin, xmax))
+    # axis(2, tcl=-0.2, hadj=.5, cex=0.8)
     # polygon(x=c(mod_out$data$solar.time, rev(mod_out$data$solar.time)),
     polygon(x=c(ustamp, rev(ustamp)),
         y=c(mod_out$data$DO.obs, rep(0, length(mod_out$data$DO.obs))),
         co='gray70', border='gray70')
     mtext('DOY', 1, font=1, line=1.5)
-    mtext('DO (mg/L)', 2, font=1, line=2.5)
+    mtext('DO (mg/L)', 2, font=1, line=3)
     # lines(mod_out$data$solar.time, mod_out$data$DO.mod,
     lines(ustamp, mod_out$data$DO.mod,
         col='royalblue4')
