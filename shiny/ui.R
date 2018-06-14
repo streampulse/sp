@@ -50,8 +50,7 @@ shinyUI(
                             choices=c('No site selected' = '',
                                 unique(sitenames)),
                             selected='', selectize=TRUE),
-                        conditionalPanel(
-                            condition = "input.input_site != ''",
+                        conditionalPanel(condition="input.input_site != ''",
                             # htmlOutput('select_time')
                             selectInput('input_year', label='Select year',
                                 choices=c('No year selected' = ''),
@@ -117,20 +116,18 @@ shinyUI(
                                 'display: inline-block;',
                                 'vertical-align:middle;',
                                 'margin-right:2em'),
-                            conditionalPanel(
-                                condition = "input.input_site2 != ''",
+                            conditionalPanel(condition="input.input_site2 != ''",
                                 # htmlOutput('select_time')
                                 selectInput('input_year2', label='Select year',
                                     choices=c('No year selected' = ''),
-                                    selected='', selectize=TRUE, width='150px')
+                                    selectize=TRUE, width='150px')
                             )
                         ),
                         div(align='center', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;',
                                 'margin-right:1em'),
-                            conditionalPanel(
-                                condition = "input.input_site2 != ''",
+                            conditionalPanel(condition="input.input_site2 != ''",
                                 div(align='center', style=paste0(
                                         'display: inline-block;',
                                         'vertical-align:middle;',
@@ -168,16 +165,14 @@ shinyUI(
                 ),
                 fluidRow(
                     column(9, align='center',
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('metab_legend', height='auto',
                                 width='auto')
                         ),
                         # plotOutput('metab_plot', height='200px'),
                         plotOutput('metab_plot', height='auto', width='auto'),
                         # hr(),
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('O2_legend', height='auto',
                                 width='auto')
                         ),
@@ -188,16 +183,14 @@ shinyUI(
                 # ),
                 # fluidRow(
                     column(3, align='center',
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('cumul_legend', height='auto',
                                 width='auto')
                         ),
                         plotOutput('cumul_plot', height='auto', width='auto'),
                         # hr(),
                         # plotOutput('cumul_plot', height='200px'),
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('kernel_legend', height='auto',
                                 width='auto')
                         ),
@@ -206,9 +199,11 @@ shinyUI(
                     )
                 ),
                 br(),
-                p(paste("*If something doesn't look right, try",
-                    "adjusting your browser's zoom level."),
-                    style='color:gray; font-size:100%')
+                conditionalPanel(condition="input.input_site2 != ''",
+                    p(paste("*If something doesn't look right, try",
+                        "adjusting your browser's zoom level."),
+                        style='color:gray; font-size:100%')
+                )
             )
         )
     )

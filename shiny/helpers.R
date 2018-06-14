@@ -33,7 +33,7 @@ processing_func = function (ts, st, en) {
 
 season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
     # print(paste('time2_toggleA', 'time2_toggleB', 'slider_toggleA', 'slider_toggleB'))
-    print(paste(time2_toggleA, time2_toggleB, slider_toggleA, slider_toggleB))
+    # print(paste(time2_toggleA, time2_toggleB, slider_toggleA, slider_toggleB))
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10,11)]
     ts_full = ts_full[, colnames(ts_full) != 'Year']
 
