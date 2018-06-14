@@ -125,10 +125,12 @@ shinyServer(
         #     }
         # })
 
-        #trigger update of slider when site changes, even if year doesn't
+        #trigger update of model objs when site changes, even if year doesn't
         reaction_sensor = reactiveVal(0)
-        #trigger plotting when year changes, even if time range doesn't
+        #trigger update of slider when year changes, even if model doesn't
         reaction_sensor2 = reactiveVal(0)
+        #trigger plotting when year changes, even if slider range doesn't
+        # reaction_sensor2 = reactiveVal(0)
 
         observeEvent(input$input_site2, {
         # observe({
@@ -157,7 +159,6 @@ shinyServer(
             input$input_year2
             reaction_sensor()
         }, {
-
             newval = reaction_sensor2() + 1
             reaction_sensor2(newval)
 
