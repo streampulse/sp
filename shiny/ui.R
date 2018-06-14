@@ -31,6 +31,9 @@ shinyjs.getHeight05 = function() {
 
 shinyUI(
     fluidPage(
+
+        #screen shouldn't go gray when plots are updating.
+        tags$style(type="text/css", ".recalculating { opacity: 1.0; }" ),
         # tags$style(type='text/css', ".selectize-input:nth-child(3) { padding: 0px; min-height: 0;}"),
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
@@ -97,6 +100,12 @@ shinyUI(
             tabPanel(HTML('O<sub>2</sub> and Metabolism'),
                 fluidRow(
                     column(12, align='left',
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'display:none;'),
+                            textInput('hidden_counter', label=NULL, value=0),
+                            textInput('hidden_counter2', label=NULL, value=0)
+                        ),
                         div(align='center', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;'),
