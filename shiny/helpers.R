@@ -32,7 +32,8 @@ processing_func = function (ts, st, en) {
 }
 
 season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
-
+    # print(paste('time2_toggleA', 'time2_toggleB', 'slider_toggleA', 'slider_toggleB'))
+    print(paste(time2_toggleA, time2_toggleB, slider_toggleA, slider_toggleB))
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10,11)]
     ts_full = ts_full[, colnames(ts_full) != 'Year']
 
@@ -225,9 +226,9 @@ O2_plot = function(mod_out, st, en, brush){
         format="%j")))
     ustamp = as.numeric(as.POSIXct(mod_out$data$solar.time, tz='UTC'))
 
-    #replace initial DOYs of 366 (solar date in previous calendar year) with 1
-    if(DOY[1] == 366){
-        DOY[DOY == 366 & 1:length(DOY) < length(DOY)/2] = 1
+    #replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
+    if(DOY[1] %in% 365:366){
+        DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
     }
 
     #get bounds

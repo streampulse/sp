@@ -129,22 +129,31 @@ shinyUI(
                                 'display: inline-block;',
                                 'vertical-align:middle;',
                                 'margin-right:1em'),
-                            p(strong('Select DOY range:')),
-                            p('Drag blue bar to move fixed range',
-                                style=paste0(
-                                    'color:gray; font-size:80%;',
-                                    'padding:0; margin:0')),
-                            p('Press play to autoscroll*',
-                                style='color:gray; font-size:80%')
-                        ),
-                        div(align='left', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align:middle;'),
-                                # 'margin-right:2em'),
-                            sliderInput("range", label=NULL,
-                                min=1, max=366, value=c(1, 366),
-                                ticks=TRUE, step=6,
-                                animate=animationOptions(interval=2000)
+                            conditionalPanel(
+                                condition = "input.input_site2 != ''",
+                                div(align='center', style=paste0(
+                                        'display: inline-block;',
+                                        'vertical-align:middle;',
+                                        'margin-right:1em'),
+                                    p(strong('Select DOY range:')),
+                                    p('Drag blue bar to move fixed range',
+                                        style=paste0(
+                                            'color:gray; font-size:80%;',
+                                            'padding:0; margin:0')),
+                                    p('Press play to autoscroll*',
+                                        style='color:gray; font-size:80%')
+                                ),
+                                div(align='left', style=paste0(
+                                        'display: inline-block;',
+                                        'vertical-align:middle;'),
+                                        # 'margin-right:2em'),
+                                    htmlOutput('time_slider')
+                                    # sliderInput("range", label=NULL,
+                                    #     min=1, max=366, value=c(1, 366),
+                                    #     ticks=TRUE, step=6,
+                                    #     animate=animationOptions(interval=2000)
+                                    # )
+                                )
                             )
                         ),
                         hr()
@@ -199,7 +208,7 @@ shinyUI(
                 br(),
                 p(paste("*If something doesn't look right, try",
                     "adjusting your browser's zoom level."),
-                    style='color:gray; font-size:80%')
+                    style='color:gray; font-size:100%')
             )
         )
     )

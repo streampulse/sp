@@ -68,6 +68,34 @@ shinyServer(
                 choices=siteyears[sitenames == input$input_site2])
         })
 
+        output$time_slider = renderUI({
+
+            modpred = update_pg2()
+            mod_out = modpred$mod_out
+
+            slider_toggleA <<- !slider_toggleA
+            # print(paste('sliderA', slider_toggleA))
+
+            if(!is.null(mod_out$data$solar.time[1])){
+
+                slider_toggleB <<- !slider_toggleB
+                # print(paste('sliderB', slider_toggleB))
+
+                #convert POSIX time to DOY and UNIX time
+                DOY = as.numeric(gsub('^0+', '',
+                    strftime(mod_out$data$solar.time, format="%j")))
+
+                #get DOY bounds for slider
+                DOYmin = ifelse(DOY[1] %in% 365:366, 1, DOY[1])
+                DOYmax = DOY[length(DOY)]
+
+                sliderInput("range", label=NULL,
+                    min=DOYmin, max=DOYmax, value=c(DOYmin, DOYmax),
+                    ticks=TRUE, step=6,
+                    animate=animationOptions(interval=2000)
+                )
+            }
+        })
 
         # output$select_time = renderUI({
         #     selectInput('input_year', label='Select year',
@@ -98,12 +126,22 @@ shinyServer(
         })
 
         update_pg2 = reactive({
+
             regionsite = input$input_site2
             year = input$input_year2
+            # print(paste(regionsite, year))
+
             #input_year depends on input_site, but server must call to ui and
             #hear back before year can update, so the following is needed:
             legit_year = year %in% siteyears[sitenames == input$input_site2]
+
+            time2_toggleA <<- !time2_toggleA
+            # print(paste('time2A', time2_toggleA))
+
             if(regionsite != '' && year != '' && legit_year){
+                time2_toggleB <<- !time2_toggleB
+                # print(paste('time2B', time2_toggleB))
+
                 modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
                     '.*'), fnames)
                 predictions_ind = grep(paste0('predictions_', regionsite,
@@ -131,7 +169,8 @@ shinyServer(
             modpred = update_pg2()
             mod_out = modpred$mod_out
             # mod_out = mod_out()
-            if(!is.null(mod_out)){
+            if(!is.null(mod_out) & !is.null(input$range) &
+                    counter %% 2 == 1 & counter > 1){
                 par(mar=c(3,4,0,1), oma=rep(0,4))
                 O2_plot(mod_out=mod_out, st=input$range[
                     1], en=input$range[2],
@@ -145,7 +184,7 @@ shinyServer(
             modpred = update_pg2()
             predictions = modpred$predictions
             # predictions = predictions()
-            if(!is.null(predictions)){
+            if(!is.null(predictions) & !is.null(input$range)){
                 ts_full = processing_func(predictions, st=input$range[1],
                     en=input$range[2])
                 par(mar=c(3,3.5,0,.5), oma=rep(0,4))
@@ -158,7 +197,8 @@ shinyServer(
         output$metab_plot = renderPlot({
             modpred = update_pg2()
             predictions = modpred$predictions
-            if(!is.null(predictions)){
+            print(paste(!is.null(predictions), !is.null(input$range)))
+            if(!is.null(predictions) & !is.null(input$range)){
                 ts_full = processing_func(predictions, st=input$range[1],
                     en=input$range[2])
                 par(mar=c(1,4,0,1), oma=rep(0,4))
@@ -180,7 +220,7 @@ shinyServer(
         output$cumul_plot = renderPlot({
             modpred = update_pg2()
             predictions = modpred$predictions
-            if(!is.null(predictions)){
+            if(!is.null(predictions) & !is.null(input$range)){
                 ts_full = processing_func(predictions, st=input$range[1],
                     en=input$range[2])
                 par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
