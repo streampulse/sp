@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<br>
+<div class="col-md-8 col-md-offset-2 text-center">
+  <h3>You've uploaded some data! Here are the next steps:</h3>
+</div>
+
+<div class="col-md-8 col-md-offset-2 text-left">
+  <br><br><br>
+  <p>
+    <span style="color:#d9534f; font-size:2em; vertical-align:bottom">
+      1.
+    </span>
+    <span>
+      <a class="btn btn-lg btn-danger" href="http://streampulse.org/clean">
+        Clean your data
+      </a>
+    </span>
+    <span style="color:#d9534f; font-size:1.3em; vertical-align:middle">
+      &nbsp; <strong>(Very important!)</strong>
+    </span>
+  </p>
+  <p style="color:#d9534f; font-size:1.2em;">
+    Erroneous sensor data can make a mess of your model results.
+  </p>
+
+  <br><br>
+  <p>
+    <span style="color:#5cb85c; font-size:2em; vertical-align:bottom">
+      2.
+    </span>
+    <a class="btn btn-lg btn-success" href="http://streampulse.org/visualize">
+      Visualize time series
+    </a>
+  </p>
+  <p style="color:#5cb85c; font-size:1.2em;">
+    Take a look at all your input data before fitting models.
+  </p>
+
+  <br><br>
+  <p>
+    <span style="color:#428bca; font-size:2em; vertical-align:bottom">
+      3.
+    </span>
+    <a class="btn btn-lg btn-primary" href="http://streampulse.org/model">
+      Model metabolism
+    </a>
+  </p>
+  <p style="color:#428bca; font-size:1.2em;">
+    Estimate ecosystem production and respiration.
+  </p>
+
+  <hr>
+  <br>
+  <p style="font-size:1.2em;">
+    Or you can &nbsp;
+    <span>
+      <a class="btn btn-lg btn-warning" href="http://streampulse.org/series_upload">
+        Upload more data
+      </a>
+    </span>
+  </p>
+</div>
+
+{% endblock %}

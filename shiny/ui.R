@@ -31,6 +31,9 @@ shinyjs.getHeight05 = function() {
 
 shinyUI(
     fluidPage(
+
+        #screen shouldn't go gray when plots are updating.
+        tags$style(type="text/css", ".recalculating { opacity: 1.0; }" ),
         # tags$style(type='text/css', ".selectize-input:nth-child(3) { padding: 0px; min-height: 0;}"),
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
@@ -50,8 +53,7 @@ shinyUI(
                             choices=c('No site selected' = '',
                                 unique(sitenames)),
                             selected='', selectize=TRUE),
-                        conditionalPanel(
-                            condition = "input.input_site != ''",
+                        conditionalPanel(condition="input.input_site != ''",
                             # htmlOutput('select_time')
                             selectInput('input_year', label='Select year',
                                 choices=c('No year selected' = ''),
@@ -100,6 +102,12 @@ shinyUI(
                     column(12, align='left',
                         div(align='center', style=paste0(
                                 'display: inline-block;',
+                                'display:none;'),
+                            textInput('hidden_counter', label=NULL, value=0),
+                            textInput('hidden_counter2', label=NULL, value=0)
+                        ),
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
                                 'vertical-align:middle;'),
 
                             # div(align='left', style=paste0(
@@ -117,34 +125,41 @@ shinyUI(
                                 'display: inline-block;',
                                 'vertical-align:middle;',
                                 'margin-right:2em'),
-                            conditionalPanel(
-                                condition = "input.input_site2 != ''",
+                            conditionalPanel(condition="input.input_site2 != ''",
                                 # htmlOutput('select_time')
                                 selectInput('input_year2', label='Select year',
                                     choices=c('No year selected' = ''),
-                                    selected='', selectize=TRUE, width='150px')
+                                    selectize=TRUE, width='150px')
                             )
                         ),
                         div(align='center', style=paste0(
                                 'display: inline-block;',
                                 'vertical-align:middle;',
                                 'margin-right:1em'),
-                            p(strong('Select DOY range:')),
-                            p('Drag blue bar to move fixed range',
-                                style=paste0(
-                                    'color:gray; font-size:80%;',
-                                    'padding:0; margin:0')),
-                            p('Press play to autoscroll*',
-                                style='color:gray; font-size:80%')
-                        ),
-                        div(align='left', style=paste0(
-                                'display: inline-block;',
-                                'vertical-align:middle;'),
-                                # 'margin-right:2em'),
-                            sliderInput("range", label=NULL,
-                                min=1, max=366, value=c(1, 366),
-                                ticks=TRUE, step=6,
-                                animate=animationOptions(interval=2000)
+                            conditionalPanel(condition="input.input_site2 != ''",
+                                div(align='center', style=paste0(
+                                        'display: inline-block;',
+                                        'vertical-align:middle;',
+                                        'margin-right:1em'),
+                                    p(strong('Select DOY range:')),
+                                    p('Drag blue bar to move fixed range',
+                                        style=paste0(
+                                            'color:gray; font-size:80%;',
+                                            'padding:0; margin:0')),
+                                    p('Press play to autoscroll*',
+                                        style='color:gray; font-size:80%')
+                                ),
+                                div(align='left', style=paste0(
+                                        'display: inline-block;',
+                                        'vertical-align:middle;'),
+                                        # 'margin-right:2em'),
+                                    htmlOutput('time_slider')
+                                    # sliderInput("range", label=NULL,
+                                    #     min=1, max=366, value=c(1, 366),
+                                    #     ticks=TRUE, step=6,
+                                    #     animate=animationOptions(interval=2000)
+                                    # )
+                                )
                             )
                         ),
                         hr()
@@ -159,16 +174,14 @@ shinyUI(
                 ),
                 fluidRow(
                     column(9, align='center',
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('metab_legend', height='auto',
                                 width='auto')
                         ),
                         # plotOutput('metab_plot', height='200px'),
                         plotOutput('metab_plot', height='auto', width='auto'),
                         # hr(),
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('O2_legend', height='auto',
                                 width='auto')
                         ),
@@ -179,16 +192,14 @@ shinyUI(
                 # ),
                 # fluidRow(
                     column(3, align='center',
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('cumul_legend', height='auto',
                                 width='auto')
                         ),
                         plotOutput('cumul_plot', height='auto', width='auto'),
                         # hr(),
                         # plotOutput('cumul_plot', height='200px'),
-                        conditionalPanel(
-                            condition = "input.input_site2 != ''",
+                        conditionalPanel(condition="input.input_site2 != ''",
                             plotOutput('kernel_legend', height='auto',
                                 width='auto')
                         ),
@@ -197,9 +208,11 @@ shinyUI(
                     )
                 ),
                 br(),
-                p(paste("*If something doesn't look right, try",
-                    "adjusting your browser's zoom level."),
-                    style='color:gray; font-size:80%')
+                conditionalPanel(condition="input.input_site2 != ''",
+                    p(paste("*If something doesn't look right, try",
+                        "adjusting your browser's zoom level."),
+                        style='color:gray; font-size:100%')
+                )
             )
         )
     )

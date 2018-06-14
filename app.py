@@ -990,6 +990,12 @@ def sitelist():
 def upload_choice():
     return render_template('upload_choice.html')
 
+@app.route('/example')
+def example():
+    flash('Uploaded 1840 values, thank you!',
+        'alert-success')
+    return render_template('example.html')
+
 @app.route('/viz_choice')
 def viz_choice():
     return render_template('viz_choice.html')
