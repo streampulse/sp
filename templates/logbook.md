@@ -1,5 +1,10 @@
 #Mike's Logbook
 
+###mon20180618
+ + finished NEON data ingester for nitrate data product
+   + water quality data product (with DO) not yet available, but nitrate script will be easily adaptable once it is
+###fri20180615
+ + building NEON data ingester
 ###thu20180614
  + fixed reactivity chain in shiny app. no unnecessary plotting/herky-jerky transitions
  + no graying of the screen while plots are recalculating
