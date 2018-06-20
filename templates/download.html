@@ -233,16 +233,23 @@ $('#dsite').change(function(){
 //   })
 // });
 
-$('#datepicker').on('apply.daterangepicker', function(ev, picker) {
-  var sdt = picker.startDate.format("YYYY-MM-DD");
-  var edt = picker.endDate.format("YYYY-MM-DD");
-  $('#dnld input[name=startDate]').val(sdt);
-  $('#dnld input[name=endDate]').val(edt);
-});
+//not using apply button, so abandoning this
+// $('#datepicker').on('apply.daterangepicker', function(ev, picker) {
+//   var sdt = picker.startDate.format("YYYY-MM-DD");
+//   var edt = picker.endDate.format("YYYY-MM-DD");
+//   $('#dnld input[name=startDate]').val(sdt);
+//   $('#dnld input[name=endDate]').val(edt);
+// });
 
 $(function(){
   $("#getcsv").click(function(){
-    $('#dnld input[name=variables]').val( $('#variables:checked').map(function() { return this.value; }).get() );
+    $('#dnld input[name=startDate]').val($('#datepicker')[0].value.substring(0,10));
+    $('#dnld input[name=endDate]').val($('#datepicker')[0].value.substring(14,25));
+    $('#dnld input[name=variables]').val(
+      $('#variables:checked').map(function(){
+        return this.value;
+      }).get()
+    );
   })
 });
 

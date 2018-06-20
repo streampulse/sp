@@ -1,105 +1,207 @@
-library(devtools)
-devtools::install_github("NEONScience/NEON-geolocation/geoNEON")
-devtools::install_github("NEONScience/NEON-utilities/neonUtilities")
+# library(devtools)
+# devtools::install_github("NEONScience/NEON-geolocation/geoNEON")
+# devtools::install_github("NEONScience/NEON-utilities/neonUtilities")
 
 library(httr)
 library(jsonlite)
 library(dplyr)
 library(downloader)
+library(RMariaDB)
+library(DBI)
+library(stringr)
+library(accelerometry)
+# library(geoNEON)
+# library(neonUtilities)
 
-req = GET("http://data.neonscience.org/api/v0/products/DP1.10003.001")
-# x = content(req, as="parsed")
-txt = content(req, as="text")
-avail = fromJSON(txt, simplifyDataFrame=T, flatten=T)
+setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
+# setwd('/home/aaron/sp/scheduled_scripts/')
 
-#keywords
-avail$data$keywords
-#references for documentation
-avail$data$specs
-#availability for each site and month
-avail$data$siteCodes
-#just months
-avail$data$siteCodes$availableMonths
-#urls for api calls
-urls = unlist(avail$data$siteCodes$availableDataUrls)
 
-#get a dataset
-brd = GET(urls[grep("WOOD/2015-07", urls)])
-brdf = fromJSON(content(brd, as="text"))
+con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
+    username='root', password='pass')
 
-# view just the available data files
-brdf$data$files
+res = dbSendQuery(con, paste0("SELECT DISTINCT site, MID(DateTime_UTC, 1, 7) ",
+    "AS date FROM data WHERE upload_id=-900"))
+resout = dbFetch(res)
+dbClearResult(res)
+retrieved_sets = paste(resout$site, resout$date)
 
-#filename format for manually collected (observational) data
-#(sometimes domain and site are omitted):
-#**NEON.[domain number].[site code].[data product ID].[file-specific name].
-#[date of file creation] **
+res = dbSendQuery(con, paste("SELECT DISTINCT site",
+    "FROM data WHERE upload_id=-900"))
+resout = dbFetch(res)
+dbClearResult(res)
+known_sites = resout$site
 
-#filename format for sensor data
-#NEON.[domain number].[site code].[data product ID].00000.
-#[soil plot number].[depth].[averaging interval].[data table name].
-#[year]-[month].[data package].[date of file creation]
+#update log file
+write(paste('\n    Running script at:', Sys.time()),
+    '../../logs_etc/NEON_ingest.log', append=TRUE)
 
-#isolate files by name components and read them into a table
-brd.count = read.delim(brdf$data$files$url
-    [intersect(grep("countdata", brdf$data$files$name),
-        grep("basic", brdf$data$files$name))], sep=",")
-
-brd.point = read.delim(brdf$data$files$url
-    [intersect(grep("perpoint", brdf$data$files$name),
-        grep("basic", brdf$data$files$name))], sep=",")
-
-#plot demo
-clusterBySp <- brd.count %>%
-    group_by(scientificName) %>%
-    summarize(total=sum(clusterSize))
-
-# Reorder so list is ordered most to least abundance
-clusterBySp <- clusterBySp[order(clusterBySp$total, decreasing=T),]
-
-# Plot
-barplot(clusterBySp$total, names.arg=clusterBySp$scientificName,
-    ylab="Total", cex.names=0.5, las=2)
-
-#read the readme
-readme = url(d$data$files$url[grep('readme', d$data$files$url)[1]])
-r = readLines(readme)
-r[1:10] #read a few lines at a time for managability
-
-#for reals ####
-
-#nitrate data
-
+#download list of available nitrate datasets
 req = GET("http://data.neonscience.org/api/v0/products/DP1.20033.001")
 txt = content(req, as="text")
-avail = fromJSON(txt, simplifyDataFrame=TRUE, flatten=TRUE)
+nitrate_data = fromJSON(txt, simplifyDataFrame=TRUE, flatten=TRUE)
 
-#availability for each site and month
-avail$data$siteCodes
-#just months
-avail$data$siteCodes$availableMonths
-#urls for api calls
-urls = unlist(avail$data$siteCodes$availableDataUrls)
+#get available urls, sites, and dates
+urls = unlist(nitrate_data$data$siteCodes$availableDataUrls)
+avail_sets = str_match(urls, '(?:.*)/([A-Z]{4})/([0-9]{4}-[0-9]{2})')
 
-sort(unique(substr(urls, 58, 61)))
+#determine which are new
+sets_to_grab = vector()
+for(i in 1:nrow(avail_sets)){
+    avail_sitemo = paste(avail_sets[i,2], avail_sets[i,3])
+    if(! avail_sitemo %in% retrieved_sets){
+        sets_to_grab = append(sets_to_grab, i)
+    }
+}
+sets_to_grab = avail_sets[sets_to_grab,]
 
-#get a collection of data files from one site and month
-d = GET(urls[1]) #the first one only has a single observation
-d = GET(urls[2]) #the first one only has a single observation
-d = fromJSON(content(d, as="text"))
+#filter sets known to have issues
+dataset_blacklist = readLines('../../logs_etc/neon_blacklist.txt')
+sets_to_grab = sets_to_grab[! sets_to_grab[,1] %in% dataset_blacklist,]
 
-# view just the available data file names
-d$data$files$name
+#process new datasets one at a time
+write(paste(nrow(sets_to_grab), 'new sets to add.'),
+    '../../logs_etc/NEON_ingest.log', append=TRUE)
 
-data = read.delim(d$data$files$url
-    [intersect(grep("basic", d$data$files$name),
-        grep("15_minute", d$data$files$name))], sep=",")
-# data2 = read.delim(d$data$files$url
-#     [intersect(grep("expanded", d$data$files$name),
-#         grep("15_minute", d$data$files$name))], sep=",")
+for(i in 1:nrow(sets_to_grab)){
 
-# sum(is.na(data$surfWaterNitrateMean))/nrow(data)
-head(data, 2)
-nitr = data[!is.na(data$surfWaterNitrateMean),]
-dim(nitr)
-nitr
+    url = sets_to_grab[i,1]
+    site = sets_to_grab[i,2]
+    date = sets_to_grab[i,3]
+
+    write(paste('Processing:', site, date),
+        '../../logs_etc/NEON_ingest.log', append=TRUE)
+
+    #download a dataset for one site and month
+    d = GET(url)
+    d = fromJSON(content(d, as="text"))
+    data = read.delim(d$data$files$url
+        [intersect(grep("expanded", d$data$files$name),
+            grep("15_minute", d$data$files$name))], sep=",")
+
+    na_filt = data[!is.na(data$surfWaterNitrateMean &
+            data$surfWaterNitrateMean != -1),]
+
+    #if it's wonky, move on and add the url to a blacklist
+    weak_coverage = dim(na_filt)[1] < 10
+    neg_ones = sum(na_filt$surfWaterNitrateMean == -1) / nrow(na_filt) > 0.9
+    if(weak_coverage){
+        write(paste('Weak coverage in dataset:', site, date),
+            '../../logs_etc/NEON_ingest.log', append=TRUE)
+
+        write(url, '../../logs_etc/NEON_blacklist.txt', append=TRUE)
+        next
+    }
+    if(neg_ones){
+        write(paste('Dataset mostly errors: ', site, date),
+            '../../logs_etc/NEON_ingest.log', append=TRUE)
+
+        write(url, '../../logs_etc/NEON_blacklist.txt', append=TRUE)
+        next
+    }
+
+    #download site data
+    req = GET(paste0('http://data.neonscience.org/api/v0/sites/', site))
+    txt = content(req, as="text")
+    site_resp = fromJSON(txt, simplifyDataFrame=TRUE, flatten=TRUE)
+
+    #update site table if this site is new
+    if(! site %in% known_sites){
+
+        cur_time = Sys.time()
+        attr(cur_time,'tzone') = 'UTC'
+
+        #create data frame to insert
+        site_data = data.frame('region'=site_resp$data$stateCode,
+            'site'=site_resp$data$siteCode,
+            'name'=site_resp$data$siteDescription,
+            'latitude'=site_resp$data$siteLatitude,
+            'longitude'=site_resp$data$siteLongitude,
+            'usgs'=NA, 'addDate'=cur_time, 'embargo'=0, 'by'=-900,
+            'contact'='NEON', 'contactEmail'=NA)
+
+        dbWriteTable(con, 'site', site_data, append=TRUE)
+
+        write(paste('Added new site: ', site),
+            '../../logs_etc/NEON_ingest.log', append=TRUE)
+
+        known_sites = append(known_sites, site)
+    }
+
+    #compress NEON flag information into one column. flag=1, no flag=0
+    na_filt$flag = 0
+    na_filt$flag[na_filt$finalQF | na_filt$finalQFSciRvw] = 1
+
+    #reformat colnames, etc.
+    na_filt = na_filt[, c('startDateTime', 'surfWaterNitrateMean', 'flag')]
+    na_filt$startDateTime = as.character(na_filt$startDateTime)
+    na_filt$startDateTime = gsub('T', ' ', na_filt$startDateTime)
+    na_filt$startDateTime = gsub('Z', '', na_filt$startDateTime)
+
+    #update flag table if there are any flags
+    if(any(na_filt$flag == 1)){
+
+        #locate blocks of flagged data
+        r = rle2(na_filt$flag, indices=TRUE, return.list=TRUE)
+        rlog = as.logical(r$values)
+        flag_run_starts = na_filt$startDateTime[r$starts[rlog]]
+        flag_run_ends = na_filt$startDateTime[r$stops[rlog]]
+
+        #create data frame to insert
+        flag_data = data.frame('startDate'=flag_run_starts)
+        flag_data$endDate = flag_run_ends
+        flag_data$region = site_resp$data$stateCode
+        flag_data$site = site_resp$data$siteCode
+        flag_data$variable = 'Nitrate_mgL'
+        flag_data$flag = 'Questionable'
+        flag_data$comment = 'At least one NEON QC test did not pass'
+        flag_data$by = -900
+
+        dbWriteTable(con, 'flag', flag_data, append=TRUE)
+
+        #get vector of resultant flag IDs to include in data table
+        res = dbSendQuery(con, paste0("SELECT id FROM flag WHERE startDate IN ",
+            "('", paste(flag_run_starts, collapse="','"), "') AND `by`=-900;"))
+        resout = dbFetch(res)
+        dbClearResult(res)
+        flag_ids = resout$id
+
+        write(paste('Added', length(flag_ids), 'flag IDs for: ', site, date),
+            '../../logs_etc/NEON_ingest.log', append=TRUE)
+    }
+
+    #add flag IDs to data table.
+    options(warn=3) #if flagidvec isn't the right size, raise an exception
+    if(exists('flag_ids')){
+
+        #flagidvec should always fit, but in case the below is buggy, it'll
+        #log an error and go to the next url
+        flagidvec = rep(flag_ids, r$lengths[as.logical(r$values)])
+        tryCatch(na_filt$flag[na_filt$flag == 1] <- flagidvec,
+            error=function(e){
+                write(paste('Error with flagidvec insertion for:',
+                    site, date), '../../logs_etc/NEON_ingest.log', append=TRUE)
+                next
+            }
+        )
+    }
+    na_filt$flag[na_filt$flag == 0] = NA
+    options(warn=0)
+
+    #assemble rest of data frame to insert
+    colnames(na_filt) = c('DateTime_UTC', 'value', 'flag')
+    nitrate_molec_mass = 62.0049
+    na_filt$value = (na_filt$value * nitrate_molec_mass) / 1000
+    na_filt$region = site_resp$data$stateCode
+    na_filt$site = site_resp$data$siteCode
+    na_filt$variable = 'Nitrate_mgL'
+    na_filt$upload_id = -900
+
+    dbWriteTable(con, 'data', na_filt, append=TRUE)
+
+    write(paste('Added', nrow(na_filt), 'records for: ', site, date),
+        '../../logs_etc/NEON_ingest.log', append=TRUE)
+}
+
+dbDisconnect(con)
+

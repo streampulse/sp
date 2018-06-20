@@ -188,14 +188,13 @@ kernel_func = function(ts_full, main){
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
 
     kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
-    # kk <<- kernel
     # k_lim = max(kernel$estimate, na.rm=TRUE)
-    k_lims = max(abs(c(min(ts_full$ER, na.rm=TRUE),
+    k_lim = max(abs(c(min(ts_full$ER, na.rm=TRUE),
         max(ts_full$GPP, na.rm=TRUE))))
     plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
-        ylim=c(-k_lims, 0), xlim=c(0, k_lims), display='filled.contour',
+        ylim=c(-k_lim, 0), xlim=c(0, k_lim), display='filled.contour',
+        # ylim=c(-k_lim, k_lim), xlim=c(-k_lim, k_lim), display='filled.contour',
         col=c(NA, "purple1", "purple3", "purple4"))
-        # col=c(NA, "gray80", "gray60", "gray40"))
     axis(1, tcl=-0.2, padj=-1)
     axis(2, tcl=-0.2, hadj=0.5, las=1)
     mtext(expression(paste("GPP (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),

@@ -1,5 +1,19 @@
 #Mike's Logbook
 
+###mon20180618
+ + finished NEON data ingester for nitrate data product
+   + water quality data product (with DO) not yet available, but nitrate script will be easily adaptable once it is
+###fri20180615
+ + building NEON data ingester
+###thu20180614
+ + fixed reactivity chain in shiny app. no unnecessary plotting/herky-jerky transitions
+ + no graying of the screen while plots are recalculating
+###wed20180613
+ + 3 possible plans for handling the updating of "official" model outputs for each site and year
+   + manual comparison of model runs by users, visual evaluation (requires building a hierarchy of user credentials, so that only qualified users can update existing models)
+   + automatic comparison based on composite model quality score (O2 obs vs. pred GOF test or IC score, CI on GPP and ER, proportion of GPP and ER estimates that go the wrong direction, ER=K600 correlation, data coverage)
+   + could maintain top 3-5 best models at all times and combine both approaches
+ + time slider conforms to available date range
 ###tue20180612
  + fixed issue with occasional "wedges" appearing in O2 diagnostic plots
  + system now ready to receive NC Cole Mill logger files

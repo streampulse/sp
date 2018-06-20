@@ -31,7 +31,7 @@ Sys.sleep(5)
 meta_local = list.files(meta_folder, full.names=TRUE)
 # cat(paste(length(meta_local), 'metadata files on server.\n'))
 write(paste(length(meta_local), 'metadata files on server.'),
-    '../logs_etc/sb_upload.log', append=TRUE)
+    '../../logs_etc/sb_upload.log', append=TRUE)
 
 #get objects in metadata folder on sb
 sb_meta_children = item_list_children(sb_meta_id, fields='id', limit=99999)
@@ -44,7 +44,7 @@ for(i in 1:length(sb_meta_children)){
 }
 # cat(paste(length(insb_meta), 'metadata files on SB.\n'))
 write(paste(length(insb_local), 'metadata files on SB.'),
-    '../logs_etc/sb_upload.log', append=TRUE)
+    '../../logs_etc/sb_upload.log', append=TRUE)
 
 #get filenames that need to be uploaded
 to_upload_meta = vector()
@@ -57,10 +57,10 @@ for(i in 1:length(meta_local)){
 }
 # cat(paste(length(to_upload_meta), 'metadata files to upload.\n'))
 write(paste(length(to_upload_meta), 'metadata files to upload.'),
-    '../logs_etc/sb_upload.log', append=TRUE)
+    '../../logs_etc/sb_upload.log', append=TRUE)
 
 #chunk metadata upload vector into a list of vectors
-working_item_id_meta = read('../logs_etc/working_sb_item_meta.txt')
+working_item_id_meta = read('../../logs_etc/working_sb_item_meta.txt')
 nper = 10
 chunks = split(to_upload_meta, ceiling(seq_along(to_upload_meta) / nper))
 
@@ -81,15 +81,15 @@ if(length(to_upload_meta)){
 
                 #server likey down
                 write(paste('failed to create new meta item on', systime),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
                 break
             } else {
 
                 #if creation succeeds, update file that tracks working id
                 working_item_id_meta = new_item$id
-                write(working_item_id_meta, '../logs_etc/working_sb_item_meta.txt')
+                write(working_item_id_meta, '../../logs_etc/working_sb_item_meta.txt')
                 write(paste('created new meta item on', systime),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
             }
 
             #try to upload again
@@ -99,17 +99,17 @@ if(length(to_upload_meta)){
 
                 #server must be down
                 write(paste('meta upload failed after', i - 1, 'chunks on', systime),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
                 break
             } else {
                 # cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
                 write(paste('Uploaded', length(chunks[[i]]), 'files.'),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
             }
         } else {
             # cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
             write(paste('Uploaded', length(chunks[[i]]), 'files.'),
-                '../logs_etc/sb_upload.log', append=TRUE)
+                '../../logs_etc/sb_upload.log', append=TRUE)
         }
 
 
@@ -120,7 +120,7 @@ if(length(to_upload_meta)){
 
 if(meta_loop_succeeded){
     write(paste('meta upload succeeded after', i - 1, 'chunks on', systime),
-        '../logs_etc/sb_upload.log', append=TRUE)
+        '../../logs_etc/sb_upload.log', append=TRUE)
 }
 
 
@@ -130,7 +130,7 @@ if(meta_loop_succeeded){
 data_local = list.files(data_folder, full.names=TRUE) #data filenames on server
 # cat(paste(length(data_local), 'data files on server.\n'))
 write(paste(length(data_local), 'data files on server.'),
-    '../logs_etc/sb_upload.log', append=TRUE)
+    '../../logs_etc/sb_upload.log', append=TRUE)
 
 #get objects in data folder on sb
 sb_data_children = item_list_children(sb_data_id, fields='id', limit=99999)
@@ -143,7 +143,7 @@ for(i in 1:length(sb_data_children)){
 }
 # cat(paste(length(insb_data), 'data files on SB.\n'))
 write(paste(length(insb_data), 'data files on SB.'),
-    '../logs_etc/sb_upload.log', append=TRUE)
+    '../../logs_etc/sb_upload.log', append=TRUE)
 
 #get filenames that need to be uploaded
 to_upload_data = vector()
@@ -156,10 +156,10 @@ for(i in 1:length(data_local)){
 }
 # cat(paste(length(to_upload_data), 'data files to upload.\n'))
 write(paste(length(to_upload_data), 'data files to upload.'),
-    '../logs_etc/sb_upload.log', append=TRUE)
+    '../../logs_etc/sb_upload.log', append=TRUE)
 
 #chunk data upload vector into a list of vectors
-working_item_id_data = read('../logs_etc/working_sb_item_data.txt')
+working_item_id_data = read('../../logs_etc/working_sb_item_data.txt')
 nper = 10
 chunks = split(to_upload_data, ceiling(seq_along(to_upload_data)/nper))
 
@@ -180,15 +180,15 @@ if(length(to_upload_data)){
 
                 #server likey down
                 write(paste('failed to create new data item on', systime),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
                 break
             } else {
 
                 #if that succeeds, update file that tracks working id
                 working_item_id_data = new_item$id
-                write(working_item_id_data, '../logs_etc/working_sb_item_data.txt')
+                write(working_item_id_data, '../../logs_etc/working_sb_item_data.txt')
                 write(paste('created new data item on', systime),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
             }
 
             #try to upload again
@@ -198,17 +198,17 @@ if(length(to_upload_data)){
 
                 #server must be down
                 write(paste('data upload failed after', i - 1, 'chunks on', systime),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
                 break
             } else {
                 # cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
                 write(paste('Uploaded', length(chunks[[i]]), 'files.'),
-                    '../logs_etc/sb_upload.log', append=TRUE)
+                    '../../logs_etc/sb_upload.log', append=TRUE)
             }
         } else {
             cat(paste('Uploaded', length(chunks[[i]]), 'files.\n'))
             write(paste('Uploaded', length(chunks[[i]]), 'files.'),
-                '../logs_etc/sb_upload.log', append=TRUE)
+                '../../logs_etc/sb_upload.log', append=TRUE)
         }
 
         Sys.sleep(10)
@@ -218,5 +218,5 @@ if(length(to_upload_data)){
 
 if(data_loop_succeeded){
     write(paste('data upload succeeded after', i - 1, 'chunks on', systime),
-        '../logs_etc/sb_upload.log', append=TRUE)
+        '../../logs_etc/sb_upload.log', append=TRUE)
 }
