@@ -2268,19 +2268,32 @@ def addflag():
 @app.route('/api')
 def api():
 
+    #this function used to handle mutiple sites in a list,
+    #but now that behavior is a relic
+
     #pull in requests
     startDate = request.args.get('startdate')
     endDate = request.args.get('enddate')
     variables = request.args.get('variables')
     sites = request.args['sitecode'].split(',')
 
-    #tests
+    #test for site existence
+    reg, sit = sites[0].split('_')
+    q1 = "select * from site where region='" + reg + "' and site='" + sit + "';"
+    resp = pd.read_sql(q1, db.engine)
+    if resp.shape[0] == 0:
+        return jsonify(error='Unknown site requested.')
+
+    #user auth
     if request.headers.get('Token') is not None:
         sites = authenticate_sites(sites, token=request.headers['Token'])
     elif current_user.is_authenticated:
         sites = authenticate_sites(sites, user=current_user.get_id())
     else:
         sites = authenticate_sites(sites)
+
+    if not sites:
+        return jsonify(error='This site is private and requires a user token.')
 
     #assemble sql queries for data and metadata
     ss = []; ss2 = []
@@ -2372,6 +2385,40 @@ def api():
             sites=meta.to_dict(orient='records'))
 
     return resp
+
+@app.route('/api/model_storage')
+def api_model():
+
+    #pull in requests
+    region = request.args.get('region')
+    site = request.args.get('site')
+    year = request.args.get('year')
+    regsite = [region + '_' + site]
+
+    #test
+    q1 = "select * from site where region='" + region +\
+        "' and site='" + site + "';"
+    resp = pd.read_sql(q1, db.engine)
+    if resp.shape[0] == 0:
+        return jsonify(error='Unknown site requested.')
+
+    #user auth
+    if request.headers.get('Token') is not None:
+        regsite = authenticate_sites(regsite, token=request.headers['Token'])
+    elif current_user.is_authenticated:
+        regsite = authenticate_sites(regsite, user=current_user.get_id())
+    else:
+        regsite = authenticate_sites(regsite)
+
+    if not regsite:
+        return jsonify(error='This site is private and requires a user token.')
+
+    #get specs for best model run so far
+    q2 = "select * from model where region='" + region +\
+        "' and site='" + site + "' and year='" + str(year) + "';"
+    best_mod = pd.read_sql(q2, db.engine)
+
+    return jsonify(specs=best_mod.to_dict(orient='records'))
 
 @app.route('/model')
 def modelgen():

@@ -1,5 +1,13 @@
 #Mike's Logbook
 
+###thur20180621
+ + added StreamPULSE API functionality so that model spec data can be requested
+###wed20180620
+ + fixed problem in download page on data portal where changes to the date range were not being registered
+ + added model specs table to the database, so we can track the best model for each site and year
+###tue20180619
+ + arranging for AZ's East Canal site to be automatically synced with our database
+   + API call script is ready for when they update the API in a few weeks
 ###mon20180618
  + finished NEON data ingester for nitrate data product
    + water quality data product (with DO) not yet available, but nitrate script will be easily adaptable once it is
