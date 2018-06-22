@@ -866,22 +866,42 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
         # return xx
 
 def authenticate_sites(sites,user=None,token=None):
+
+    #there's some weird legacy stuff in this function. worth cleaning some day
+    #do we ever have to validate multiple sites at once? maybe in download...
+
     ss = []
     for site in sites:
         r,s = site.split("_")
         ss.append("(region='"+r+"' and site='"+s+"') ")
+
+    #get user id (if necessary) and sites they have access to
     qs = "or ".join(ss)
     xx = pd.read_sql("select region, site, embargo, addDate, site.by from site where "+qs, db.engine)
+
     if token is not None:
-        tt = pd.read_sql("select * from user where token='"+token+"'", db.engine)
-        if(len(tt)==1):
+        tt = pd.read_sql("select * from user where token='" + token + "'",
+            db.engine)
+        if(len(tt) == 1): #this should never be false
             user = str(tt.id[0])
-    embargoed = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
+        auth_sites = tt.qaqc[0].split(',')
+    elif user is not None:
+        tt = pd.read_sql("select qaqc from user where id='" +\
+            str(user) + "';", db.engine)
+        auth_sites = tt.qaqc[0].split(',')
+    else:
+        pass
+
+    #public and user_authed are pandas series by which to logically index xx
+    public = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
+
     if user is not None: # return public sites and authenticated sites
-        xx = xx[(embargoed)|(xx['by']==int(user))]
+        user_authed = pd.Series(sites[0] in auth_sites)
+        xx = xx[public | (xx['by']==int(user)) | user_authed]
     else: # return only public sites
-        xx = xx[(embargoed)] # return
-    return [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
+        xx = xx[public]
+
+    return [x[0] + "_" + x[1] for x in zip(xx.region, xx.site)]
 
 def generate_confirmation_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -2293,7 +2313,7 @@ def api():
         sites = authenticate_sites(sites)
 
     if not sites:
-        return jsonify(error='This site is private and requires a user token.')
+        return jsonify(error='This site is private and requires a valid user token.')
 
     #assemble sql queries for data and metadata
     ss = []; ss2 = []
@@ -2411,7 +2431,7 @@ def api_model():
         regsite = authenticate_sites(regsite)
 
     if not regsite:
-        return jsonify(error='This site is private and requires a user token.')
+        return jsonify(error='This site is private and requires a valid user token.')
 
     #get specs for best model run so far
     q2 = "select * from model where region='" + region +\
