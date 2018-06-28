@@ -295,8 +295,8 @@ KvQvER_plot = function(mod_out){
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
     abline(mod, lty=2, col='gray50', lwd=2)
-    plot(mod_out$fit$daily$K600_daily_mean,
-        mod_out$data_daily$discharge.daily,
-        col='purple4', ylab='Daily mean Q', xlab='Daily mean K600',
+    plot(mod_out$data_daily$discharge.daily,
+        mod_out$fit$daily$K600_daily_mean,
+        col='purple4', ylab='Daily mean K600', xlab='Daily mean Q',
         bty='l', font.lab=2, cex.axis=0.8, las=1)
 }

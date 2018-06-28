@@ -1,6 +1,11 @@
 #Mike's Logbook
 
-###thur20180621
+###wed20180627
+ + updated database and R pipeline so that all model specifications can be tracked and the details of how each "best" model was run will not be lost
+###mon20180625
+ + register page?
+ + fixed issue with HOBO parser. unrecognized column
+###thu20180621
  + added StreamPULSE API functionality so that model spec data can be requested
 ###wed20180620
  + fixed problem in download page on data portal where changes to the date range were not being registered
