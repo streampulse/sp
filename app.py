@@ -372,6 +372,76 @@ class Upload(db.Model):
     def __repr__(self):
         return '<Upload %r>' % (self.filename)
 
+class Model(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(2))
+    site = db.Column(db.String(50))
+    start_date = db.Column(db.DateTime)
+    end_date = db.Column(db.DateTime)
+    requested_variables = db.Column(db.String(200))
+    year = db.Column(db.Integer)
+    run_finished = db.Column(db.DateTime)
+    model = db.Column(db.String(17))
+    method = db.Column(db.String(5))
+    engine = db.Column(db.String(4))
+    rm_flagged = db.Column(db.String(35))
+    used_rating_curve = db.Column(db.Boolean)
+    pool = db.Column(db.String(7))
+    proc_err = db.Column(db.Boolean)
+    obs_err = db.Column(db.Boolean)
+    proc_acor = db.Column(db.Boolean)
+    ode_method = db.Column(db.String(9))
+    deficit_src = db.Column(db.String(13))
+    interv = db.Column(db.String(12))
+    fillgaps = db.Column(db.String(13))
+    estimate_areal_depth = db.Column(db.Boolean)
+    O2_GOF = db.Column(db.Float)
+    GPP_95CI = db.Column(db.Float)
+    ER_95CI = db.Column(db.Float)
+    prop_pos_ER = db.Column(db.Float)
+    prop_neg_GPP = db.Column(db.Float)
+    ER_K600_cor = db.Column(db.Float)
+    coverage = db.Column(db.Integer)
+
+    def __init__(self, region, site, start_date, end_date,
+        requested_variables, year, run_finished, model, method, engine,
+        rm_flagged, used_rating_curve, pool, proc_err, obs_err, proc_acor,
+        ode_method, deficit_src, interv, fillgaps, estimate_areal_depth,
+        O2_GOF, GPP_95CI, ER_95CI, prop_pos_ER, prop_neg_GPP, ER_K600_cor,
+        coverage):
+
+        self.region = region
+        self.site = site
+        self.start_date = start_date
+        self.end_date = end_date
+        self.requested_variables = requested_variables
+        self.year = year
+        self.run_finished = run_finished
+        self.model = model
+        self.method = method
+        self.engine = engine
+        self.rm_flagged = rm_flagged
+        self.used_rating_curve = used_rating_curve
+        self.pool = pool
+        self.proc_err = proc_err
+        self.obs_err = obs_err
+        self.proc_acor = proc_acor
+        self.ode_method = ode_method
+        self.deficit_src = deficit_src
+        self.interv = interv
+        self.fillgaps = fillgaps
+        self.estimate_areal_depth = estimate_areal_depth
+        self.O2_GOF = O2_GOF
+        self.GPP_95CI = GPP_95CI
+        self.ER_95CI = ER_95CI
+        self.prop_pos_ER = prop_pos_ER
+        self.prop_neg_GPP = prop_neg_GPP
+        self.ER_K600_cor = ER_K600_cor
+        self.coverage = coverage
+
+    def __repr__(self):
+        return '<Data %r, %r, %r>' % (self.region, self.site, self.year)
+
 class Grabupload(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100))
@@ -1431,6 +1501,7 @@ def chunker_ingester(df, chunksize=100000):
     #convert directly to dict if small enough, otherwise do it chunkwise
     if n_full_chunks == 0:
         xdict = df.to_dict('records')
+        print xdict
         db.session.bulk_insert_mappings(Data, xdict) #ingest all records
     else:
         for i in xrange(n_full_chunks):
@@ -2406,8 +2477,8 @@ def api():
 
     return resp
 
-@app.route('/api/model_details')
-def model_details():
+@app.route('/api/model_details_download')
+def model_details_download():
 
     #pull in requests
     region = request.args.get('region')
@@ -2439,6 +2510,56 @@ def model_details():
     best_mod = pd.read_sql(q2, db.engine)
 
     return jsonify(specs=best_mod.to_dict(orient='records'))
+
+@app.route('/api/model_details_upload', methods=['POST'])
+def model_details_upload():
+
+    #pull in data, format for database entry
+    deets = dict(request.form) #not readable by bulk_insert_mappings
+    deets = pd.DataFrame.from_dict(deets, orient='columns')
+    deets = deets.to_dict('records')[0] #readable by bulk_insert_mappings
+
+    #convert R string booleans to 0 and 1
+    for k in deets:
+        if deets[k] == 'FALSE':
+            deets[k] = 0
+        if deets[k] == 'TRUE':
+            deets[k] = 1
+
+    # #user auth (not needed; user will never run unauthorized model in first place)
+    # regsite = deets['region'] + '_' + deets['site']
+    #
+    # if request.headers.get('Token') is not None:
+    #     regsite = authenticate_sites(regsite, token=request.headers['Token'])
+    # elif current_user.is_authenticated: #will this ever be possible?
+    #     regsite = authenticate_sites(regsite, user=current_user.get_id())
+    # else:
+    #     regsite = authenticate_sites(regsite)
+    #
+    # if not regsite:
+    #     return jsonify(error='This site is private and requires a valid user token.')
+
+    #add record to model database
+    db.session.bulk_insert_mappings(Model, [deets])
+    db.session.commit()
+
+    return jsonify(callback='success')
+
+@app.route('/api/model_upload', methods=['POST'])
+def model_upload():
+
+    #pull in serialized R data and variable filename component
+    modOut = request.files['modOut']
+    predictions = request.files['predictions']
+    file_id = request.headers.get('file_id')
+
+    #save RDS (serialized R data) files to shiny data folder
+    modOut.save('/home/mike/git/streampulse/server_copy/sp/shiny/data/' +\
+        'modOut_' + file_id + '.rds')
+    predictions.save('/home/mike/git/streampulse/server_copy/sp/shiny/data/' +\
+        'predictions_' + file_id + '.rds')
+
+    return jsonify(callback='success')
 
 @app.route('/model')
 def modelgen():
