@@ -1880,7 +1880,7 @@ def getcsv():
         xx = pd.read_sql(sqlq, db.engine)
 
         if len(xx) < 1:
-            continue #why?
+            continue
 
         # set NA values, then drop them (currently not doing anything)
         xx.loc[xx.flag == 0, "value"] = None
@@ -1933,10 +1933,18 @@ def getcsv():
         #write sensor dataframes to CSV file in temp directory
         xx.to_csv(tmp + '/' + s + '_sensorData.csv', index=False)
 
-        #put metadata in folder if metdata file exists
-        mdfile = os.path.join(app.config['META_FOLDER'], s + "_metadata.txt")
+        #put additional metadata in folder if metdata file exists
+        mdfile = os.path.join(app.config['META_FOLDER'], s + "_addtl_metadata.txt")
         if os.path.isfile(mdfile):
             shutil.copy2(mdfile, tmp)
+
+    #write site data to CSV in temp dir
+    sitequery = "select region, site, name, latitude, longitude, usgs" +\
+        " as usgsGage" +\
+        ", contact, contactEmail from site where concat(region, '_'," +\
+        " site) in ('" + "','".join(sitenm) + "');"
+    sitedata = pd.read_sql(sitequery, db.engine)
+    sitedata.to_csv(tmp + '/' + 'siteData.csv', index=False)
 
     #zip all files in temp dir as new zip dir, pass on to user
     writefiles = os.listdir(tmp) # list files in the temp directory
