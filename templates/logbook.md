@@ -1,9 +1,15 @@
 #Mike's Logbook
 
+###thu20180628
+ + built API protocols for uploading model fits and predictions to server
+   + built supporting R code
+ + built API protocols for uploading model details to database
+   + built supporting R code
+ + added SQLAlchemy ORM for model table
+ + simplified model output RDS filenames and Shiny code that calls them
 ###wed20180627
  + updated database and R pipeline so that all model specifications can be tracked and the details of how each "best" model was run will not be lost
 ###mon20180625
- + register page?
  + fixed issue with HOBO parser. unrecognized column
 ###thu20180621
  + added StreamPULSE API functionality so that model spec data can be requested
@@ -30,7 +36,6 @@
 ###tue20180612
  + fixed issue with occasional "wedges" appearing in O2 diagnostic plots
  + system now ready to receive NC Cole Mill logger files
- + 
 ###mon20180611
  + added units to grab sample overlay dropdown on input viz page
  + widened right plot margins so that large labels don't get cut off
