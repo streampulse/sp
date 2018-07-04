@@ -402,13 +402,15 @@ class Model(db.Model):
     prop_neg_GPP = db.Column(db.Float)
     ER_K600_cor = db.Column(db.Float)
     coverage = db.Column(db.Integer)
+    kmax = db.Column(db.Float)
+    current_best = db.Column(db.Boolean)
 
     def __init__(self, region, site, start_date, end_date,
         requested_variables, year, run_finished, model, method, engine,
         rm_flagged, used_rating_curve, pool, proc_err, obs_err, proc_acor,
         ode_method, deficit_src, interv, fillgaps, estimate_areal_depth,
         O2_GOF, GPP_95CI, ER_95CI, prop_pos_ER, prop_neg_GPP, ER_K600_cor,
-        coverage):
+        coverage, kmax, current_best):
 
         self.region = region
         self.site = site
@@ -438,9 +440,11 @@ class Model(db.Model):
         self.prop_neg_GPP = prop_neg_GPP
         self.ER_K600_cor = ER_K600_cor
         self.coverage = coverage
+        self.kmax = kmax
+        self.current_best = current_best
 
     def __repr__(self):
-        return '<Data %r, %r, %r>' % (self.region, self.site, self.year)
+        return '<Data %r, %r, %r, %r>' % (self.region, self.site, self.year, self.current_best)
 
 class Grabupload(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -2506,7 +2510,8 @@ def model_details_download():
 
     #get specs for best model run so far
     q2 = "select * from model where region='" + region +\
-        "' and site='" + site + "' and year='" + str(year) + "';"
+        "' and site='" + site + "' and year='" + str(year) +\
+        "' and current_best=1;"
     best_mod = pd.read_sql(q2, db.engine)
 
     return jsonify(specs=best_mod.to_dict(orient='records'))
@@ -2538,6 +2543,18 @@ def model_details_upload():
     #
     # if not regsite:
     #     return jsonify(error='This site is private and requires a valid user token.')
+
+    #demote previous best model
+    d = Model.query.filter(Model.region == deets['region'],
+        Model.site == deets['site'], Model.year == deets['year'],
+        Model.current_best == 1).all()
+
+    for rec in d:
+        rec.current_best = False
+
+    #something wrong with orm stuff here. check circa line 1566 for cross ref
+
+    db.session.add(d)
 
     #add record to model database
     db.session.bulk_insert_mappings(Model, [deets])

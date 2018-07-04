@@ -114,3 +114,5 @@
 [97m[m[33mpredictions_WI_BRW_2015-01-01_2015-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds[0m[K
 [97m[m[33mpredictions_WI_BRW_2016-01-01_2016-12-31_bayes_binned_obsproc_trapezoid_DO-mod_stan.rds[0m[K
 [97m[m[33mpredictions_WI_BRW_2017.rds[0m
+
+WARNING: Eno 2017 and possibly others have been overwritten in local folder

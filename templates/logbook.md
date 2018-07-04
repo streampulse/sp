@@ -1,5 +1,10 @@
 #Mike's Logbook
 
+###mon20180702
+ + added registration link to homepage
+   + redid layout for link buttons on homepage
+ + logged Q in diag plots
+ + site data now included with downloads
 ###thu20180628
  + built API protocols for uploading model fits and predictions to server
    + built supporting R code
