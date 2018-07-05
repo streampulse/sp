@@ -1,5 +1,13 @@
 #Mike's Logbook
 
+###thu20180705
+ + updated API code so that incoming models and model details automatically push previous best models and details to relegated status. details remain in table but are no longer used. model objects get moved to a holding folder and are removed on a 1 month schedule.
+ + made fit_model function more customizable in R package
+   + pool_K600, err_obs_iid, err_proc_iid, proc_acor_iid, ode_method, deficit_src now adjustable by the user
+###wed20180704
+ + developed scheme for comparing models, taking into account overall penalty and temporal coverage using piecewise function.
+###tue20180703
+ + developed schemes for penalizing maximum daily K600 and K600-ER correlation using cubic and linear functions, respectively
 ###mon20180702
  + added registration link to homepage
    + redid layout for link buttons on homepage

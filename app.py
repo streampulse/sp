@@ -31,6 +31,7 @@ os.environ['R_HOME'] = '/usr/lib/R' #needed for rpy2 to find R. has to be a bett
 import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
 import markdown
+import time
 
 #another attempt at serverside sessions
 # import pickle
@@ -2544,19 +2545,16 @@ def model_details_upload():
     # if not regsite:
     #     return jsonify(error='This site is private and requires a valid user token.')
 
-    #demote previous best model
+    #demote previous best model if it exists
     d = Model.query.filter(Model.region == deets['region'],
         Model.site == deets['site'], Model.year == deets['year'],
         Model.current_best == 1).all()
 
-    for rec in d:
-        rec.current_best = False
+    if d:
+        for rec in d:
+            rec.current_best = False
 
-    #something wrong with orm stuff here. check circa line 1566 for cross ref
-
-    db.session.add(d)
-
-    #add record to model database
+    #add new record to model database
     db.session.bulk_insert_mappings(Model, [deets])
     db.session.commit()
 
@@ -2565,16 +2563,26 @@ def model_details_upload():
 @app.route('/api/model_upload', methods=['POST'])
 def model_upload():
 
-    #pull in serialized R data and variable filename component
+    #pull in serialized R data (RDS files) and variable filename component
     modOut = request.files['modOut']
     predictions = request.files['predictions']
     file_id = request.headers.get('file_id')
 
-    #save RDS (serialized R data) files to shiny data folder
-    modOut.save('/home/mike/git/streampulse/server_copy/sp/shiny/data/' +\
-        'modOut_' + file_id + '.rds')
-    predictions.save('/home/mike/git/streampulse/server_copy/sp/shiny/data/' +\
-        'predictions_' + file_id + '.rds')
+    #if already a model for this region-site-time, move and rename
+    fnames = os.listdir('shiny/data')
+    cur_time = time.mktime(datetime.now().timetuple())
+    cur_time = str(cur_time)[0:-2]
+    if 'modOut_' + file_id + '.rds' in fnames:
+        os.rename('shiny/data/modOut_' + file_id + '.rds',
+            'shiny/former_best_models/modOut_' + file_id + cur_time +\
+                '.rds')
+        os.rename('shiny/data/predictions_' + file_id + '.rds',
+            'shiny/former_best_models/predictions_' + file_id +\
+                cur_time + '.rds')
+
+    #save new RDS files to shiny data folder
+    modOut.save('shiny/data/modOut_' + file_id + '.rds')
+    predictions.save('shiny/data/predictions_' + file_id + '.rds')
 
     return jsonify(callback='success')
 
