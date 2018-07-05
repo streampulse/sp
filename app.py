@@ -31,6 +31,7 @@ os.environ['R_HOME'] = '/usr/lib/R' #needed for rpy2 to find R. has to be a bett
 import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
 import markdown
+import time
 
 #another attempt at serverside sessions
 # import pickle
@@ -372,6 +373,80 @@ class Upload(db.Model):
     def __repr__(self):
         return '<Upload %r>' % (self.filename)
 
+class Model(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(2))
+    site = db.Column(db.String(50))
+    start_date = db.Column(db.DateTime)
+    end_date = db.Column(db.DateTime)
+    requested_variables = db.Column(db.String(200))
+    year = db.Column(db.Integer)
+    run_finished = db.Column(db.DateTime)
+    model = db.Column(db.String(17))
+    method = db.Column(db.String(5))
+    engine = db.Column(db.String(4))
+    rm_flagged = db.Column(db.String(35))
+    used_rating_curve = db.Column(db.Boolean)
+    pool = db.Column(db.String(7))
+    proc_err = db.Column(db.Boolean)
+    obs_err = db.Column(db.Boolean)
+    proc_acor = db.Column(db.Boolean)
+    ode_method = db.Column(db.String(9))
+    deficit_src = db.Column(db.String(13))
+    interv = db.Column(db.String(12))
+    fillgaps = db.Column(db.String(13))
+    estimate_areal_depth = db.Column(db.Boolean)
+    O2_GOF = db.Column(db.Float)
+    GPP_95CI = db.Column(db.Float)
+    ER_95CI = db.Column(db.Float)
+    prop_pos_ER = db.Column(db.Float)
+    prop_neg_GPP = db.Column(db.Float)
+    ER_K600_cor = db.Column(db.Float)
+    coverage = db.Column(db.Integer)
+    kmax = db.Column(db.Float)
+    current_best = db.Column(db.Boolean)
+
+    def __init__(self, region, site, start_date, end_date,
+        requested_variables, year, run_finished, model, method, engine,
+        rm_flagged, used_rating_curve, pool, proc_err, obs_err, proc_acor,
+        ode_method, deficit_src, interv, fillgaps, estimate_areal_depth,
+        O2_GOF, GPP_95CI, ER_95CI, prop_pos_ER, prop_neg_GPP, ER_K600_cor,
+        coverage, kmax, current_best):
+
+        self.region = region
+        self.site = site
+        self.start_date = start_date
+        self.end_date = end_date
+        self.requested_variables = requested_variables
+        self.year = year
+        self.run_finished = run_finished
+        self.model = model
+        self.method = method
+        self.engine = engine
+        self.rm_flagged = rm_flagged
+        self.used_rating_curve = used_rating_curve
+        self.pool = pool
+        self.proc_err = proc_err
+        self.obs_err = obs_err
+        self.proc_acor = proc_acor
+        self.ode_method = ode_method
+        self.deficit_src = deficit_src
+        self.interv = interv
+        self.fillgaps = fillgaps
+        self.estimate_areal_depth = estimate_areal_depth
+        self.O2_GOF = O2_GOF
+        self.GPP_95CI = GPP_95CI
+        self.ER_95CI = ER_95CI
+        self.prop_pos_ER = prop_pos_ER
+        self.prop_neg_GPP = prop_neg_GPP
+        self.ER_K600_cor = ER_K600_cor
+        self.coverage = coverage
+        self.kmax = kmax
+        self.current_best = current_best
+
+    def __repr__(self):
+        return '<Data %r, %r, %r, %r>' % (self.region, self.site, self.year, self.current_best)
+
 class Grabupload(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100))
@@ -572,7 +647,7 @@ def allowed_file(filename):
 def read_hobo(f):
     xt = pd.read_csv(f, skiprows=[0])
     cols = [x for x in xt.columns.tolist() if re.match("^#$|Coupler|File|" +\
-        "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad",x) is None]
+        "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired",x) is None]
     xt = xt[cols]
     m = [re.sub(" ","",x.split(",")[0]) for x in xt.columns.tolist()]
     u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
@@ -866,22 +941,42 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
         # return xx
 
 def authenticate_sites(sites,user=None,token=None):
+
+    #there's some weird legacy stuff in this function. worth cleaning some day
+    #do we ever have to validate multiple sites at once? maybe in download...
+
     ss = []
     for site in sites:
         r,s = site.split("_")
         ss.append("(region='"+r+"' and site='"+s+"') ")
+
+    #get user id (if necessary) and sites they have access to
     qs = "or ".join(ss)
     xx = pd.read_sql("select region, site, embargo, addDate, site.by from site where "+qs, db.engine)
+
     if token is not None:
-        tt = pd.read_sql("select * from user where token='"+token+"'", db.engine)
-        if(len(tt)==1):
+        tt = pd.read_sql("select * from user where token='" + token + "'",
+            db.engine)
+        if(len(tt) == 1): #this should never be false
             user = str(tt.id[0])
-    embargoed = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
+        auth_sites = tt.qaqc[0].split(',')
+    elif user is not None:
+        tt = pd.read_sql("select qaqc from user where id='" +\
+            str(user) + "';", db.engine)
+        auth_sites = tt.qaqc[0].split(',')
+    else:
+        pass
+
+    #public and user_authed are pandas series by which to logically index xx
+    public = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
+
     if user is not None: # return public sites and authenticated sites
-        xx = xx[(embargoed)|(xx['by']==int(user))]
+        user_authed = pd.Series(sites[0] in auth_sites)
+        xx = xx[public | (xx['by']==int(user)) | user_authed]
     else: # return only public sites
-        xx = xx[(embargoed)] # return
-    return [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
+        xx = xx[public]
+
+    return [x[0] + "_" + x[1] for x in zip(xx.region, xx.site)]
 
 def generate_confirmation_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -1411,6 +1506,7 @@ def chunker_ingester(df, chunksize=100000):
     #convert directly to dict if small enough, otherwise do it chunkwise
     if n_full_chunks == 0:
         xdict = df.to_dict('records')
+        print xdict
         db.session.bulk_insert_mappings(Data, xdict) #ingest all records
     else:
         for i in xrange(n_full_chunks):
@@ -2276,19 +2372,32 @@ def addflag():
 @app.route('/api')
 def api():
 
+    #this function used to handle mutiple sites in a list,
+    #but now that behavior is a relic
+
     #pull in requests
     startDate = request.args.get('startdate')
     endDate = request.args.get('enddate')
     variables = request.args.get('variables')
     sites = request.args['sitecode'].split(',')
 
-    #tests
+    #test for site existence
+    reg, sit = sites[0].split('_')
+    q1 = "select * from site where region='" + reg + "' and site='" + sit + "';"
+    resp = pd.read_sql(q1, db.engine)
+    if resp.shape[0] == 0:
+        return jsonify(error='Unknown site requested.')
+
+    #user auth
     if request.headers.get('Token') is not None:
         sites = authenticate_sites(sites, token=request.headers['Token'])
     elif current_user.is_authenticated:
         sites = authenticate_sites(sites, user=current_user.get_id())
     else:
         sites = authenticate_sites(sites)
+
+    if not sites:
+        return jsonify(error='This site is private and requires a valid user token.')
 
     #assemble sql queries for data and metadata
     ss = []; ss2 = []
@@ -2380,6 +2489,110 @@ def api():
             sites=meta.to_dict(orient='records'))
 
     return resp
+
+@app.route('/api/model_details_download')
+def model_details_download():
+
+    #pull in requests
+    region = request.args.get('region')
+    site = request.args.get('site')
+    year = request.args.get('year')
+    regsite = [region + '_' + site]
+
+    #test
+    q1 = "select * from site where region='" + region +\
+        "' and site='" + site + "';"
+    resp = pd.read_sql(q1, db.engine)
+    if resp.shape[0] == 0:
+        return jsonify(error='Unknown site requested.')
+
+    #user auth
+    if request.headers.get('Token') is not None:
+        regsite = authenticate_sites(regsite, token=request.headers['Token'])
+    elif current_user.is_authenticated:
+        regsite = authenticate_sites(regsite, user=current_user.get_id())
+    else:
+        regsite = authenticate_sites(regsite)
+
+    if not regsite:
+        return jsonify(error='This site is private and requires a valid user token.')
+
+    #get specs for best model run so far
+    q2 = "select * from model where region='" + region +\
+        "' and site='" + site + "' and year='" + str(year) +\
+        "' and current_best=1;"
+    best_mod = pd.read_sql(q2, db.engine)
+
+    return jsonify(specs=best_mod.to_dict(orient='records'))
+
+@app.route('/api/model_details_upload', methods=['POST'])
+def model_details_upload():
+
+    #pull in data, format for database entry
+    deets = dict(request.form) #not readable by bulk_insert_mappings
+    deets = pd.DataFrame.from_dict(deets, orient='columns')
+    deets = deets.to_dict('records')[0] #readable by bulk_insert_mappings
+
+    #convert R string booleans to 0 and 1
+    for k in deets:
+        if deets[k] == 'FALSE':
+            deets[k] = 0
+        if deets[k] == 'TRUE':
+            deets[k] = 1
+
+    # #user auth (not needed; user will never run unauthorized model in first place)
+    # regsite = deets['region'] + '_' + deets['site']
+    #
+    # if request.headers.get('Token') is not None:
+    #     regsite = authenticate_sites(regsite, token=request.headers['Token'])
+    # elif current_user.is_authenticated: #will this ever be possible?
+    #     regsite = authenticate_sites(regsite, user=current_user.get_id())
+    # else:
+    #     regsite = authenticate_sites(regsite)
+    #
+    # if not regsite:
+    #     return jsonify(error='This site is private and requires a valid user token.')
+
+    #demote previous best model if it exists
+    d = Model.query.filter(Model.region == deets['region'],
+        Model.site == deets['site'], Model.year == deets['year'],
+        Model.current_best == 1).all()
+
+    if d:
+        for rec in d:
+            rec.current_best = False
+
+    #add new record to model database
+    db.session.bulk_insert_mappings(Model, [deets])
+    db.session.commit()
+
+    return jsonify(callback='success')
+
+@app.route('/api/model_upload', methods=['POST'])
+def model_upload():
+
+    #pull in serialized R data (RDS files) and variable filename component
+    modOut = request.files['modOut']
+    predictions = request.files['predictions']
+    file_id = request.headers.get('file_id')
+
+    #if already a model for this region-site-time, move and rename
+    fnames = os.listdir('shiny/data')
+    cur_time = time.mktime(datetime.now().timetuple())
+    cur_time = str(cur_time)[0:-2]
+    if 'modOut_' + file_id + '.rds' in fnames:
+        os.rename('shiny/data/modOut_' + file_id + '.rds',
+            'shiny/former_best_models/modOut_' + file_id + cur_time +\
+                '.rds')
+        os.rename('shiny/data/predictions_' + file_id + '.rds',
+            'shiny/former_best_models/predictions_' + file_id +\
+                cur_time + '.rds')
+
+    #save new RDS files to shiny data folder
+    modOut.save('shiny/data/modOut_' + file_id + '.rds')
+    predictions.save('shiny/data/predictions_' + file_id + '.rds')
+
+    return jsonify(callback='success')
 
 @app.route('/model')
 def modelgen():

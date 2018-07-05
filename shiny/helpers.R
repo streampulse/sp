@@ -290,13 +290,16 @@ KvQvER_plot = function(mod_out){
             mod_out$fit$daily$K600_daily_mean)
     R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
     plot(mod_out$fit$daily$K600_daily_mean, mod_out$fit$daily$ER_mean,
-        col='darkgreen', ylab='Daily mean ER', xlab='Daily mean K600',
-        bty='l', font.lab=2, cex.axis=0.8, las=1)
+        col='darkgreen', ylab='', xlab='Daily mean K600',
+        bty='l', font.lab=1, cex.axis=0.8, las=1)
+    mtext(expression(paste("Daily mean ER (g O"[2] * " m"^"-2" ~ ")")), side=2,
+        line=2.5)
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
     abline(mod, lty=2, col='gray50', lwd=2)
     plot(mod_out$fit$daily$K600_daily_mean,
-        mod_out$data_daily$discharge.daily,
-        col='purple4', ylab='Daily mean Q', xlab='Daily mean K600',
-        bty='l', font.lab=2, cex.axis=0.8, las=1)
+        log(mod_out$data_daily$discharge.daily),
+        col='purple4', ylab='Daily mean Q (ln cms)', xlab='Daily mean K600',
+        bty='l', font.lab=1, cex.axis=0.8, las=1)
 }
+
