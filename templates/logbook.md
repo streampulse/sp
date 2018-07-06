@@ -1,5 +1,37 @@
 #Mike's Logbook
 
+###thu20180705
+ + updated API code so that incoming models and model details automatically push previous best models and details to relegated status. details remain in table but are no longer used. model objects get moved to a holding folder and are removed on a 1 month schedule.
+ + made fit_model function more customizable in R package
+   + pool_K600, err_obs_iid, err_proc_iid, proc_acor_iid, ode_method, deficit_src now adjustable by the user
+###wed20180704
+ + developed scheme for comparing models, taking into account overall penalty and temporal coverage using piecewise function.
+###tue20180703
+ + developed schemes for penalizing maximum daily K600 and K600-ER correlation using cubic and linear functions, respectively
+###mon20180702
+ + added registration link to homepage
+   + redid layout for link buttons on homepage
+ + logged Q in diag plots
+ + site data now included with downloads
+###thu20180628
+ + built API protocols for uploading model fits and predictions to server
+   + built supporting R code
+ + built API protocols for uploading model details to database
+   + built supporting R code
+ + added SQLAlchemy ORM for model table
+ + simplified model output RDS filenames and Shiny code that calls them
+###wed20180627
+ + updated database and R pipeline so that all model specifications can be tracked and the details of how each "best" model was run will not be lost
+###mon20180625
+ + fixed issue with HOBO parser. unrecognized column
+###thu20180621
+ + added StreamPULSE API functionality so that model spec data can be requested
+###wed20180620
+ + fixed problem in download page on data portal where changes to the date range were not being registered
+ + added model specs table to the database, so we can track the best model for each site and year
+###tue20180619
+ + arranging for AZ's East Canal site to be automatically synced with our database
+   + API call script is ready for when they update the API in a few weeks
 ###mon20180618
  + finished NEON data ingester for nitrate data product
    + water quality data product (with DO) not yet available, but nitrate script will be easily adaptable once it is
@@ -17,7 +49,6 @@
 ###tue20180612
  + fixed issue with occasional "wedges" appearing in O2 diagnostic plots
  + system now ready to receive NC Cole Mill logger files
- + 
 ###mon20180611
  + added units to grab sample overlay dropdown on input viz page
  + widened right plot margins so that large labels don't get cut off
