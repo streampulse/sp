@@ -2621,5 +2621,13 @@ def modelgen():
     sitedict = sorted([tuple(x) for x in dx[['regionsite','name','startdate','enddate']].values], key=lambda tup: tup[1])
     return render_template('model.html',sites=sitedict)
 
+@app.route('/map')
+def site_map():
+
+    site_data = pd.read_csv('static/map/site_table.csv')
+    site_dict = site_data.to_dict('records')
+    
+    return render_template('map.html', site_data=site_dict)
+
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
