@@ -1506,7 +1506,6 @@ def chunker_ingester(df, chunksize=100000):
     #convert directly to dict if small enough, otherwise do it chunkwise
     if n_full_chunks == 0:
         xdict = df.to_dict('records')
-        print xdict
         db.session.bulk_insert_mappings(Data, xdict) #ingest all records
     else:
         for i in xrange(n_full_chunks):
@@ -1880,7 +1879,12 @@ def add_site_permission(user, region, site_list):
     #update the existing user permissions string with new region_site combo(s)
     site_permiss = list(pd.read_sql('select qaqc from user where username="' +\
         user.username + '";', db.engine).qaqc)
-    site_permiss = site_permiss[0] + ',' + regsites
+    
+    if site_permiss[0]:
+        site_permiss = site_permiss[0] + ',' + regsites
+    else:
+        site_permiss = regsites
+
     cx = User.query.filter_by(username=user.username).first()
     cx.qaqc = site_permiss
 
@@ -2104,7 +2108,6 @@ def getgrabvars():
                 grabvarunits.append(v['unit'])
                 continue
 
-    print grabvarunits
     return jsonify(variables=grabvars, varsandunits=grabvarunits)
 
 @app.route('/_getgrabviz', methods=["POST"])
