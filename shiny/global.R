@@ -2,10 +2,15 @@ library(stringr)
 library(RMariaDB)
 library(DBI)
 
+#read in mysql pw
+# conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
+conf = readLines('/home/aaron/sp/config.py')
+ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
+pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
+# pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
+
 #read in site table from mysql
-pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
-con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
-    username='root', password=pw)
+con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 site = dbReadTable(con, "site")
 
 #get list of fitted model names available on server
