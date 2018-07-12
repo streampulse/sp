@@ -32,11 +32,10 @@ shinyServer(function(input, output, session){
     js$getHeight10()
     js$getHeight05()
 
-    viewable_mods = eventReactive(c(input$submit_token, input$input_site,
-        input$input_site2), {
+    viewable_mods = reactive({
 
-        token = input$token_input
-        print(token)
+        input$submit_token
+        token = isolate(input$token_input)
 
         con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
             username='root', password=pw)
@@ -57,9 +56,9 @@ shinyServer(function(input, output, session){
                 paste('Authorized for', length(usersites), 'private sites.')
             })
             updateSelectizeInput(session, 'input_site', choices=sitenames,
-                selected=NULL)
+                selected='', options=list(placeholder='No site selected'))
             updateSelectizeInput(session, 'input_site2', choices=sitenames,
-                selected=NULL)
+                selected='', options=list(placeholder='No site selected'))
         } else {
             if(length(usersites) && usersites == ''){
                 output$token_resp = renderText({
@@ -78,11 +77,20 @@ shinyServer(function(input, output, session){
         return(out)
     })
 
+    observeEvent(input$submit_token, {
+        viewable_mods()
+        # counter = input$hidden_counter
+        # updateTextInput(session, 'hidden_counter', label=NULL,
+        #     value=as.numeric(counter) + 1)
+        counter2 = input$hidden_counter2
+        updateTextInput(session, 'hidden_counter2', label=NULL,
+            value=as.numeric(counter2) + 1)
+    })
+
     observeEvent(input$input_site, {
         v = viewable_mods()
         updateSelectizeInput(session, 'input_year',
             choices=v$siteyears[v$sitenames == input$input_site])
-            # choices=siteyears[sitenames == input$input_site])
     })
 
     update_pg1 = reactive({
@@ -143,7 +151,6 @@ shinyServer(function(input, output, session){
 
         regionsite = input$input_site2
         year = input$input_year2
-        # available_years = siteyears[sitenames == regionsite]
         available_years = v$siteyears[v$sitenames == regionsite]
         legit_year = year %in% available_years
 
@@ -245,49 +252,91 @@ shinyServer(function(input, output, session){
         start = input$range[1]
         end = input$range[2]
 
-        if(!is.null(start) && !is.null(end)){
+        if(input$input_site2 == '' && !is.null(start) && !is.null(end)){
+
+            #all blank plots for the rare case in which someone anonymously
+            #chooses a model, then enters a token.
             output$metab_legend = renderPlot({
-                metab_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$cumul_legend = renderPlot({
-                cumul_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$metab_plot = renderPlot({
-                ts_full = processing_func(fitpred$predictions, st=start,
-                    en=end)
-                par(mar=c(1,4,0,1), oma=rep(0,4))
-                season_ts_func(ts_full, TRUE, st=start, en=end)
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
 
             output$cumul_plot = renderPlot({
-                ts_full = processing_func(fitpred$predictions, st=start,
-                    en=end)
-                par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
-                cumulative_func(ts_full, st=start, en=end)
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
 
             output$O2_legend = renderPlot({
-                O2_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$kernel_legend = renderPlot({
-                kernel_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$O2_plot = renderPlot({
-                par(mar=c(3,4,0,1), oma=rep(0,4))
-                O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
-                    input$O2_brush)
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
 
             output$kernel_plot = renderPlot({
-                ts_full = processing_func(fitpred$predictions, st=start,
-                    en=end)
-                par(mar=c(3,3.5,0,.5), oma=rep(0,4))
-                kernel_func(ts_full, 'Name and Year')
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
+
+        } else {
+            if(!is.null(start) && !is.null(end)){
+                output$metab_legend = renderPlot({
+                    metab_legend()
+                }, height=height05)
+
+                output$cumul_legend = renderPlot({
+                    cumul_legend()
+                }, height=height05)
+
+                output$metab_plot = renderPlot({
+                    ts_full = processing_func(fitpred$predictions, st=start,
+                        en=end)
+                    par(mar=c(1,4,0,1), oma=rep(0,4))
+                    season_ts_func(ts_full, TRUE, st=start, en=end)
+                }, height=height35)
+
+                output$cumul_plot = renderPlot({
+                    ts_full = processing_func(fitpred$predictions, st=start,
+                        en=end)
+                    par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
+                    cumulative_func(ts_full, st=start, en=end)
+                }, height=height35)
+
+                output$O2_legend = renderPlot({
+                    O2_legend()
+                }, height=height05)
+
+                output$kernel_legend = renderPlot({
+                    kernel_legend()
+                }, height=height05)
+
+                output$O2_plot = renderPlot({
+                    par(mar=c(3,4,0,1), oma=rep(0,4))
+                    O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
+                        input$O2_brush)
+                }, height=height35)
+
+                output$kernel_plot = renderPlot({
+                    ts_full = processing_func(fitpred$predictions, st=start,
+                        en=end)
+                    par(mar=c(3,3.5,0,.5), oma=rep(0,4))
+                    kernel_func(ts_full, 'Name and Year')
+                }, height=height35)
+            }
         }
 
     })
