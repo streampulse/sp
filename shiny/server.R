@@ -32,70 +32,70 @@ shinyServer(function(input, output, session){
     js$getHeight10()
     js$getHeight05()
 
-    # viewable_mods = eventReactive(input$token_input, {
-    #
-    #     token = input$token_input
-    #
-    #     con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
-    #         username='root', password=pw)
-    #
-    #     res = dbSendQuery(con,
-    #         paste0("SELECT qaqc FROM user WHERE token = '", token, "';"))
-    #     usersites = dbFetch(res)$qaqc
-    #     dbClearResult(res)
-    #
-    #     # sn = get('sitenames', envir=globalenv())
-    #
-    #     if(isTruthy(usersites)){
-    #         usersites = strsplit(usersites, ',')[[1]]
-    #         authed_sites = c(sitenames_public, usersites)
-    #         modelnames_authed = intersect(sitenmyr_all[,1], authed_sites)
-    #         sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_authed,]
-    #         sitenames = sitenmyr[,1]
-    #         siteyears = sitenmyr[,2]
-    #         # assign('sitenames', sitenmyr[,1], envir=globalenv())
-    #         # assign('siteyears', sitenmyr[,2], envir=globalenv())
-    #         output$token_resp = renderText({
-    #             paste('Authorized for', length(usersites), 'private sites.')
-    #         })
-    #     } else {
-    #         if(length(usersites) && usersites == ''){
-    #             output$token_resp = renderText({
-    #                 'No private site permissions\nassociated with this token.'
-    #             })
-    #         } else {
-    #             output$token_resp = renderText({
-    #                 'Invalid token.'
-    #             })
-    #         }
-    #     }
-    #
-    #     dbDisconnect(con)
-    #
-    #     return(list(sitenames=sitenames, siteyears=siteyears))
-    # })
+    viewable_mods = eventReactive(c(input$submit_token, input$input_site,
+        input$input_site2), {
 
-    # observeEvent(input$input_site, {
-    observe({
-        # print(input$input_site)
-        # v = viewable_mods()
-        # print(v$siteyears[v$sitenames == input$input_site])
+        token = input$token_input
+        print(token)
+
+        con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
+            username='root', password=pw)
+
+        res = dbSendQuery(con,
+            paste0("SELECT qaqc FROM user WHERE token = '", token, "';"))
+        usersites = dbFetch(res)$qaqc
+        dbClearResult(res)
+
+        if(isTruthy(usersites)){
+            usersites = strsplit(usersites, ',')[[1]]
+            authed_sites = c(sitenames_public, usersites)
+            modelnames_authed = intersect(sitenmyr_all[,1], authed_sites)
+            sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_authed,]
+            sitenames = sitenmyr[,1]
+            siteyears = sitenmyr[,2]
+            output$token_resp = renderText({
+                paste('Authorized for', length(usersites), 'private sites.')
+            })
+            updateSelectizeInput(session, 'input_site', choices=sitenames,
+                selected=NULL)
+            updateSelectizeInput(session, 'input_site2', choices=sitenames,
+                selected=NULL)
+        } else {
+            if(length(usersites) && usersites == ''){
+                output$token_resp = renderText({
+                    'No private site permissions\nassociated with this token.'
+                })
+            } else {
+                output$token_resp = renderText({
+                    'Invalid token.'
+                })
+            }
+        }
+
+        dbDisconnect(con)
+
+        out = list(sitenames=sitenames, siteyears=siteyears)
+        return(out)
+    })
+
+    observeEvent(input$input_site, {
+        v = viewable_mods()
         updateSelectizeInput(session, 'input_year',
-            # choices=v$siteyears[v$sitenames == input$input_site])
-            choices=siteyears[sitenames == input$input_site])
+            choices=v$siteyears[v$sitenames == input$input_site])
+            # choices=siteyears[sitenames == input$input_site])
     })
 
     update_pg1 = reactive({
 
-        # v = viewable_mods()
+        v = viewable_mods()
 
         regionsite = input$input_site
         year = input$input_year
 
         #input_year depends on input_site, but server must call to ui and
         #hear back before year can update, so the following is needed:
-        legit_year = year %in% siteyears[sitenames == input$input_site]
-        # legit_year = year %in% v$siteyears[v$sitenames == input$input_site]
+        # legit_year = year %in% siteyears[sitenames == input$input_site]
+        legit_year = year %in% v$siteyears[v$sitenames == input$input_site]
 
         if(regionsite != '' && year != '' && legit_year){
             modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
@@ -139,12 +139,12 @@ shinyServer(function(input, output, session){
 
     observeEvent(input$input_site2, {
 
-        # v = viewable_mods()
+        v = viewable_mods()
 
         regionsite = input$input_site2
         year = input$input_year2
-        available_years = siteyears[sitenames == regionsite]
-        # available_years = v$siteyears[v$sitenames == regionsite]
+        # available_years = siteyears[sitenames == regionsite]
+        available_years = v$siteyears[v$sitenames == regionsite]
         legit_year = year %in% available_years
 
         if(regionsite != ''){
@@ -169,12 +169,12 @@ shinyServer(function(input, output, session){
         input$hidden_counter
     }, {
 
-        # v = viewable_mods()
+        v = viewable_mods()
 
         year = input$input_year2
         regionsite = input$input_site2
-        available_years = siteyears[sitenames == regionsite]
-        # available_years = v$siteyears[v$sitenames == regionsite]
+        # available_years = siteyears[sitenames == regionsite]
+        available_years = v$siteyears[v$sitenames == regionsite]
         legit_year = year %in% available_years
 
         if(year != '' && legit_year){

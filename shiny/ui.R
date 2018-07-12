@@ -57,11 +57,12 @@ shinyUI(
                         placeholder='Enter token here', width='300px')
                 ),
                 div(style='display: inline-block',
-                    submitButton('Submit')
+                    actionButton('submit_token', 'Submit')
                 ),
                 br(),
                 div(style='width:300px',
-                    conditionalPanel(condition="input.token_input != ''",
+                    conditionalPanel(condition=paste0("input.token_input != ''",
+                        " && input.submit_token > 0"),
                         verbatimTextOutput('token_resp')
                     )
                 ),

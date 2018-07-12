@@ -942,9 +942,6 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
 
 def authenticate_sites(sites,user=None,token=None):
 
-    #there's some weird legacy stuff in this function. worth cleaning some day
-    #do we ever have to validate multiple sites at once? maybe in download...
-
     ss = []
     for site in sites:
         r,s = site.split("_")
@@ -952,12 +949,13 @@ def authenticate_sites(sites,user=None,token=None):
 
     #get user id (if necessary) and sites they have access to
     qs = "or ".join(ss)
-    xx = pd.read_sql("select region, site, embargo, addDate, site.by from site where "+qs, db.engine)
+    xx = pd.read_sql("select region, site, embargo, addDate, site.by from site where " + qs,
+        db.engine)
 
     if token is not None:
         tt = pd.read_sql("select * from user where token='" + token + "'",
             db.engine)
-        if(len(tt) == 1): #this should never be false
+        if(len(tt) == 1):
             user = str(tt.id[0])
         auth_sites = tt.qaqc[0].split(',')
     elif user is not None:
@@ -2064,7 +2062,7 @@ def getcsv():
 # @login_required
 def visualize():
     vv = pd.read_sql("select distinct region, site, variable from data", db.engine)
-    sites = [x[0]+"_"+x[1] for x in zip(vv.region,vv.site)]
+    sites = list(set([x[0]+"_"+x[1] for x in zip(vv.region,vv.site)]))
     if current_user.is_authenticated:
         sites = authenticate_sites(sites, user=current_user.get_id())
     else:
