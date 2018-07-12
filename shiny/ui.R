@@ -47,28 +47,31 @@ shinyUI(
         # ),
         navbarPage(title=p(strong('Diagnostics')), inverse=TRUE,
             tabPanel('User Authentication',
-                span(paste('Use this tool to visualize models fit by StreamPULSE',
+                p(paste('Use this tool to visualize models fit by StreamPULSE',
                     'users. The best available model fits and metabolism',
-                    'estimates for each site and calendar year are stored here.',
-                    'To view private results, enter a valid user token.')),
-                br(), br(),
-                div(style='display: inline-block',
+                    'estimates for each site and calendar year are stored here.')),
+                p('To view private results, enter a valid user token.'),
+                br(),
+                div(style='display: inline-block; vertical-align:top',
                     textInput('token_input', label=NULL, value='',
                         placeholder='Enter token here', width='300px')
                 ),
-                div(style='display: inline-block',
+                div(style='display: inline-block; vertical-align:top',
                     actionButton('submit_token', 'Submit')
                 ),
                 br(),
                 div(style='width:300px',
                     conditionalPanel(condition=paste0("input.token_input != ''",
-                        " && input.submit_token > 0"),
+                        " && input.submit_token > 0 && input.hidden_bool == 'T'"),
                         verbatimTextOutput('token_resp')
                     )
                 ),
                 span('If you do not have your token, email Mike at ',
                     a('streampuse.info@gmail.com',
-                        href='mailto:streampulse.info@gmail.com'), '.')
+                        href='mailto:streampulse.info@gmail.com'), '.'),
+                div(style='display:none;',
+                    textInput('hidden_bool', label=NULL, value='F')
+                )
             ),
             tabPanel('Model Performance',
                 sidebarLayout(

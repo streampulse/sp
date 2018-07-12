@@ -78,10 +78,9 @@ shinyServer(function(input, output, session){
     })
 
     observeEvent(input$submit_token, {
+        print('g')
         viewable_mods()
-        # counter = input$hidden_counter
-        # updateTextInput(session, 'hidden_counter', label=NULL,
-        #     value=as.numeric(counter) + 1)
+        updateTextInput(session, 'hidden_bool', label=NULL, value='T')
         counter2 = input$hidden_counter2
         updateTextInput(session, 'hidden_counter2', label=NULL,
             value=as.numeric(counter2) + 1)
