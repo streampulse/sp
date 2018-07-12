@@ -62,16 +62,13 @@ shinyUI(
                 br(),
                 div(style='width:300px',
                     conditionalPanel(condition=paste0("input.token_input != ''",
-                        " && input.submit_token > 0 && input.hidden_bool == 'T'"),
+                        " && input.submit_token > 0"),
                         verbatimTextOutput('token_resp')
                     )
                 ),
                 span('If you do not have your token, email Mike at ',
                     a('streampuse.info@gmail.com',
-                        href='mailto:streampulse.info@gmail.com'), '.'),
-                div(style='display:none;',
-                    textInput('hidden_bool', label=NULL, value='F')
-                )
+                        href='mailto:streampulse.info@gmail.com'), '.')
             ),
             tabPanel('Model Performance',
                 sidebarLayout(

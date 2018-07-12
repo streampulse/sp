@@ -65,9 +65,11 @@ shinyServer(function(input, output, session){
                     'No private site permissions\nassociated with this token.'
                 })
             } else {
-                output$token_resp = renderText({
-                    'Invalid token.'
-                })
+                if(input$token_input != ''){
+                    output$token_resp = renderText({
+                        'Invalid token.'
+                    })
+                }
             }
         }
 
@@ -78,9 +80,7 @@ shinyServer(function(input, output, session){
     })
 
     observeEvent(input$submit_token, {
-        print('g')
         viewable_mods()
-        updateTextInput(session, 'hidden_bool', label=NULL, value='T')
         counter2 = input$hidden_counter2
         updateTextInput(session, 'hidden_counter2', label=NULL,
             value=as.numeric(counter2) + 1)
