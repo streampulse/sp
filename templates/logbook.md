@@ -1,5 +1,12 @@
 #Mike's Logbook
 
+###wed20180711
+ + rerunning all models without interpolating gaps > 3 hours
+ + building user auth infrastructure for diagnostic app
+###tue20180710
+ + synthesizing watershed data and model results for all streampulse sites for Jim's paper
+###fri20180706
+ + learned basics of Leaflet for interactive mapmaking. Seems to be the only way we can avoid the continent-duplication-at-full-zoomout issue, which seems to be common to every user-friendly mapmaking platform in existence (nearly all of which appear to be based on the google engine)
 ###thu20180705
  + updated API code so that incoming models and model details automatically push previous best models and details to relegated status. details remain in table but are no longer used. model objects get moved to a holding folder and are removed on a 1 month schedule.
  + made fit_model function more customizable in R package

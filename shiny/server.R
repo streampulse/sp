@@ -32,19 +32,78 @@ shinyServer(function(input, output, session){
     js$getHeight10()
     js$getHeight05()
 
-    observe({
+    viewable_mods = reactive({
+
+        input$submit_token
+        token = isolate(input$token_input)
+
+        con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
+            username='root', password=pw)
+
+        res = dbSendQuery(con,
+            paste0("SELECT qaqc FROM user WHERE token = '", token, "';"))
+        usersites = dbFetch(res)$qaqc
+        dbClearResult(res)
+
+        if(isTruthy(usersites)){
+            usersites = strsplit(usersites, ',')[[1]]
+            authed_sites = c(sitenames_public, usersites)
+            modelnames_authed = intersect(sitenmyr_all[,1], authed_sites)
+            sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_authed,]
+            sitenames = sitenmyr[,1]
+            siteyears = sitenmyr[,2]
+            output$token_resp = renderText({
+                paste('Authorized for', length(usersites), 'private sites.')
+            })
+            updateSelectizeInput(session, 'input_site', choices=sitenames,
+                selected='', options=list(placeholder='No site selected'))
+            updateSelectizeInput(session, 'input_site2', choices=sitenames,
+                selected='', options=list(placeholder='No site selected'))
+        } else {
+            if(length(usersites) && usersites == ''){
+                output$token_resp = renderText({
+                    'No private site permissions\nassociated with this token.'
+                })
+            } else {
+                output$token_resp = renderText({
+                    'Invalid token.'
+                })
+            }
+        }
+
+        dbDisconnect(con)
+
+        out = list(sitenames=sitenames, siteyears=siteyears)
+        return(out)
+    })
+
+    observeEvent(input$submit_token, {
+        viewable_mods()
+        # counter = input$hidden_counter
+        # updateTextInput(session, 'hidden_counter', label=NULL,
+        #     value=as.numeric(counter) + 1)
+        counter2 = input$hidden_counter2
+        updateTextInput(session, 'hidden_counter2', label=NULL,
+            value=as.numeric(counter2) + 1)
+    })
+
+    observeEvent(input$input_site, {
+        v = viewable_mods()
         updateSelectizeInput(session, 'input_year',
-            choices=siteyears[sitenames == input$input_site])
+            choices=v$siteyears[v$sitenames == input$input_site])
     })
 
     update_pg1 = reactive({
+
+        v = viewable_mods()
 
         regionsite = input$input_site
         year = input$input_year
 
         #input_year depends on input_site, but server must call to ui and
         #hear back before year can update, so the following is needed:
-        legit_year = year %in% siteyears[sitenames == input$input_site]
+        # legit_year = year %in% siteyears[sitenames == input$input_site]
+        legit_year = year %in% v$siteyears[v$sitenames == input$input_site]
 
         if(regionsite != '' && year != '' && legit_year){
             modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
@@ -88,9 +147,11 @@ shinyServer(function(input, output, session){
 
     observeEvent(input$input_site2, {
 
+        v = viewable_mods()
+
         regionsite = input$input_site2
         year = input$input_year2
-        available_years = siteyears[sitenames == regionsite]
+        available_years = v$siteyears[v$sitenames == regionsite]
         legit_year = year %in% available_years
 
         if(regionsite != ''){
@@ -114,9 +175,13 @@ shinyServer(function(input, output, session){
         input$input_year2
         input$hidden_counter
     }, {
+
+        v = viewable_mods()
+
         year = input$input_year2
         regionsite = input$input_site2
-        available_years = siteyears[sitenames == regionsite]
+        # available_years = siteyears[sitenames == regionsite]
+        available_years = v$siteyears[v$sitenames == regionsite]
         legit_year = year %in% available_years
 
         if(year != '' && legit_year){
@@ -187,49 +252,91 @@ shinyServer(function(input, output, session){
         start = input$range[1]
         end = input$range[2]
 
-        if(!is.null(start) && !is.null(end)){
+        if(input$input_site2 == '' && !is.null(start) && !is.null(end)){
+
+            #all blank plots for the rare case in which someone anonymously
+            #chooses a model, then enters a token.
             output$metab_legend = renderPlot({
-                metab_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$cumul_legend = renderPlot({
-                cumul_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$metab_plot = renderPlot({
-                ts_full = processing_func(fitpred$predictions, st=start,
-                    en=end)
-                par(mar=c(1,4,0,1), oma=rep(0,4))
-                season_ts_func(ts_full, TRUE, st=start, en=end)
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
 
             output$cumul_plot = renderPlot({
-                ts_full = processing_func(fitpred$predictions, st=start,
-                    en=end)
-                par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
-                cumulative_func(ts_full, st=start, en=end)
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
 
             output$O2_legend = renderPlot({
-                O2_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$kernel_legend = renderPlot({
-                kernel_legend()
+                defpar = par(mar=rep(0,4), oma=rep(0,4))
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
             output$O2_plot = renderPlot({
-                par(mar=c(3,4,0,1), oma=rep(0,4))
-                O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
-                    input$O2_brush)
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
 
             output$kernel_plot = renderPlot({
-                ts_full = processing_func(fitpred$predictions, st=start,
-                    en=end)
-                par(mar=c(3,3.5,0,.5), oma=rep(0,4))
-                kernel_func(ts_full, 'Name and Year')
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
+
+        } else {
+            if(!is.null(start) && !is.null(end)){
+                output$metab_legend = renderPlot({
+                    metab_legend()
+                }, height=height05)
+
+                output$cumul_legend = renderPlot({
+                    cumul_legend()
+                }, height=height05)
+
+                output$metab_plot = renderPlot({
+                    ts_full = processing_func(fitpred$predictions, st=start,
+                        en=end)
+                    par(mar=c(1,4,0,1), oma=rep(0,4))
+                    season_ts_func(ts_full, TRUE, st=start, en=end)
+                }, height=height35)
+
+                output$cumul_plot = renderPlot({
+                    ts_full = processing_func(fitpred$predictions, st=start,
+                        en=end)
+                    par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
+                    cumulative_func(ts_full, st=start, en=end)
+                }, height=height35)
+
+                output$O2_legend = renderPlot({
+                    O2_legend()
+                }, height=height05)
+
+                output$kernel_legend = renderPlot({
+                    kernel_legend()
+                }, height=height05)
+
+                output$O2_plot = renderPlot({
+                    par(mar=c(3,4,0,1), oma=rep(0,4))
+                    O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
+                        input$O2_brush)
+                }, height=height35)
+
+                output$kernel_plot = renderPlot({
+                    ts_full = processing_func(fitpred$predictions, st=start,
+                        en=end)
+                    par(mar=c(3,3.5,0,.5), oma=rep(0,4))
+                    kernel_func(ts_full, 'Name and Year')
+                }, height=height35)
+            }
         }
 
     })

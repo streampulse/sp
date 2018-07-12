@@ -942,9 +942,6 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
 
 def authenticate_sites(sites,user=None,token=None):
 
-    #there's some weird legacy stuff in this function. worth cleaning some day
-    #do we ever have to validate multiple sites at once? maybe in download...
-
     ss = []
     for site in sites:
         r,s = site.split("_")
@@ -952,12 +949,13 @@ def authenticate_sites(sites,user=None,token=None):
 
     #get user id (if necessary) and sites they have access to
     qs = "or ".join(ss)
-    xx = pd.read_sql("select region, site, embargo, addDate, site.by from site where "+qs, db.engine)
+    xx = pd.read_sql("select region, site, embargo, addDate, site.by from site where " + qs,
+        db.engine)
 
     if token is not None:
         tt = pd.read_sql("select * from user where token='" + token + "'",
             db.engine)
-        if(len(tt) == 1): #this should never be false
+        if(len(tt) == 1):
             user = str(tt.id[0])
         auth_sites = tt.qaqc[0].split(',')
     elif user is not None:
@@ -1506,7 +1504,6 @@ def chunker_ingester(df, chunksize=100000):
     #convert directly to dict if small enough, otherwise do it chunkwise
     if n_full_chunks == 0:
         xdict = df.to_dict('records')
-        print xdict
         db.session.bulk_insert_mappings(Data, xdict) #ingest all records
     else:
         for i in xrange(n_full_chunks):
@@ -1880,7 +1877,12 @@ def add_site_permission(user, region, site_list):
     #update the existing user permissions string with new region_site combo(s)
     site_permiss = list(pd.read_sql('select qaqc from user where username="' +\
         user.username + '";', db.engine).qaqc)
-    site_permiss = site_permiss[0] + ',' + regsites
+    
+    if site_permiss[0]:
+        site_permiss = site_permiss[0] + ',' + regsites
+    else:
+        site_permiss = regsites
+
     cx = User.query.filter_by(username=user.username).first()
     cx.qaqc = site_permiss
 
@@ -2060,7 +2062,7 @@ def getcsv():
 # @login_required
 def visualize():
     vv = pd.read_sql("select distinct region, site, variable from data", db.engine)
-    sites = [x[0]+"_"+x[1] for x in zip(vv.region,vv.site)]
+    sites = list(set([x[0]+"_"+x[1] for x in zip(vv.region,vv.site)]))
     if current_user.is_authenticated:
         sites = authenticate_sites(sites, user=current_user.get_id())
     else:
@@ -2104,7 +2106,6 @@ def getgrabvars():
                 grabvarunits.append(v['unit'])
                 continue
 
-    print grabvarunits
     return jsonify(variables=grabvars, varsandunits=grabvarunits)
 
 @app.route('/_getgrabviz', methods=["POST"])
@@ -2620,6 +2621,14 @@ def modelgen():
     dx.name = dx.region+" - "+dx.name
     sitedict = sorted([tuple(x) for x in dx[['regionsite','name','startdate','enddate']].values], key=lambda tup: tup[1])
     return render_template('model.html',sites=sitedict)
+
+@app.route('/map')
+def site_map():
+
+    site_data = pd.read_csv('static/map/site_table.csv')
+    site_dict = site_data.to_dict('records')
+    
+    return render_template('map.html', site_data=site_dict)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -46,6 +46,30 @@ shinyUI(
         #     # 'Upload'))
         # ),
         navbarPage(title=p(strong('Diagnostics')), inverse=TRUE,
+            tabPanel('User Authentication',
+                span(paste('Use this tool to visualize models fit by StreamPULSE',
+                    'users. The best available model fits and metabolism',
+                    'estimates for each site and calendar year are stored here.',
+                    'To view private results, enter a valid user token.')),
+                br(), br(),
+                div(style='display: inline-block',
+                    textInput('token_input', label=NULL, value='',
+                        placeholder='Enter token here', width='300px')
+                ),
+                div(style='display: inline-block',
+                    actionButton('submit_token', 'Submit')
+                ),
+                br(),
+                div(style='width:300px',
+                    conditionalPanel(condition=paste0("input.token_input != ''",
+                        " && input.submit_token > 0"),
+                        verbatimTextOutput('token_resp')
+                    )
+                ),
+                span('If you do not have your token, email Mike at ',
+                    a('streampuse.info@gmail.com',
+                        href='mailto:streampulse.info@gmail.com'), '.')
+            ),
             tabPanel('Model Performance',
                 sidebarLayout(
                     sidebarPanel(
@@ -116,7 +140,7 @@ shinyUI(
                             selectInput('input_site2', label='Select site',
                                 choices=c('No site selected' = '',
                                     unique(sitenames)),
-                                selected='', selectize=TRUE, width='150px')
+                                selected='', selectize=TRUE, width='170px')
                         ),
                             # div(align='left', style=paste0(
                             #     'margin:0; padding:0; top:0px; left:0px; bottom:0px; right:0px;'),
@@ -129,7 +153,7 @@ shinyUI(
                                 # htmlOutput('select_time')
                                 selectInput('input_year2', label='Select year',
                                     choices=c('No year selected' = ''),
-                                    selectize=TRUE, width='150px')
+                                    selectize=TRUE, width='100px')
                             )
                         ),
                         div(align='center', style=paste0(
