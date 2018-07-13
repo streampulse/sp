@@ -2575,7 +2575,7 @@ def model_upload():
     #pull in serialized R data (RDS files) and variable filename component
     modOut = request.files['modOut']
     predictions = request.files['predictions']
-    file_id = request.headers.get('file_id')
+    file_id = request.headers.get('fileid')
 
     #if already a model for this region-site-time, move and rename
     fnames = os.listdir('shiny/data')

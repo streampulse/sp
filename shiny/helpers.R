@@ -62,6 +62,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
         xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
     mtext(expression(paste("O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')), side=2,
         line=2.5, font=2)
+    #split up polygon plotting into chunks separated by NaN sections
     polygon(x=c(doy, rev(doy)),
         y=c(gpplo, rev(gppup)), col=adjustcolor('red', alpha.f=0.3),
         border=NA)
@@ -249,6 +250,7 @@ O2_plot = function(mod_out, st, en, brush){
         xaxs='i', yaxs='i', xlim=c(xmin, xmax))
     # axis(2, tcl=-0.2, hadj=.5, cex=0.8)
     # polygon(x=c(mod_out$data$solar.time, rev(mod_out$data$solar.time)),
+    print(mod_out$data$DO.obs)
     polygon(x=c(ustamp, rev(ustamp)),
         y=c(mod_out$data$DO.obs, rep(0, length(mod_out$data$DO.obs))),
         co='gray70', border='gray70')

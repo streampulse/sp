@@ -3,8 +3,8 @@ library(RMariaDB)
 library(DBI)
 
 #read in mysql pw
-# conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
-conf = readLines('/home/aaron/sp/config.py')
+conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
+# conf = readLines('/home/aaron/sp/config.py')
 ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
 pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
 # pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
@@ -21,6 +21,10 @@ sitenmyr_all = str_match(modnames, 'modOut_(\\w+_\\w+)_([0-9]{4})')[,2:3]
 #isolate those that are public (no embargo or past embargo period)
 public_sites = Sys.time() - site$addDate > site$embargo * 365
 site = site[public_sites,c('region','site')]
+
+###################
+site = rbind(site, data.frame(region='GG', site='YOYO'))
+
 sitenames_public = paste(site[,1], site[,2], sep='_')
 
 #filter available models so that only public ones can be viewed

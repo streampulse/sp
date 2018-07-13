@@ -46,6 +46,7 @@ shinyUI(
         #     # 'Upload'))
         # ),
         navbarPage(title=p(strong('Diagnostics')), inverse=TRUE,
+            windowTitle='StreamPULSE Diagnostics',
             tabPanel('User Authentication',
                 p(paste('Use this tool to visualize models fit by StreamPULSE',
                     'users. The best available model fits and metabolism',

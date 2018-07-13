@@ -2,7 +2,8 @@
 
 ###wed20180711
  + rerunning all models without interpolating gaps > 3 hours
- + building user auth infrastructure for diagnostic app
+ + built user auth infrastructure for diagnostic app
+ + fixed browser window title for diag app
 ###tue20180710
  + synthesizing watershed data and model results for all streampulse sites for Jim's paper
 ###fri20180706
