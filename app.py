@@ -2042,7 +2042,7 @@ def getcsv():
         ", contact, contactEmail from site where concat(region, '_'," +\
         " site) in ('" + "','".join(sitenm) + "');"
     sitedata = pd.read_sql(sitequery, db.engine)
-    sitedata.to_csv(tmp + '/' + 'siteData.csv', index=False)
+    sitedata.to_csv(tmp + '/' + 'siteData.csv', index=False, encoding='utf-8')
 
     #zip all files in temp dir as new zip dir, pass on to user
     writefiles = os.listdir(tmp) # list files in the temp directory
