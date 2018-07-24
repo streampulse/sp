@@ -1877,7 +1877,7 @@ def add_site_permission(user, region, site_list):
     #update the existing user permissions string with new region_site combo(s)
     site_permiss = list(pd.read_sql('select qaqc from user where username="' +\
         user.username + '";', db.engine).qaqc)
-    
+
     if site_permiss[0]:
         site_permiss = site_permiss[0] + ',' + regsites
     else:
@@ -2625,10 +2625,18 @@ def modelgen():
 @app.route('/map')
 def site_map():
 
-    site_data = pd.read_csv('static/map/site_table.csv')
+    core_sites = pd.read_csv('static/sitelist.csv')
+    core_sites = list(core_sites['REGIONID'] + '_' + core_sites['SITEID'])
+
+    site_data = pd.read_sql('select * from site;', db.engine)
+    site_data.addDate = site_data.addDate.astype('str')
+    # print site_data.dtypes
     site_dict = site_data.to_dict('records')
-    
-    return render_template('map.html', site_data=site_dict)
+
+    # print site_dict
+
+    return render_template('map.html', site_data=site_dict,
+        core_sites=core_sites)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
