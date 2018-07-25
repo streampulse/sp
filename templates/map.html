@@ -21,7 +21,7 @@
         padding: 6px 8px;
         font: 14px/16px Arial, Helvetica, sans-serif;
         background: white;
-        background: rgba(255,255,255,0.8);
+        background: rgba(255,255,255,1.0);
         box-shadow: 0 0 15px rgba(0,0,0,0.2);
         border-radius: 5px;
     }
@@ -38,7 +38,7 @@
         height: 18px;
         float: left;
         margin-right: 8px;
-        opacity: 0.7;
+        opacity: 1.0;
     }
   </style>
 
@@ -49,20 +49,23 @@
 
   <script>
 
+    //data passed from Flask
     var site_data = {{ site_data|tojson|safe }};
     var core_sites = {{ core_sites|tojson|safe }};
     var powell_sites = {{ powell_sites|tojson|safe }};
 
-    var spmap = L.map('mapid').setView([36.0715, -79.0968], 2.5);
+    //create map base
+    var spmap = L.map('mapid', {zoomSnap: 0.5}).setView([50, -10], 2.5);
 
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
       attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
       maxZoom: 17,
-      minZoom: 2,
+      minZoom: 2.5,
       id: 'mapbox.outdoors',
       accessToken: 'pk.eyJ1IjoidmxhaG0iLCJhIjoiY2pqYWQwbXpjMGFuODNxcWh6bWE5ZWZvMiJ9.xvVhktbooqGTJkK0sGpiow'
     }).addTo(spmap);
 
+    //define marker types (not including small circles for powell sites)
     var blueMarker = L.VectorMarkers.icon({
       icon: 'circle',
       markerColor: '#0051ff'
@@ -76,8 +79,10 @@
       markerColor: 'gray'
     });
 
+    //for non-powell sites
     for (var p in site_data){
 
+      //replace nulls with 'N/A'
       var pp = site_data[p]
       for (attribute in pp){
         if (pp[attribute] == null){
@@ -85,6 +90,7 @@
         }
       }
 
+      //determine which sites are still embargoed (not public)
       var currentdate = new Date();
 
       var regex = /(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}/;
@@ -97,6 +103,8 @@
 
       embargo_expired = (currentdate - add_date)/1000 > pp.embargo * 365 * 24 *
         60 * 60;
+
+      //assign markers according to site type
       if (! embargo_expired){
         var marker = L.marker([pp.latitude, pp.longitude], {
           icon: grayMarker, title: pp.region + "_" + pp.site
@@ -111,12 +119,14 @@
         }).addTo(spmap);
       }
 
+      //for labels attached to each marker
       // marker.bindTooltip("Test Label", {
       //   permanent: true,
       //   direction: 'bottom',
       //   opacity: 0.1
       // });
 
+      //popup text when a user clicks on a marker
       marker.bindPopup(
         "<b>Site Name: </b>" + pp.name + "<br>" +
         "<b>Site Code: </b>" + pp.region + "_" + pp.site + "<br>" +
@@ -127,19 +137,6 @@
         "<b>Contact Email: </b>" + pp.contactEmail + "<br>" +
         "<b>USGS Gage ID: </b>" + pp.usgs + "<br>"
       );
-    }
-
-    //powell center synthesis sites
-    for (var p in powell_sites){
-      var pp = powell_sites[p]
-      var circle = L.circleMarker([pp.lat, pp.lon], {
-        color: '#474863',
-        weight: 2,
-        fillColor: '#61b876',
-        fillOpacity: 1.0,
-        radius: 5
-        // title: pp.site_name
-      }).addTo(spmap);
     }
 
     //mapclick listener that creates a latlong popup when clicking baselayer
@@ -157,14 +154,35 @@
     legend.onAdd = function (spmap) {
 
         var div = L.DomUtil.create('div', 'info legend');
+        div.innerHTML += '<i class="legend" style="background: #white; height=50px; width=50px"></i><strong>Site Type</strong><br>';
         div.innerHTML += '<i class="legend" style="background: #0051ff; height=50px; width=50px"></i>Core (public)<br>';
         div.innerHTML += '<i class="legend" style="background: #8bc3f6; height=50px; width=50px"></i>Leveraged (public)<br>';
         div.innerHTML += '<i class="legend" style="background: gray; height=50px; width=50px"></i>Leveraged (embargoed)<br>';
+        div.innerHTML += '<i class="legend" style="background: #61b876; height=50px; width=50px"></i>Powell Center Synthesis<br>';
 
         return div;
     };
 
     legend.addTo(spmap);
+
+    //add powell center synthesis sites
+    for (var p in powell_sites){
+      var pp = powell_sites[p]
+      var circle = L.circleMarker([pp.lat, pp.lon], {
+        color: '#474863',
+        weight: 1,
+        fillColor: '#61b876',
+        fillOpacity: 1.0,
+        radius: 5
+      }).addTo(spmap);
+
+      circle.bindPopup(
+        "<b>Site Name: </b>" + pp.site_name + "<br>" +
+        "<b>Lat/Long: </b>" + pp.lat.toFixed(4) + "/" + pp.lon.toFixed(4) +
+          "<br>" +
+        "<b>Source: </b>" + '<em>Publication pending</em>' + "<br>"
+      );
+    }
 
   </script>
 
