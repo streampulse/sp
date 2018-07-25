@@ -1,5 +1,4 @@
 spv2code
-*.csv
 *.dat
 *.pyc
 static/img/*

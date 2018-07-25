@@ -1,5 +1,12 @@
 #Mike's Logbook
 
+###wed20180718
+ + fixed encoding error (ASCII instead of utf-8) in download tool
+###20180713-18
+ + synthesis of streampulse metabolism and watershed data
+###thu20180712
+ + updated package (v 0.0.0.9008) so input data arent automatically interpolated
+ + extended interpolation options to the user
 ###wed20180711
  + rerunning all models without interpolating gaps > 3 hours
  + building user auth infrastructure for diagnostic app

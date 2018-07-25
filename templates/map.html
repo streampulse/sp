@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 
+  <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
   integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
   crossorigin=""/>
@@ -10,6 +12,36 @@
   integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw=="
   crossorigin=""></script>
 
+  <!-- additional leaflet graphics (some depend on font-awesome) -->
+  <link rel="stylesheet" href="/static/css/leaflet-vector-markers.css">
+  <script src="/static/js/leaflet-vector-markers.js"></script>
+
+  <style type="text/css">
+    .info {
+        padding: 6px 8px;
+        font: 14px/16px Arial, Helvetica, sans-serif;
+        background: white;
+        background: rgba(255,255,255,1.0);
+        box-shadow: 0 0 15px rgba(0,0,0,0.2);
+        border-radius: 5px;
+    }
+    .info h4 {
+        margin: 0 0 5px;
+        color: #777;
+    }
+    .legend {
+        line-height: 18px;
+        color: #555;
+    }
+    .legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 1.0;
+    }
+  </style>
+
 </head>
 <body>
 
@@ -17,51 +49,140 @@
 
   <script>
 
+    //data passed from Flask
     var site_data = {{ site_data|tojson|safe }};
-    console.log(site_data);
+    var core_sites = {{ core_sites|tojson|safe }};
+    var powell_sites = {{ powell_sites|tojson|safe }};
 
-    var mymap = L.map('mapid').setView([36.0715, -79.0968], 2.5);
-    // var mymap = L.map('mapid').setView([51.505, -0.09], 2.5);
+    //create map base
+    var spmap = L.map('mapid', {zoomSnap: 0.5}).setView([50, -10], 2.5);
 
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
       attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-      maxZoom: 18,
+      maxZoom: 17,
       minZoom: 2.5,
-      id: 'mapbox.streets',
+      id: 'mapbox.outdoors',
       accessToken: 'pk.eyJ1IjoidmxhaG0iLCJhIjoiY2pqYWQwbXpjMGFuODNxcWh6bWE5ZWZvMiJ9.xvVhktbooqGTJkK0sGpiow'
-    }).addTo(mymap);
+    }).addTo(spmap);
 
-    // var circle = L.circle([51.508, -0.11], {
-    //   color: 'red',
-    //   fillColor: '#f03',
-    //   fillOpacity: 0.5,
-    //   radius: 500
-    // }).addTo(mymap);
+    //define marker types (not including small circles for powell sites)
+    var blueMarker = L.VectorMarkers.icon({
+      icon: 'circle',
+      markerColor: '#0051ff'
+    });
+    var lbMarker = L.VectorMarkers.icon({
+      icon: 'circle',
+      markerColor: '#8bc3f6'
+    });
+    var grayMarker = L.VectorMarkers.icon({
+      icon: 'circle',
+      markerColor: 'gray'
+    });
 
-    // var marker = L.marker([51.5, -0.09]).addTo(mymap);
-    // marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup();
-    // circle.bindPopup("I am a circle.");
-    //
-    // var popup = L.popup()
-    //   .setLatLng([51.5, -0.09])
-    //   .setContent("I am a standalone popup.")
-    //   .openOn(mymap);
+    //for non-powell sites
+    for (var p in site_data){
 
-    //mapclick listener (e here is the object that was clicked [the tile])
-    function onMapClick(e) {
-      alert("You clicked the map at " + e.latlng);
+      //replace nulls with 'N/A'
+      var pp = site_data[p]
+      for (attribute in pp){
+        if (pp[attribute] == null){
+          pp[attribute] = 'N/A';
+        }
+      }
+
+      //determine which sites are still embargoed (not public)
+      var currentdate = new Date();
+
+      var regex = /(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}/;
+      var dateArray = regex.exec(pp.addDate);
+      var add_date = new Date(
+          (+dateArray[1]),
+          (+dateArray[2])-1,
+          (+dateArray[3])
+      );
+
+      embargo_expired = (currentdate - add_date)/1000 > pp.embargo * 365 * 24 *
+        60 * 60;
+
+      //assign markers according to site type
+      if (! embargo_expired){
+        var marker = L.marker([pp.latitude, pp.longitude], {
+          icon: grayMarker, title: pp.region + "_" + pp.site
+        }).addTo(spmap);
+      } else if (core_sites.includes(pp.region + "_" + pp.site)){
+        var marker = L.marker([pp.latitude, pp.longitude], {
+          icon: blueMarker, title: pp.region + "_" + pp.site
+        }).addTo(spmap);
+      } else {
+        var marker = L.marker([pp.latitude, pp.longitude], {
+          icon: lbMarker, title: pp.region + "_" + pp.site
+        }).addTo(spmap);
+      }
+
+      //for labels attached to each marker
+      // marker.bindTooltip("Test Label", {
+      //   permanent: true,
+      //   direction: 'bottom',
+      //   opacity: 0.1
+      // });
+
+      //popup text when a user clicks on a marker
+      marker.bindPopup(
+        "<b>Site Name: </b>" + pp.name + "<br>" +
+        "<b>Site Code: </b>" + pp.region + "_" + pp.site + "<br>" +
+        "<b>Lat/Long: </b>" + pp.latitude.toFixed(4) + "/" + pp.longitude.toFixed(4) +
+          "<br>" +
+        "<b>Added: </b>" + String(pp.addDate) + "<br>" +
+        "<b>Contact: </b>" + pp.contact + "<br>" +
+        "<b>Contact Email: </b>" + pp.contactEmail + "<br>" +
+        "<b>USGS Gage ID: </b>" + pp.usgs + "<br>"
+      );
     }
-    mymap.on('click', onMapClick);
 
-    //mapclick listener that creates a popup
+    //mapclick listener that creates a latlong popup when clicking baselayer
     var popup = L.popup();
     function onMapClick(e) {
         popup
             .setLatLng(e.latlng)
-            .setContent("You clicked the map at " + e.latlng.toString())
-            .openOn(mymap);
+            .setContent(e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4))
+            .openOn(spmap);
     }
-    mymap.on('click', onMapClick);
+    spmap.on('click', onMapClick);
+
+    //legend
+    var legend = L.control({position: 'bottomright'});
+    legend.onAdd = function (spmap) {
+
+        var div = L.DomUtil.create('div', 'info legend');
+        div.innerHTML += '<i class="legend" style="background: #white; height=50px; width=50px"></i><strong>Site Type</strong><br>';
+        div.innerHTML += '<i class="legend" style="background: #0051ff; height=50px; width=50px"></i>Core (public)<br>';
+        div.innerHTML += '<i class="legend" style="background: #8bc3f6; height=50px; width=50px"></i>Leveraged (public)<br>';
+        div.innerHTML += '<i class="legend" style="background: gray; height=50px; width=50px"></i>Leveraged (embargoed)<br>';
+        div.innerHTML += '<i class="legend" style="background: #61b876; height=50px; width=50px"></i>Powell Center Synthesis<br>';
+
+        return div;
+    };
+
+    legend.addTo(spmap);
+
+    //add powell center synthesis sites
+    for (var p in powell_sites){
+      var pp = powell_sites[p]
+      var circle = L.circleMarker([pp.lat, pp.lon], {
+        color: '#474863',
+        weight: 1,
+        fillColor: '#61b876',
+        fillOpacity: 1.0,
+        radius: 5
+      }).addTo(spmap);
+
+      circle.bindPopup(
+        "<b>Site Name: </b>" + pp.site_name + "<br>" +
+        "<b>Lat/Long: </b>" + pp.lat.toFixed(4) + "/" + pp.lon.toFixed(4) +
+          "<br>" +
+        "<b>Source: </b>" + '<em>Publication pending</em>' + "<br>"
+      );
+    }
 
   </script>
 

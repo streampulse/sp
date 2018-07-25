@@ -1,0 +1,20 @@
+SITEID,NAME,LNG,LAT,USGS,SHARING,CONTACT
+AZ_SC,Sycamore Creek,-111.5063884,33.75315556,09510200,TRUE,Lindsey.Pollard@asu.edu
+AZ_OC,Oak Creek,-111.76203,34.861618,09504420,TRUE,Lindsey.Pollard@asu.edu
+AZ_WB,Wet Beaver Creek,-111.695454,34.67926,09505200,TRUE,Lindsey.Pollard@asu.edu
+AZ_VR,Verde River,-111.668831,33.558587,09511300,TRUE,Lindsey.Pollard@asu.edu
+AZ_AF,Agua Fria,-112.066403,34.256078,09512500,TRUE,Lindsey.Pollard@asu.edu
+FL_SF2500,Santa Fe 2500,-82.71476453,29.84927937,02322500,TRUE,lily33@ufl.edu
+FL_SF700,Santa Fe 700,-82.21974048,29.84651338,02320700,TRUE,lily33@ufl.edu
+FL_NR1000,New River 1000,-82.2741586,29.99804678,02321000,TRUE,lily33@ufl.edu
+FL_WS1500,Worthington Springs 1500,-82.42622786,29.92191842,02321500,TRUE,lily33@ufl.edu
+FL_ICHE2700,Ichetucknee Springs 2700,-82.78627307,29.95258697,02322700,TRUE,lily33@ufl.edu
+FL_SF2800,Santa Fe 2800,-82.86062853,29.91179083,02322800,TRUE,lily33@ufl.edu
+NC_UEno,East Eno River,-79.1587665,36.1359182,NA,TRUE,ericmoore4812@gmail.com
+NC_Eno,Eno River,-79.0967778,36.0714833,02085000,TRUE,ericmoore4812@gmail.com
+NC_Mud,Mud Tributary,-78.9714595,36.0039787,NA,TRUE,ericmoore4812@gmail.com
+NC_NHC,New Hope Creek,-79.046011,35.992507,NA,TRUE,ericmoore4812@gmail.com
+NC_UNHC,Upper New Hope Creek,-79.0017518,35.9794965,NA,TRUE,ericmoore4812@gmail.com
+NC_Stony,Stony Creek,-79.0824089,36.0324607,NA,TRUE,ericmoore4812@gmail.com
+PR_QS,Quebrada Sonadora,-65.817053,18.321316,NA,TRUE,leonmi@sas.upenn.edu
+PR_Icacos,Rio Icacos,-65.785497,18.275448,50075000,TRUE,leonmi@sas.upenn.edu
