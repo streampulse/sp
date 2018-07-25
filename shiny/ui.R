@@ -46,10 +46,13 @@ shinyUI(
         #     # 'Upload'))
         # ),
         navbarPage(title=p(strong('Diagnostics')), inverse=TRUE,
+            windowTitle='StreamPULSE Diagnostics',
             tabPanel('User Authentication',
                 p(paste('Use this tool to visualize models fit by StreamPULSE',
                     'users. The best available model fits and metabolism',
                     'estimates for each site and calendar year are stored here.')),
+                p('NOTE: Model outputs with gaps currently fail to render properly in some plots. This will be fixed shortly!',
+                    style='color:red'),
                 p('To view private results, enter a valid user token.'),
                 br(),
                 div(style='display: inline-block; vertical-align:top',
