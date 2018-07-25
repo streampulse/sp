@@ -51,6 +51,7 @@
 
     var site_data = {{ site_data|tojson|safe }};
     var core_sites = {{ core_sites|tojson|safe }};
+    var powell_sites = {{ powell_sites|tojson|safe }};
 
     var spmap = L.map('mapid').setView([36.0715, -79.0968], 2.5);
 
@@ -85,9 +86,7 @@
       }
 
       var currentdate = new Date();
-      // console.log(pp.addDate);
 
-      // var regex = /^\w+, (\d{2}) (\w{3}) (\d{4}).*$/;
       var regex = /(\d{4})-(\d{2})-(\d{2}) \d{2}:\d{2}:\d{2}/;
       var dateArray = regex.exec(pp.addDate);
       var add_date = new Date(
@@ -95,18 +94,28 @@
           (+dateArray[2])-1,
           (+dateArray[3])
       );
-      // console.log(add_date);
-
 
       embargo_expired = (currentdate - add_date)/1000 > pp.embargo * 365 * 24 *
         60 * 60;
       if (! embargo_expired){
-        var marker = L.marker([pp.latitude, pp.longitude], {icon: grayMarker}).addTo(spmap);
+        var marker = L.marker([pp.latitude, pp.longitude], {
+          icon: grayMarker, title: pp.region + "_" + pp.site
+        }).addTo(spmap);
       } else if (core_sites.includes(pp.region + "_" + pp.site)){
-        var marker = L.marker([pp.latitude, pp.longitude], {icon: blueMarker}).addTo(spmap);
+        var marker = L.marker([pp.latitude, pp.longitude], {
+          icon: blueMarker, title: pp.region + "_" + pp.site
+        }).addTo(spmap);
       } else {
-        var marker = L.marker([pp.latitude, pp.longitude], {icon: lbMarker}).addTo(spmap);
+        var marker = L.marker([pp.latitude, pp.longitude], {
+          icon: lbMarker, title: pp.region + "_" + pp.site
+        }).addTo(spmap);
       }
+
+      // marker.bindTooltip("Test Label", {
+      //   permanent: true,
+      //   direction: 'bottom',
+      //   opacity: 0.1
+      // });
 
       marker.bindPopup(
         "<b>Site Name: </b>" + pp.name + "<br>" +
@@ -120,7 +129,20 @@
       );
     }
 
-    //mapclick listener that creates a latlong popup on click
+    //powell center synthesis sites
+    for (var p in powell_sites){
+      var pp = powell_sites[p]
+      var circle = L.circleMarker([pp.lat, pp.lon], {
+        color: '#474863',
+        weight: 2,
+        fillColor: '#61b876',
+        fillOpacity: 1.0,
+        radius: 5
+        // title: pp.site_name
+      }).addTo(spmap);
+    }
+
+    //mapclick listener that creates a latlong popup when clicking baselayer
     var popup = L.popup();
     function onMapClick(e) {
         popup
@@ -130,6 +152,7 @@
     }
     spmap.on('click', onMapClick);
 
+    //legend
     var legend = L.control({position: 'bottomright'});
     legend.onAdd = function (spmap) {
 

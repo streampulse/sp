@@ -2630,13 +2630,13 @@ def site_map():
 
     site_data = pd.read_sql('select * from site;', db.engine)
     site_data.addDate = site_data.addDate.astype('str')
-    # print site_data.dtypes
     site_dict = site_data.to_dict('records')
 
-    # print site_dict
+    powell_sites = pd.read_csv('static/map/powell_sites.csv')
+    powell_dict = powell_sites.to_dict('records')
 
     return render_template('map.html', site_data=site_dict,
-        core_sites=core_sites)
+        core_sites=core_sites, powell_sites=powell_dict)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
