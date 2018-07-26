@@ -236,7 +236,8 @@ shinyUI(
                 ),
                 br(),
                 conditionalPanel(condition="input.input_site2 != ''",
-                    p(paste("*If something doesn't look right, try",
+                    p(paste("*Plots may take a few moments to load.",
+                        "If something doesn't look right, try",
                         "adjusting your browser's zoom level."),
                         style='color:gray; font-size:100%')
                 )

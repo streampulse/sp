@@ -1,5 +1,13 @@
 #Mike's Logbook
 
+###thu20180726
+ + updated diag plots to accommodate gappy data, now that package doesn't interpolate everything by default
+###wed20180725
+ + added powell sites, adjusted zoom, embedded site map in data portal sitelist page and weebly sites page
+###tue20180724
+ + added markers, popup messages, color, legend to site map
+###thu20180719
+ + made new site map with Leaflet. added sites and base layer
 ###wed20180718
  + fixed encoding error (ASCII instead of utf-8) in download tool
 ###20180713-18
