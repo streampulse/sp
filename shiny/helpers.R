@@ -62,20 +62,26 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
         xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
     mtext(expression(paste("O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')), side=2,
         line=2.5, font=2)
-    polygon(x=c(doy, rev(doy)),
-        y=c(gpplo, rev(gppup)), col=adjustcolor('red', alpha.f=0.3),
-        border=NA)
-    # t = avg_trajectory$Date
-    # yearstarts = match(unique(substr(t,1,4)), substr(t,1,4))
-    # monthstarts = match(unique(substr(t,1,7)), substr(t,1,7))
-    # axis(1, yearstarts, rep('', length(yearstarts)), lwd.ticks=2, tck=-0.05)
-    # axis(1, yearstarts, substr(t[yearstarts],1,4), line=1, tick=FALSE)
-    # month_abbs = month.abb[as.numeric(substr(t[monthstarts],6,7))]
-    # axis(1, monthstarts[-1], month_abbs[-1])
+
+    #split time and DO series into NA-less chunks for plotting polygons
+    ff = data.frame(doy=doy, gpplo=gpplo, gppup=gppup, erlo=erlo, erup=erup)
+    rl = rle(is.na(ff$gpplo))
+    vv = !rl$values
+    chunkfac = rep(cumsum(vv), rl$lengths)
+    chunkfac[chunkfac == 0] = 1
+    chunks = split(ff, chunkfac)
+    noNAchunks = lapply(chunks, function(x) x[!is.na(x$gpplo),] )
+
+    for(i in 1:length(noNAchunks)){
+        polygon(x=c(noNAchunks[[i]]$doy, rev(noNAchunks[[i]]$doy)),
+            y=c(noNAchunks[[i]]$gpplo, rev(noNAchunks[[i]]$gppup)),
+            col=adjustcolor('red', alpha.f=0.3), border=NA)
+        polygon(x=c(noNAchunks[[i]]$doy, rev(noNAchunks[[i]]$doy)),
+            y=c(noNAchunks[[i]]$erlo, rev(noNAchunks[[i]]$erup)),
+            col=adjustcolor('blue', alpha.f=0.3), border=NA)
+    }
+
     lines(doy, avg_trajectory$ER, col="blue", lwd=2)
-    polygon(x=c(doy, rev(doy)),
-        y=c(erlo, rev(erup)), col=adjustcolor('blue', alpha.f=0.3),
-        border=NA)
     abline(h=0, lty=3, col='gray50')
     # if(suppress_NEP){
     #     # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
@@ -243,15 +249,26 @@ O2_plot = function(mod_out, st, en, brush){
     yrng = range(c(slice$DO.obs, slice$DO.mod), na.rm=TRUE)
 
     #window, series, axis labels
-    # plot(mod_out$data$solar.time, mod_out$data$DO.obs, xaxt='n', las=1,
     plot(ustamp, mod_out$data$DO.obs, xaxt='n', las=0,
         type='n', xlab='', ylab='', bty='l', ylim=c(yrng[1], yrng[2]),
         xaxs='i', yaxs='i', xlim=c(xmin, xmax))
-    # axis(2, tcl=-0.2, hadj=.5, cex=0.8)
-    # polygon(x=c(mod_out$data$solar.time, rev(mod_out$data$solar.time)),
-    polygon(x=c(ustamp, rev(ustamp)),
-        y=c(mod_out$data$DO.obs, rep(0, length(mod_out$data$DO.obs))),
-        co='gray70', border='gray70')
+
+    #split time and DO series into NA-less chunks for plotting polygons
+    ff = data.frame(ustamp=ustamp, DO=mod_out$data$DO.obs,
+        zero=rep(0, length(mod_out$data$DO.obs)))
+    rl = rle(is.na(ff$DO))
+    vv = !rl$values
+    chunkfac = rep(cumsum(vv), rl$lengths)
+    chunkfac[chunkfac == 0] = 1
+    chunks = split(ff, chunkfac)
+    noNAchunks = lapply(chunks, function(x) x[!is.na(x$DO),] )
+
+    for(i in 1:length(noNAchunks)){
+        polygon(x=c(noNAchunks[[i]]$ustamp, rev(noNAchunks[[i]]$ustamp)),
+            y=c(noNAchunks[[i]]$DO, rep(0, nrow(noNAchunks[[i]]))),
+            col='gray70', border='gray70')
+    }
+
     mtext('DOY', 1, font=1, line=1.5)
     mtext('DO (mg/L)', 2, font=1, line=3)
     # lines(mod_out$data$solar.time, mod_out$data$DO.mod,
