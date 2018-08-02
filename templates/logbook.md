@@ -15,6 +15,7 @@
 ###thu20180712
  + updated package (v 0.0.0.9008) so input data arent automatically interpolated
  + extended interpolation options to the user
+ + finished user auth for diagnostic app.
 ###wed20180711
  + rerunning all models without interpolating gaps > 3 hours
  + building user auth infrastructure for diagnostic app
