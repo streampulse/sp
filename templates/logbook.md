@@ -1,5 +1,9 @@
 #Mike's Logbook
 
+###thu20180802
+ + fixed highlighting of flagged points when "apply to all variables" is selected
+ + added warnings to qaqc app
+ + fixed alert placement, popup box layout, select placeholder on qaqc app
 ###thu20180726
  + updated diag plots to accommodate gappy data, now that package doesn't interpolate everything by default
 ###wed20180725

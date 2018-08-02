@@ -69,6 +69,11 @@
     fill: red;
     stroke-width: 2px;
   }
+  .sel-highl {
+    stroke: black;
+    fill: red;
+    stroke-width: 2px;
+  }
   .outside {
     stroke: none !important;
     fill: none !important;
@@ -223,6 +228,9 @@
     {% endfor %}
   {% endif %}
   {% endwith %}
+  </div>
+
+  <div id="alerts_floating" style="position:fixed; z-index:100; width: 80%">
   </div>
 
   {% block body %}{% endblock %}

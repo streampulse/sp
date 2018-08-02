@@ -273,35 +273,32 @@ function brushend(){
     .getBoundingClientRect().bottom + window.scrollY;
 
   //if i run into trouble, reset flags2, flagID2, fcomment2, qaqc2
-  //can eventually commet the part in qaqc.html about #addflag
+  //can eventually comment the part in qaqc.html about #addflag
 
   html_str = '<form id="qaqc">'
-    // + '<div class="col-md-11">'
-    // html_str = '<button class="btn btn-warning btn-xs v_align" type="button" '
-    + '<select id="flags2" placeholder="Choose (or enter) a flag ID" '
+    + '<div>'
+    + '<select id="flags2" '
     + 'name="flagID2" class="v_align">'
-    // + '<option value="" disabled selected hidden>Choose flag type</option>'
+    + '<option value="" disabled selected hidden>Choose a flag label</option>'
     + '<option value="Questionable">Questionable</option>'
     + '<option value="Interesting">Interesting</option>'
     + '<option value="Bad Data">Bad Data</option>'
     + '</select>'
-    // + '</div>'
-    // + '<div class="col-md-7">'
     + '<input type="text" name="fcomment2" class="form-control v_align" '
     + 'style="width: 26em;"'
-    + 'placeholder=\'Optional comments (e.g. "Sensor out of water")\'>'
-    // + '<div class="form-inline">'
-    + '<div class="v_align" style="width: .5em"></div><p class="v_align" style="font: 10pt sans-serif">Apply to <br> all variables:</p> <input type="checkbox" id="fillbrush" value="yes"><div class="v_align" style="width: .5em"></div>'
-    // + '<p class="v_align" style="font: 10pt sans-serif">Apply to <br> all variables</p>: <input type="checkbox" id="fillbrush" value="yes">'
-    // + '</div>'
+    + 'placeholder=\'Optional flag comments (e.g. "Sensor out of water")\'>'
+    + '</div><div>'
+    + '<div class="v_align" style="width: .5em"></div><p class="v_align" style="font: 10pt sans-serif">Apply vertically to <br> all variables:</p> <input type="checkbox" id="fillbrush" value="yes"><div class="v_align" style="width: .5em"></div>'
     + '<button class="btn btn-warning btn-xs v_align" type="button" '
-    + 'id="addflag2">Flag all<br />selected</button>'
+    + 'id="addflag2">Flag all<br />selected points</button>'
     + '<button class="btn btn-danger btn-xs v_align" type="button" '
-//    + 'id="addflag_outl">Flag red<br />points</button>'
-    + 'id="addflag_outl">Flag potential<br />outliers (red)</button>'
+    + 'id="addflag_outl">Flag selected<br />"outliers" (red points)</button>'
+    + '<button class="btn btn-success btn-xs v_align" type="button" '
+    + 'id="rmflag">Remove all<br />selected flags</button>'
     + '<div class="v_align" style="width: .5em"></div>'
     + '<button class="btn btn-primary btn-xs v_align" type="button" '
     + 'id="zoomin">Zoom in to<br />selected region</button>'
+    + '</div>'
     + '</form>'
 
   if (!dott_undef) {

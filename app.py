@@ -541,98 +541,6 @@ grab_variables = [
 ]
 # #'Substrate',  Bed_Cover?, Flow,
 
-# o = u'other'
-# grab_variables = {
-# 'Br': ('Br (molar)', ['IC',o]),
-# 'Ca': ('Ca (molar)', ['IC',o]),
-# 'Cl': ('Cl (molar)', ['IC',o]),
-# 'K': ('K (molar)', ['IC',o]),
-# 'Mg': ('Mg (molar)', ['IC',o]),
-# 'Na': ('Na (molar)', ['IC',o]),
-# 'NH4': ('NH4 (molar)', ['FIA',o]),
-# 'NO3': ('NO3 (molar)', ['IC','FIA',o]),
-# 'PO4': ('PO4 (molar)', ['IC','FIA',o]),
-# 'SiO2': ('SiO2 (molar)', ['FIA','spectrophotometer',o]),
-# 'SO4': ('SO4 (molar)', ['IC',o]),
-# 'Total_Fe': ('Total_Fe (molar)', ['spectroscopy','FIA',o]),
-# 'Total_Mn': ('Total_Mn (molar)', ['spectroscopy','FIA',o]),
-# 'TOC': ('TOC (ppm)', ['TOC-TN',o]),
-# 'TN': ('TN (ppm)', ['TOC-TN',o]),
-# 'TDP': ('TDP (mg/L)', ['Ascorbic Acid Method',o]),
-# 'DOC': ('DOC (ppm)', ['combustion','oxidation',o]),
-# 'TSS': ('TSS (ppm)', ['dry mass','backscatter',o]),
-# 'fDOM': ('fDOM (ppb)', ['sonde',o]),
-# 'CO2': ('CO2 (ppm)', ['sonde','GC',o]),
-# 'CH4': ('CH4 (ug/L)', ['GC',o]),
-# 'N2O': ('N2O (ug/L)', ['GC',o]),
-# 'DO': ('DO (mg/L)', ['sensor',o]),
-# 'DO_Sat': ('DO_Sat (%)', ['sensor',o]),
-# 'Chlorophyll-a': ('Chlorophyll-a (mg/L)', ['spectrophotometer',o]),
-# 'Alkalinity': ('Alkalinity (meq/L)', ['FIA','titration',o]),
-# 'pH': ('pH', ['ISFET',o]),
-# 'Spec_Cond': ('Spec_Cond (mS/cm)', ['sonde',o]),
-# 'Turbidity': ('Turbidity (NTU)', ['turbidimeter',o]),
-# 'Light_Atten': ('Light_Atten (m^-1)', ['pyranometer',o]),
-# 'Illuminance': ('Illuminance (lux)', ['lux meter',o]),
-# 'PAR': ('PAR (W/m^2)', ['pyranometer',o]),
-# 'UV_Absorbance': ('UV_Absorbance (cm^-1)', ['spectrophotometer',o]),
-# 'Canopy_Cover': ('Canopy_Cover (LAI)', ['field measurement','remote sensing','model',o]),
-# 'Width': ('Width (m)', ['field measurement',o]),
-# 'Depth': ('Depth (m)', ['field measurement',o]),
-# 'Distance': ('Distance (m)', ['field measurement',o]),
-# 'Discharge': ('Discharge (m^3/s)', ['flow meter','salt slug',o]),
-# 'k': ('k (min^-1)', ['argon','propane','SF6','radon','floating chamber',o]),
-# 'Water_Temp': ('Water_Temp (C)', ['sonde',o]),
-# 'Air_Temp': ('Air_Temp (C)', ['sonde',o]),
-# 'Water_Pres': ('Water_Pres (kPa)', ['sonde',o]),
-# 'Air_Pres': ('Air_Pres (kPa)', ['sonde',o])
-# }
-#'Substrate',  Bed_Cover?, Flow,
-
-
-# #corresponding elements of grab_variables, grab_vars_with_units, grab_methods,
-# #and grab_filters must remain aligned. If you add a new variable, update all
-# #four lists with a new element and put it at the same index for each.
-# grab_variables = ['Br', 'Ca', 'Cl', 'K',
-# 'Mg', 'Na', 'NH4', 'NO3', 'PO4',
-# 'SiO2', 'SO4', 'Total_Fe',
-# 'Total_Mn', 'TOC', 'TN', 'TDP', 'DOC',
-# 'TSS', 'fDOM', 'CO2', 'CH4', 'N2O',
-# 'DO', 'DO_Sat', 'Chlorophyll-a', 'Alkalinity', 'pH',
-# 'Spec_Cond', 'Turbidity', 'Light_Atten',
-# 'Illuminance', 'PAR', 'UV_Absorbance',
-# 'Canopy_Cover', 'Width', 'Depth', 'Distance',
-# 'Discharge', 'k', 'Water_Temp',
-# 'Air_Temp', 'Water_Pres', 'Air_Pres']
-# #'Substrate',  Bed_Cover?, Flow,
-#
-# grab_vars_with_units = ['Br (molar)', 'Ca (molar)', 'Cl (molar)', 'K (molar)',
-# 'Mg (molar)', 'Na (molar)', 'NH4 (molar)', 'NO3 (molar)', 'PO4 (molar)',
-# 'SiO2 (molar)', 'SO4 (molar)', 'Total_Fe (molar)',
-# 'Total_Mn (molar)', 'TOC (ppm)', 'TN (ppm)', 'TDP (mg/L)', 'DOC (ppm)',
-# 'TSS (ppm)', 'fDOM (ppb)', 'CO2 (ppm)', 'CH4 (ug/L)', 'N2O (ug/L)',
-# 'DO (mg/L)', 'DO_Sat (%)', 'Chlorophyll-a (mg/L)', 'Alkalinity (meq/L)', 'pH',
-# 'Spec_Cond (mS/cm)', 'Turbidity (NTU)', 'Light_Atten (m^-1)',
-# 'Illuminance (lux)', 'PAR (W/m^2)', 'UV_Absorbance (cm^-1)',
-# 'Canopy_Cover (LAI)', 'Width (m)', 'Depth (m)', 'Distance (m)',
-# 'Discharge (m^3/s)', 'k (min^-1)', 'Water_Temp (C)',
-# 'Air_Temp (C)', 'Water_Pres (kPa)', 'Air_Pres (kPa)']
-# #'Substrate ()',  Bed_Cover? (), Flow (Laminar, etc.),
-#
-# o = 'other'
-# grab_methods = [['IC',o], ['IC',o], ['IC',o], ['IC',o],
-# ['IC',o], ['IC',o], ['FIA',o], ['IC','FIA',o], ['IC','FIA',o],
-# ['FIA','spectrophotometer',o], ['IC',o], ['spectroscopy','FIA',o],
-# ['spectroscopy','FIA',o], ['TOC-TN',o], ['TOC-TN',o], ['Ascorbic Acid Method',o], ['combustion','oxidation',o],
-# ['dry mass','backscatter',o], ['sonde',o], ['sonde','GC',o], ['GC',o], ['GC',o],
-# ['sensor',o], ['sensor',o], ['spectrophotometer',o], ['FIA','titration',o], ['ISFET',o],
-# ['sonde',o], ['turbidimeter',o], ['pyranometer',o],
-# ['lux meter',o], ['pyranometer',o], ['spectrophotometer',o],
-# ['field measurement','remote sensing','model',o], ['field measurement',o], ['field measurement',o], ['field measurement',o],
-# ['flow meter','salt slug',o], ['argon','propane','SF6','radon','floating chamber',o], ['sonde',o],
-# ['sonde',o], ['sonde',o], ['sonde',o]]
-# #'Substrate',  Bed_Cover?, Flow,
-
 #R code for outlier detection
 with open('find_outliers.R', 'r') as f:
     find_outliers_string = f.read()
@@ -2196,7 +2104,7 @@ def qaqc():
     sitedict = sorted([getsitenames(x) for x in sites], key=lambda tup: tup[1])
     return render_template('qaqc.html',sites=sitedict,flags=flags, tags=[''])
 
-@app.route('/_getqaqc',methods=["POST"])
+@app.route('/_getqaqc', methods=["POST"])
 def getqaqc():
     region, site = request.json['site'].split(",")[0].split("_")
     sqlq = "select * from data where region='"+region+"' and site='"+site+"'"
@@ -2241,7 +2149,7 @@ def getqaqc():
     drr = daterange(sdt,edt)
     return jsonify(variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)
 
-@app.route('/_outlierdetect',methods=["POST"])
+@app.route('/_outlierdetect', methods=["POST"])
 def outlier_detect():
     dat_chunk = pd.DataFrame(request.json)
     # dat_chunk.to_csv('~/Dropbox/streampulse/data/test_outl2.csv', index=False)
@@ -2262,7 +2170,7 @@ def outlier_detect():
 
     return jsonify(outliers=outl_ind)
 
-@app.route('/_addflag',methods=["POST"])
+@app.route('/_addflag', methods=["POST"])
 def addflag():
     rgn, ste = request.json['site'].split("_")
     # sdt = dtparse.parse(request.json['startDate'])
@@ -2283,23 +2191,31 @@ def addflag():
         db.session.commit()
     return jsonify(result="success")
 
-# @app.route('/_addtag',methods=["POST"])
-# def addtag():
-#     rgn, ste = request.json['site'].split("_")
-#     sdt = dtparse.parse(request.json['startDate'])
-#     edt = dtparse.parse(request.json['endDate'])
-#     var = request.json['var']
-#     tag = request.json['tagid']
-#     cmt = request.json['comment']
-#     for vv in var:
-#         ttt = Tag(rgn, ste, sdt, edt, vv, tag, cmt, int(current_user.get_id()))
-#         db.session.add(ttt)
-#         db.session.commit()
-#     # flgdat = Data.query.filter(Data.region==rgn,Data.site==ste,Data.DateTime_UTC>=sdt,Data.DateTime_UTC<=edt,Data.variable==var).all()
-#     # for f in flgdat:
-#     #     f.flag = fff.id
-#     # db.session.commit()
-#     return jsonify(result="success")
+@app.route('/_rmflag', methods=["POST"])
+def rmflag():
+
+    rgn, ste = request.json['site'].split("_")
+    sdt = datetime.strptime(request.json['startDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
+    edt = datetime.strptime(request.json['endDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
+    var = request.json['var']
+
+    for vv in var:
+
+        # flagq = Flag.query.filter(Flag.region==rgn, Flag.site==ste,
+        #     Flag.startDate>=sdt, Flag.endDate<=edt,
+        #     Flag.variable==vv).all()
+        # for f in flagq:
+        #     db.session.delete(f)
+
+        datq = Data.query.filter(Data.region == rgn, Data.site == ste,
+            Data.DateTime_UTC >= sdt, Data.DateTime_UTC <= edt,
+            Data.variable == vv).all()
+        for d in datq:
+            d.flag = None
+
+        db.session.commit()
+
+    return jsonify(result="success")
 
 # @app.route('/_addna',methods=["POST"])
 # def addna():
