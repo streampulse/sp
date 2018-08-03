@@ -4,6 +4,11 @@
  + fixed highlighting of flagged points when "apply to all variables" is selected
  + added warnings to qaqc app
  + fixed alert placement, popup box layout, select placeholder on qaqc app
+ + fixed point coloring on brush
+ + new button for removing existing flags (works with apply to all)
+ + fixed bug with apply to all and flag outliers combo
+ + selected point color changes now apply to all point types
+ + toggle apply to all and selection colors toggle for all plots
 ###thu20180726
  + updated diag plots to accommodate gappy data, now that package doesn't interpolate everything by default
 ###wed20180725

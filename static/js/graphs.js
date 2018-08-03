@@ -230,6 +230,8 @@ function brushstart(){
   // d3.selectAll(".brush").clear();
   // d3.selectAll(".brush").call(brush.move, null);
   selectedBrush = $(this).attr("id")
+  // selection_manager();
+  brushdown = false;
 }
 
 function brushmove(){
@@ -237,11 +239,11 @@ function brushmove(){
   if (s) {
     ext0 = x.invert(s[0]);
     ext1 = x.invert(s[1]);
-    if(brushdown){ // select all dots
-      var dott = d3.selectAll(".dot, .maybe_outl")
-    }else{ // select just the dots in plot window = selectedBrush
-      var dott = d3.select("."+selectedBrush).selectAll(".dot, .maybe_outl")
-    }
+    // if(brushdown){ // select all dots (bad feature; removed)
+    //   var dott = d3.selectAll(".dot, .maybe_outl, .highlighted")
+    // }else{ // select just the dots in plot window = selectedBrush
+    var dott = d3.select("." + selectedBrush).selectAll(".dot, .maybe_outl")
+    // }
     dott.classed("selected", function(d) {
       is_brushed = ext0 <= d.date && d.date <= ext1;
       return is_brushed;
@@ -327,6 +329,7 @@ function brushend(){
       .style('left', (popupx) + 3 + 'px')
       .style('top', (popupy) - height_of_popupbox + 'px');
       // .style("text-anchor", "start");
+
   }
 }
 

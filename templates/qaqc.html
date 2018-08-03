@@ -456,6 +456,35 @@ $('body').ready(function(){
   });
 });
 
+// highlight/unhighlight across all variables when "apply vertically..." is toggled
+$('body').ready(function(){
+  $('body').on("input", "#fillbrush", selection_manager);
+});
+
+function selection_manager() {
+  var brsh = d3.brushSelection(d3.select("#" + selectedBrush).node())
+  if (typeof $('#fillbrush')[0] != 'undefined') {
+    var b_strt = x.invert(brsh[0]);
+    var b_end = x.invert(brsh[1]);
+    if( $('#fillbrush')[0].checked ){
+      brushdown = true;
+      d3.selectAll(".dot, .maybe_outl, .highlighted").classed("selected",
+        function(d) { return b_strt <= d.date && d.date <= b_end; });
+    } else {
+      brushdown = false;
+      d3.selectAll(".selected").classed("selected", false);
+      d3.select("." + selectedBrush)
+        .selectAll(".dot, .maybe_outl, .highlighted")
+        .classed("selected", function(d) {
+          return b_strt <= d.date && d.date <= b_end;
+        });
+    }
+  // } else {
+  //   d3.selectAll(".selected").classed("selected", false);
+  }
+  return false
+}
+
 function rm_flag() {
   if(undefined != selectedBrush){ // only do this if there is a brush selected
     s = d3.brushSelection(d3.select("#"+selectedBrush).node())
@@ -485,6 +514,10 @@ function rm_flag() {
       is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return ! is_brushed;
     });
+    b.classed('flagdot', function(d) {
+      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      return ! is_brushed;
+    });
     brushdown = false;
     // dat['comment'] = $("input[name=fcomment2]").val();
     // dat['flagid'] = $("select[name=flagID2]").val();
@@ -511,13 +544,13 @@ function rm_flag() {
   }
 }
 
-function add_flag() {
+function add_flag(red_points_only) {
   if(undefined != selectedBrush){ // only do this if there is a brush selected
     if( $('#qaqc select').val() == null ){
-      $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
+      $("#alerts_floating").append(alertbox('danger','Please select a flag label.'));
       return false
     }
-    s = d3.brushSelection(d3.select("#"+selectedBrush).node())
+    s = d3.brushSelection(d3.select("#" + selectedBrush).node())
     dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['startDate'] = x.invert(s[0]);
@@ -534,7 +567,7 @@ function add_flag() {
       // });
     } else {
       dat['var'] = [selectedBrush];
-      b = d3.select("."+selectedBrush).selectAll(".selected");
+      b = d3.select("." + selectedBrush).selectAll(".selected");
       if(red_points_only){
         b = b.filter('.maybe_outl');
       }
@@ -551,8 +584,8 @@ function add_flag() {
     dat['comment'] = $("input[name=fcomment2]").val();
     dat['flagid'] = $("select[name=flagID2]").val();
     if(red_points_only){
-      so = d3.select("."+selectedBrush).selectAll(".selected")
-      .filter('.maybe_outl').data(); //extract selected outliers
+      // so = d3.select("." + selectedBrush).selectAll(".selected")
+      so = d3.selectAll(".highlighted").filter('.maybe_outl').data();
       counter = 0; //prepare for flag_ajax_serial recursion
       dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
       dat['endDate'] = so[counter].DateTime_UTC;
@@ -647,15 +680,15 @@ function rmflag_ajax(){
 // })
 
 //fillbrush
-$('body').ready(function(){ //delegated event handler for filldown brush
-  $('body').on('change', '#fillbrush', function(){
-    if($(this).is(":checked")){
-      brushdown = true;
-    }else{
-      brushdown = false;
-    }
-  });
-});
+// $('body').ready(function(){ //delegated event handler for filldown brush
+//   $('body').on('change', '#fillbrush', function(){
+//     if($(this).is(":checked")){
+//       brushdown = true;
+//     }else{
+//       brushdown = false;
+//     }
+//   });
+// });
 
 </script>
 
