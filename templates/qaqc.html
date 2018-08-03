@@ -70,9 +70,6 @@ drift.load('s2rst4h926mg');
         <button class="btn btn-link" type="button" id="zoomreset">Reset zoom</button>
         (Can also double-click any plot to reset)
         </div>
-        <p> NOTES: flag type resets to "Questionable" after each operation.<br>
-          "Apply to all variables" works. It just doesn't register visually until you reload the page.<br>
-          Fixes for these issues and for general sluggishness coming soon.</p>
       </div>
     </div>
   </div>
@@ -399,12 +396,11 @@ $(function(){
 })
 
 //alertbox
-function alertbox(alrt,msg){
-  return '<div class="alert alert-dismissible alert-'+alrt+'">\
+function alertbox(alrt, msg){
+  return '<div class="alert alert-dismissible alert-' + alrt + '">\
     <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
-    '+msg+'</div>'
+    ' + msg + '</div>'
 }
-
 
 //addna
 // $(function(){
@@ -439,32 +435,57 @@ function alertbox(alrt,msg){
 //   });
 // })
 
-//add flags when static button is clicked
-// $(function(){
-//   $("#addflag").click(add_flag);
-// });
-
-// add flags for all highlighted points when popup button is clicked
+// add flags for all highlighted points when yellow popup button is clicked
 $('body').ready(function(){
   $('body').on("click", "#addflag2", function(){
     add_flag(red_points_only=false);
   });
 });
-// $(document).on('click', '#addflag2', function(){
-//   add_flag(red_points_only=false);
-// });
 
-// add flags for red highlighted points when popup button is clicked
+// add flags for red highlighted points when red popup button is clicked
 $('body').ready(function(){
   $('body').on("click", "#addflag_outl", function(){
     add_flag(red_points_only=true);
   });
 });
-// $(document).on('click', '#addflag_outl', function(){
-//   add_flag(red_points_only=true);
-// });
 
-function add_flag() {
+// remove flags when green popup button is clicked
+$('body').ready(function(){
+  $('body').on("click", "#rmflag", function(){
+    rm_flag();
+  });
+});
+
+// highlight/unhighlight across all variables when "apply vertically..." is toggled
+$('body').ready(function(){
+  $('body').on("input", "#fillbrush", selection_manager);
+});
+
+function selection_manager() {
+  var brsh = d3.brushSelection(d3.select("#" + selectedBrush).node())
+  if (typeof $('#fillbrush')[0] != 'undefined') {
+    var b_strt = x.invert(brsh[0]);
+    var b_end = x.invert(brsh[1]);
+    if( $('#fillbrush')[0].checked ){
+      brushdown = true;
+      d3.selectAll(".dot, .maybe_outl, .highlighted").classed("selected",
+        function(d) { return b_strt <= d.date && d.date <= b_end; });
+    } else {
+      brushdown = false;
+      d3.selectAll(".selected").classed("selected", false);
+      d3.select("." + selectedBrush)
+        .selectAll(".dot, .maybe_outl, .highlighted")
+        .classed("selected", function(d) {
+          return b_strt <= d.date && d.date <= b_end;
+        });
+    }
+  // } else {
+  //   d3.selectAll(".selected").classed("selected", false);
+  }
+  return false
+}
+
+function rm_flag() {
   if(undefined != selectedBrush){ // only do this if there is a brush selected
     s = d3.brushSelection(d3.select("#"+selectedBrush).node())
     dat = {}
@@ -474,30 +495,97 @@ function add_flag() {
     if(brushdown){
       dat['var'] = variables;
       b = d3.selectAll("svg").selectAll(".selected");
-      if(red_points_only){
-        b = b.filter('.maybe_outl');
-      }
-      b.classed('highlighted', function(d) {
-        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-        return is_brushed;
-      });
+      // if(red_points_only){
+      //   b = b.filter('.maybe_outl');
+      // }
+      // b.classed('dot', function(d) {
+      //   is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      //   return is_brushed;
+      // });
     } else {
       dat['var'] = [selectedBrush];
-      b = d3.select("."+selectedBrush).selectAll(".selected");
+      b = d3.select("." + selectedBrush).selectAll(".selected");
+      // if(red_points_only){
+      //   b = b.filter('.maybe_outl');
+      // }
+      // });
+    }
+    b.classed('highlighted', function(d) {
+      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      return ! is_brushed;
+    });
+    b.classed('flagdot', function(d) {
+      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      return ! is_brushed;
+    });
+    brushdown = false;
+    // dat['comment'] = $("input[name=fcomment2]").val();
+    // dat['flagid'] = $("select[name=flagID2]").val();
+    // if(red_points_only){
+    //   so = d3.select("."+selectedBrush).selectAll(".selected")
+    //   .filter('.maybe_outl').data(); //extract selected outliers
+    //   counter = 0; //prepare for flag_ajax_serial recursion
+    //   dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
+    //   dat['endDate'] = so[counter].DateTime_UTC;
+    // }
+    // if (dat.flagid != null){
+      // if(red_points_only){
+      //   flag_ajax_serial(counter, so);
+      // } else {
+    rmflag_ajax();
+      // }
+    return false;
+    // }
+    // } else {
+    //   $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
+    // }
+  } else {
+    $("#alerts_floating").append(alertbox('warning', 'No points selected.'));
+  }
+}
+
+function add_flag(red_points_only) {
+  if(undefined != selectedBrush){ // only do this if there is a brush selected
+    if( $('#qaqc select').val() == null ){
+      $("#alerts_floating").append(alertbox('danger','Please select a flag label.'));
+      return false
+    }
+    s = d3.brushSelection(d3.select("#" + selectedBrush).node())
+    dat = {}
+    dat['site'] = $('select[name=site]').val();
+    dat['startDate'] = x.invert(s[0]);
+    dat['endDate'] = x.invert(s[1]);
+    if(brushdown){
+      dat['var'] = variables;
+      b = d3.selectAll("svg").selectAll(".dot");
       if(red_points_only){
         b = b.filter('.maybe_outl');
       }
-      b.classed('highlighted', function(d) {
-        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-        return is_brushed;
-      });
+      // b.classed('highlighted', function(d) {
+      //   is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      //   return is_brushed;
+      // });
+    } else {
+      dat['var'] = [selectedBrush];
+      b = d3.select("." + selectedBrush).selectAll(".selected");
+      if(red_points_only){
+        b = b.filter('.maybe_outl');
+      }
+      // b.classed('highlighted', function(d) {
+      //   is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      //   return is_brushed;
+      // });
     }
+    b.classed('highlighted', function(d) {
+      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      return is_brushed;
+    });
     brushdown = false;
     dat['comment'] = $("input[name=fcomment2]").val();
     dat['flagid'] = $("select[name=flagID2]").val();
     if(red_points_only){
-      so = d3.select("."+selectedBrush).selectAll(".selected")
-      .filter('.maybe_outl').data(); //extract selected outliers
+      // so = d3.select("." + selectedBrush).selectAll(".selected")
+      so = d3.selectAll(".highlighted").filter('.maybe_outl').data();
       counter = 0; //prepare for flag_ajax_serial recursion
       dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
       dat['endDate'] = so[counter].DateTime_UTC;
@@ -510,10 +598,10 @@ function add_flag() {
       }
       return false;
     } else {
-      $("#alerts").append(alertbox('warning','Please select a flag type.'));
+      $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
     }
   } else {
-    $("#alerts").append(alertbox('warning','Please select points to add Flags.'));
+    $("#alerts_floating").append(alertbox('warning','No points selected.'));
   }
 }
 
@@ -528,7 +616,7 @@ function flag_ajax_batch(){
     success: function(){
       $('.popupbox').remove();
       console.log("success");
-      $("#alerts").append(alertbox('success','Added flag.'));
+      // $("#alerts_floating").append(alertbox('success','Added flag.'));
     },
     error: function(error){
       $('.popupbox').remove();
@@ -553,7 +641,7 @@ function flag_ajax_serial(counter, selection){
         flag_ajax_serial(counter, so);
       } else {
         $('.popupbox').remove();
-        $("#alerts").append(alertbox('success','Added flag.'));
+        // $("#alerts_floating").append(alertbox('success','Added flag.'));
       }
     },
     error: function(error){
@@ -563,40 +651,23 @@ function flag_ajax_serial(counter, selection){
   });
 }
 
-//$(function(){
-//  $("#addtag").click(function(){
-//    if (undefined != selectedBrush){ // only do this if there is a brush selected
-//      s = d3.brushSelection(d3.select("#"+selectedBrush).node())
-//      dat = {}
-//      dat['site'] = $('select[name=site]').val();
-//      dat['startDate'] = x.invert(s[0]);
-//      dat['endDate'] = x.invert(s[1]);
-//      dat['var'] = selectedBrush;
-//      dat['tagid'] = $("select[name=tagID]").val();
-//      dat['comment'] = $("input[name=fcomment]").val();
-//      d3.select("."+selectedBrush).selectAll(".selected").classed("highlighted", function(d) {
-//        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-//        return is_brushed;
-//      });
-//      $.ajax({
-//        type: 'POST',
-//        url:'/_addtag',
-//        data: JSON.stringify(dat),
-//        contentType: 'application/json;charset=UTF-8',
-//        success: function(response){
-//          console.log("success")
-//          $("#alerts").append(alertbox('success','Added tag.'))
-//        },
-//        error: function(error){
-//          console.log(error);
-//        }
-//      });
-//      return false;
-//    }else{
-//      $("#alerts").append(alertbox('warning','Please select values to add Tags/Notes.'))
-//    }
-//  })
-//});
+//remove all flags from selected points
+function rmflag_ajax(){
+  $.ajax({
+    type: 'POST',
+    url:'/_rmflag',
+    data: JSON.stringify(dat),
+    contentType: 'application/json;charset=UTF-8',
+    success: function(){
+      $('.popupbox').remove();
+      console.log("success");
+    },
+    error: function(error){
+      $('.popupbox').remove();
+      console.log(error);
+    }
+  });
+}
 
 // $(function(){
 //   $('#fillbrush').change(function() {
@@ -609,15 +680,15 @@ function flag_ajax_serial(counter, selection){
 // })
 
 //fillbrush
-$('body').ready(function(){ //delegated event handler for filldown brush
-  $('body').on('change', '#fillbrush', function(){
-    if($(this).is(":checked")){
-      brushdown = true;
-    }else{
-      brushdown = false;
-    }
-  });
-});
+// $('body').ready(function(){ //delegated event handler for filldown brush
+//   $('body').on('change', '#fillbrush', function(){
+//     if($(this).is(":checked")){
+//       brushdown = true;
+//     }else{
+//       brushdown = false;
+//     }
+//   });
+// });
 
 </script>
 

@@ -16,9 +16,9 @@ library(accelerometry)
 setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
 # setwd('/home/aaron/sp/scheduled_scripts/')
 
-
+pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
-    username='root', password='pass')
+    username='root', password=pw)
 
 res = dbSendQuery(con, paste0("SELECT DISTINCT site, MID(DateTime_UTC, 1, 7) ",
     "AS date FROM data WHERE upload_id=-900"))
@@ -37,6 +37,8 @@ write(paste('\n    Running script at:', Sys.time()),
     '../../logs_etc/NEON_ingest.log', append=TRUE)
 
 #download list of available nitrate datasets
+write(paste('Checking for new nitrate data.'),
+    '../../logs_etc/NEON_ingest.log', append=TRUE)
 req = GET("http://data.neonscience.org/api/v0/products/DP1.20033.001")
 txt = content(req, as="text")
 nitrate_data = fromJSON(txt, simplifyDataFrame=TRUE, flatten=TRUE)
@@ -56,7 +58,7 @@ for(i in 1:nrow(avail_sets)){
 sets_to_grab = avail_sets[sets_to_grab,]
 
 #filter sets known to have issues
-dataset_blacklist = readLines('../../logs_etc/neon_blacklist.txt')
+dataset_blacklist = readLines('../../logs_etc/NEON_blacklist.txt')
 sets_to_grab = sets_to_grab[! sets_to_grab[,1] %in% dataset_blacklist,]
 
 #process new datasets one at a time

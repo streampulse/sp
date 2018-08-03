@@ -59,16 +59,26 @@
     stroke: red;
     stroke-width: 1px;
   }
+  .highlighted {
+    fill: red;
+    stroke: orange;
+    stroke-width: 2px;
+  }
+  .flagdot {
+    fill: orange;
+    stroke: rgba(0,0,0,0.5);
+    stroke-width: 0.5px;
+  }
   .selected {
-    fill: steelblue;
+    /* fill: steelblue; */
     stroke: black;
     stroke-width: 2px;
   }
-  .highlighted {
-    stroke: orange;
+  /* .sel-highl {
+    stroke: black;
     fill: red;
     stroke-width: 2px;
-  }
+  } */
   .outside {
     stroke: none !important;
     fill: none !important;
@@ -76,11 +86,6 @@
   .naval {
     fill: none;
     stroke: #aaaaaa;
-  }
-  .flagdot {
-    fill: orange;
-    stroke: rgba(0,0,0,0.5);
-    stroke-width: 0.5px;
   }
   .anomdot {
     stroke: deeppink;
@@ -223,6 +228,9 @@
     {% endfor %}
   {% endif %}
   {% endwith %}
+  </div>
+
+  <div id="alerts_floating" style="position:fixed; z-index:100; width: 80%">
   </div>
 
   {% block body %}{% endblock %}
