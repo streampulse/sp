@@ -220,6 +220,7 @@ $(function(){
               d.set = parseDate(d.set);
             });
             flags = JSON.parse(response.flagdat);
+            // flagtypes = JSON.parse(response.flagtypes);
             Plots(variables, data, flags, outliers, "qaqc");
             if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
             $('#flagging').show();
@@ -460,6 +461,18 @@ $('body').ready(function(){
 $('body').ready(function(){
   $('body').on("input", "#fillbrush", selection_manager);
 });
+
+// point hover tooltips
+// $('body').ready(function(){
+//   $('body').on("hover", ".flagdot", hover_info);
+// });
+
+// function hover_info() {
+//   $(this)
+  // var div = d3.select("body").append("div")
+  //   .attr("class", "tooltip")
+  //   .style("opacity", 0);
+// }
 
 function selection_manager() {
   var brsh = d3.brushSelection(d3.select("#" + selectedBrush).node())
