@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###sat20180804
+ + added flag information popups when hovering over flagged data
 ###thu20180802
  + fixed highlighting of flagged points when "apply to all variables" is selected
  + added warnings to qaqc app

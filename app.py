@@ -458,7 +458,6 @@ class Grabupload(db.Model):
     def __repr__(self):
         return '<Grabupload %r>' % (self.filename)
 
-
 db.create_all()
 
 @login_manager.user_loader
@@ -2107,23 +2106,38 @@ def qaqc():
 @app.route('/_getqaqc', methods=["POST"])
 def getqaqc():
     region, site = request.json['site'].split(",")[0].split("_")
-    sqlq = "select * from data where region='"+region+"' and site='"+site+"'"
+    sqlq = "select data.id, data.region, data.site, data.DateTime_UTC, " +\
+        "data.variable, data.value, data.flag as flagid, flag.flag, " +\
+        "flag.comment from data left join flag on data.flag=flag.id where " +\
+        "data.region='" + region + "' and data.site='" + site + "'"
+    # sqlq = "select * from data where region='"+region+"' and site='"+site+"'"
     xx = pd.read_sql(sqlq, db.engine) #this is what makes it take so long. read in 4w chunks
-    xx.loc[xx.flag==0,"value"] = None # set NaNs
-    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
-        axis=1).to_json(orient='records',date_format='iso') # flag data
+    xx.loc[xx.flag==0, "value"] = None # set NaNs
+    flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
+        'comment']].dropna().drop(['flagid'],
+        axis=1).to_json(orient='records', date_format='iso') # flag data
+
+    # flaginfoq = "select * from flag where region='" + region +\
+    #     "' and site='" + site + "';"
+    # flagtypes = pd.read_sql(flaginfoq, db.engine)
+    # flagtypes = flagtypes.drop(['id','region','site','by'],
+    #     axis=1).to_json(orient='records', date_format='iso')
+
     #xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
     variables = list(set(xx['variable'].tolist()))
-    xx = xx.drop('id', axis=1).drop_duplicates()\
-      .set_index(["DateTime_UTC","variable"])\
-      .drop(['region','site','flag','upload_id'], axis=1)
+    xx = xx.drop(['id', 'flag', 'comment'], axis=1).drop_duplicates()\
+        .set_index(["DateTime_UTC", "variable"])\
+        .drop(['region', 'site', 'flagid'], axis=1)
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
+    print xx.head()
     # Get sunrise sunset data
-    sxx = pd.read_sql("select * from site where region='"+region+"' and site='"+site+"'",db.engine)
-    sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)
-    edt = max(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)+timedelta(days=1)
+    sxx = pd.read_sql("select * from site where region='" + region +\
+        "' and site='" + site + "'", db.engine)
+    sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    edt = max(xx.DateTime_UTC).replace(hour=0, minute=0, second=0,
+        microsecond=0)+timedelta(days=1)
 
     ddt = edt-sdt
     lat = sxx.latitude[0]
@@ -2135,19 +2149,20 @@ def getqaqc():
             sets = sets + timedelta(days=1) # account for UTC
         rss.append([rise, sets])
     #
-    rss = pd.DataFrame(rss, columns=("rise","set"))
+    rss = pd.DataFrame(rss, columns=("rise", "set"))
     rss.set = rss.set.shift(1)
-    sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
+    sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
     # Get 2wk plot intervals
     def daterange(start, end):
-        r = (end+timedelta(days=1)-start).days
-        if r%14 > 0:
-            r = r+14
-        return [(end-timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0,r,28)]
+        r = (end + timedelta(days=1) - start).days
+        if r % 14 > 0:
+            r = r + 14
+        return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0,r,28)]
     #drr = pd.date_range(sdt,edt,freq="14D").tolist()[::-1] # need to reverse
     #drr = [da.strftime('%Y-%m-%d') for da in drr]
-    drr = daterange(sdt,edt)
-    return jsonify(variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)
+    drr = daterange(sdt, edt)
+    return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
+        sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)#, flagtypes=flagtypes)
 
 @app.route('/_outlierdetect', methods=["POST"])
 def outlier_detect():

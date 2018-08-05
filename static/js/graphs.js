@@ -22,6 +22,10 @@ var datna;
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 var dott_undef //for disabling popup options if no points selected
+// var flagdict = {}
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
 
 function Plots(variables, data, flags, outliers, page){
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -42,9 +46,9 @@ function Plots(variables, data, flags, outliers, page){
 
     //create line accessor and handler for ignoring undefined values
     var line = d3.line()
-        .defined(function(d){return d[vvv];})
-        .x(function(d) { return x(d.date); })
-        .y(function(d) { return y(d[vvv]); });
+      .defined(function(d){return d[vvv];})
+      .x(function(d) { return x(d.date); })
+      .y(function(d) { return y(d[vvv]); });
 
     var svg = d3.select("#graphs").append("svg")
       .datum(data) //initialize and position
@@ -85,9 +89,17 @@ function Plots(variables, data, flags, outliers, page){
         .attr("class", "backgraph");
     svg.append("g")
         .attr("class", "sunriseset");
+    // flagobj = {}
+    // data.forEach(function(e){
+    //   flagobj[e.DateTime_UTC] = [e.varia
     dff = {} // flagged values
+     // flagarray.push({vvv: []})
+    // flagdict[vvv] = []
     flags.forEach(function(e){
-      if(e.variable==vvv){ dff[e.DateTime_UTC]=e.variable } // only if it is the right variable
+      if(e.variable == vvv){ // only if this is the right variable
+        dff[e.DateTime_UTC] = e.variable
+        // flagdict[vvv].push(e.flag)
+      }
     });
     // code for qaqc page
     if(page=="qaqc"){
@@ -101,10 +113,9 @@ function Plots(variables, data, flags, outliers, page){
           .attr("class", "dot")
           .attr("cx", line.x())
           .attr("cy", line.y())
-          .attr("pointer-events", "none") //pass mouseovers and clicks through to the graph
         .classed("maybe_outl", function(d, j){
           return outliers[vvv] && outliers[vvv].includes(j+1) &&
-            vvv != dff[d.DateTime_UTC]; //datetime is actually stream variable name now
+            vvv != dff[d.DateTime_UTC];
         })
         .attr("r", function(d, j){
           if(outliers[vvv] && outliers[vvv].includes(j+1) &&
@@ -116,7 +127,41 @@ function Plots(variables, data, flags, outliers, page){
         })
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
-        });
+        })
+        .filter('.flagdot')
+        .on("mouseover", function(d, j) {
+
+          //get the name (which for some reason is a class) of the svg under the mouse
+          var hovered_point = this.getBoundingClientRect();
+          var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+          for(var i = 0; i < elems.length; ++i){
+            if(elems[i].tagName.toLowerCase() == 'svg'){
+              var svgname = elems[i].classList[0];
+            }
+          }
+
+          var this_point_flaginfo = $.grep(flags, function(v) {
+            return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
+          })[0];
+
+          div.transition()
+            .duration(200)
+            .style("opacity", .9);
+          div.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+            this_point_flaginfo.comment)
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {
+            div.transition()
+              .duration(500)
+              .style("opacity", 0);
+          });
+
+      //non-flagged points shouldnt register mouse activity
+      svg.selectAll('.dot:not(.flagdot)')
+        .attr('pointer-events', 'none');
+
     }else{ // viz page
       svg.append("path")
           .attr("class", "line")
