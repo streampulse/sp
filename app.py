@@ -2164,6 +2164,10 @@ def getqaqc():
     return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
         sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)#, flagtypes=flagtypes)
 
+@app.route('/qaqc_help')
+def qaqc_help_page():
+    return render_template('qaqc_help.html')
+
 @app.route('/_outlierdetect', methods=["POST"])
 def outlier_detect():
     dat_chunk = pd.DataFrame(request.json)

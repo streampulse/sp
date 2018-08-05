@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<div class="col-md-12 text-center">
+  <p class='lead'>Data cleaning instructions</p>
+</div>
+<div class="col-md-6 col-md-offset-3 text-left">
+  <ul>
+    <li>
+      Place the mouse over flagged (orange) points to view flag information.
+    </li>
+    <li>
+      Click and drag across any plot to bring up the options menu.
+    </li>
+    <li>
+      To flag a series of points, choose a label in the dropdown menu, optionally add a
+      comment, and click either the orange or red button:
+      <ul>
+        <li>
+          Orange: flag all selected points.
+        </li>
+        <li>
+          Red: flag only red points (identified by the outlier detector as
+          potentially anomalous).
+        </li>
+      </ul>
+    </li>
+    <li>
+      To remove flags, select flagged points and press the green button.
+    </li>
+    <li>
+      To zoom back to the full extent, double-click any plot.
+    </li>
+    <li>
+      To move the time window, click "Previous four weeks" or "Next four weeks",
+      or choose a time range from the dropdown.
+    </li>
+  </ul>
+  <br><br>
+</div>
+
+<div class="col-md-12 text-center">
+  <div class="embed-responsive embed-responsive-16by9">
+    <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/ZrtB3fyLDsg" frameborder="0" allowfullscreen></iframe>
+  </div>
+</div>
+
+{% endblock %}
