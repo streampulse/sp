@@ -24,11 +24,17 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
 
 # variables = c('Nitrate_mgL')
 products = c('DO_mgL')
+prods_abb = c('DO')
 # var_codes = c('DP1.20033.001') #DP1.20288.001 wq; DP1.20190.001 rea
 prod_codes = c('DP1.20288.001')
+
+#update log file
+write(paste('\n    Running script at:', Sys.time()),
+    '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+
 for(p in 1:length(products)){
 
-    #get lists of retreived sets for nitrate (N), gas transfer velocity (K) and O2 (O)
+    #get lists of retreived sets
     res = dbSendQuery(con, paste0("SELECT DISTINCT site, MID(DateTime_UTC, 1, 7) ",
         "AS date FROM data WHERE upload_id=-900 and variable='", products[p], "';"))
     # "AS date FROM data WHERE upload_id=-900 and variable='Nitrate_mgL'"))
@@ -54,12 +60,8 @@ for(p in 1:length(products)){
     dbClearResult(res)
     known_sites = resout$site
 
-    #update log file
-    write(paste('\n    Running script at:', Sys.time()),
-        '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
-
     #download list of available datasets for the current data product
-    write(paste('Checking for new', products[p], 'data.'),
+    write(paste('Checking for new', prods_abb[p], 'data.'),
         '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
     req = GET(paste0("http://data.neonscience.org/api/v0/products/", prod_codes[p]))
     txt = content(req, as="text")
@@ -81,7 +83,7 @@ for(p in 1:length(products)){
 
     #filter sets known to have issues
     dataset_blacklist = readLines(paste0('../../logs_etc/NEON/NEON_blacklist_',
-        strsplit(products[p], '_')[[1]][1], '.txt'))
+        prods_abb[p], '.txt'))
     sets_to_grab = sets_to_grab[! sets_to_grab[,1] %in% dataset_blacklist,]
 
     #process new datasets one at a time
@@ -97,52 +99,6 @@ for(p in 1:length(products)){
         write(paste('Processing:', site, date),
             '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
 
-        #download a dataset for one site and month
-        d = GET(url)
-        d = fromJSON(content(d, as="text"))
-
-
-        if(products[p] %in% c('DO_mgL', 'O2GasTransferVelocity_ms')){
-            data_inds = intersect(grep("expanded", d$data$files$name),
-                grep("instantaneous", d$data$files$name))
-        } else {
-            # if(products[p] == 'Nitrate_mgL'){
-            data_inds = intersect(grep("expanded", d$data$files$name),
-                grep("15_minute", d$data$files$name))
-            # } else {
-            #     data_inds = intersect(grep("expanded", d$data$files$name),
-            #         grep("15_minute", d$data$files$name))
-            # }
-        }
-
-        for(j in 1:length(data_inds)){
-            data = read.delim(d$data$files$url[data_inds[j]] , sep=",")
-        }
-        # data = read.delim(d$data$files$url
-        #     [intersect(grep("expanded", d$data$files$name),
-        #         grep("15_minute", d$data$files$name))], sep=",")
-
-
-        na_filt = data[!is.na(data$surfWaterNitrateMean &
-                data$surfWaterNitrateMean != -1),]
-
-        #if it's wonky, move on and add the url to a blacklist
-        weak_coverage = dim(na_filt)[1] < 10
-        neg_ones = sum(na_filt$surfWaterNitrateMean == -1) / nrow(na_filt) > 0.9
-        if(weak_coverage){
-            write(paste('Weak coverage in dataset:', site, date),
-                '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
-
-            write(url, '../../logs_etc/NEON/NEON_blacklist.txt', append=TRUE)
-            next
-        }
-        if(neg_ones){
-            write(paste('Dataset mostly errors: ', site, date),
-                '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
-
-            write(url, '../../logs_etc/NEON/NEON_blacklist.txt', append=TRUE)
-            next
-        }
 
         #download site data
         req = GET(paste0('http://data.neonscience.org/api/v0/sites/', site))
@@ -172,80 +128,194 @@ for(p in 1:length(products)){
             known_sites = append(known_sites, site)
         }
 
-        #compress NEON flag information into one column. flag=1, no flag=0
-        na_filt$flag = 0
-        na_filt$flag[na_filt$finalQF | na_filt$finalQFSciRvw] = 1
+        #download a dataset for one site and month
+        d = GET(url)
+        d = fromJSON(content(d, as="text"))
 
-        #reformat colnames, etc.
-        na_filt = na_filt[, c('startDateTime', 'surfWaterNitrateMean', 'flag')]
-        na_filt$startDateTime = as.character(na_filt$startDateTime)
-        na_filt$startDateTime = gsub('T', ' ', na_filt$startDateTime)
-        na_filt$startDateTime = gsub('Z', '', na_filt$startDateTime)
 
-        #update flag table if there are any flags
-        if(any(na_filt$flag == 1)){
-
-            #locate blocks of flagged data
-            r = rle2(na_filt$flag, indices=TRUE, return.list=TRUE)
-            rlog = as.logical(r$values)
-            flag_run_starts = na_filt$startDateTime[r$starts[rlog]]
-            flag_run_ends = na_filt$startDateTime[r$stops[rlog]]
-
-            #create data frame to insert
-            flag_data = data.frame('startDate'=flag_run_starts)
-            flag_data$endDate = flag_run_ends
-            flag_data$region = site_resp$data$stateCode
-            flag_data$site = site_resp$data$siteCode
-            flag_data$variable = 'Nitrate_mgL'
-            flag_data$flag = 'Questionable'
-            flag_data$comment = 'At least one NEON QC test did not pass'
-            flag_data$by = -900
-
-            dbWriteTable(con, 'flag', flag_data, append=TRUE)
-
-            #get vector of resultant flag IDs to include in data table
-            res = dbSendQuery(con, paste0("SELECT id FROM flag WHERE startDate IN ",
-                "('", paste(flag_run_starts, collapse="','"), "') AND `by`=-900;"))
-            resout = dbFetch(res)
-            dbClearResult(res)
-            flag_ids = resout$id
-
-            write(paste('Added', length(flag_ids), 'flag IDs for: ', site, date),
-                '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+        if(prods_abb[p] %in% c('DO', 'O2GasTransferVelocity')){
+            data_inds = intersect(grep("expanded", d$data$files$name),
+                grep("instantaneous", d$data$files$name))
+        } else {
+            # if(prods_abb[p] == 'Nitrate'){
+            data_inds = intersect(grep("expanded", d$data$files$name),
+                grep("15_minute", d$data$files$name))
+            # } else {
+            #     data_inds = intersect(grep("expanded", d$data$files$name),
+            #         grep("15_minute", d$data$files$name))
+            # }
         }
 
-        #add flag IDs to data table.
-        options(warn=3) #if flagidvec isn't the right size, raise an exception
-        if(exists('flag_ids')){
+        for(j in 1:length(data_inds)){
 
-            #flagidvec should always fit, but in case the below is buggy, it'll
-            #log an error and go to the next url
-            flagidvec = rep(flag_ids, r$lengths[as.logical(r$values)])
-            tryCatch(na_filt$flag[na_filt$flag == 1] <- flagidvec,
-                error=function(e){
-                    write(paste('Error with flagidvec insertion for:',
-                        site, date), '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+            data = read.delim(d$data$files$url[data_inds[j]] , sep=",")
+            # data = read.delim(d$data$files$url
+            #     [intersect(grep("expanded", d$data$files$name),
+            #         grep("15_minute", d$data$files$name))], sep=",")
+
+
+            varind = grep('SciRvw', colnames(data))
+            rgx = str_match(colnames(data)[varind],
+                '^(\\w*)(?:FinalQFSciRvw|SciRvwQF)$')
+            varlist = flagprefixlist = rgx[,2]
+            if('specificCond' %in% varlist){
+                varlist[which(varlist == 'specificCond')] =
+                    'specificConductance'
+            }
+            if('dissolvedOxygenSat' %in% varlist){
+                varlist[which(varlist == 'dissolvedOxygenSat')] =
+                    'dissolvedOxygenSaturation'
+            }
+
+
+            for(k in 1:length(varlist)){
+
+                # na_filt = data[!is.na(data[,v]) & data[,v] >= 0,,
+                #     drop=FALSE]
+                # na_filt = data[!is.na(data$surfWaterNitrateMean &
+                #         data$surfWaterNitrateMean != -1),]
+
+                #if it's wonky, move on and add the url to a blacklist
+                # weak_coverage = dim(na_filt)[1] < 10
+                na_filt = data[!is.na(data[,varlist[k]]) &
+                    data[,varlist[k]] >= 0,] # <0 = error
+                weak_coverage = nrow(na_filt) / nrow(data) < 0.01
+                # mostly_err = sum(data[,v] < 0, na.rm=TRUE) / nrow(data) > 0.9
+                if(weak_coverage){
+                    write(paste('Weak coverage in dataset:', site, date),
+                        '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+
+                    write(url, paste0('../../logs_etc/NEON/NEON_blacklist',
+                        prods_abb[p], '.txt', append=TRUE)
                     next
                 }
-            )
-        }
-        na_filt$flag[na_filt$flag == 0] = NA
-        options(warn=0)
+                # if(mostly_err){
+                #     write(paste('Dataset mostly errors: ', site, date),
+                #         '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+                #
+                #     write(url, '../../logs_etc/NEON/NEON_blacklist',
+                #         prods_abb[p], '.txt', append=TRUE)
+                #     next
+                # }
 
-        #assemble rest of data frame to insert
-        colnames(na_filt) = c('DateTime_UTC', 'value', 'flag')
-        nitrate_molec_mass = 62.0049
-        na_filt$value = (na_filt$value * nitrate_molec_mass) / 1000
-        na_filt$region = site_resp$data$stateCode
-        na_filt$site = site_resp$data$siteCode
-        na_filt$variable = 'Nitrate_mgL'
-        na_filt$upload_id = -900
 
-        dbWriteTable(con, 'data', na_filt, append=TRUE)
+                #compose flag column names
+                neonflag1 = paste0(flagprefixlist[k], 'FinalQF')
+                neonflag2 = paste0(varlist[k], 'FinalQF')
+                litflag1 = paste0(flagprefixlist[k], 'FinalQFSciRvw')
+                litflag2 = paste0(flagprefixlist[k], 'SciRvwQF')
 
-        write(paste('Added', nrow(na_filt), 'records for: ', site, date),
-            '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
-    }
+                #replace flag=NA with flag=0
+                tryCatch({ #sometimes literature flag column has one name...
+                    na_filt[is.na(na_filt[,litflag1]), litflag1] = 0
+                }, error=function(e){})
+                tryCatch({ #sometimes another
+                    na_filt[is.na(na_filt[,litflag2]), litflag2] = 0
+                }, error=function(e){})
 
-    dbDisconnect(con)
+                #compress NEON flag information into one column. flag=1, no flag=0
+                #in NEON parlance, 1=error, 0=good/not reviewed, -1=untestable.
+                #for final QA and sci review though, it's just 1 or 0.
+                #sometimes names are abbreviated, sometimes not.
+                na_filt$flag = 0
+                flagcols = intersect(colnames(na_filt),
+                    c(neonflag1, neonflag2, litflag1, litflag2))
+
+                if(length(flagcols) == 2){
+                    flagged = mapply(`|`, na_filt[,flagcols[1]],
+                        na_filt[,flagcols[2]])
+                    na_filt$flag[flagged] = 1
+                } else {
+                    na_filt[,flagcols] = 1
+                }
+
+                # tryCatch({
+                #     na_filt$flag[na_filt[,neonflag1] | na_filt[,litflag1]] = 1
+                # }, error=function(e){})
+                # tryCatch({
+                #     na_filt$flag[na_filt[,neonflag2] | na_filt[,litflag1]] = 1
+                # }, error=function(e){})
+                # tryCatch({
+                #     na_filt$flag[na_filt[,neonflag1] | na_filt[,litflag2]] = 1
+                # }, error=function(e){})
+                # tryCatch({
+                #     na_filt$flag[na_filt[,neonflag2] | na_filt[,litflag2]] = 1
+                # }, error=function(e){})
+                # tryCatch({
+                #     na_filt$flag[as.logical(na_filt[,litflag2])] = 1 #depth
+                # }, error=function(e){})
+
+
+                #reformat colnames, etc.
+                na_filt = na_filt[, c('startDateTime', 'surfWaterNitrateMean', 'flag')]
+                na_filt$startDateTime = as.character(na_filt$startDateTime)
+                na_filt$startDateTime = gsub('T', ' ', na_filt$startDateTime)
+                na_filt$startDateTime = gsub('Z', '', na_filt$startDateTime)
+
+                #update flag table if there are any flags
+                if(any(na_filt$flag == 1)){
+
+                    #locate blocks of flagged data
+                    r = rle2(na_filt$flag, indices=TRUE, return.list=TRUE)
+                    rlog = as.logical(r$values)
+                    flag_run_starts = na_filt$startDateTime[r$starts[rlog]]
+                    flag_run_ends = na_filt$startDateTime[r$stops[rlog]]
+
+                    #create data frame to insert
+                    flag_data = data.frame('startDate'=flag_run_starts)
+                    flag_data$endDate = flag_run_ends
+                    flag_data$region = site_resp$data$stateCode
+                    flag_data$site = site_resp$data$siteCode
+                    flag_data$variable = 'Nitrate_mgL'
+                    flag_data$flag = 'Questionable'
+                    flag_data$comment = 'At least one NEON QC test did not pass'
+                    flag_data$by = -900
+
+                    dbWriteTable(con, 'flag', flag_data, append=TRUE)
+
+                    #get vector of resultant flag IDs to include in data table
+                    res = dbSendQuery(con, paste0("SELECT id FROM flag WHERE startDate IN ",
+                        "('", paste(flag_run_starts, collapse="','"), "') AND `by`=-900;"))
+                    resout = dbFetch(res)
+                    dbClearResult(res)
+                    flag_ids = resout$id
+
+                    write(paste('Added', length(flag_ids), 'flag IDs for: ', site, date),
+                        '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+                }
+
+                #add flag IDs to data table.
+                options(warn=3) #if flagidvec isn't the right size, raise an exception
+                if(exists('flag_ids')){
+
+                    #flagidvec should always fit, but in case the below is buggy, it'll
+                    #log an error and go to the next url
+                    flagidvec = rep(flag_ids, r$lengths[as.logical(r$values)])
+                    tryCatch(na_filt$flag[na_filt$flag == 1] <- flagidvec,
+                        error=function(e){
+                            write(paste('Error with flagidvec insertion for:',
+                                site, date), '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+                            next
+                        }
+                    )
+                }
+                na_filt$flag[na_filt$flag == 0] = NA
+                options(warn=0)
+
+                #assemble rest of data frame to insert
+                colnames(na_filt) = c('DateTime_UTC', 'value', 'flag')
+                nitrate_molec_mass = 62.0049
+                na_filt$value = (na_filt$value * nitrate_molec_mass) / 1000
+                na_filt$region = site_resp$data$stateCode
+                na_filt$site = site_resp$data$siteCode
+                na_filt$variable = 'Nitrate_mgL'
+                na_filt$upload_id = -900
+
+                dbWriteTable(con, 'data', na_filt, append=TRUE)
+
+                write(paste('Added', nrow(na_filt), 'records for: ', site, date),
+                    '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+            }
+
+            dbDisconnect(con)
 
