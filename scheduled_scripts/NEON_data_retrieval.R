@@ -2,6 +2,7 @@
 # devtools::install_github("NEONScience/NEON-geolocation/geoNEON")
 # devtools::install_github("NEONScience/NEON-utilities/neonUtilities")
 # devtools::install_github('NEONScience/NEON-reaeration/reaRate')
+rm(list=ls()); cat('\014')
 
 library(httr)
 library(jsonlite)
@@ -24,9 +25,13 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
 
 #DO must always be first in these vectors. Sitemonths from the other datasets
 #will be ignored if they're not represented in DO.
-products = c('DO_mgL', 'Nitrate_mgL', 'O2GasTransferVelocity_ms')
-prods_abb = c('DO', 'Nitrate', 'O2GasTransferVelocity')
-prod_codes = c('DP1.20288.001', 'DP1.20033.001', 'DP1.20190.001')
+products = c('DO_mgL', 'Nitrate_mgL', 'O2GasTransferVelocity_ms')#'Discharge_m3s')
+prods_abb = str_split(products, '_', simplify=TRUE)[,1]
+prod_codes = c('DP1.20288.001', 'DP1.20033.001', 'DP1.20190.001')#'DP1.20048.001')
+prod_varlists = list(c('Level_m','SpecCond_uScm','DO_mgL','DOsat_pct','pH',
+    'ChlorophyllA_ugL','Turbidity_FNU'),
+    'Nitrate_mgL', 'O2GasTransferVelocity_ms')
+
 
 varname_mappings = list(sensorDepth='Level_m',
     specificConductance='SpecCond_uScm',
@@ -35,28 +40,37 @@ varname_mappings = list(sensorDepth='Level_m',
     pH='pH',
     chlorophyll='ChlorophyllA_ugL',
     turbidity='Turbidity_FNU',
-    fDOM='fDOM_ppb')
+    fDOM='fDOM_ppb',
+    surfWaterNitrateMean='Nitrate_mgL')
 
 #update log file
-write(paste('\n    Running script at:', Sys.time()),
+write(paste('\n\tRunning script at:', Sys.time()),
     '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
 
 #query sites already in our database
-res = dbSendQuery(con, paste("SELECT DISTINCT site",
+res = dbSendQuery(con, paste("SELECT DISTINCT MID(site, 1, 4) as site",
     "FROM data WHERE upload_id=-900"))
 resout = dbFetch(res)
 dbClearResult(res)
 known_sites = resout$site
 
-if(length(known_sites)){
-    known_sites = unique(str_split(known_sites, '_')[[1]][1]) #remove _up/_down
-}
+# if(length(known_sites)){
+#     known_sites = unique(str_split(known_sites, '_')[[1]][1]) #remove _up/_down
+# }
 
 for(p in 1:length(products)){
 
+    if(prods_abb[p] == 'O2GasTransferVelocity'){
+        write('Skipping K for now.',
+            '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+        next
+    }
+
     #get lists of retreived sets
-    res = dbSendQuery(con, paste0("SELECT DISTINCT site, MID(DateTime_UTC, 1, 7) ",
-        "AS date FROM data WHERE upload_id=-900 and variable='", products[p], "';"))
+    res = dbSendQuery(con, paste0("SELECT DISTINCT MID(site, 1, 4) as site, ",
+        "MID(DateTime_UTC, 1, 7) ",
+        "AS date FROM data WHERE upload_id=-900 and variable in ('",
+        paste(prod_varlists[[p]], collapse="','"), "');"))
     # "AS date FROM data WHERE upload_id=-900 and variable='Nitrate_mgL'"))
     resout = dbFetch(res)
     dbClearResult(res)
@@ -110,7 +124,7 @@ for(p in 1:length(products)){
     }
 
     #filter sets known to have issues
-    if(prods_abb[p] != 'DO'){
+    if(prods_abb[p] != 'DO'){ ####VERIFY THIS
         dataset_blacklist = readLines(paste0('../../logs_etc/NEON/NEON_blacklist_',
             prods_abb[p], '.txt'))
         sets_to_grab = sets_to_grab[! sets_to_grab[,1] %in% dataset_blacklist,]
@@ -132,10 +146,12 @@ for(p in 1:length(products)){
         #download a dataset for one site and month
         d = GET(url)
         d = fromJSON(content(d, as="text"))
+        # d$data$files$name
 
         if(prods_abb[p] %in% c('DO', 'O2GasTransferVelocity')){
             data_inds = intersect(grep("expanded", d$data$files$name),
                 grep("instantaneous", d$data$files$name))
+            # data_inds = 10
         } else {
             # if(prods_abb[p] == 'Nitrate'){
             data_inds = intersect(grep("expanded", d$data$files$name),
@@ -146,15 +162,45 @@ for(p in 1:length(products)){
             # }
         }
 
+        if(! length(data_inds)){
+            write(paste('Error: Datasets missing for', site, date),
+                '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+            next
+        }
+
+
         # two_stations = ifelse(length(data_inds) == 2, TRUE, FALSE)
 
-        #download site data
+        #download site data (needed for flags even if site known)
         req = GET(paste0('http://data.neonscience.org/api/v0/sites/', site))
         txt = content(req, as="text")
         site_resp = fromJSON(txt, simplifyDataFrame=TRUE, flatten=TRUE)
 
         #update site table if this site is new
         if(! site %in% known_sites){
+
+            if(prods_abb[p] != 'DO'){
+                write(paste('Unknown site encountered for non-waterqual variable:',
+                    prods_abb[p], site, date), '. This should have been filtered.',
+                    '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+                next
+            }
+
+            #get lat/long for upstream and downstream stations
+            errflag = FALSE
+            tryCatch({
+                sensor_data_ind = grep("sensor_positions",
+                    d$data$files$name)[1]
+                sensor_pos = read.delim(d$data$files$url[sensor_data_ind],
+                    sep=",")
+                sensor_pos[2,1] #raise exception if only one row
+            }, error=function(e){
+                write(paste('Problem with sensor positions for site', site,
+                    '(', prods_abb[p], date, ')'),
+                    '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+                errflag <<- TRUE
+            })
+            if(errflag) next
 
             cur_time = Sys.time()
             attr(cur_time,'tzone') = 'UTC'
@@ -165,8 +211,8 @@ for(p in 1:length(products)){
                     paste0(site_resp$data$siteCode, '_down')),
                 'name'=c(paste(site_resp$data$siteDescription, 'Upstream'),
                     paste(site_resp$data$siteDescription, 'Downstream')),
-                'latitude'=rep(site_resp$data$siteLatitude, 2),
-                'longitude'=rep(site_resp$data$siteLongitude, 2),
+                'latitude'=sensor_pos$referenceLatitude,
+                'longitude'=sensor_pos$referenceLongitude,
                 'usgs'=rep(NA, 2), 'addDate'=rep(cur_time, 2),
                 'embargo'=rep(0, 2), 'by'=rep(-900, 2),
                 'contact'=rep('NEON', 2), 'contactEmail'=rep(NA, 2))
@@ -180,12 +226,23 @@ for(p in 1:length(products)){
         }
 
         #determine which dataset is upstream/downstream if necessary
+        updown_suffixes = c('_up', '_down')
         if(length(data_inds) == 2){
             position = str_split(d$data$files$name[data_inds[1]], '\\.')[[1]][7]
-            updown_order = ifelse(position == '101', 1:2, 2:1)
+            updown_order = if(position == '101') 1:2 else 2:1
+        } else {
+            updown_order = 1:2 #this should never be needed
         }
 
         for(j in 1:length(data_inds)){
+
+            #add appropriate suffix for upstream/downstream sites
+            if(prods_abb[p] == 'Nitrate'){
+                site_suffix = '_down' #nitrate only measured at downstream
+            } else {
+                site_suffix = updown_suffixes[updown_order[j]]
+            }
+            site_with_suffix = paste0(site_resp$data$siteCode, site_suffix)
 
             #download data
             data = read.delim(d$data$files$url[data_inds[j]], sep=",")
@@ -194,22 +251,32 @@ for(p in 1:length(products)){
             #         grep("15_minute", d$data$files$name))], sep=",")
 
             #get list of variables included
-            varind = grep('SciRvw', colnames(data))
-            rgx = str_match(colnames(data)[varind],
-                '^(\\w*)(?:FinalQFSciRvw|SciRvwQF)$')
-            varlist = flagprefixlist = rgx[,2]
-            if('specificCond' %in% varlist){
-                varlist[which(varlist == 'specificCond')] =
-                    'specificConductance'
+            if(prods_abb[p] == 'DO'){
+                varind = grep('SciRvw', colnames(data))
+                rgx = str_match(colnames(data)[varind],
+                    '^(\\w*)(?:FinalQFSciRvw|SciRvwQF)$')
+                varlist = flagprefixlist = rgx[,2]
+                if('specificCond' %in% varlist){
+                    varlist[which(varlist == 'specificCond')] =
+                        'specificConductance'
+                }
+                if('dissolvedOxygenSat' %in% varlist){
+                    varlist[which(varlist == 'dissolvedOxygenSat')] =
+                        'dissolvedOxygenSaturation'
+                }
+                varlist = varlist[varlist != 'fDOM']
+            } else {
+                if(prods_abb[p] == 'Nitrate'){
+                    varlist = 'surfWaterNitrateMean'
+                    flagprefixlist = ''
+                }
             }
-            if('dissolvedOxygenSat' %in% varlist){
-                varlist[which(varlist == 'dissolvedOxygenSat')] =
-                    'dissolvedOxygenSaturation'
-            }
-            varlist = varlist[varlist != 'fDOM']
 
 
             for(k in 1:length(varlist)){
+
+                current_var = varlist[k]
+                current_var_u = varname_mappings[[varlist[k]]]
 
                 # na_filt = data[!is.na(data[,v]) & data[,v] >= 0,,
                 #     drop=FALSE]
@@ -218,21 +285,21 @@ for(p in 1:length(products)){
 
                 #if it's wonky, move on and add the url to a blacklist
                 # weak_coverage = dim(na_filt)[1] < 10
-                na_filt = data[!is.na(data[,varlist[k]]) &
-                    data[,varlist[k]] >= 0,] # <0 = error
+                na_filt = data[!is.na(data[,current_var]) &
+                    data[,current_var] >= 0,] # <0 = error
                 weak_coverage = nrow(na_filt) / nrow(data) < 0.01
                 # mostly_err = sum(data[,v] < 0, na.rm=TRUE) / nrow(data) > 0.9
                 if(weak_coverage){
-                    write(paste('Weak coverage in', varlist[k], 'dataset:',
-                        site, date), '../../logs_etc/NEON/NEON_ingest.log',
-                        append=TRUE)
+                    write(paste('Insufficient coverage in', current_var, 'for:',
+                        site_with_suffix, date),
+                        '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
 
                     #blacklist problematic datasets so they don't get checked
                     #each time and clog the logfile. Doesn't apply to water qual
                     #data because it includes many variables.
                     if(prods_abb[p] == 'Nitrate'){
-                        write(url, paste0('../../logs_etc/NEON/NEON_blacklist',
-                            prods_abb[p], '.txt', append=TRUE)
+                        write(url, paste0('../../logs_etc/NEON/NEON_blacklist_',
+                            prods_abb[p], '.txt'), append=TRUE)
                     }
 
                     next
@@ -248,9 +315,11 @@ for(p in 1:length(products)){
 
                 #compose flag column names
                 neonflag1 = paste0(flagprefixlist[k], 'FinalQF')
-                neonflag2 = paste0(varlist[k], 'FinalQF')
+                neonflag2 = paste0(current_var, 'FinalQF')
+                neonflag3 = paste0(flagprefixlist[k], 'finalQF')
                 litflag1 = paste0(flagprefixlist[k], 'FinalQFSciRvw')
                 litflag2 = paste0(flagprefixlist[k], 'SciRvwQF')
+                litflag3 = paste0(flagprefixlist[k], 'finalQFSciRvw')
 
                 #replace flag=NA with flag=0
                 tryCatch({ #sometimes literature flag column has one name...
@@ -266,7 +335,8 @@ for(p in 1:length(products)){
                 #take into account inconsistent variable names.
                 na_filt$flag = 0
                 flagcols = intersect(colnames(na_filt),
-                    c(neonflag1, neonflag2, litflag1, litflag2))
+                    c(neonflag1, neonflag2, neonflag3, litflag1, litflag2,
+                        litflag3))
 
                 if(length(flagcols) == 2){
                     flagged = mapply(`|`, na_filt[,flagcols[1]],
@@ -294,7 +364,11 @@ for(p in 1:length(products)){
 
 
                 #reformat colnames, etc.
-                na_filt = na_filt[, c('startDateTime', varlist[k], 'flag')]
+                if('startDate' %in% colnames(na_filt)){
+                    colnames(na_filt)[which(colnames(na_filt) == 'startDate')] =
+                        'startDateTime'
+                }
+                na_filt = na_filt[, c('startDateTime', current_var, 'flag')]
                 # na_filt = na_filt[, c('startDateTime', 'surfWaterNitrateMean', 'flag')]
                 na_filt$startDateTime = as.character(na_filt$startDateTime)
                 na_filt$startDateTime = gsub('T', ' ', na_filt$startDateTime)
@@ -313,13 +387,8 @@ for(p in 1:length(products)){
                     flag_data = data.frame('startDate'=flag_run_starts)
                     flag_data$endDate = flag_run_ends
                     flag_data$region = site_resp$data$stateCode
-                    if(prods_abb[p] == 'Nitrate'){
-                        site_suffix = '_down'
-                    } else {
-                        if(j == 1)
-                        site_suffix =
-                    flag_data$site = site_resp$data$siteCode
-                    flag_data$variable = varname_mappings[[varlist[k]]]
+                    flag_data$site = site_with_suffix
+                    flag_data$variable = current_var_u
                     flag_data$flag = 'Questionable'
                     flag_data$comment = 'At least one NEON QC test did not pass'
                     flag_data$by = -900
@@ -330,13 +399,16 @@ for(p in 1:length(products)){
                     res = dbSendQuery(con,
                         paste0("SELECT id FROM flag WHERE startDate IN ",
                         "('", paste(flag_run_starts, collapse="','"),
-                            "') AND `by`=-900;"))
+                            "') AND variable='", current_var_u,
+                            "' AND `by`=-900 AND region='",
+                            site_resp$data$stateCode, "' AND site='",
+                            site_with_suffix, "';"))
                     resout = dbFetch(res)
                     dbClearResult(res)
                     flag_ids = resout$id
 
-                    write(paste('Added', length(flag_ids), varlist[k],
-                        'flag IDs for: ', site, date),
+                    write(paste('Added', length(flag_ids), current_var,
+                        'flag ID(s) for: ', site_with_suffix, date),
                         '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
                 }
 
@@ -344,18 +416,22 @@ for(p in 1:length(products)){
                 options(warn=3) #if flagidvec isn't the right size, raise an exception
                 if(exists('flag_ids')){
 
-                    #flagidvec should always fit, but in case the below is buggy, it'll
-                    #log an error and go to the next url
-                    flagidvec = rep(flag_ids, r$lengths[as.logical(r$values)])
-                    tryCatch(na_filt$flag[na_filt$flag == 1] <- flagidvec,
-                        error=function(e){
-                            write(paste('Error with flagidvec insertion for:',
-                                prods_abb[p], site, date),
-                                '../../logs_etc/NEON/NEON_ingest.log',
-                                append=TRUE)
-                            next
-                        }
-                    )
+                    #flagidvec should always fit, but in case the below is buggy,
+                    #it'll log an error and go to the next url
+                    errflag = FALSE
+                    tryCatch({
+                        flagidvec = rep(flag_ids, r$lengths[as.logical(r$values)])
+                        na_filt$flag[na_filt$flag == 1] = flagidvec
+                    }, error=function(e){
+                        write(paste('Error with flagidvec creation/insertion for:',
+                            current_var, site_with_suffix, date),
+                            '../../logs_etc/NEON/NEON_ingest.log',
+                            append=TRUE)
+                        errflag <<- TRUE
+                    })
+                    rm(flag_ids)
+                    if(errflag) next
+
                 }
                 na_filt$flag[na_filt$flag == 0] = NA
                 options(warn=0)
@@ -363,8 +439,8 @@ for(p in 1:length(products)){
                 #assemble rest of data frame to insert
                 colnames(na_filt) = c('DateTime_UTC', 'value', 'flag')
                 na_filt$region = site_resp$data$stateCode
-                na_filt$site = site_resp$data$siteCode
-                na_filt$variable = varname_mappings[[varlist[k]]]
+                na_filt$site = site_with_suffix
+                na_filt$variable = current_var_u
                 na_filt$upload_id = -900
 
                 if(prods_abb[p] == 'Nitrate'){
@@ -372,12 +448,13 @@ for(p in 1:length(products)){
                     na_filt$value = (na_filt$value * nitrate_molec_mass) / 1000
                 }
                 if(prods_abb[p] == 'O2GasTransferVelocity'){
+                    print('o')
                 }
 
                 dbWriteTable(con, 'data', na_filt, append=TRUE)
 
-                write(paste('Added', nrow(na_filt), varlist[k],
-                    'records for: ', site, date),
+                write(paste('Added', nrow(na_filt), current_var,
+                    'records for: ', site_with_suffix, date),
                     '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
             }
         }
@@ -388,4 +465,3 @@ dbDisconnect(con)
 
 #todo: average 5 min stuff by 30 (thts the interval that water qual comes in)
 #the additional (non instantaneous) file for each site may contain depth (this is buoy)
-#just determined sensor updown order, now utilize that info
