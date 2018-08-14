@@ -2,7 +2,7 @@
 # devtools::install_github("NEONScience/NEON-geolocation/geoNEON")
 # devtools::install_github("NEONScience/NEON-utilities/neonUtilities")
 # devtools::install_github('NEONScience/NEON-reaeration/reaRate')
-rm(list=ls()); cat('\014')
+#rm(list=ls()); cat('\014')
 
 library(httr)
 library(jsonlite)

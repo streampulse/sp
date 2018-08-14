@@ -1940,7 +1940,7 @@ def getcsv():
         xx.to_csv(tmp + '/' + s + '_sensorData.csv', index=False)
 
         #put additional metadata in folder if metdata file exists
-        mdfile = os.path.join(app.config['META_FOLDER'], s + "_addtl_metadata.txt")
+        mdfile = os.path.join(app.config['META_FOLDER'], s + "_metadata.txt")
         if os.path.isfile(mdfile):
             shutil.copy2(mdfile, tmp)
 
