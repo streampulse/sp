@@ -7,21 +7,22 @@ rm(list=ls()); cat('\014')
 library(httr)
 library(jsonlite)
 library(dplyr)
-library(downloader)
+# library(downloader)
 library(RMariaDB)
 library(DBI)
 library(stringr)
 library(accelerometry)
-library(reaRate)
+# library(reaRate)
 # library(geoNEON)
 # library(neonUtilities)
 
-setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
-# setwd('/home/aaron/sp/scheduled_scripts/')
+# setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
+setwd('/home/aaron/sp/scheduled_scripts/')
 
 pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
-    username='root', password=pw)
+    username='mike', password=pw)
+    # username='root', password=pw)
 
 #DO must always be first in these vectors. Sitemonths from the other datasets
 #will be ignored if they're not represented in DO.
@@ -54,9 +55,7 @@ resout = dbFetch(res)
 dbClearResult(res)
 known_sites = resout$site
 
-# if(length(known_sites)){
-#     known_sites = unique(str_split(known_sites, '_')[[1]][1]) #remove _up/_down
-# }
+# p=i=j=1;k=3
 
 for(p in 1:length(products)){
 
@@ -71,7 +70,6 @@ for(p in 1:length(products)){
         "MID(DateTime_UTC, 1, 7) ",
         "AS date FROM data WHERE upload_id=-900 and variable in ('",
         paste(prod_varlists[[p]], collapse="','"), "');"))
-    # "AS date FROM data WHERE upload_id=-900 and variable='Nitrate_mgL'"))
     resout = dbFetch(res)
     dbClearResult(res)
     retrieved_sets = paste(resout$site, resout$date)
@@ -80,18 +78,6 @@ for(p in 1:length(products)){
     if(prods_abb[p] == 'DO'){
         relevant_sitemonths = retrieved_sets
     }
-
-    # res = dbSendQuery(con, paste0("SELECT DISTINCT site, MID(DateTime_UTC, 1, 7) ",
-    #     "AS date FROM data WHERE upload_id=-900 and variable='Nitrate_mgL'"))
-    # resout = dbFetch(res)
-    # dbClearResult(res)
-    # retrieved_sets = paste(resout$site, resout$date)
-    #
-    # res = dbSendQuery(con, paste0("SELECT DISTINCT site, MID(DateTime_UTC, 1, 7) ",
-    #     "AS date FROM data WHERE upload_id=-900 and variable='Nitrate_mgL'"))
-    # resout = dbFetch(res)
-    # dbClearResult(res)
-    # retrieved_sets_N = paste(resout$site, resout$date)
 
     #download list of available datasets for the current data product
     write(paste('Checking for new', prods_abb[p], 'data.'),
@@ -124,7 +110,7 @@ for(p in 1:length(products)){
     }
 
     #filter sets known to have issues
-    if(prods_abb[p] != 'DO'){ ####VERIFY THIS
+    if(prods_abb[p] != 'DO'){
         dataset_blacklist = readLines(paste0('../../logs_etc/NEON/NEON_blacklist_',
             prods_abb[p], '.txt'))
         sets_to_grab = sets_to_grab[! sets_to_grab[,1] %in% dataset_blacklist,]
@@ -146,20 +132,13 @@ for(p in 1:length(products)){
         #download a dataset for one site and month
         d = GET(url)
         d = fromJSON(content(d, as="text"))
-        # d$data$files$name
 
         if(prods_abb[p] %in% c('DO', 'O2GasTransferVelocity')){
             data_inds = intersect(grep("expanded", d$data$files$name),
                 grep("instantaneous", d$data$files$name))
-            # data_inds = 10
         } else {
-            # if(prods_abb[p] == 'Nitrate'){
             data_inds = intersect(grep("expanded", d$data$files$name),
                 grep("15_minute", d$data$files$name))
-            # } else {
-            #     data_inds = intersect(grep("expanded", d$data$files$name),
-            #         grep("15_minute", d$data$files$name))
-            # }
         }
 
         if(! length(data_inds)){
@@ -167,7 +146,6 @@ for(p in 1:length(products)){
                 '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
             next
         }
-
 
         # two_stations = ifelse(length(data_inds) == 2, TRUE, FALSE)
 
@@ -246,9 +224,6 @@ for(p in 1:length(products)){
 
             #download data
             data = read.delim(d$data$files$url[data_inds[j]], sep=",")
-            # data = read.delim(d$data$files$url
-            #     [intersect(grep("expanded", d$data$files$name),
-            #         grep("15_minute", d$data$files$name))], sep=",")
 
             #get list of variables included
             if(prods_abb[p] == 'DO'){
@@ -272,23 +247,15 @@ for(p in 1:length(products)){
                 }
             }
 
-
             for(k in 1:length(varlist)){
 
                 current_var = varlist[k]
                 current_var_u = varname_mappings[[varlist[k]]]
 
-                # na_filt = data[!is.na(data[,v]) & data[,v] >= 0,,
-                #     drop=FALSE]
-                # na_filt = data[!is.na(data$surfWaterNitrateMean &
-                #         data$surfWaterNitrateMean != -1),]
-
                 #if it's wonky, move on and add the url to a blacklist
-                # weak_coverage = dim(na_filt)[1] < 10
                 na_filt = data[!is.na(data[,current_var]) &
                     data[,current_var] >= 0,] # <0 = error
                 weak_coverage = nrow(na_filt) / nrow(data) < 0.01
-                # mostly_err = sum(data[,v] < 0, na.rm=TRUE) / nrow(data) > 0.9
                 if(weak_coverage){
                     write(paste('Insufficient coverage in', current_var, 'for:',
                         site_with_suffix, date),
@@ -304,14 +271,6 @@ for(p in 1:length(products)){
 
                     next
                 }
-                # if(mostly_err){
-                #     write(paste('Dataset mostly errors: ', site, date),
-                #         '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
-                #
-                #     write(url, '../../logs_etc/NEON/NEON_blacklist',
-                #         prods_abb[p], '.txt', append=TRUE)
-                #     next
-                # }
 
                 #compose flag column names
                 neonflag1 = paste0(flagprefixlist[k], 'FinalQF')
@@ -346,23 +305,6 @@ for(p in 1:length(products)){
                     na_filt[,flagcols] = 1
                 }
 
-                # tryCatch({
-                #     na_filt$flag[na_filt[,neonflag1] | na_filt[,litflag1]] = 1
-                # }, error=function(e){})
-                # tryCatch({
-                #     na_filt$flag[na_filt[,neonflag2] | na_filt[,litflag1]] = 1
-                # }, error=function(e){})
-                # tryCatch({
-                #     na_filt$flag[na_filt[,neonflag1] | na_filt[,litflag2]] = 1
-                # }, error=function(e){})
-                # tryCatch({
-                #     na_filt$flag[na_filt[,neonflag2] | na_filt[,litflag2]] = 1
-                # }, error=function(e){})
-                # tryCatch({
-                #     na_filt$flag[as.logical(na_filt[,litflag2])] = 1 #depth
-                # }, error=function(e){})
-
-
                 #reformat colnames, etc.
                 if('startDate' %in% colnames(na_filt)){
                     colnames(na_filt)[which(colnames(na_filt) == 'startDate')] =
@@ -396,20 +338,30 @@ for(p in 1:length(products)){
                     dbWriteTable(con, 'flag', flag_data, append=TRUE)
 
                     #get vector of resultant flag IDs to include in data table
-                    res = dbSendQuery(con,
-                        paste0("SELECT id FROM flag WHERE startDate IN ",
-                        "('", paste(flag_run_starts, collapse="','"),
-                            "') AND variable='", current_var_u,
-                            "' AND `by`=-900 AND region='",
-                            site_resp$data$stateCode, "' AND site='",
-                            site_with_suffix, "';"))
-                    resout = dbFetch(res)
-                    dbClearResult(res)
-                    flag_ids = resout$id
+                    flag_ids = c()
+                    nfchunks = ceiling(length(flag_run_starts) / 200)
+                    for(l in 1:nfchunks){
+                        if(l == nfchunks){
+                            ch = flag_run_starts
+                        } else {
+                            ch = flag_run_starts[1:200]
+                            flag_run_starts =
+                                flag_run_starts[201:length(flag_run_starts)]
+                        }
 
-                    write(paste('Added', length(flag_ids), current_var,
-                        'flag ID(s) for: ', site_with_suffix, date),
-                        '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+                        print(length(ch))
+                        res = dbSendQuery(con,
+                            paste0("SELECT id FROM flag WHERE startDate IN ",
+                            "('", paste(ch, collapse="','"),
+                                "') AND variable='", current_var_u,
+                                "' AND `by`=-900 AND region='",
+                                site_resp$data$stateCode, "' AND site='",
+                                site_with_suffix, "';"))
+                        resout = dbFetch(res)
+                        dbClearResult(res)
+                        chunkout = resout$id
+                        flag_ids = c(flag_ids, chunkout)
+                    }
                 }
 
                 #add flag IDs to data table.
@@ -422,11 +374,15 @@ for(p in 1:length(products)){
                     tryCatch({
                         flagidvec = rep(flag_ids, r$lengths[as.logical(r$values)])
                         na_filt$flag[na_filt$flag == 1] = flagidvec
+                        write(paste('Added', length(flag_ids), current_var,
+                            'flag ID(s) for: ', site_with_suffix, date),
+                            '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
                     }, error=function(e){
                         write(paste('Error with flagidvec creation/insertion for:',
                             current_var, site_with_suffix, date),
                             '../../logs_etc/NEON/NEON_ingest.log',
                             append=TRUE)
+                        next
                         errflag <<- TRUE
                     })
                     rm(flag_ids)
@@ -462,6 +418,3 @@ for(p in 1:length(products)){
 }
 
 dbDisconnect(con)
-
-#todo: average 5 min stuff by 30 (thts the interval that water qual comes in)
-#the additional (non instantaneous) file for each site may contain depth (this is buoy)
