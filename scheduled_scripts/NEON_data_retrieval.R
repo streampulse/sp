@@ -185,8 +185,8 @@ for(p in 1:length(products)){
 
             #create data frame to insert
             site_data = data.frame('region'=rep(site_resp$data$stateCode, 2),
-                'site'=c(paste0(site_resp$data$siteCode, '_up'),
-                    paste0(site_resp$data$siteCode, '_down')),
+                'site'=c(paste0(site_resp$data$siteCode, '-up'),
+                    paste0(site_resp$data$siteCode, '-down')),
                 'name'=c(paste(site_resp$data$siteDescription, 'Upstream'),
                     paste(site_resp$data$siteDescription, 'Downstream')),
                 'latitude'=sensor_pos$referenceLatitude,
@@ -204,7 +204,7 @@ for(p in 1:length(products)){
         }
 
         #determine which dataset is upstream/downstream if necessary
-        updown_suffixes = c('_up', '_down')
+        updown_suffixes = c('-up', '-down')
         if(length(data_inds) == 2){
             position = str_split(d$data$files$name[data_inds[1]], '\\.')[[1]][7]
             updown_order = if(position == '101') 1:2 else 2:1
@@ -216,7 +216,7 @@ for(p in 1:length(products)){
 
             #add appropriate suffix for upstream/downstream sites
             if(prods_abb[p] == 'Nitrate'){
-                site_suffix = '_down' #nitrate only measured at downstream
+                site_suffix = '-down' #nitrate only measured at downstream
             } else {
                 site_suffix = updown_suffixes[updown_order[j]]
             }
