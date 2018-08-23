@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# os.chdir('/home/mike/git/streampulse/server_copy/sp')
 from flask import Flask, Markup, session, flash, render_template, request, jsonify, url_for, make_response, send_file, redirect, g
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1460,6 +1461,16 @@ def updatedb(xx, fnamelist, replace=False):
     else: #if not replacing, just insert new data
         chunker_ingester(xx)
 
+    #create and call stored procedure to update site table with var list and time range
+    with open('site_update_stored_procedure.sql', 'r') as f:
+        t = f.read()
+
+    t = t.replace('RR', xx.region[0])
+    t = t.replace('SS', xx.site[0])
+
+    db.session.execute(t)
+    db.session.execute('CALL update_site_table();')
+
 def grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict):
 
     #get input variable name list
@@ -1805,41 +1816,30 @@ def getsitenames(regionsite):
 @app.route('/download')
 def download():
 
-    #acquire site list and authenticate
-    vv = pd.read_sql("select distinct region, site, variable from data",
-        db.engine)
-    sites = [x[0] + "_" + x[1] for x in zip(vv.region, vv.site)]
-    sites = list(set(sites))
+    #acquire site data and filter rows by authenticated sites
+    sitedata = pd.read_sql("select region, site, name, variableList " +\
+        "as variable, firstRecord as startdate, lastRecord as enddate " +\
+        "from site;", db.engine)
+    sitedata['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedata.region,
+        sitedata.site)]
 
     if current_user.is_authenticated:
-        sites = authenticate_sites(sites, user=current_user.get_id())
+        sites = authenticate_sites(sitedata.regionsite,
+            user=current_user.get_id())
     else:
-        sites = authenticate_sites(sites)
+        sites = authenticate_sites(sitedata.regionsite)
 
-    #
-    ss = []
-    for site in sites:
-        r, s = site.split("_")
-        ss.append("(region='" + r + "' and site='" + s + "') ")
-    qs = "or ".join(ss)
+    sitedata = sitedata[sitedata.regionsite.isin(sites) &
+        sitedata.variable.notnull()]
 
-    nn = pd.read_sql("select region, site, name from site", db.engine)
-    # print nn
-    dd = pd.read_sql("select region, site, min(DateTime_UTC) as startdate, " +\
-        "max(DateTime_UTC) as enddate from data where " + qs +\
-        "group by region, site", db.engine)
-    # print dd
-    nd = nn.merge(dd, on=['region','site'], how='right')
-    # print nd
-    vv = vv.groupby(['region','site'])['variable'].unique().reset_index()
-    print vv
-    dx = pd.merge(vv, nd, on=['region','site'], how='right')
-    print dx
-    dx['regionsite'] = [x[0] + "_" + x[1] for x in zip(dx.region, dx.site)]
-    dx.startdate = dx.startdate.apply(lambda x: x.strftime('%Y-%m-%d'))
-    dx.enddate = dx.enddate.apply(lambda x: x.strftime('%Y-%m-%d'))
-    dx.name = dx.region + " - " + dx.name
-    dvv = dx[['regionsite','name','startdate','enddate','variable']].values
+    #reformat and filter columns; return data as dict
+    sitedata.variable = sitedata.variable.apply(lambda x: x.split(','))
+    sitedata.startdate = sitedata.startdate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedata.enddate = sitedata.enddate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedata.name = sitedata.region + " - " + sitedata.name
+    dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
 
     return render_template('download.html', sites=sitedict)

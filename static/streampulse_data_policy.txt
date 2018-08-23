@@ -1,11 +1,11 @@
 # StreamPULSE Data Policy
 
-The StreamPULSE data offered in this download are shared to enhance information reuse and scientific discovery. Two data products are made available:
+The StreamPULSE data offered in this download are shared to enhance information reuse and scientific discovery. Two data products are available:
 
 1. Sensor and manual field observations: these data may not be fully vetted and in many cases are preliminary.
 2. Metabolism model output: these data are versioned estimates of metabolism based on field observations and network-recognized models.
 
-These data are made available under the Open Data Commons Attribution License: http://opendatacommons.org/licenses/by/1.0.
+These data are available under the Open Data Commons Attribution License: http://opendatacommons.org/licenses/by/1.0.
 
 
 ## For users:
@@ -15,7 +15,7 @@ In summary, you are free:
 - To Create: To produce works from the database.
 - To Adapt: To modify, transform and build upon the database.
 
-As long as you:
+So long as you:
 
 - Attribute: You must attribute any public use of the database, or works produced from the database, in the manner specified in the license. For any use or redistribution of the database, or works produced from it, you must make clear to others the license of the database and keep intact any notices on the original database.
 
@@ -29,4 +29,4 @@ Notification: The data user should notify the data contributor when any derivati
 
 
 ## For contributors:
-Contributed data will be made available under the above license. Individual contributing sites may request that sensor and manual field observations be embargoed for a period of time by contacting a project representative (e.g., vlahm13@gmail.com) before uploading data. If this request is not received and confirmed, then all uploaded sensor and manual field observations will be made immediately publicly available. All metabolism model estimates will be publicly available under the above license.
+Contributed data will be made available under the above license. By default, data from newly contributed study sites will be embargoed for one year past the date of upload. This means that only the uploading user can download, visualize, or in any way access data or model estimates from such sites for one year. If a user wishes to modify this embargo period, or to permit specific other users to access embargoed data, they may do so by contacting a project representative (e.g. Michael Vlah: vlahm13@gmail.com).
