@@ -800,15 +800,17 @@ def panda_usgs(x,jsof):
         'value':colnm}).set_index(["DateTime_UTC"])}
     return out
 
-def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
+def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
     # regionsite is a list
     # vvv is a list of variable codes
     #00060 is cfs, discharge; 00065 is feet, height
-    xs = pd.read_sql("select * from site",db.engine)
-    xs['regionsite'] = xs["region"].map(str)+"_"+xs["site"]
+    xs = pd.read_sql('select id, region, site, name, latitude, ' +\
+        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'from site', db.engine)
+    xs['regionsite'] = xs["region"].map(str) + "_" + xs["site"]
     # for each region site...
     sitex = xs.loc[xs.regionsite.isin(regionsite)].usgs.tolist()
-    sitedict = dict(zip(sitex,regionsite))
+    sitedict = dict(zip(sitex, regionsite))
     sitex = [x for x in sitex if x is not None]
     usgs = ",".join(sitex)
     #lat,lng = sitex.loc[:,['latitude','longitude']].values.tolist()[0]
@@ -832,7 +834,7 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060','00065']):
         x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
         x2['site']=sitedict[s]
         xoo.append(x2.reset_index())
-    #
+
     xx = pd.concat(xoo)
     xx = xx.set_index(['DateTime_UTC','site'])
     xx.columns.name='variable'
@@ -1167,7 +1169,7 @@ def series_upload():
         # check if existing site
         try:
             allsites = pd.read_sql("select concat(region, '_', site) as" +\
-                " sitenm from site",db.engine).sitenm.tolist()
+                " sitenm from site", db.engine).sitenm.tolist()
             existing = True if site[0] in allsites else False
 
             #go to next webpage
@@ -2086,7 +2088,10 @@ def getviz():
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
     # Get sunrise sunset data
-    sxx = pd.read_sql("select * from site where region='"+region+"' and site='"+site+"'",db.engine)
+    sxx = pd.read_sql("select id, region, site, name, latitude, " +\
+        "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
+        "from site where region='" + region +\
+        "' and site='" + site + "'", db.engine)
     sdt = datetime.strptime(startDate,"%Y-%m-%d")
     edt = datetime.strptime(endDate,"%Y-%m-%d")
     ddt = edt-sdt
@@ -2094,15 +2099,17 @@ def getviz():
     lng = sxx.longitude[0]
     rss = []
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt+timedelta(days=i-1), latitude=lat, longitude=lng).calculate())
-        if rise>sets:
+        rise, sets = list(suns(sdt + timedelta(days=i-1), latitude=lat,
+            longitude=lng).calculate())
+        if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
         rss.append([rise, sets])
-    #
-    rss = pd.DataFrame(rss, columns=("rise","set"))
+
+    rss = pd.DataFrame(rss, columns=("rise", "set"))
     rss.set = rss.set.shift(1)
     sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
-    return jsonify(variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
+    return jsonify(variables=variables, dat=xx.to_json(orient='records',
+        date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
 
 @app.route('/logbook')
 def print_log():
@@ -2153,7 +2160,9 @@ def getqaqc():
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
     # Get sunrise sunset data
-    sxx = pd.read_sql("select * from site where region='" + region +\
+    sxx = pd.read_sql("select id, region, site, name, latitude, " +\
+        "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
+        "from site where region='" + region +\
         "' and site='" + site + "'", db.engine)
     sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     edt = max(xx.DateTime_UTC).replace(hour=0, minute=0, second=0,
@@ -2339,7 +2348,9 @@ def api():
 
     #test for site existence
     reg, sit = sites[0].split('_')
-    q1 = "select * from site where region='" + reg + "' and site='" + sit + "';"
+    q1 = "select id, region, site, name, latitude, " +\
+        "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
+        "from site where region='" + reg + "' and site='" + sit + "';"
     resp = pd.read_sql(q1, db.engine)
     if resp.shape[0] == 0:
         return jsonify(error='Unknown site requested.')
@@ -2359,8 +2370,8 @@ def api():
     ss = []; ss2 = []
     for site in sites:
         r,s = site.split("_")
-        ss.append("(region='"+r+"' and site='"+s+"') ")
-        ss2.append("(data.region='"+r+"' and data.site='"+s+"') ")
+        ss.append("(region='" + r + "' and site='" + s + "') ")
+        ss2.append("(data.region='" + r + "' and data.site='" + s + "') ")
 
     qs = "or ".join(ss)
     qs2 = "or ".join(ss2)
@@ -2456,7 +2467,9 @@ def model_details_download():
     regsite = [region + '_' + site]
 
     #test
-    q1 = "select * from site where region='" + region +\
+    q1 = "select id, region, site, name, latitude, " +\
+        "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
+        "from site where region='" + region +\
         "' and site='" + site + "';"
     resp = pd.read_sql(q1, db.engine)
     if resp.shape[0] == 0:
@@ -2553,29 +2566,33 @@ def model_upload():
 @app.route('/model')
 def modelgen():
     xx = pd.read_sql("select distinct region, site from data", db.engine)
-    sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
+    sites = [x[0] + "_" + x[1] for x in zip(xx.region,xx.site)]
     if current_user.is_authenticated:
         sites = authenticate_sites(sites, user=current_user.get_id())
     else:
         sites = authenticate_sites(sites)
     ss = []
     for site in sites:
-        r,s = site.split("_")
-        ss.append("(region='"+r+"' and site='"+s+"') ")
+        r, s = site.split("_")
+        ss.append("(region='" + r + "' and site='" + s + "') ")
     qs = "or ".join(ss)
-    nn = pd.read_sql("select region, site, name from site",db.engine)
-    dd = pd.read_sql("select region, site, min(DateTime_UTC) as startdate, max(DateTime_UTC) as enddate from data where "+qs+"group by region, site", db.engine)
+    nn = pd.read_sql("select region, site, name from site", db.engine)
+    dd = pd.read_sql("select region, site, min(DateTime_UTC) as startdate, " +\
+        "max(DateTime_UTC) as enddate from data where " + qs + "group by " +\
+        "region, site", db.engine)
     # dd = pd.read_sql_table('data',db.engine)[['region','site','DateTime_UTC']]
     # dd = pd.concat([dd.groupby(['region','site']).DateTime_UTC.min(),dd.groupby(['region','site']).DateTime_UTC.max()], axis=1)
     # dd.columns = ['startdate','enddate']
     # dd = dd.reset_index()
     dx = nn.merge(dd, on=['region','site'], how='right')
-    dx['regionsite'] = [x[0]+"_"+x[1] for x in zip(dx.region,dx.site)]
+    dx['regionsite'] = [x[0] + "_" + x[1] for x in zip(dx.region, dx.site)]
     dx.startdate = dx.startdate.apply(lambda x: x.strftime('%Y-%m-%d'))
     dx.enddate = dx.enddate.apply(lambda x: x.strftime('%Y-%m-%d'))
-    dx.name = dx.region+" - "+dx.name
-    sitedict = sorted([tuple(x) for x in dx[['regionsite','name','startdate','enddate']].values], key=lambda tup: tup[1])
-    return render_template('model.html',sites=sitedict)
+    dx.name = dx.region + " - " + dx.name
+    sitedict = sorted([tuple(x) for x in dx[['regionsite','name','startdate',
+        'enddate']].values], key=lambda tup: tup[1])
+
+    return render_template('model.html', sites=sitedict)
 
 @app.route('/map')
 def site_map():
@@ -2583,7 +2600,9 @@ def site_map():
     core_sites = pd.read_csv('static/sitelist.csv')
     core_sites = list(core_sites['REGIONID'] + '_' + core_sites['SITEID'])
 
-    site_data = pd.read_sql('select * from site;', db.engine)
+    site_data = pd.read_sql('select id, region, site, name, latitude, ' +\
+        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'from site;', db.engine)
     site_data.addDate = site_data.addDate.astype('str')
     site_dict = site_data.to_dict('records')
 
