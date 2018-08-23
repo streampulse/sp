@@ -19,10 +19,18 @@ library(accelerometry)
 # setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
 setwd('/home/aaron/sp/scheduled_scripts/')
 
-pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
+conf = read_lines('../config.py')
+extract_from_config = function(key){
+    ind = which(lapply(conf, function(x) grepl(key, x)) == TRUE)
+    val = str_match(conf[ind], '.*\\"(.*)\\"')[2]
+    return(val)
+}
+pw = extract_from_config('MYSQL_PW')
+#pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
+
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
-    username='mike', password=pw)
-    # username='root', password=pw)
+    # username='mike', password=pw)
+    username='root', password=pw)
 
 #DO must always be first in these vectors. Sitemonths from the other datasets
 #will be ignored if they're not represented in DO.
