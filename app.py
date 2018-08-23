@@ -478,9 +478,10 @@ def before_request():
 ########### FUNCTIONS
 # Load core data sites
 core = pd.read_csv('static/sitelist.csv')
-core['SITECD'] = list(core["REGIONID"].map(str) +"_"+ core["SITEID"])
+core['SITECD'] = list(core["REGIONID"].map(str) + "_" + core["SITEID"])
 core = core.set_index('SITECD')
 
+#DateTime_UTC must remain in the first position
 variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'WaterPres_kPa', 'AirTemp_C', 'AirPres_kPa', 'Level_m', 'Depth_m',
 'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV',
@@ -489,7 +490,6 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
 'Light5_lux', 'Light5_PAR', 'Battery_V', 'O2GasTransferVelocity_ms',
 'ChlorophyllA_ugL']
-
 
 o = 'other'
 # fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer']
@@ -1156,8 +1156,6 @@ def series_upload():
             cdict = pd.read_sql("select * from cols where region='" + rr +\
                 "' and site='" + ss + "'", db.engine)
             cdict = dict(zip(cdict['rawcol'],cdict['dbcol'])) #varname mappings
-            flash("Please double check your variable name matching.",
-                'alert-warning')
 
         except:
             msg = Markup('Error 001. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
@@ -1172,6 +1170,8 @@ def series_upload():
             existing = True if site[0] in allsites else False
 
             #go to next webpage
+            flash("Please double check your variable name matching.",
+                'alert-warning')
             return render_template('upload_columns.html', filenames=filenames,
                 columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict,
                 existing=existing, sitenm=site[0], replacing=replace)
@@ -1182,15 +1182,17 @@ def series_upload():
             [os.remove(f) for f in fnlong]
             return redirect(request.url)
 
-    if request.method == 'GET': #?
-        xx = pd.read_sql("select distinct region, site from data", db.engine)
-        vv = pd.read_sql("select distinct variable from data",
-            db.engine)['variable'].tolist()
-        sites = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
+    if request.method == 'GET': #when first visiting the series upload page
+        # xx = pd.read_sql("select distinct region, site from data", db.engine)
+        # vv = pd.read_sql("select distinct variable from data",
+        #     db.engine)['variable'].tolist()
+        xx = pd.read_sql("select distinct region, site from site", db.engine)
+        sites = [x[0] + "_" + x[1] for x in zip(xx.region, xx.site)]
         sitedict = sorted([getsitenames(x) for x in sites],
             key=lambda tup: tup[1])
         return render_template('series_upload.html', sites=sitedict,
-            variables=map(str,vv))
+            variables=variables[1:])
+            # variables=map(str, vv)) #corresponds to the inefficient old way
 
 @app.route('/grab_upload', methods=['GET', 'POST'])
 @login_required
@@ -1796,32 +1798,50 @@ def add_site_permission(user, region, site_list):
 
 def getsitenames(regionsite):
     region, site = regionsite.split("_")
-    names = pd.read_sql("select name from site where region='"+region+"' and site ='"+site+"'", db.engine)
-    return (regionsite, region+" - "+names.name[0])
+    names = pd.read_sql("select name from site where region='" + region +\
+        "' and site ='" + site + "'", db.engine)
+    return (regionsite, region + " - " + names.name[0])
 
 @app.route('/download')
 def download():
-    vv = pd.read_sql("select distinct region, site, variable from data", db.engine)
-    sites = [x[0]+"_"+x[1] for x in zip(vv.region,vv.site)]
+
+    #acquire site list and authenticate
+    vv = pd.read_sql("select distinct region, site, variable from data",
+        db.engine)
+    sites = [x[0] + "_" + x[1] for x in zip(vv.region, vv.site)]
+    sites = list(set(sites))
+
     if current_user.is_authenticated:
         sites = authenticate_sites(sites, user=current_user.get_id())
     else:
         sites = authenticate_sites(sites)
+
+    #
     ss = []
     for site in sites:
-        r,s = site.split("_")
-        ss.append("(region='"+r+"' and site='"+s+"') ")
+        r, s = site.split("_")
+        ss.append("(region='" + r + "' and site='" + s + "') ")
     qs = "or ".join(ss)
-    nn = pd.read_sql("select region, site, name from site",db.engine)
-    dd = pd.read_sql("select region, site, min(DateTime_UTC) as startdate, max(DateTime_UTC) as enddate from data where "+qs+"group by region, site", db.engine)
+
+    nn = pd.read_sql("select region, site, name from site", db.engine)
+    # print nn
+    dd = pd.read_sql("select region, site, min(DateTime_UTC) as startdate, " +\
+        "max(DateTime_UTC) as enddate from data where " + qs +\
+        "group by region, site", db.engine)
+    # print dd
+    nd = nn.merge(dd, on=['region','site'], how='right')
+    # print nd
     vv = vv.groupby(['region','site'])['variable'].unique().reset_index()
-    dx = pd.merge(vv, nn.merge(dd, on=['region','site'], how='right'), on=['region','site'], how='right')
-    dx['regionsite'] = [x[0]+"_"+x[1] for x in zip(dx.region,dx.site)]
+    print vv
+    dx = pd.merge(vv, nd, on=['region','site'], how='right')
+    print dx
+    dx['regionsite'] = [x[0] + "_" + x[1] for x in zip(dx.region, dx.site)]
     dx.startdate = dx.startdate.apply(lambda x: x.strftime('%Y-%m-%d'))
     dx.enddate = dx.enddate.apply(lambda x: x.strftime('%Y-%m-%d'))
-    dx.name = dx.region+" - "+dx.name
+    dx.name = dx.region + " - " + dx.name
     dvv = dx[['regionsite','name','startdate','enddate','variable']].values
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
+
     return render_template('download.html', sites=sitedict)
 
 @app.route('/_getstats',methods=['POST'])
@@ -2132,7 +2152,6 @@ def getqaqc():
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
-    print xx.head()
     # Get sunrise sunset data
     sxx = pd.read_sql("select * from site where region='" + region +\
         "' and site='" + site + "'", db.engine)
