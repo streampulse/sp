@@ -1,5 +1,20 @@
 #Mike's Logbook
 
+###20180822
+ + made report of NEON O2 data availability and coverage
+ + made sql reads for upload page a zillion times more efficient. upload page now runs like a dream
+###20180821
+ + created pull request for reaRate, filed issue on github for other errors that need to be addressed before we can use k600 data
+###20180820
+ + researched NEON depth and discharge acquisition possibilities
+ + attempted to use NEON's reaRate package to estimate k600 for all available sites. encountered uncaught exceptions in core functions
+###vacation 20180810-19
+###20180807-09
+ + set up NEON data ingest for water quality and nitrate
+###mon20180806
+ + set up lter account on streampulse server for hbef data sync
+###sun20180805
+ + made qaqc demo video
 ###sat20180804
  + added flag information popups when hovering over flagged data
 ###thu20180802
