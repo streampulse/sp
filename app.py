@@ -978,8 +978,9 @@ def index():
     nusers = spstats.nusers[0]
     nobs = spstats.nobs[0]
     nsites = spstats.nsites[0]
-
-    return render_template('index.html', nobs=nobs, nuse=nusers, nsit=nsites)
+    
+    return render_template('index.html', nobs="{:,}".format(nobs),
+        nuse=nusers, nsit=nsites)
 
 @app.route('/sitelist')
 def sitelist():
