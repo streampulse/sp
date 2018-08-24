@@ -11,3 +11,4 @@ wsgi*
 local.py
 .Rdata
 .Rhistory
+scheduled_scripts/*.csv

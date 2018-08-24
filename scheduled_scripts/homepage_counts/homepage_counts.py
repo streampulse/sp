@@ -1,8 +1,12 @@
 import os
-os.chdir('/home/aaron/sp')
-import config as cfg
+import sys
 import MySQLdb
 import pandas as pd
+wrk_dir = '/home/aaron/sp'
+# wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
+sys.path.insert(0, wrk_dir)
+os.chdir(wrk_dir)
+import config as cfg
 
 pw = cfg.MYSQL_PW
 
