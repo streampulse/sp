@@ -973,10 +973,13 @@ def logout():
 @app.route('/')
 @app.route('/index')
 def index():
-    nuse = pd.read_sql("select count(id) as n from user", db.engine)
-    nobs = pd.read_sql("select count(id) as n from data", db.engine)
-    nsit = pd.read_sql("select count(id) as n from site", db.engine)
-    return render_template('index.html',nobs="{:,}".format(nobs.n.sum()), nuse=nuse.n[0], nsit=nsit.n[0])
+
+    spstats = pd.read_csv('scheduled_scripts/homepage_counts/homepage_counts.csv')
+    nusers = spstats.nusers[0]
+    nobs = spstats.nobs[0]
+    nsites = spstats.nsites[0]
+
+    return render_template('index.html', nobs=nobs, nuse=nusers, nsit=nsites)
 
 @app.route('/sitelist')
 def sitelist():
