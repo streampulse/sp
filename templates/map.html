@@ -79,7 +79,10 @@
       markerColor: 'gray'
     });
 
-    //for non-powell sites
+    //filter sites without lat/long info (so far only happened with one NEON site)
+    site_data = site_data.filter( e => ! isNaN(e.latitude) );
+
+    //process non-powell sites
     for (var p in site_data){
 
       //replace nulls with 'N/A'
