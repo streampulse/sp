@@ -975,24 +975,38 @@ def logout():
 def index():
 
     spstats = pd.read_csv('scheduled_scripts/homepage_counts/homepage_counts.csv')
-    nusers = spstats.nusers[0]
+
+    # nusers = spstats.nusers[0]
+    nusers = pd.read_sql("select count(id) as n from user", db.engine).n[0]
+    # nsites = spstats.nsites[0]
+    nsites = pd.read_sql("select count(id) as n from site", db.engine).n[0]
     nobs = spstats.nobs[0]
-    nsites = spstats.nsites[0]
-    
+
     return render_template('index.html', nobs="{:,}".format(nobs),
         nuse=nusers, nsit=nsites)
 
 @app.route('/sitelist')
 def sitelist():
-    ss = pd.read_sql_table('site',db.engine).set_index(['site','region'])
-    sqlq = 'select region, site, count(region) as value from data group by region, site'
-    xx = pd.read_sql(sqlq, db.engine).set_index(['site','region'])
-    res = xx.merge(ss,"left",left_index=True,right_index=True)
-    res = res.reset_index()
-    res = res[['region','site','name','latitude','longitude','value']]
-    res = res.rename(columns={'region':'Region','site':'Site','name':'Name','latitude':'Latitude','longitude':'Longitude','value':'Observations'}).fillna(0).sort_values(['Region','Site'],ascending=True)
-    res.Observations = res.Observations.astype(int)
-    return render_template('sitelist.html', dats=Markup(res.to_html(index=False, classes=['table','table-condensed'])))
+
+    #pull in all site data
+    sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
+        'Name, latitude as Lat, longitude as Lon, usgs as `USGS gage`, ' +\
+        'embargo as `Embargo (days)`, addDate from site;', db.engine)
+
+    #calculate remaining embargo days
+    timedeltas = datetime.utcnow() - sitedata.addDate
+    days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
+    sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
+    sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
+
+    #additional arranging and modification of data frame
+    sitedata = sitedata.drop(['addDate'], axis=1)
+    sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
+        ascending=True)
+
+    return render_template('sitelist.html',
+        dats=Markup(sitedata.to_html(index=False,
+        classes=['table', 'table-condensed'])))
 
 @app.route('/upload_choice')
 def upload_choice():
