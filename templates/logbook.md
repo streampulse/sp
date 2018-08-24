@@ -1,11 +1,14 @@
 #Mike's Logbook
 
-###20180822
+###thu20180823
+ + made download, sitelist, and home pages efficient
+ + made info in sitelist table more useful
+###wed20180822
  + made report of NEON O2 data availability and coverage
  + made sql reads for upload page a zillion times more efficient. upload page now runs like a dream
-###20180821
+###tue20180821
  + created pull request for reaRate, filed issue on github for other errors that need to be addressed before we can use k600 data
-###20180820
+###mon20180820
  + researched NEON depth and discharge acquisition possibilities
  + attempted to use NEON's reaRate package to estimate k600 for all available sites. encountered uncaught exceptions in core functions
 ###vacation 20180810-19

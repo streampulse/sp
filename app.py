@@ -2009,28 +2009,34 @@ def getcsv():
 @app.route('/visualize')
 # @login_required
 def visualize():
-    vv = pd.read_sql("select distinct region, site, variable from data", db.engine)
-    sites = list(set([x[0]+"_"+x[1] for x in zip(vv.region,vv.site)]))
+
+    #acquire site data and filter rows by authenticated sites
+    sitedata = pd.read_sql("select region, site, name, variableList " +\
+        "as variable, firstRecord as startdate, lastRecord as enddate " +\
+        "from site;", db.engine)
+    sitedata['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedata.region,
+        sitedata.site)]
+
     if current_user.is_authenticated:
-        sites = authenticate_sites(sites, user=current_user.get_id())
+        sites = authenticate_sites(sitedata.regionsite,
+            user=current_user.get_id())
     else:
-        sites = authenticate_sites(sites)
-    ss = []
-    for site in sites:
-        r,s = site.split("_")
-        ss.append("(region='"+r+"' and site='"+s+"') ")
-    qs = "or ".join(ss)
-    nn = pd.read_sql("select region, site, name from site",db.engine)
-    dd = pd.read_sql("select region, site, min(DateTime_UTC) as startdate, max(DateTime_UTC) as enddate from data where "+qs+"group by region, site", db.engine)
-    vv = vv.groupby(['region','site'])['variable'].unique().reset_index()
-    dx = pd.merge(vv, nn.merge(dd, on=['region','site'], how='right'), on=['region','site'], how='right')
-    dx['regionsite'] = [x[0]+"_"+x[1] for x in zip(dx.region,dx.site)]
-    dx.startdate = dx.startdate.apply(lambda x: x.strftime('%Y-%m-%d'))
-    dx.enddate = dx.enddate.apply(lambda x: x.strftime('%Y-%m-%d'))
-    dx.name = dx.region+" - "+dx.name
-    dvv = dx[['regionsite','name','startdate','enddate','variable']].values
+        sites = authenticate_sites(sitedata.regionsite)
+
+    sitedata = sitedata[sitedata.regionsite.isin(sites) &
+        sitedata.variable.notnull()]
+
+    #reformat and filter columns; return data as dict
+    sitedata.variable = sitedata.variable.apply(lambda x: x.split(','))
+    sitedata.startdate = sitedata.startdate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedata.enddate = sitedata.enddate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedata.name = sitedata.region + " - " + sitedata.name
+    dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
-    return render_template('visualize.html',sites=sitedict)
+
+    return render_template('visualize.html', sites=sitedict)
 
 @app.route('/_getgrabvars', methods=["POST"])
 def getgrabvars():
@@ -2087,37 +2093,42 @@ def getvgrabviz():
 
 @app.route('/_getviz',methods=["POST"])
 def getviz():
+
     region, site = request.json['site'].split(",")[0].split("_")
     startDate = request.json['startDate']
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
-    # print region, site, startDate, endDate, variables
-    sqlq = "select * from data where region='"+region+"' and site='"+site+"' "+\
-        "and DateTime_UTC>'"+startDate+"' "+\
-        "and DateTime_UTC<'"+endDate+"' "+\
-        "and variable in ('"+"', '".join(variables)+"')"
+
+    sqlq = "select * from data where region='" + region + "' and site='" +\
+        site + "' " + "and DateTime_UTC>'" + startDate + "' " +\
+        "and DateTime_UTC<'" + endDate + "' " +\
+        "and variable in ('" + "', '".join(variables) + "')"
     xx = pd.read_sql(sqlq, db.engine)
-    xx.loc[xx.flag==0,"value"] = None # set NaNs
-    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
-    xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
-      .set_index(["DateTime_UTC","variable"])\
-      .drop(['region','site','flag'],axis=1)
+
+    xx.loc[xx.flag == 0, "value"] = None # set NaNs
+    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
+        axis=1).to_json(orient='records',date_format='iso') # flag data
+    xx = xx.drop(['id', 'upload_id'], axis=1).drop_duplicates()\
+      .set_index(["DateTime_UTC", "variable"])\
+      .drop(['region', 'site', 'flag'], axis=1)
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
+
     # Get sunrise sunset data
     sxx = pd.read_sql("select id, region, site, name, latitude, " +\
         "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
         "from site where region='" + region +\
         "' and site='" + site + "'", db.engine)
-    sdt = datetime.strptime(startDate,"%Y-%m-%d")
-    edt = datetime.strptime(endDate,"%Y-%m-%d")
-    ddt = edt-sdt
+    sdt = datetime.strptime(startDate, "%Y-%m-%d")
+    edt = datetime.strptime(endDate, "%Y-%m-%d")
+    ddt = edt - sdt
     lat = sxx.latitude[0]
     lng = sxx.longitude[0]
     rss = []
+
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt + timedelta(days=i-1), latitude=lat,
+        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
             longitude=lng).calculate())
         if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
@@ -2125,7 +2136,8 @@ def getviz():
 
     rss = pd.DataFrame(rss, columns=("rise", "set"))
     rss.set = rss.set.shift(1)
-    sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
+    sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
+    
     return jsonify(variables=variables, dat=xx.to_json(orient='records',
         date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
 
