@@ -2137,7 +2137,7 @@ def getviz():
     rss = pd.DataFrame(rss, columns=("rise", "set"))
     rss.set = rss.set.shift(1)
     sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
-    
+
     return jsonify(variables=variables, dat=xx.to_json(orient='records',
         date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
 
@@ -2151,26 +2151,31 @@ def print_log():
 @app.route('/clean')
 @login_required
 def qaqc():
-    xx = pd.read_sql("select distinct region, site from data", db.engine)
-    sitesa = [x[0]+"_"+x[1] for x in zip(xx.region,xx.site)]
+
+    #acquire site data and filter by authenticated sites
+    all_sites = pd.read_sql("select concat(region, '_', site) as regionsite " +\
+        "from site;", db.engine).iloc[:,0].tolist()
     qaqcuser = current_user.qaqc_auth()
-    sites = [z for z in sitesa if z in qaqcuser]
-    #xx = pd.read_sql("select distinct flag from flag", db.engine)
-    #flags = xx['flag'].tolist()
+    auth_sites = [z for z in all_sites if z in qaqcuser]
+
+    #generate basic flag types; convert site data to dict, pass on to html
     flags = ['Interesting', 'Questionable', 'Bad Data']
-    sitedict = sorted([getsitenames(x) for x in sites], key=lambda tup: tup[1])
-    return render_template('qaqc.html',sites=sitedict,flags=flags, tags=[''])
+    sitedict = sorted([getsitenames(x) for x in auth_sites],
+        key=lambda tup: tup[1])
+    return render_template('qaqc.html', sites=sitedict, flags=flags, tags=[''])
 
 @app.route('/_getqaqc', methods=["POST"])
 def getqaqc():
+
+    # region='AZ'; site='MV'
     region, site = request.json['site'].split(",")[0].split("_")
-    sqlq = "select data.id, data.region, data.site, data.DateTime_UTC, " +\
+    sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
         "data.variable, data.value, data.flag as flagid, flag.flag, " +\
         "flag.comment from data left join flag on data.flag=flag.id where " +\
         "data.region='" + region + "' and data.site='" + site + "'"
     # sqlq = "select * from data where region='"+region+"' and site='"+site+"'"
     xx = pd.read_sql(sqlq, db.engine) #this is what makes it take so long. read in 4w chunks
-    xx.loc[xx.flag==0, "value"] = None # set NaNs
+    xx.loc[xx.flag == 0, "value"] = None # set NaNs
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
         'comment']].dropna().drop(['flagid'],
         axis=1).to_json(orient='records', date_format='iso') # flag data
@@ -2182,32 +2187,38 @@ def getqaqc():
     #     axis=1).to_json(orient='records', date_format='iso')
 
     #xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
-    variables = list(set(xx['variable'].tolist()))
-    xx = xx.drop(['id', 'flag', 'comment'], axis=1).drop_duplicates()\
+    # variables = list(set(xx['variable'].tolist()))
+    variables = xx.loc[:,'variable'].unique().tolist()
+
+    xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
         .set_index(["DateTime_UTC", "variable"])\
         .drop(['region', 'site', 'flagid'], axis=1)
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
+
     # Get sunrise sunset data
-    sxx = pd.read_sql("select id, region, site, name, latitude, " +\
-        "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
-        "from site where region='" + region +\
-        "' and site='" + site + "'", db.engine)
+    sxx = pd.read_sql("select latitude, longitude from site where region='" +\
+        region + "' and site='" + site + "'", db.engine)
+    # sxx = pd.read_sql("select id, region, site, name, latitude, " +\
+    #     "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
+    #     "from site where region='" + region +\
+    #     "' and site='" + site + "'", db.engine)
     sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     edt = max(xx.DateTime_UTC).replace(hour=0, minute=0, second=0,
-        microsecond=0)+timedelta(days=1)
+        microsecond=0) + timedelta(days=1)
 
-    ddt = edt-sdt
+    ddt = edt - sdt
     lat = sxx.latitude[0]
     lng = sxx.longitude[0]
     rss = []
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt+timedelta(days=i-1), latitude=lat, longitude=lng).calculate())
-        if rise>sets:
+        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+            longitude=lng).calculate())
+        if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
         rss.append([rise, sets])
-    #
+
     rss = pd.DataFrame(rss, columns=("rise", "set"))
     rss.set = rss.set.shift(1)
     sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
@@ -2216,10 +2227,11 @@ def getqaqc():
         r = (end + timedelta(days=1) - start).days
         if r % 14 > 0:
             r = r + 14
-        return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0,r,28)]
+        return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, r, 28)]
     #drr = pd.date_range(sdt,edt,freq="14D").tolist()[::-1] # need to reverse
     #drr = [da.strftime('%Y-%m-%d') for da in drr]
     drr = daterange(sdt, edt)
+
     return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
         sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)#, flagtypes=flagtypes)
 

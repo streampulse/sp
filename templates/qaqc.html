@@ -49,7 +49,7 @@ drift.load('s2rst4h926mg');
 </div></div>
 
 <br>
-<div class="col-md-12 text-center">
+<div class="col-md-2 col-md-offset-5 text-center">
   <!-- <a target="_blank" rel="noopener noreferrer" href="https://data.streampulse.org/qaqc_help.html"> -->
   <!-- <a href="http://localhost:5000/qaqc_help"> -->
   <a href="qaqc_help">
@@ -183,8 +183,8 @@ var plotend;
 function getdisplaydata(start, end, dat){
   stdt = Date.parse(start) //convert from YYYY-MM-DD to unix
   endt = Date.parse(end)
-  pltdat = $(dat).filter(function(i,n){
-    return Date.parse(n.DateTime_UTC)>stdt && Date.parse(n.DateTime_UTC)<endt
+  pltdat = $(dat).filter(function(i, n){
+    return Date.parse(n.DateTime_UTC) > stdt && Date.parse(n.DateTime_UTC) < endt
   })
   return $.makeArray(pltdat)
 }
