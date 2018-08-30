@@ -12,3 +12,5 @@ local.py
 .Rdata
 .Rhistory
 scheduled_scripts/homepage_counts/*.csv
+scheduled_scripts/homepage_counts/homepage_counts.sh
+static/email_list.csv
