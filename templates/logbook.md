@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###fri20180824
+ + made viz and qaqc landing pages more efficient. determined that delays in loading plots are not due to database inefficiency
 ###thu20180823
  + made download, sitelist, and home pages efficient
  + made info in sitelist table more useful
