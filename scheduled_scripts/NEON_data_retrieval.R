@@ -19,14 +19,14 @@ library(accelerometry)
 # setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
 setwd('/home/aaron/sp/scheduled_scripts/')
 
-conf = read_lines('../config.py')
+conf = readLines('../config.py')
 extract_from_config = function(key){
     ind = which(lapply(conf, function(x) grepl(key, x)) == TRUE)
     val = str_match(conf[ind], '.*\\"(.*)\\"')[2]
     return(val)
 }
 pw = extract_from_config('MYSQL_PW')
-#pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
+# pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
 
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
     # username='mike', password=pw)
@@ -34,12 +34,12 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
 
 #DO must always be first in these vectors. Sitemonths from the other datasets
 #will be ignored if they're not represented in DO.
-products = c('DO_mgL', 'Nitrate_mgL', 'O2GasTransferVelocity_ms')#'Discharge_m3s')
+products = c('DO_mgL', 'Nitrate_mgL', 'O2GasTransferVelocity_ms','Discharge_m3s')
 prods_abb = str_split(products, '_', simplify=TRUE)[,1]
-prod_codes = c('DP1.20288.001', 'DP1.20033.001', 'DP1.20190.001')#'DP1.20048.001')
+prod_codes = c('DP1.20288.001', 'DP1.20033.001', 'DP1.20190.001', 'DP4.00130.001')
 prod_varlists = list(c('Level_m','SpecCond_uScm','DO_mgL','DOsat_pct','pH',
     'ChlorophyllA_ugL','Turbidity_FNU'),
-    'Nitrate_mgL', 'O2GasTransferVelocity_ms')
+    'Nitrate_mgL', 'O2GasTransferVelocity_ms', 'Discharge_m3s')
 
 
 varname_mappings = list(sensorDepth='Level_m',
@@ -50,7 +50,8 @@ varname_mappings = list(sensorDepth='Level_m',
     chlorophyll='ChlorophyllA_ugL',
     turbidity='Turbidity_FNU',
     fDOM='fDOM_ppb',
-    surfWaterNitrateMean='Nitrate_mgL')
+    surfWaterNitrateMean='Nitrate_mgL',
+    maxpostDischarge='Discharge_m3s')
 
 #update log file
 write(paste('\n\tRunning script at:', Sys.time()),
@@ -82,7 +83,7 @@ for(p in 1:length(products)){
     dbClearResult(res)
     retrieved_sets = paste(resout$site, resout$date)
 
-    #for Nitrate and k, only ingest datasets for which we have DO data
+    #for nitrate, k, discharge, only ingest datasets for which we have DO data
     if(prods_abb[p] == 'DO'){
         relevant_sitemonths = retrieved_sets
     }
@@ -144,9 +145,12 @@ for(p in 1:length(products)){
         if(prods_abb[p] %in% c('DO', 'O2GasTransferVelocity')){
             data_inds = intersect(grep("expanded", d$data$files$name),
                 grep("instantaneous", d$data$files$name))
-        } else {
+        } else if(prods_abb[p] == 'Nitrate'){
             data_inds = intersect(grep("expanded", d$data$files$name),
                 grep("15_minute", d$data$files$name))
+        } else {
+            data_inds = intersect(grep("expanded", d$data$files$name),
+                grep("csd_continuousDischarge_pub", d$data$files$name))
         }
 
         if(! length(data_inds)){
@@ -189,7 +193,7 @@ for(p in 1:length(products)){
             if(errflag) next
 
             cur_time = Sys.time()
-            attr(cur_time,'tzone') = 'UTC'
+            attr(cur_time, 'tzone') = 'UTC'
 
             #create data frame to insert
             site_data = data.frame('region'=rep(site_resp$data$stateCode, 2),
@@ -223,8 +227,8 @@ for(p in 1:length(products)){
         for(j in 1:length(data_inds)){
 
             #add appropriate suffix for upstream/downstream sites
-            if(prods_abb[p] == 'Nitrate'){
-                site_suffix = '-down' #nitrate only measured at downstream
+            if(prods_abb[p] %in% c('Nitrate', 'Discharge')){
+                site_suffix = '-down' #these vars only measured at downstream
             } else {
                 site_suffix = updown_suffixes[updown_order[j]]
             }
@@ -248,11 +252,12 @@ for(p in 1:length(products)){
                         'dissolvedOxygenSaturation'
                 }
                 varlist = varlist[varlist != 'fDOM']
-            } else {
-                if(prods_abb[p] == 'Nitrate'){
-                    varlist = 'surfWaterNitrateMean'
-                    flagprefixlist = ''
-                }
+            } else if(prods_abb[p] == 'Nitrate'){
+                varlist = 'surfWaterNitrateMean'
+                flagprefixlist = ''
+            } else { #discharge
+                varlist = 'maxpostDischarge'
+                flagprefixlist = 'discharge'
             }
 
             for(k in 1:length(varlist)){
@@ -272,7 +277,7 @@ for(p in 1:length(products)){
                     #blacklist problematic datasets so they don't get checked
                     #each time and clog the logfile. Doesn't apply to water qual
                     #data because it includes many variables.
-                    if(prods_abb[p] == 'Nitrate'){
+                    if(prods_abb[p] %in% c('Nitrate', 'Discharge')){
                         write(url, paste0('../../logs_etc/NEON/NEON_blacklist_',
                             prods_abb[p], '.txt'), append=TRUE)
                     }
@@ -294,6 +299,9 @@ for(p in 1:length(products)){
                 }, error=function(e){})
                 tryCatch({ #sometimes another
                     na_filt[is.na(na_filt[,litflag2]), litflag2] = 0
+                }, error=function(e){})
+                tryCatch({ #maybe even a third
+                    na_filt[is.na(na_filt[,litflag3]), litflag3] = 0
                 }, error=function(e){})
 
                 #compress NEON flag information into one column. flag=1, no flag=0
@@ -317,7 +325,16 @@ for(p in 1:length(products)){
                 if('startDate' %in% colnames(na_filt)){
                     colnames(na_filt)[which(colnames(na_filt) == 'startDate')] =
                         'startDateTime'
+                } else if('endDate' %in% colnames(na_filt)){
+                    colnames(na_filt)[which(colnames(na_filt) == 'endDate')] =
+                        'startDateTime'
+                } else {
+                    write(paste('Datetime column not found for:', current_var,
+                        site_with_suffix, date),
+                        '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+                   next
                 }
+
                 na_filt = na_filt[, c('startDateTime', current_var, 'flag')]
                 # na_filt = na_filt[, c('startDateTime', 'surfWaterNitrateMean', 'flag')]
                 na_filt$startDateTime = as.character(na_filt$startDateTime)
@@ -345,6 +362,13 @@ for(p in 1:length(products)){
 
                     dbWriteTable(con, 'flag', flag_data, append=TRUE)
 
+                    #duplicate flag data for upstream station for variables that
+                    #are only measured at the downstream station.
+                    if(prods_abb[p] %in% c('Nitrate', 'Discharge')){
+                        flag_data$site = paste0(substr(flag_data$site,1,4), '-up')
+                        dbWriteTable(con, 'flag', flag_data, append=TRUE)
+                    }
+
                     #get vector of resultant flag IDs to include in data table
                     flag_ids = c()
                     nfchunks = ceiling(length(flag_run_starts) / 200)
@@ -357,7 +381,6 @@ for(p in 1:length(products)){
                                 flag_run_starts[201:length(flag_run_starts)]
                         }
 
-                        print(length(ch))
                         res = dbSendQuery(con,
                             paste0("SELECT id FROM flag WHERE startDate IN ",
                             "('", paste(ch, collapse="','"),
@@ -411,11 +434,21 @@ for(p in 1:length(products)){
                     nitrate_molec_mass = 62.0049
                     na_filt$value = (na_filt$value * nitrate_molec_mass) / 1000
                 }
+                if(prods_abb[p] == 'Discharge'){
+                    na_filt$value = na_filt$value / 1000
+                }
                 if(prods_abb[p] == 'O2GasTransferVelocity'){
-                    print('o')
+                    print('this isnt hooked up yet')
                 }
 
                 dbWriteTable(con, 'data', na_filt, append=TRUE)
+
+                #duplicate data for upstream station for variables that
+                #are only measured at the downstream station.
+                if(prods_abb[p] %in% c('Nitrate', 'Discharge')){
+                    na_filt$site = paste0(substr(na_filt$site,1,4), '-up')
+                    dbWriteTable(con, 'data', na_filt, append=TRUE)
+                }
 
                 write(paste('Added', nrow(na_filt), current_var,
                     'records for: ', site_with_suffix, date),

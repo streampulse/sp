@@ -1,5 +1,15 @@
 #Mike's Logbook
 
+###thu20180830
+ + talked with Chris Collins at Duke OIT about cloud computing possibilities
+ + built discharge portion of NEON ingestion script 
+ + duplicated nitrate data for upstream stations, since it's only measured at downstream stations
+###wed20180829
+ + NEON DO exploration, workshop prep
+###tue20180828
+ + worked on toy coupled O2-CO2 model for SE workshop
+###mon20180827
+ + wrote draft proposal to South BD-HUB for Azure credits
 ###fri20180824
  + made viz and qaqc landing pages more efficient. determined that delays in loading plots are not due to database inefficiency
 ###thu20180823
