@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # os.chdir('/home/mike/git/streampulse/server_copy/sp')
+# import timeit
 from flask import Flask, Markup, session, flash, render_template, request, jsonify, url_for, make_response, send_file, redirect, g
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -2167,6 +2168,8 @@ def qaqc():
 @app.route('/_getqaqc', methods=["POST"])
 def getqaqc():
 
+    # start_time2 = timeit.default_timer()
+
     # region='AZ'; site='MV'
     region, site = request.json['site'].split(",")[0].split("_")
     sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
@@ -2232,6 +2235,9 @@ def getqaqc():
     #drr = [da.strftime('%Y-%m-%d') for da in drr]
     drr = daterange(sdt, edt)
 
+    # elapsed2 = timeit.default_timer() - start_time2
+    # print 'qaqc', elapsed2
+
     return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
         sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)#, flagtypes=flagtypes)
 
@@ -2241,6 +2247,9 @@ def qaqc_help_page():
 
 @app.route('/_outlierdetect', methods=["POST"])
 def outlier_detect():
+
+    # start_time = timeit.default_timer()
+
     dat_chunk = pd.DataFrame(request.json)
     # dat_chunk.to_csv('~/Dropbox/streampulse/data/test_outl2.csv', index=False)
 
@@ -2257,6 +2266,9 @@ def outlier_detect():
         for i in outl_ind_r.rx2(j):
             tmp_lst.append(int(i))
         outl_ind[outl_ind_r.names[j-1]] = tmp_lst
+
+    # elapsed = timeit.default_timer() - start_time
+    # print elapsed
 
     return jsonify(outliers=outl_ind)
 

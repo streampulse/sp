@@ -1,5 +1,17 @@
 #Mike's Logbook
 
+###thu20180830
+ + talked with Chris Collins at Duke OIT about cloud computing possibilities
+ + built discharge portion of NEON ingestion script 
+ + duplicated nitrate data for upstream stations, since it's only measured at downstream stations
+###wed20180829
+ + NEON DO exploration, workshop prep
+###tue20180828
+ + worked on toy coupled O2-CO2 model for SE workshop
+###mon20180827
+ + wrote draft proposal to South BD-HUB for Azure credits
+###fri20180824
+ + made viz and qaqc landing pages more efficient. determined that delays in loading plots are not due to database inefficiency
 ###thu20180823
  + made download, sitelist, and home pages efficient
  + made info in sitelist table more useful
@@ -12,6 +24,7 @@
  + researched NEON depth and discharge acquisition possibilities
  + attempted to use NEON's reaRate package to estimate k600 for all available sites. encountered uncaught exceptions in core functions
 ###vacation 20180810-19
+ + hooked up NEON script for synching water quality and nitrate between databases
 ###20180807-09
  + set up NEON data ingest for water quality and nitrate
 ###mon20180806

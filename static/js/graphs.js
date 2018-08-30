@@ -28,6 +28,7 @@ var div = d3.select("body").append("div")
     .style("opacity", 0);
 
 function Plots(variables, data, flags, outliers, page){
+
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
 
@@ -181,6 +182,7 @@ function Plots(variables, data, flags, outliers, page){
 }
 
 function Sunlight(variables, sundat){
+  console.time('sun')
   d3.selectAll(".sunriseset").remove();
   extent = x.domain();
   for (var i = 0; i < variables.length; ++i) {
@@ -199,9 +201,10 @@ function Sunlight(variables, sundat){
         is_inplot = extent[0] > d.rise || d.set > extent[1];
         return is_inplot;
       });
-
   }
+  console.timeEnd('sun')
 }
+
 $(function(){
   $('#shownight').change(function() {
     if($(this).is(":checked")) {
