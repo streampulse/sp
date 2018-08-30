@@ -12,6 +12,7 @@
  + researched NEON depth and discharge acquisition possibilities
  + attempted to use NEON's reaRate package to estimate k600 for all available sites. encountered uncaught exceptions in core functions
 ###vacation 20180810-19
+ + hooked up NEON script for synching water quality and nitrate between databases
 ###20180807-09
  + set up NEON data ingest for water quality and nitrate
 ###mon20180806
