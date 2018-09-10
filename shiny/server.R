@@ -43,6 +43,7 @@ shinyServer(function(input, output, session){
         res = dbSendQuery(con,
             paste0("SELECT qaqc FROM user WHERE token = '", token, "';"))
         usersites = dbFetch(res)$qaqc
+
         dbClearResult(res)
 
         if(isTruthy(usersites)){
@@ -53,7 +54,7 @@ shinyServer(function(input, output, session){
             sitenames = sitenmyr[,1]
             siteyears = sitenmyr[,2]
             output$token_resp = renderText({
-                paste('Authorized for', length(usersites), 'private sites.')
+                paste('Authorized for', length(usersites), 'sites.')
             })
             updateSelectizeInput(session, 'input_site', choices=sitenames,
                 selected='', options=list(placeholder='No site selected'))
@@ -71,6 +72,12 @@ shinyServer(function(input, output, session){
                     })
                 }
             }
+        }
+
+        if(token == ''){
+            sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% sitenames_public,]
+            sitenames = sitenmyr[,1]
+            siteyears = sitenmyr[,2]
         }
 
         dbDisconnect(con)
