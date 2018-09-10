@@ -58,8 +58,10 @@ write(paste('\n\tRunning script at:', Sys.time()),
     '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
 
 #query sites already in our database
+# res = dbSendQuery(con, paste("SELECT DISTINCT MID(site, 1, 4) as site",
+#     "FROM data WHERE upload_id=-900"))
 res = dbSendQuery(con, paste("SELECT DISTINCT MID(site, 1, 4) as site",
-    "FROM data WHERE upload_id=-900"))
+    "FROM site WHERE `by`=-900"))
 resout = dbFetch(res)
 dbClearResult(res)
 known_sites = resout$site
