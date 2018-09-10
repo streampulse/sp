@@ -74,11 +74,11 @@ shinyServer(function(input, output, session){
             }
         }
 
-        if(token == ''){
-            sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% sitenames_public,]
-            sitenames = sitenmyr[,1]
-            siteyears = sitenmyr[,2]
-        }
+        # if(token == ''){
+        #     sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% sitenames_public,]
+        #     sitenames = sitenmyr[,1]
+        #     siteyears = sitenmyr[,2]
+        # }
 
         dbDisconnect(con)
 

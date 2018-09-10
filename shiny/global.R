@@ -19,7 +19,8 @@ modnames = dir('data', pattern='modOut')
 sitenmyr_all = str_match(modnames, 'modOut_(\\w+_\\w+)_([0-9]{4})')[,2:3]
 
 #isolate those that are public (no embargo or past embargo period)
-public_sites = Sys.time() - site$addDate > site$embargo * 365
+public_sites = difftime(Sys.time(), site$addDate,
+    units='days') > site$embargo * 365
 site = site[public_sites,c('region','site')]
 sitenames_public = paste(site[,1], site[,2], sep='_')
 
