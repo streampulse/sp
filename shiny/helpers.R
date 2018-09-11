@@ -165,6 +165,9 @@ cumulative_func = function (ts_full, st, en){
         # col=adjustcolor('purple', alpha.f=0.4))
         # las=1, ylim=c(lim_npp[1], lim_npp[2]),
         # ylab="Cumulative NEP", xlim=c(st, en), xlab='', type='p', xaxt='n')
+    maxcumul = na_rm[nrow(na_rm), c('csum_gpp', 'csum_er', 'csum_npp')]
+    text(rep(max(na_rm$DOY), 3), maxcumul, labels=round(maxcumul),
+        pos=2, cex=0.8)
 
     # legend("top", legend=c('GPP', 'ER', 'NEP'), seg.len=1, inset=c(0,-0.0),
     #     col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=TRUE,
