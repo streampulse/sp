@@ -1,5 +1,11 @@
 #Mike's Logbook
 
+###tue20180911
+ + added text to cumulative plot in diagnostic app to show final accumulation
+###mon20180910
+ + fixed bug in NEON data retrieval that caused duplication of site information
+ + fixed bug in timediff calculation in shiny app (difference in behavior between R versions)
+###away 20180901-09
 ###thu20180830
  + talked with Chris Collins at Duke OIT about cloud computing possibilities
  + built discharge portion of NEON ingestion script 
