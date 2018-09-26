@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###20180912-21
+ + Switzerland workshop
 ###tue20180911
  + added text to cumulative plot in diagnostic app to show final accumulation
 ###mon20180910
