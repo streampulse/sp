@@ -910,10 +910,13 @@ def confirm_token(token, expiration=3600*24): # expires in one day
 def register():
     if request.method == 'GET':
         return render_template('register.html')
-    user = User(request.form['username'], request.form['password'], request.form['email'])
-    db.session.add(user)
-    db.session.commit()
-    flash('User successfully registered', 'alert-success')
+    try:
+        user = User(request.form['username'], request.form['password'], request.form['email'])
+        db.session.add(user)
+        db.session.commit()
+        flash('User successfully registered', 'alert-success')
+    except:
+        flash('Error: Username or email already in use.', 'alert-warning')
     return redirect(url_for('login'))
 
 @app.route('/_reset_sp_pass', methods=['GET','POST'])
