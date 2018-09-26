@@ -7,7 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sunrise_sunset import SunriseSunset as suns
 from werkzeug.utils import secure_filename
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
+import sqlalchemy
 # from sqlalchemy.ext import serializer
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime, timedelta
@@ -910,14 +910,24 @@ def confirm_token(token, expiration=3600*24): # expires in one day
 def register():
     if request.method == 'GET':
         return render_template('register.html')
+
     try:
         user = User(request.form['username'], request.form['password'], request.form['email'])
         db.session.add(user)
         db.session.commit()
         flash('User successfully registered', 'alert-success')
-    except:
-        flash('Error: Username or email already in use.', 'alert-warning')
-    return redirect(url_for('login'))
+
+        return redirect(url_for('login'))
+
+    except sqlalchemy.exc.IntegrityError as e:
+        if 'email' in e[0]:
+            flash('Error: Email already in use.', 'alert-warning')
+        elif 'username' in e[0]:
+            flash('Error: Username already in use.', 'alert-warning')
+        else:
+            flash('Unknown error. Please try again.', 'alert-warning')
+
+        return redirect(url_for('register'))
 
 @app.route('/_reset_sp_pass', methods=['GET','POST'])
 @login_required
