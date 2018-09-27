@@ -2006,16 +2006,19 @@ def getcsv():
     sitedata = pd.read_sql(sitequery, db.engine)
     sitedata.to_csv(tmp + '/' + 'siteData.csv', index=False, encoding='utf-8')
 
+    #add readme with notes if needed
+    if nograbsites:
+        with open(tmp + '/' + 'readme.txt', 'w') as readme:
+            readme.write('Note: No manually collected data available at ' +\
+                'specified time for site(s): ' + ', '.join(nograbsites) + '.')
+            readme.close()
+
     #zip all files in temp dir as new zip dir, pass on to user
     writefiles = os.listdir(tmp) # list files in the temp directory
     zipname = 'SPdata_' + datetime.now().strftime("%Y-%m-%d") + '.zip'
     with zipfile.ZipFile(tmp + '/' + zipname, 'w') as zf:
         [zf.write(tmp + '/' + f, f) for f in writefiles]
     #flash('File sent: '+zipname, 'alert-success')
-
-    if nograbsites:
-        flash('No manually collected data available at specified time for ' +\
-            'site(s): ' + ', '.join(nograbsites) + '.', 'alert-warning')
 
     return send_file(tmp + '/' + zipname, 'application/zip',
         as_attachment=True, attachment_filename=zipname)

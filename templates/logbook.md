@@ -1,5 +1,12 @@
 #Mike's Logbook
 
+###wed20180926
+ + fixed loading screen problem on site that would often result from following an externa link and then returning with the back button
+ + added error handers for username/email already in use
+ + added data policy links, updated model page text
+ + fixed bug in download: if no grab data, notification appears after leaving page
+###tue20180925
+ + workshop wrapup, help new users
 ###20180912-21
  + Switzerland workshop
 ###tue20180911

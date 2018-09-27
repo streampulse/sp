@@ -19,7 +19,9 @@ So long as you:
 
 - Attribute: You must attribute any public use of the database, or works produced from the database, in the manner specified in the license. For any use or redistribution of the database, or works produced from it, you must make clear to others the license of the database and keep intact any notices on the original database.
 
-Citation: The StreamPULSE policy is that all data will be properly cited, with reference to StreamPULSE as well as the data set contributor. [Citation example here, coming soon. In the meantime, you can email vlahm13@gmail.com]
+Citation: Until we acquire a system of DOIs for StreamPULSE datasets, please cite the following paper in association with any use of StreamPULSE data:
+
+Appling, A. P., Hall, R. O., Yackulic, C. B., & Arroita, M. (2018). Overcoming equifinality: Leveraging long time series for stream metabolism estimation. Journal of Geophysical Research: Biogeosciences, 123(2), 624-645. 
 
 Acknowledgement: If the data contributed significantly to the content of a publication, the user should also acknowledge the StreamPULSE network, the NSF Macrosystems program, and any additional institutional support or funding awards referenced in the metadata. For example:
 
