@@ -1,5 +1,11 @@
 #Mike's Logbook
 
+###fri20180928
+ + completed local version of shiny viz app
+ + resolved namespace pollution issue in streampulse R package
+###thu20180927
+ + added link back to data portal from diagnostic apps
+ + built timeout feature into fit_metabolism for http requests
 ###wed20180926
  + fixed loading screen problem on site that would often result from following an externa link and then returning with the back button
  + added error handers for username/email already in use

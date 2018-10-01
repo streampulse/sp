@@ -45,7 +45,8 @@ shinyUI(
         #     # tabPanel(tags$a(href='https://data.streampulse.org/upload_choice/',
         #     # 'Upload'))
         # ),
-        navbarPage(title=p(strong('Diagnostics')), inverse=TRUE,
+        navbarPage(title=p(strong(a('StreamPULSE',
+            href='https://data.streampulse.org/'))), inverse=TRUE,
             windowTitle='StreamPULSE Diagnostics',
             tabPanel('User Authentication',
                 p(paste('Use this tool to visualize models fit by StreamPULSE',
