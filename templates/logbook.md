@@ -1,5 +1,10 @@
 #Mike's Logbook
 
+###mon20181001
+Input viz improvements:
+ + sorted variable checkboxes at top by importance, then alphabetically
+ + only variables critical to metab modeling are now checked by default
+ + fixed overlay plots so that all variables can be overlain, not just the ones that were selected at the top
 ###fri20180928
  + completed local version of shiny viz app
  + resolved namespace pollution issue in streampulse R package

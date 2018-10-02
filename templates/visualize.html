@@ -15,7 +15,7 @@
     </select>
     <br>
     <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range"><br>
-    Select variables:<br>
+    <p id="selectvarp" style="display:none">Select variables (core metabolism variables bolded):</p>
     <div id="viz_vars"></div><br>
     <button name="getviz" class="btn btn-primary btn-block">View</button>
   </form>
@@ -109,18 +109,49 @@ $('#dsite').change(function(){
   $('#start_date').text( '"'+$("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD')+'"' );
   $('#end_date').text( '"'+$("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD')+'"' );
 
-  var sitevars = siteinfo['vars'].split(",")
+  //order site variables by importance for metabolism modeling, then alphabetically
+  var sitevars = siteinfo['vars'].split(",");
+  var reference_vars = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
+    'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux'];
+
+  var metabvars = [];
+  for (var i = sitevars.length; i >= 0; --i) {
+    if(reference_vars.includes(sitevars[i])){
+      metabvars.push(sitevars.splice(i, 1)[0]);
+    }
+  }
+
+  metabvars.sort(function(a, b) {
+    return reference_vars.indexOf(a) - reference_vars.indexOf(b);
+  });
+
+  sitevars.sort(function(a, b) {
+    return a.toLowerCase().localeCompare(b.toLowerCase());
+  });
+
+  sitevars = metabvars.concat(sitevars);
+
   $("#graphs").empty();
   $("#viz_vars").empty();
+  $("#selectvarp").css('display', '');
   $('#backgraphlist')
-      .find('option')
-      .remove()
-      .end()
-      .append('<option value="None" selected>None</option>');
+    .find('option')
+    .remove()
+    .end()
+    .append('<option value="None" selected>None</option>');
+
   for (var i = 0; i < sitevars.length; ++i) {
-      $('#viz_vars').append('<input type="checkbox" id="variables" value="'+sitevars[i]+'" checked> '+sitevars[i]+'<br>');
-      // add stuff to dropdown
-      $('#backgraphlist').append('<option value="'+sitevars[i]+'">'+sitevars[i]+'</option>');
+
+    if(reference_vars.includes(sitevars[i])){
+      $('#viz_vars').append('<input type="checkbox" id="variables" value="' +
+        sitevars[i] + '" checked><span style="font-weight:bold">' +
+        sitevars[i] + '</span><br>');
+    } else {
+      $('#viz_vars').append('<input type="checkbox" id="variables" value="' +
+        sitevars[i] + '"> ' + sitevars[i] + '<br>');
+    }
+
+    $('#backgraphlist').append('<option value="'+sitevars[i]+'">'+sitevars[i]+'</option>');
   }
 
   update_grabvars(regionsite=$('select[name=site]').val(),

@@ -260,13 +260,48 @@ function BackGraph(vvv, graph, data){
 $(function(){
   $("#backgraphlist").change(function () {
 
+    var backfill = this.value;
+
     //reset the other dropdown
     $('#backgraphlist_grab').val('None'); //why doesn't this set off a feedback loop?
 
-    var backfill = this.value;
-    for (var i = 0; i < variables.length; ++i) {
-      BackGraph(backfill, variables[i], data);
+    //if requested backfill var not already loaded, go get it
+    if(!variables.includes(backfill)){
+      var dat = {}
+      dat['site'] = $('select[name=site]').val();
+      dat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
+      dat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
+      dat['variables'] = [backfill]
+
+      $.ajax({
+        type: 'POST',
+        url:'/_getviz',
+        data: JSON.stringify(dat),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response){
+          backfilldata = JSON.parse(response.dat);
+
+          //what is up with this heinous need for date duplication??
+          //investigate the Backgraph function first
+          backfilldata.forEach(function(d){
+            d.date = parseDate(d['DateTime_UTC'])
+          });
+
+          for(var i = 0; i < variables.length; ++i) {
+            BackGraph(backfill, variables[i], backfilldata);
+          }
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
+
+    } else {
+      for (var i = 0; i < variables.length; ++i) {
+        BackGraph(backfill, variables[i], data);
+      }
     }
+
   });
 })
 
