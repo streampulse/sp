@@ -1,25 +1,43 @@
 {% extends "layout.html" %}
 {% block body %}
 
-<div class="row"><div class="col-md-6 col-md-offset-3">
-  <h1>Visualize Data</h1>
-  <br>
-  <!-- <p class="lead">Use this interface to rapidly preview data and view provisional model estimates.<p> -->
-
-  <form id="viz">
-    <select placeholder="Choose a site" id="dsite" name="site">
-      <option value="">Choose a site</option>
-      {% for sv, sn, sd, ed, va in sites %}
-      <option value="{{sv}}">{{sn}}</option>
-      {% endfor %}
-    </select>
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <h1>Visualize Data</h1>
     <br>
-    <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range"><br>
-    <p id="selectvarp" style="display:none">Select variables (core metabolism variables bolded):</p>
-    <div id="viz_vars"></div><br>
-    <button name="getviz" class="btn btn-primary btn-block">View</button>
-  </form>
-</div></div>
+    <!-- <p class="lead">Use this interface to rapidly preview data and view provisional model estimates.<p> -->
+
+    <form id="viz">
+      <select placeholder="Choose a site" id="dsite" name="site">
+        <option value="">Choose a site</option>
+        {% for sv, sn, sd, ed, va in sites %}
+          <option value="{{sv}}">{{sn}}</option>
+        {% endfor %}
+      </select>
+      <br>
+      <div class="col-md-6">
+        <!-- <select placeholder="Choose a year" id="yearpicker" name="year">
+          <option value="">Choose a year</option>
+        </select> -->
+        <span id="fullrange" style="color:gray"><span>
+      </div>
+      <div class="col-md-6">
+        <input class="form-control" type="text" id="datepicker" name="daterange"
+          value="" placeholder="Select date range">
+      </div>
+      <br><br><br><br>
+      <p id="selectvarp" class="lead" style="display:none">
+        Select variables (core metabolism variables bolded):
+      </p>
+      <div id="viz_vars">
+      </div>
+      <br>
+      <button name="getviz" class="btn btn-primary btn-block">
+        View
+      </button>
+    </form>
+  </div>
+</div>
 <br>
 
 <!--
@@ -87,18 +105,41 @@ $('#dsite').selectize({
     }
 });
 
+// var $yearpick = $('#yearpicker').selectize({
+//     delimiter: ',',
+//     persist: false,
+//     create: function(input) {
+//         return {
+//             value: input,
+//             text: input
+//         }
+//     }
+// });
+
 var sitedict = {}
 {% for sv, sn, sd, ed, va in sites %}
   sitedict['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
 {% endfor %}
+
 $('#dsite').change(function(){
   //http://www.daterangepicker.com/
   $('#graphcontrol').hide();
+
   var siteinfo = sitedict[$('select[name=site]').val()];
   var sitedates = siteinfo['dates']
+
+  //display the full available date range
+  $("#fullrange").empty().append("Full available time range:<br>" +
+    sitedates[0] + " to " + sitedates[1]);
+
+  //used below: show most recent year unless there isn't a full year; then full range
+  min_date = new Date(sitedates[0]);
+  max_date = new Date(sitedates[1]);
+  ms364 = 364 * 24 * 60 * 60 * 1000;
+
   $('#datepicker').daterangepicker({
     locale: {format: 'YYYY-MM-DD', separator: ' to '},
-    startDate: sitedates[0],
+    startDate: max_date - ms364  >= min_date ? new Date(max_date - ms364) : min_date,
     endDate: sitedates[1],
     minDate: sitedates[0],
     maxDate: sitedates[1],
@@ -130,6 +171,16 @@ $('#dsite').change(function(){
   });
 
   sitevars = metabvars.concat(sitevars);
+
+  //populate available years
+  // siteyears = []
+  // sitedates.forEach(function(d, i){ siteyears[i] = d.slice(0,4) })
+  // unique_years = Array.from(new Set(siteyears)).sort()
+  //
+  // var yearPickerInst = $yearpick[0].selectize;
+  // unique_years.forEach(d => {
+  //   yearPickerInst.addOption({value:d, text:d})
+  // })
 
   $("#graphs").empty();
   $("#viz_vars").empty();
