@@ -75,18 +75,41 @@
 
 <div id="graphcontrol" class="text-center">
   <div class="form-inline">
-  Show local night-time: <input type="checkbox" id="shownight" value="no"> &nbsp;
   <!-- Aggregation: <select class="form-control" id="timescale" name="timescale">
     <option value="15m" selected>15 minutes (default)</option>
     <option value="1h">1 hour</option>
     <option value="1d">1 day</option></select> &nbsp; -->
-  Compare sensor variable:
-  <select class="form-control" id="backgraphlist" name="backgraphlist">
-  </select> &nbsp
-  Compare other variable:
-  <select class="form-control" id="backgraphlist_grab" name="backgraphlist_grab">
-  </select>
-</div>
+    <div style="display:inline-block; margin:1em">
+      <p>
+        Compare sensor variable:
+      </p>
+      <select class="form-control" id="backgraphlist" name="backgraphlist"
+        style="width:200px">
+      </select> &nbsp
+    </div>
+    <div style="display:inline-block; margin:1em">
+      <p>
+        Compare historic range (25-75%):
+      </p>
+      <select class="form-control" id="interquartile" name="interquartile"
+        style="width:200px">
+      </select>
+    </div>
+    <div style="display:inline-block; margin:1em">
+      <p>
+        Compare grab variable:
+      </p>
+      <select class="form-control" id="backgraphlist_grab" name="backgraphlist_grab"
+        style="width:200px">
+      </select>
+    </div>
+    <div style="display:inline-block; margin:1em">
+      <p>
+        Show local night-time:
+      </p>
+      <input type="checkbox" id="shownight" value="no"> &nbsp;
+    </div>
+  </div>
 </div>
 
 <div id="graphs"></div>
@@ -185,11 +208,14 @@ $('#dsite').change(function(){
   $("#graphs").empty();
   $("#viz_vars").empty();
   $("#selectvarp").css('display', '');
-  $('#backgraphlist')
-    .find('option')
-    .remove()
-    .end()
+  $('#backgraphlist').find('option').remove().end() //could use .empty()?
     .append('<option value="None" selected>None</option>');
+  $('#interquartile').empty()
+    .append('<option value="None" selected>None</option>');
+
+  var battery_ind = sitevars.indexOf('Battery_V')
+  var sitevars_nobat = sitevars.slice(0, battery_ind)
+    .concat(sitevars.slice(battery_ind + 1, sitevars.length))
 
   for (var i = 0; i < sitevars.length; ++i) {
 
@@ -202,7 +228,10 @@ $('#dsite').change(function(){
         sitevars[i] + '"> ' + sitevars[i] + '<br>');
     }
 
-    $('#backgraphlist').append('<option value="'+sitevars[i]+'">'+sitevars[i]+'</option>');
+    $('#backgraphlist').append('<option value="' + sitevars[i] + '">' +
+      sitevars[i] + '</option>');
+    $('#interquartile').append('<option value="' + sitevars_nobat[i] + '">' +
+      sitevars_nobat[i] + '</option>');
   }
 
   update_grabvars(regionsite=$('select[name=site]').val(),
@@ -386,8 +415,8 @@ $(function(){
     // $('#loading').show();
     var dat = {}
     dat['site'] = $('select[name=site]').val();
-    dat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');//$('#startDate').datepicker().val();
-    dat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');//$('#endDate').datepicker().val();
+    dat['startDate'] = $("#datepicker").data('daterangepicker').minDate.format('YYYY-MM-DD');//$('#startDate').datepicker().val();
+    dat['endDate'] = $("#datepicker").data('daterangepicker').maxDate.format('YYYY-MM-DD');//$('#endDate').datepicker().val();
     dat['variables'] = $('#variables:checked').map(function() { return this.value; }).get();
     // $('#vizspecs input[name=variables]').val( $('#variables:checked').map(function() { return this.value; }).get() );
     $.ajax({
@@ -423,8 +452,9 @@ $(function(){
 $(function(){
   $("select[name=backgraphlist_grab]").change(function(){
 
-    //reset the other dropdown
+    //reset the other dropdowns
     $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
+    $('#interquartile').val('None');
 
     if($(this).val() != 'None'){
 
@@ -462,6 +492,40 @@ $(function(){
     return false
   });
 });
+
+$(function(){
+  $("select[name=interquartile]").change(function(){
+
+    //reset the other dropdowns
+    $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
+    $('#backgraphlist_grab').val('None');
+
+    if($(this).val() != 'None'){
+
+      for(var i = 0; i < data.length; ++i){
+
+      }
+
+      time_arr = data.map(x => x.DateTime_UTC.slice(5, 13));
+      var_arr = data.map(x => x[$(this).val()]);
+
+      hash = [...new Set(time_arr)];
+      agg = hash.map(v => inputLabels.map((c,i) => c == v ? inputValues[i] : null)
+        .filter(z => z));
+      //gotta apply the following over agg
+      quantile75ind = Math.ceil(agg.length * .75)
+      quantile75 = agg.sort().slice(quantile75ind - 1, quantile75ind)
+      quantile25ind = Math.ceil(agg.length * .25)
+      quantile25 = agg.sort().slice(quantile25ind - 1, quantile25ind)
+
+
+      console.log(groupData(time_arr, var_arr));
+
+    }
+
+  });
+});
+
 
 // function Sunlight(variables, sundat){
 //   for (var i = 0; i < variables.length; ++i) {

@@ -53,14 +53,14 @@ function Plots(variables, data, flags, outliers, page){
 
     var svg = d3.select("#graphs").append("svg")
       .datum(data) //initialize and position
-        .attr("class",vvv)
+        .attr("class", vvv)
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
     svg.append("g") //x axis and x label
         .attr("class", "axis axis--x")
-        .attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(0," + (height-1) + ")") //1px adj shows lines
         .call(xAxis)
         .append("text") //label here
           .attr("fill", "#000")
@@ -70,7 +70,7 @@ function Plots(variables, data, flags, outliers, page){
           .text("DateTime (UTC)");
     svg.append("g")
         .attr("class", "axis axis--y")
-        .call(d3.axisLeft().scale(y).ticks(3))
+        .call(d3.axisLeft().scale(y).ticks(6))
         // .selectAll('.line')
         //   .attr('stroke', 'red')
       .append("text")
@@ -98,7 +98,7 @@ function Plots(variables, data, flags, outliers, page){
     // flagdict[vvv] = []
     flags.forEach(function(e){
       if(e.variable == vvv){ // only if this is the right variable
-        dff[e.DateTime_UTC] = e.variable
+        dff[e.DateTime_UTC] = e.variable //so ugly...
         // flagdict[vvv].push(e.flag)
       }
     });
@@ -164,9 +164,6 @@ function Plots(variables, data, flags, outliers, page){
         .attr('pointer-events', 'none');
 
     }else{ // viz page
-      svg.append("path")
-          .attr("class", "line")
-          .attr("d", line);
       svg.selectAll(".vdot")
           .data(data.filter(function(d) { return d[vvv]; }))
         .enter().append("circle")
@@ -253,7 +250,7 @@ function BackGraph(vvv, graph, data){
 
   // refresh right-hand axis
   d3.select("#" + graph + 'rightaxis')
-      .call(d3.axisRight().scale(ynew).ticks(3))
+      .call(d3.axisRight().scale(ynew).ticks(6))
       .attr('class', 'backarea backarea_axis');
 }
 
@@ -264,6 +261,7 @@ $(function(){
 
     //reset the other dropdown
     $('#backgraphlist_grab').val('None'); //why doesn't this set off a feedback loop?
+    $('#interquartile').val('None');
 
     //if requested backfill var not already loaded, go get it
     if(!variables.includes(backfill)){
