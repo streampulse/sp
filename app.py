@@ -2108,6 +2108,22 @@ def getvgrabviz():
 
     return jsonify(grabdat=xx)
 
+@app.route('/_interquartile',methods=["POST"])
+def interquartile():
+
+    dat = pd.DataFrame({'time':request.json['time_arr'],
+        'var':request.json['var_arr']})
+
+    def quant25(x):
+        return x.quantile(.25)
+    def quant75(x):
+        return x.quantile(.75)
+
+    quantiles = dat.pivot_table(index='time', values='var',
+        aggfunc=[quant25, quant75]).reset_index()
+
+    return jsonify(dat=quantiles.to_json(orient='values'))
+
 @app.route('/_getviz',methods=["POST"])
 def getviz():
 

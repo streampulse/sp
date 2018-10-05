@@ -18,7 +18,7 @@ var data;
 var variables;
 var sundat;
 var flags;
-var datna;
+var datna; //is this still needed?
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 var dott_undef //for disabling popup options if no points selected
@@ -211,6 +211,54 @@ $(function(){
     }
   });
 })
+
+function Interquartile(graph, ranges){
+
+  //make new y axis scale and select graph
+  var ynew = d3.scaleLinear().range([height, 0]);
+  cur_backgraph = d3.select("." + graph).select(".backgraph");
+
+  // remove previous graph and secondary axis if it exists
+  cur_backgraph.select("path").remove();
+  d3.select('#' + graph + 'rightaxis').empty();
+
+  //move this to flask
+  ///
+  ///
+  flattened_ranges = [].concat(...ranges.map(x => [x[1], x[2]]));
+  ynew.domain(d3.min(flattened_ranges), d3.max(flattened_ranges));
+
+  //how does this know what data to use??
+  ///
+  ///
+  var area = d3.area()
+    .defined(function(d){
+      if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
+        rrr = false
+      } else {
+        rrr = true
+      }
+      return rrr
+    });
+  area.x(function(d) {
+    return x(d[0]);
+  });
+  area.y0(function(d) {
+    return ynew(d[1]); //bottom of polygon
+  }).y1(function(d) {
+    return ynew(d[2]); //top of polygon
+  });
+
+  cur_backgraph.append("path")
+    .datum(data)
+    .attr("class", "backarea")
+    .attr("d", area);
+
+  // refresh right-hand axis
+  d3.select("#" + graph + 'rightaxis')
+      .call(d3.axisRight().scale(ynew).ticks(6))
+      .attr('class', 'backarea backarea_axis');
+}
 
 function BackGraph(vvv, graph, data){
 

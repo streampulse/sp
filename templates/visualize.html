@@ -502,24 +502,106 @@ $(function(){
 
     if($(this).val() != 'None'){
 
-      for(var i = 0; i < data.length; ++i){
 
-      }
+      var dat = {}
+      dat['time_arr'] = data.map(x => x.DateTime_UTC.slice(5, 13));
+      dat['var_arr'] = data.map(x => x[$('#interquartile').val()]);
 
-      time_arr = data.map(x => x.DateTime_UTC.slice(5, 13));
-      var_arr = data.map(x => x[$(this).val()]);
+      $.ajax({
+        type: 'POST',
+        url:'/_interquartile',
+        data: JSON.stringify(dat),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response){
 
-      hash = [...new Set(time_arr)];
-      agg = hash.map(v => inputLabels.map((c,i) => c == v ? inputValues[i] : null)
-        .filter(z => z));
-      //gotta apply the following over agg
-      quantile75ind = Math.ceil(agg.length * .75)
-      quantile75 = agg.sort().slice(quantile75ind - 1, quantile75ind)
-      quantile25ind = Math.ceil(agg.length * .25)
-      quantile25 = agg.sort().slice(quantile25ind - 1, quantile25ind)
+          ranges = JSON.parse(response.dat);
+          mindate = x.domain()[0];
+          minabb = mindate.toISOString().slice(5, 13);
+          maxdate = x.domain()[1];
+          maxabb = maxdate.toISOString().slice(5, 13);
+          st_yr = mindate.getFullYear();
+          en_yr = maxdate.getFullYear();
+          yrs = [];
+          for(var i = st_yr; i <= en_yr; i++){ yrs.push(i); }
+          dates = ranges.map(x => x[0]);
+          // quant25 = ranges.map(x => x[1])
+          // quant75 = ranges.map(x => x[2])
+
+          nyrs = yrs.length;
+          a1 = dates.indexOf(minabb);
+          a2 = nyrs > 1 ? dates.length : dates.indexOf(maxabb);
+          rangesA = ranges.slice(a1, a2).map(x =>
+            [st_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
+          // datesA = dates.slice(a1, a2).map(x => st_yr + '-' + x + ':00:00.00Z')
+          // quant25A = quant25.slice(a1, a2)
+          // quant75A = quant75.slice(a1, a2)
+          if(nyrs > 1){
+            b1 = dates.slice(0, 1);
+            b2 = dates.indexOf(maxabb);
+            rangesB = ranges.slice(b1, b2).map(x =>
+              [en_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
+            // datesB = dates.slice(b1, b2).map(x => en_yr + '-' + x + ':00:00.00Z')
+            // quant25B = quant25.slice(b1, b2)
+            // quant75B = quant75.slice(b1, b2)
+            if(nyrs === 2){
+              rangesA = rangesA.concat(rangesB);
+              // datesA = datesA.concat(datesB)
+              // quant25A = quant25A.concat(quant25B)
+              // quant75A = quant75A.concat(quant75B)
+            }
+            if(nyrs >= 3){
+              for(var i = 1; i < nyrs; i++){
+                rangesA = rangesA.slice(b1, b2).map(x =>
+                  [yrs[i] + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
+                // datesA = datesA.concat(dates.map(x => yrs[i] + '-' + x + ':00:00.00Z'))
+                // quant25A = quant25A.concat(quant25A)
+                // quant75A = quant75A.concat(quant75)
+              }
+              rangesA = rangesA.concat(rangesB);
+              // datesA = datesA.concat(datesB)
+              // quant25A = quant25A.concat(quant25B)
+              // quant75A = quant75A.concat(quant75B)
+            }
+          }
+          rangesA = rangesA.map(x => [parseDate(x[0]), x[1], x[2]]);
+          // datesA = datesA.map(x => parseDate(x))
+          console.log(rangesA);
+
+          var variables = $('#variables:checked').map(function(){
+            return this.value;
+          }).get();
+
+          for (var i = 0; i < variables.length; ++i) {
+            Interquartile(variables[i], rangesA);
+          }
+
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
 
 
-      console.log(groupData(time_arr, var_arr));
+      //
+      // console.log(time_arr)
+      // console.log(var_arr)
+      // hash = [...new Set(time_arr)];
+      // console.log(hash)
+      // agg = hash.map(v => time_arr.map((c,i) => c == v ? var_arr[i] : null)
+      //   .filter(z => z));
+      // console.log(agg)
+      //
+      // quantile25 = []
+      // quantile75 = []
+      //
+      // agg.map(function(x){
+      //   quantile75ind = Math.ceil(x.length * .75)
+      //   quantile75.push(x.sort().slice(quantile75ind - 1, quantile75ind))
+      // })
+      // console.log(quantile75)
+
+      // quantile25ind = Math.ceil(agg.length * .25)
+      // quantile25 = agg.sort().slice(quantile25ind - 1, quantile25ind)
 
     }
 
