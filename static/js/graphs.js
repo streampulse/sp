@@ -184,7 +184,7 @@ function Sunlight(variables, sundat){
   extent = x.domain();
   for (var i = 0; i < variables.length; ++i) {
     vvv = variables[i];
-    d3.select("."+vvv).selectAll('.sunriseset')
+    d3.select("." + vvv).selectAll('.sunriseset')
         .data(sundat)
       .enter().append('rect')
         .attr('class', 'sunriseset')
@@ -220,44 +220,106 @@ function Interquartile(graph, ranges){
 
   // remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove();
+  console.log(cur_backgraph);
   d3.select('#' + graph + 'rightaxis').empty();
 
   //move this to flask
   ///
   ///
   flattened_ranges = [].concat(...ranges.map(x => [x[1], x[2]]));
-  ynew.domain(d3.min(flattened_ranges), d3.max(flattened_ranges));
+  ynew.domain([d3.min(flattened_ranges), d3.max(flattened_ranges)]);
 
   //how does this know what data to use??
   ///
   ///
+
+  // var zz = d3.line();
+  //   // .defined(function(d){
+  //   //   if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
+  //   //     rrr = false
+  //   //   } else {
+  //   //     rrr = true
+  //   //   }
+  //   //   return rrr
+  //   // });
+  //   // zz.x(function(d) { return x(d[0]); });
+  //   // zz.y(function(d) { return y(d[1]); });
+  //   zz.x(function(d) {
+  //     return x(d.DateTime_UTC);
+  //   });
+  //   zz.y(function(d) { return y(d.DO_mgL); });
+  //
+  // cur_backgraph.data(data).enter().append('circle')
+  // // data.filter(function(d) { return d[vvv]; })
+  //   .attr("class", "vdot")
+  //   .attr("cx", zz.x())
+  //   .attr("cy", zz.y())
+  //   .attr("r", 2)
+
+  // var area = d3.area()
+  //   .defined(function(d){
+  //     if(d.DO_mgL == null || d.DateTime_UTC < x.domain()[0] || d.DateTime_UTC > x.domain()[1]){
+  //     // if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
+  //       rrr = false
+  //     } else {
+  //       rrr = true
+  //     }
+  //     return rrr
+  //   });
+  // area.x(function(d) {
+  //   return x(d.DateTime_UTC);
+  //   // return x(d[0]);
+  // });
+  // area.y0(function(d) {
+  // // area.y(function(d) {
+  //   return ynew(d.DO_mgL); //bottom of polygon
+  // // });
+  //   // return ynew(d[1]); //bottom of polygon
+  // }).y1(function(d) {
+  //   return ynew(d.DO_mgL + 1); //top of polygon
+  //   // return ynew(d[2]); //top of polygon
+  // });
+  //
+  // cur_backgraph.append("path")
+  //   .datum(data)
+  //   .attr("class", "backarea")
+  //   .attr("d", area);
+  //
+  // // refresh right-hand axis
+  // d3.select("#" + graph + 'rightaxis')
+  //     .call(d3.axisRight().scale(ynew).ticks(6))
+  //     .attr('class', 'backarea backarea_axis');
+
   var area = d3.area()
-    .defined(function(d){
-      if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-        rrr = false
-      } else {
-        rrr = true
-      }
-      return rrr
-    });
+      .defined(function(d){
+        if(d[1]==null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
+        // if(d[vvv]==null || d.date < x.domain()[0] || d.date > x.domain()[1]){
+          rrr = false
+        }else{
+          rrr = true
+        }
+        return rrr
+      });
   area.x(function(d) {
     return x(d[0]);
+    // return x(d.date);
   });
-  area.y0(function(d) {
-    return ynew(d[1]); //bottom of polygon
+  area.y0(function(d){
+    return ynew(d[1]);
   }).y1(function(d) {
-    return ynew(d[2]); //top of polygon
+    return ynew(d[2]);
   });
 
   cur_backgraph.append("path")
-    .datum(data)
-    .attr("class", "backarea")
+    .datum(ranges)
+    .attr("class", "interquartile")
+    // .attr("class", "line")
     .attr("d", area);
 
   // refresh right-hand axis
   d3.select("#" + graph + 'rightaxis')
       .call(d3.axisRight().scale(ynew).ticks(6))
-      .attr('class', 'backarea backarea_axis');
+      .attr('class', 'interquartile interquart_axis');
 }
 
 function BackGraph(vvv, graph, data){

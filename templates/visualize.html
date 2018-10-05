@@ -3,7 +3,7 @@
 
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
-    <h1>Visualize Data</h1>
+    <h1>Visualize Input Data</h1>
     <br>
     <!-- <p class="lead">Use this interface to rapidly preview data and view provisional model estimates.<p> -->
 
@@ -415,8 +415,8 @@ $(function(){
     // $('#loading').show();
     var dat = {}
     dat['site'] = $('select[name=site]').val();
-    dat['startDate'] = $("#datepicker").data('daterangepicker').minDate.format('YYYY-MM-DD');//$('#startDate').datepicker().val();
-    dat['endDate'] = $("#datepicker").data('daterangepicker').maxDate.format('YYYY-MM-DD');//$('#endDate').datepicker().val();
+    dat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');//$('#startDate').datepicker().val();
+    dat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');//$('#endDate').datepicker().val();
     dat['variables'] = $('#variables:checked').map(function() { return this.value; }).get();
     // $('#vizspecs input[name=variables]').val( $('#variables:checked').map(function() { return this.value; }).get() );
     $.ajax({
@@ -502,7 +502,6 @@ $(function(){
 
     if($(this).val() != 'None'){
 
-
       var dat = {}
       dat['time_arr'] = data.map(x => x.DateTime_UTC.slice(5, 13));
       dat['var_arr'] = data.map(x => x[$('#interquartile').val()]);
@@ -514,6 +513,8 @@ $(function(){
         contentType: 'application/json;charset=UTF-8',
         success: function(response){
 
+          //duplicate hourly aggregated values as necessary to reconstitute
+          //the full time range of already plotted series
           ranges = JSON.parse(response.dat);
           mindate = x.domain()[0];
           minabb = mindate.toISOString().slice(5, 13);
@@ -524,48 +525,29 @@ $(function(){
           yrs = [];
           for(var i = st_yr; i <= en_yr; i++){ yrs.push(i); }
           dates = ranges.map(x => x[0]);
-          // quant25 = ranges.map(x => x[1])
-          // quant75 = ranges.map(x => x[2])
 
           nyrs = yrs.length;
           a1 = dates.indexOf(minabb);
           a2 = nyrs > 1 ? dates.length : dates.indexOf(maxabb);
           rangesA = ranges.slice(a1, a2).map(x =>
             [st_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
-          // datesA = dates.slice(a1, a2).map(x => st_yr + '-' + x + ':00:00.00Z')
-          // quant25A = quant25.slice(a1, a2)
-          // quant75A = quant75.slice(a1, a2)
           if(nyrs > 1){
             b1 = dates.slice(0, 1);
             b2 = dates.indexOf(maxabb);
             rangesB = ranges.slice(b1, b2).map(x =>
               [en_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
-            // datesB = dates.slice(b1, b2).map(x => en_yr + '-' + x + ':00:00.00Z')
-            // quant25B = quant25.slice(b1, b2)
-            // quant75B = quant75.slice(b1, b2)
             if(nyrs === 2){
               rangesA = rangesA.concat(rangesB);
-              // datesA = datesA.concat(datesB)
-              // quant25A = quant25A.concat(quant25B)
-              // quant75A = quant75A.concat(quant75B)
             }
             if(nyrs >= 3){
               for(var i = 1; i < nyrs; i++){
                 rangesA = rangesA.slice(b1, b2).map(x =>
                   [yrs[i] + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
-                // datesA = datesA.concat(dates.map(x => yrs[i] + '-' + x + ':00:00.00Z'))
-                // quant25A = quant25A.concat(quant25A)
-                // quant75A = quant75A.concat(quant75)
               }
               rangesA = rangesA.concat(rangesB);
-              // datesA = datesA.concat(datesB)
-              // quant25A = quant25A.concat(quant25B)
-              // quant75A = quant75A.concat(quant75B)
             }
           }
           rangesA = rangesA.map(x => [parseDate(x[0]), x[1], x[2]]);
-          // datesA = datesA.map(x => parseDate(x))
-          console.log(rangesA);
 
           var variables = $('#variables:checked').map(function(){
             return this.value;
