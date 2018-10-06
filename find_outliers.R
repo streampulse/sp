@@ -70,7 +70,12 @@ function(df){
         #an outlier as defined here must consist of a pair of positive and
         #negative jumps. here we get the run lengths of consecutive positive
         #(1) and negative (0) jumps
-        runs = rle2(as.numeric(jump_inds %in% pos_jumps), indices=TRUE)
+        #runs = rle2(as.numeric(jump_inds %in% pos_jumps), indices=TRUE) #function broken
+        runs = rle(as.numeric(jump_inds %in% pos_jumps))
+        ends = cumsum(runs$lengths)
+        runs = cbind(values=runs$values, starts=c(1, lag(ends)[-1] + 1),
+            stops=ends, lengths=runs$lengths, deparse.level=1)
+
         lr = runs[,'lengths'] > 3 #runs > 3 are considered "long"
         long_runs = runs[lr, 2:3, drop=FALSE]
 
@@ -138,8 +143,13 @@ function(df){
 
                 #a multijump is a series of jumps in the same direction wihtin
                 #a short space of time. not likely to be a real outlier
-                jump_runs = rle2(as.numeric(short_jumps), indices=TRUE,
-                    return.list=FALSE)
+                #jump_runs = rle2(as.numeric(short_jumps), indices=TRUE)
+                #    return.list=FALSE)
+                jump_runs = rle(as.numeric(short_jumps))
+                ends2 = cumsum(jump_runs$lengths)
+                jump_runs = cbind(values=jump_runs$values, starts=c(1, lag(ends2)[-1] + 1),
+                    stops=ends2, lengths=jump_runs$lengths, deparse.level=1)
+
                 multijumps = jump_runs[jump_runs[,'lengths'] > 1,
                     2:3, drop=FALSE]
                 if(length(multijumps)){
@@ -175,15 +185,19 @@ function(df){
                 } else {
 
                     #find remaining one-way jumps
-                    same_sign_runs = rle2(as.numeric(big_outdif), indices=TRUE,
-                        return.list=TRUE)
+                    #same_sign_runs = rle2(as.numeric(big_outdif), indices=TRUE,
+                    #    return.list=TRUE)
+                    same_sign_runs = rle(as.numeric(big_outdif))
+                    same_sign_run_ends = cumsum(same_sign_runs$lengths)
+                    same_sign_run_starts = c(1, lag(same_sign_run_ends)[-1] + 1)
 
                     if(length(same_sign_runs)){
                         l = same_sign_runs$lengths
                         one_way_jumps = numeric()
                         for(i in 1:length(l)){
                             if(l[i] > 1){
-                                s = same_sign_runs$starts[i]
+                                s = same_sign_run_starts[i]
+                                # s = same_sign_runs$starts[i]
                                 one_way_jumps = append(one_way_jumps,
                                     seq(s, s + (l[i] - 2), 1))
                             }
