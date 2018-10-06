@@ -1,5 +1,5 @@
 var margin = {top: 40, right: 60, bottom: 40, left: 40},
-    width = $("#graphs").width() - margin.left - margin.right,
+    width = $("#graphs").width() - margin.left - margin.right - 30, //30 for buttons
     height = 250 - margin.top - margin.bottom;
 var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
 var x = d3.scaleUtc().range([0, width]),
@@ -23,7 +23,7 @@ var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 var dott_undef //for disabling popup options if no points selected
 // var flagdict = {}
-var div = d3.select("body").append("div")
+var tooltip = d3.select("body").append("div")
     .attr("class", "tooltip")
     .style("opacity", 0);
 
@@ -51,7 +51,10 @@ function Plots(variables, data, flags, outliers, page){
       .x(function(d) { return x(d.date); })
       .y(function(d) { return y(d[vvv]); });
 
-    var svg = d3.select("#graphs").append("svg")
+    var svg = d3.select("#graphs")
+      .append('div').attr('id', 'svgrow_' + vvv)
+      .append('div').attr('class', 'inline')
+      .append("svg")
       .datum(data) //initialize and position
         .attr("class", vvv)
         .attr("width", width + margin.left + margin.right)
@@ -145,16 +148,16 @@ function Plots(variables, data, flags, outliers, page){
             return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
           })[0];
 
-          div.transition()
+          tooltip.transition()
             .duration(200)
             .style("opacity", .9);
-          div.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+          tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
             this_point_flaginfo.comment)
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
           })
           .on("mouseout", function(d) {
-            div.transition()
+            tooltip.transition()
               .duration(500)
               .style("opacity", 0);
           });
@@ -174,7 +177,51 @@ function Plots(variables, data, flags, outliers, page){
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
         });
-      d3.select("#sidebuttons").append("p").text('oi');
+      // d3.select("#sidebuttons").append("div")
+      //   .attr("height", height + margin.top + margin.bottom)
+      //   .text('oi');
+        d3.select('#svgrow_' + vvv)
+          .append('div').attr('id', 'sidebuttons_' + vvv)
+            .attr('class', 'inline').style('width', '30px')
+          .append('button').attr('name', 'interq_' + vvv)
+            .attr('class', "btn btn-primary btn-block")
+            .text('H');
+
+        // d3.select('interq_' + vvv).on("mouseover", function(d, j) {
+        //
+        //   // //get the name (which for some reason is a class) of the svg under the mouse
+        //   // var hovered_point = this.getBoundingClientRect();
+        //   // var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+        //   // for(var i = 0; i < elems.length; ++i){
+        //   //   if(elems[i].tagName.toLowerCase() == 'svg'){
+        //   //     var svgname = elems[i].classList[0];
+        //   //   }
+        //   // }
+        //
+        //   // var this_point_flaginfo = $.grep(flags, function(v) {
+        //   //   return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
+        //   // })[0];
+        //
+        //   tooltip.transition()
+        //     .duration(200)
+        //     .style("opacity", .9);
+        //   tooltip.html('oi')
+        //     .style("left", (d3.event.pageX) + "px")
+        //     .style("top", (d3.event.pageY) + "px");
+        //   })
+        //   .on("mouseout", function(d) {
+        //     tooltip.transition()
+        //       .duration(500)
+        //       .style("opacity", 0);
+        //   });
+
+        // d3.select('interq_' + vvv)
+        //   .attr("class", "tooltip").style("opacity", 0)
+        //   .text('shiiiiiit');
+        d3.select('#sidebuttons_' + vvv)
+          .append('button').attr('name', 'interqDO_' + vvv)
+            .attr('class', "btn btn-success btn-block")
+            .text('DO');
     }
   }
 }
