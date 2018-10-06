@@ -174,12 +174,13 @@ function Plots(variables, data, flags, outliers, page){
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
         });
+      d3.select("#sidebuttons").append("p").text('oi');
     }
   }
 }
 
 function Sunlight(variables, sundat){
-  console.time('sun')
+  // console.time('sun')
   d3.selectAll(".sunriseset").remove();
   extent = x.domain();
   for (var i = 0; i < variables.length; ++i) {
@@ -199,7 +200,7 @@ function Sunlight(variables, sundat){
         return is_inplot;
       });
   }
-  console.timeEnd('sun')
+  // console.timeEnd('sun')
 }
 
 $(function(){
@@ -220,7 +221,6 @@ function Interquartile(graph, ranges){
 
   // remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove();
-  console.log(cur_backgraph);
   d3.select('#' + graph + 'rightaxis').empty();
 
   //move this to flask
@@ -371,7 +371,7 @@ $(function(){
 
     //reset the other dropdown
     $('#backgraphlist_grab').val('None'); //why doesn't this set off a feedback loop?
-    $('#interquartile').val('None');
+    // $('#interquartile').val('None');
 
     //if requested backfill var not already loaded, go get it
     if(!variables.includes(backfill)){
@@ -612,9 +612,3 @@ function redrawPoints(zoom_in, sbrush, reset){
   d3.selectAll(".brush").call(brush.move, null);
   var selectedBrush;
 }
-
-// $('#flags2').selectize({
-//     delimiter: ',',
-//     persist: false,
-//     create: function(input) { return {value: input,text: input} }
-// });

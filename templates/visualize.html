@@ -39,38 +39,6 @@
   </div>
 </div>
 <br>
-
-<!--
-<button name="vizsite" class="btn btn-primary btn-block">Select</button>
-<div class="row"><div class="col-md-6 col-md-offset-3">
-  <form id="viz" class="form-horizontal">
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Choose a site</span>
-      <select class="form-control" name="site">
-        {% for s in sites %}
-        <option value="{{s}}">{{s}}</option>
-        {% endfor %}
-      </select>
-      <span class="input-group-btn">
-        <button name="vizsite" class="btn btn-primary">Select</button>
-      </span>
-    </div><br>
-  </form>
-</div></div>
-
-<div class="row" id="vizspecs"><div class="col-md-6 col-md-offset-3">
-  <form id="viz_specs" class="form-horizontal">
-    Choose dates:<br>
-    <input type="hidden" name="site" value="">
-    <input type="hidden" name="variables" value="">
-    <input class="form-control" type="text" id="datepicker" name="daterange" value="" placeholder="Select date range"><br>
-    Select variables:<br>
-    <div id="viz_vars"></div><br>
-    <button name="getviz" class="btn btn-primary btn-block">View</button>
-  </form>
-</div></div>
--->
-
 <hr>
 
 <div id="graphcontrol" class="text-center">
@@ -87,14 +55,14 @@
         style="width:200px">
       </select> &nbsp
     </div>
-    <div style="display:inline-block; margin:1em">
+    <!-- <div style="display:inline-block; margin:1em">
       <p>
         Compare historic range (25-75%):
       </p>
       <select class="form-control" id="interquartile" name="interquartile"
         style="width:200px">
       </select>
-    </div>
+    </div> -->
     <div style="display:inline-block; margin:1em">
       <p>
         Compare grab variable:
@@ -112,7 +80,15 @@
   </div>
 </div>
 
-<div id="graphs"></div>
+
+<div class="row">
+  <div class="col-md-11">
+    <div id="graphs"></div>
+  </div>
+  <div class="col-md-1">
+    <div id="sidebuttons"></div>
+  </div>
+</div>
 
 <script src="static/js/graphs.js"></script>
 
@@ -127,17 +103,6 @@ $('#dsite').selectize({
         }
     }
 });
-
-// var $yearpick = $('#yearpicker').selectize({
-//     delimiter: ',',
-//     persist: false,
-//     create: function(input) {
-//         return {
-//             value: input,
-//             text: input
-//         }
-//     }
-// });
 
 var sitedict = {}
 {% for sv, sn, sd, ed, va in sites %}
@@ -195,16 +160,6 @@ $('#dsite').change(function(){
 
   sitevars = metabvars.concat(sitevars);
 
-  //populate available years
-  // siteyears = []
-  // sitedates.forEach(function(d, i){ siteyears[i] = d.slice(0,4) })
-  // unique_years = Array.from(new Set(siteyears)).sort()
-  //
-  // var yearPickerInst = $yearpick[0].selectize;
-  // unique_years.forEach(d => {
-  //   yearPickerInst.addOption({value:d, text:d})
-  // })
-
   $("#graphs").empty();
   $("#viz_vars").empty();
   $("#selectvarp").css('display', '');
@@ -240,12 +195,6 @@ $('#dsite').change(function(){
 });
 
 function update_grabvars (regionsite, startdate, enddate) {
-
-  // $.getJSON('/_getgrabvars',
-  //   {regionsite: regionsite, startdate: startdate, enddate: enddate},
-  //   function(data) {
-  //   data.result;
-  // });
 
   $.ajax({
     type: 'POST',
@@ -283,132 +232,6 @@ $('#datepicker').on('apply.daterangepicker', function(ev, picker) {
   $('#start_date').text( '"'+picker.startDate.format('YYYY-MM-DD')+'"' );
   $('#end_date').text( '"'+picker.endDate.format('YYYY-MM-DD')+'"' );
 });
-
-
-// var margin = {top: 40, right: 40, bottom: 40, left: 40},
-//     width = $("#graphs").width() - margin.left - margin.right,
-//     height = 250 - margin.top - margin.bottom;
-// var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
-// var x = d3.scaleUtc().range([0, width]),
-//     y = d3.scaleLinear().range([height, 0]),
-//     xAxis = d3.axisBottom().scale(x).ticks(6);
-// var data;
-// var variables;
-// var sundat;
-// var flags;
-//
-// function Plots(variables, data, flags){
-//   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
-//   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
-//   x.domain(d3.extent(data, function(d) { return d.date; }));
-//   for (var i = 0; i < variables.length; ++i) {
-//     vvv = variables[i];
-//     y.domain(d3.extent(data, function(d) { return d[vvv]; }));
-//     var line = d3.line()
-//         .defined(function(d){return d[vvv];})
-//         .x(function(d) { return x(d.date); })
-//         .y(function(d) { return y(d[vvv]); });
-//     var svg = d3.select("#graphs").append("svg")
-//       .datum(data)
-//         .attr("class",vvv)
-//         .attr("width", width + margin.left + margin.right)
-//         .attr("height", height + margin.top + margin.bottom)
-//       .append("g")
-//         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-//       // .on('dblclick',redrawPoints);
-//     svg.append("g")
-//         .attr("class", "axis axis--x")
-//         .attr("transform", "translate(0," + height + ")")
-//         .call(xAxis)
-//         .append("text")
-//           .attr("fill", "#000")
-//           .attr("dy", "3em")
-//           .attr("dx", width)
-//           .style("text-anchor", "end")
-//           .text("DateTime (UTC)");
-//     svg.append("g")
-//         .attr("class", "axis axis--y")
-//         .call(d3.axisLeft().scale(y).ticks(3))
-//       .append("text")
-//         .attr("fill", "#000")
-//         .attr("dy", "-0.71em")
-//         .attr("dx", "0.71em")
-//         .style("text-anchor", "start")
-//         .text(vvv);
-//     svg.append("g")
-//         .attr("class", "backgraph")
-//     svg.append("path")
-//         .attr("class", "line")
-//         .attr("d", line);
-//     dff = {} // flagged values
-//     flags.forEach(function(e){
-//       if(e.variable==vvv){ dff[e.DateTime_UTC]=e.variable } // only if it is the right variable
-//     });
-//     svg.selectAll(".vdot")
-//         .data(data.filter(function(d) { return d[vvv]; }))
-//       .enter().append("circle")
-//         .attr("class", "vdot")
-//         .attr("cx", line.x())
-//         .attr("cy", line.y())
-//         .attr("r", 2)
-//       .classed("flagdot", function(d){
-//         return vvv == dff[d.DateTime_UTC]
-//       });
-//   }
-// }
-
-// $(function(){
-//   $("button[name=vizsite]").click(function(){
-//     $('#loading').show();
-//     var dat = {}
-//     dat['site'] = [$('select[name=site]').val()];
-//     $.ajax({
-//       type: 'POST',
-//       url:'/_getstats',
-//       data: JSON.stringify(dat),
-//       contentType: 'application/json;charset=UTF-8',
-//       success: function(response){
-//         $('#loading').hide();
-//         $('#graphcontrol').hide();
-//         $('#datepicker').daterangepicker({
-//           locale: {format: 'YYYY-MM-DD', separator: ' to '},
-//           startDate: response.initDate,
-//           endDate: response.endDate,
-//           minDate: response.startDate,
-//           maxDate: response.endDate,
-//           autoApply: true,
-//           opens: 'left'
-//         });
-//         // $('.input-daterange').datepicker({
-//         //     startDate: response.startDate,
-//         //     endDate: response.endDate,
-//         //     todayHighlight: true,
-//         //     format: 'yyyy-mm-dd'
-//         // });
-//         // $('#startDate').val(response.initDate);
-//         // $('#endDate').val(response.endDate);
-//         $('#vizspecs input[name=site]').val(response.site);
-//         $("#graphs").empty();
-//         $("#viz_vars").empty();
-//         $('#backgraphlist')
-//             .find('option')
-//             .remove()
-//             .end()
-//             .append('<option value="None" selected>None</option>');
-//         for (var i = 0; i < response.variables.length; ++i) {
-//             $('#viz_vars').append('<input type="checkbox" id="variables" value="'+response.variables[i]+'" checked> '+response.variables[i]+'<br>');
-//             // add stuff to dropdown
-//             $('#backgraphlist').append('<option value="'+response.variables[i]+'">'+response.variables[i]+'</option>');
-//         }
-//         $('#vizspecs').show();
-//       },
-//       error: function(error){
-//         console.log(error);
-//       }
-//     });
-//     return false;
-//   })
-// });
 
 $(function(){
   $("button[name=getviz]").click(function(){
@@ -454,7 +277,7 @@ $(function(){
 
     //reset the other dropdowns
     $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
-    $('#interquartile').val('None');
+    // $('#interquartile').val('None');
 
     if($(this).val() != 'None'){
 
@@ -562,83 +385,10 @@ $(function(){
           console.log(error);
         }
       });
-
-
-      //
-      // console.log(time_arr)
-      // console.log(var_arr)
-      // hash = [...new Set(time_arr)];
-      // console.log(hash)
-      // agg = hash.map(v => time_arr.map((c,i) => c == v ? var_arr[i] : null)
-      //   .filter(z => z));
-      // console.log(agg)
-      //
-      // quantile25 = []
-      // quantile75 = []
-      //
-      // agg.map(function(x){
-      //   quantile75ind = Math.ceil(x.length * .75)
-      //   quantile75.push(x.sort().slice(quantile75ind - 1, quantile75ind))
-      // })
-      // console.log(quantile75)
-
-      // quantile25ind = Math.ceil(agg.length * .25)
-      // quantile25 = agg.sort().slice(quantile25ind - 1, quantile25ind)
-
     }
 
   });
 });
-
-
-// function Sunlight(variables, sundat){
-//   for (var i = 0; i < variables.length; ++i) {
-//     vvv = variables[i];
-//     d3.select("."+vvv).selectAll('.sunriseset')
-//         .data(sundat)
-//       .enter().append('rect')
-//         .attr('class', 'sunriseset')
-//         .attr('x', function(d) { return x(d.set); })
-//         .attr('y', 0)
-//         .attr('width', function(d) { return x(d.rise) - x(d.set); })
-//         .attr('height', height)
-//         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-//   }
-// }
-//
-// $(function(){
-//   $('#shownight').change(function() {
-//     if($(this).is(":checked")) {
-//       Sunlight(variables, sundat);
-//     }else{
-//       d3.select("#graphs").selectAll(".sunriseset").remove();
-//     }
-//   });
-// })
-//
-// function BackGraph(vvv, graph, data){
-//   var ynew = d3.scaleLinear().range([height, 0]);
-//   svg = d3.select("."+graph).select(".backgraph")
-//   svg.select("path").remove() // remove previous graph
-//   ynew.domain(d3.extent(data, function(d) { return d[vvv]; }));
-//   var area = d3.area()
-//       .x(function(d) { return x(d.date); })
-//       .y0(height)
-//       .y1(function(d) { return ynew(d[vvv]); });
-//   svg.append("path")
-//       .datum(data)
-//       .attr("class", "backarea")
-//       .attr("d", area);
-// }
-//
-// $(function(){
-//   $("#backgraphlist").change(function () {
-//     var backfill = this.value;
-//     for (var i = 0; i < variables.length; ++i) {
-//       BackGraph(backfill, variables[i], data);
-//     }
-//   });
-// })
 
 </script>
 
