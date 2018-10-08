@@ -1,5 +1,5 @@
 var margin = {top: 40, right: 60, bottom: 40, left: 40},
-    width = $("#graphs").width() - margin.left - margin.right - 30, //30 for buttons
+    width = $("#graphs").width() - margin.left - margin.right - 45, //45 for buttons
     height = 250 - margin.top - margin.bottom;
 var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
 var x = d3.scaleUtc().range([0, width]),
@@ -23,8 +23,11 @@ var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 var dott_undef //for disabling popup options if no points selected
 // var flagdict = {}
-var tooltip = d3.select("body").append("div")
+var point_tooltip = d3.select("body").append("div")
     .attr("class", "tooltip")
+    .style("opacity", 0);
+var button_tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip button-tooltip")
     .style("opacity", 0);
 
 function Plots(variables, data, flags, outliers, page){
@@ -148,16 +151,16 @@ function Plots(variables, data, flags, outliers, page){
             return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
           })[0];
 
-          tooltip.transition()
+          point_tooltip.transition()
             .duration(200)
             .style("opacity", .9);
-          tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+          point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
             this_point_flaginfo.comment)
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
           })
           .on("mouseout", function(d) {
-            tooltip.transition()
+            point_tooltip.transition()
               .duration(500)
               .style("opacity", 0);
           });
@@ -180,48 +183,54 @@ function Plots(variables, data, flags, outliers, page){
       // d3.select("#sidebuttons").append("div")
       //   .attr("height", height + margin.top + margin.bottom)
       //   .text('oi');
-        d3.select('#svgrow_' + vvv)
-          .append('div').attr('id', 'sidebuttons_' + vvv)
-            .attr('class', 'inline').style('width', '30px')
-          .append('button').attr('name', 'interq_' + vvv)
-            .attr('class', "btn btn-primary btn-block")
-            .text('H');
+      d3.select('#svgrow_' + vvv)
+        .append('div')
+          .attr('id', 'sidebuttons_' + vvv)
+          .attr('class', 'inline').style('width', '45px')
+        .append('button')
+          .attr('id', 'interq_' + vvv)
+          .attr('name', 'I' + vvv)
+          .attr('class', 'btn btn-primary btn-block')
+          .text('H');
+      d3.select('#sidebuttons_' + vvv)
+        .append('button')
+          .attr('id', 'interqDO_' + vvv)
+          .attr('name', 'I' + vvv)
+          .attr('class', 'btn btn-success btn-block')
+          .text('DO');
 
-        // d3.select('interq_' + vvv).on("mouseover", function(d, j) {
-        //
-        //   // //get the name (which for some reason is a class) of the svg under the mouse
-        //   // var hovered_point = this.getBoundingClientRect();
-        //   // var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
-        //   // for(var i = 0; i < elems.length; ++i){
-        //   //   if(elems[i].tagName.toLowerCase() == 'svg'){
-        //   //     var svgname = elems[i].classList[0];
-        //   //   }
-        //   // }
-        //
-        //   // var this_point_flaginfo = $.grep(flags, function(v) {
-        //   //   return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
-        //   // })[0];
-        //
-        //   tooltip.transition()
-        //     .duration(200)
-        //     .style("opacity", .9);
-        //   tooltip.html('oi')
-        //     .style("left", (d3.event.pageX) + "px")
-        //     .style("top", (d3.event.pageY) + "px");
-        //   })
-        //   .on("mouseout", function(d) {
-        //     tooltip.transition()
-        //       .duration(500)
-        //       .style("opacity", 0);
-        //   });
+      d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#bfd7dd')
+          .style("opacity", 1);
+          button_tooltip.html('View historical interquartile range ' +
+            '(25th-75th percentile, binned by hour).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+        })
+        .on("mouseout", function(d) {
+          button_tooltip.transition()
+            .duration(100)
+            .style("opacity", 0);
+        });
 
-        // d3.select('interq_' + vvv)
-        //   .attr("class", "tooltip").style("opacity", 0)
-        //   .text('shiiiiiit');
-        d3.select('#sidebuttons_' + vvv)
-          .append('button').attr('name', 'interqDO_' + vvv)
-            .attr('class', "btn btn-success btn-block")
-            .text('DO');
+      d3.selectAll("button[id^='interqDO_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+          button_tooltip.html('View historical interquartile range of ' +
+            'dissolved oxygen (25th-75th percentile, binned by hour).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+        })
+        .on("mouseout", function(d) {
+          button_tooltip.transition()
+            .duration(100)
+            .style("opacity", 0);
+        });
+
     }
   }
 }
@@ -270,15 +279,11 @@ function Interquartile(graph, ranges){
   cur_backgraph.select("path").remove();
   d3.select('#' + graph + 'rightaxis').empty();
 
-  //move this to flask
-  ///
-  ///
   flattened_ranges = [].concat(...ranges.map(x => [x[1], x[2]]));
   ynew.domain([d3.min(flattened_ranges), d3.max(flattened_ranges)]);
 
-  //how does this know what data to use??
-  ///
-  ///
+  // ynew.domain(d3.extent(data, function(d) {
+  //   return d[vvv]; }));
 
   // var zz = d3.line();
   //   // .defined(function(d){
@@ -296,6 +301,7 @@ function Interquartile(graph, ranges){
   //   });
   //   zz.y(function(d) { return y(d.DO_mgL); });
   //
+  // // d3.select("." + graph).data(data).enter().append('circle')
   // cur_backgraph.data(data).enter().append('circle')
   // // data.filter(function(d) { return d[vvv]; })
   //   .attr("class", "vdot")
@@ -351,17 +357,26 @@ function Interquartile(graph, ranges){
     return x(d[0]);
     // return x(d.date);
   });
-  area.y0(function(d){
+  area.y(function(d){
     return ynew(d[1]);
+    // return ynew(d[vvv]);
   }).y1(function(d) {
     return ynew(d[2]);
   });
 
   cur_backgraph.append("path")
+    // .data(data)
     .datum(ranges)
     .attr("class", "interquartile")
-    // .attr("class", "line")
+    // .attr("class", "line");
     .attr("d", area);
+
+  // svg.selectAll(".vdot")
+  //   .data(data.filter(function(d) { return d[vvv]; }))
+  // .enter().append("circle")
+  //   .attr("class", "vdot")
+  //   .attr("cx", line.x())
+  //   .attr("cy", line.y())
 
   // refresh right-hand axis
   d3.select("#" + graph + 'rightaxis')
