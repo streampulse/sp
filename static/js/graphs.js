@@ -17,7 +17,7 @@ var selectedBrush;
 var data;
 var variables;
 var sundat;
-var flags;
+// var flags;
 var datna; //is this still needed?
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
@@ -179,7 +179,45 @@ function Plots(variables, data, flags, outliers, page){
           .attr("r", 2)
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
-        });
+        })
+        .filter('.flagdot')
+        .on("mouseover", function(d, j) {
+
+          //add mouseover tooltips for each flagged point:
+          //get the name (which for some reason is a class) of the svg under the mouse
+          var hovered_point = this.getBoundingClientRect();
+          var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+          for(var i = 0; i < elems.length; ++i){
+            if(elems[i].tagName.toLowerCase() == 'svg'){
+              var svgname = elems[i].classList[0];
+            }
+          }
+
+          var this_point_flaginfo = $.grep(flags, function(v) {
+            return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
+          })[0];
+
+          point_tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+          point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+            this_point_flaginfo.comment)
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {
+            point_tooltip.transition()
+              .duration(500)
+              .style("opacity", 0);
+          });
+
+      //non-flagged points shouldnt register mouse activity
+      svg.selectAll('.dot:not(.flagdot)')
+        .attr('pointer-events', 'none');
+
+
+
+
       // d3.select("#sidebuttons").append("div")
       //   .attr("height", height + margin.top + margin.bottom)
       //   .text('oi');
@@ -190,7 +228,7 @@ function Plots(variables, data, flags, outliers, page){
         .append('button')
           .attr('id', 'interq_' + vvv)
           .attr('name', 'I' + vvv)
-          .attr('class', 'btn btn-primary btn-block')
+          .attr('class', 'btn btn-warning btn-block')
           .text('H');
       d3.select('#sidebuttons_' + vvv)
         .append('button')
@@ -202,10 +240,10 @@ function Plots(variables, data, flags, outliers, page){
       d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
           .duration(50)
-          .style('background', '#bfd7dd')
+          .style('background', '#ffd68c')
           .style("opacity", 1);
           button_tooltip.html('View historical interquartile range ' +
-            '(25th-75th percentile, binned by hour).')
+            '(25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
         })
@@ -221,7 +259,7 @@ function Plots(variables, data, flags, outliers, page){
           .style('background', '#89e6a1')
           .style("opacity", 1);
           button_tooltip.html('View historical interquartile range of ' +
-            'dissolved oxygen (25th-75th percentile, binned by hour).')
+            'dissolved oxygen (25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
         })
@@ -308,40 +346,6 @@ function Interquartile(graph, ranges){
   //   .attr("cx", zz.x())
   //   .attr("cy", zz.y())
   //   .attr("r", 2)
-
-  // var area = d3.area()
-  //   .defined(function(d){
-  //     if(d.DO_mgL == null || d.DateTime_UTC < x.domain()[0] || d.DateTime_UTC > x.domain()[1]){
-  //     // if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-  //       rrr = false
-  //     } else {
-  //       rrr = true
-  //     }
-  //     return rrr
-  //   });
-  // area.x(function(d) {
-  //   return x(d.DateTime_UTC);
-  //   // return x(d[0]);
-  // });
-  // area.y0(function(d) {
-  // // area.y(function(d) {
-  //   return ynew(d.DO_mgL); //bottom of polygon
-  // // });
-  //   // return ynew(d[1]); //bottom of polygon
-  // }).y1(function(d) {
-  //   return ynew(d.DO_mgL + 1); //top of polygon
-  //   // return ynew(d[2]); //top of polygon
-  // });
-  //
-  // cur_backgraph.append("path")
-  //   .datum(data)
-  //   .attr("class", "backarea")
-  //   .attr("d", area);
-  //
-  // // refresh right-hand axis
-  // d3.select("#" + graph + 'rightaxis')
-  //     .call(d3.axisRight().scale(ynew).ticks(6))
-  //     .attr('class', 'backarea backarea_axis');
 
   var area = d3.area()
       .defined(function(d){

@@ -326,16 +326,21 @@ $('body').ready(function(){
     $('#backgraphlist').val('None');
     $('#backgraphlist_grab').val('None');
 
-    //determine time slices and variables to send in ajax request
+    //determine variable and site for which to retrieve entire data record
+    // //determine time slices and variables to send in ajax request
     var dat = {}
-    dat['time_arr'] = data.map(x => x.DateTime_UTC.slice(5, 13));
+    // dat['time_arr'] = data.map(x => x.DateTime_UTC.slice(5, 13));
     var current_plot = $(this).attr('name').slice(1)
     if($(this).attr('id').slice(0, 8) == 'interqDO'){
-      dat['var_arr'] = data.map(x => x['DO_mgL']);
+      // dat['var_arr'] = data.map(x => x['DO_mgL']);
+      dat['variable'] = 'DO_mgL'
     } else {
-      dat['var_arr'] = data.map(x => x[current_plot]);
+      // dat['var_arr'] = data.map(x => x[current_plot]);
+      dat['variable'] = current_plot
     }
+    dat['site'] = $('#dsite').val()
     // dat['var_arr'] = data.map(x => x[$('#interquartile').val()]);
+
 
     $.ajax({
       type: 'POST',
@@ -348,9 +353,10 @@ $('body').ready(function(){
         //the full time range of already plotted series
         ranges = JSON.parse(response.dat);
         mindate = x.domain()[0];
-        minabb = mindate.toISOString().slice(5, 13);
+        minabb = mindate.toISOString().slice(5, 11);
+        // minabb = mindate.toISOString().slice(5, 13);
         maxdate = x.domain()[1];
-        maxabb = maxdate.toISOString().slice(5, 13);
+        maxabb = maxdate.toISOString().slice(5, 11);
         st_yr = mindate.getFullYear();
         en_yr = maxdate.getFullYear();
         yrs = [];
@@ -361,19 +367,20 @@ $('body').ready(function(){
         a1 = dates.indexOf(minabb);
         a2 = nyrs > 1 ? dates.length : dates.indexOf(maxabb);
         rangesA = ranges.slice(a1, a2).map(x =>
-          [st_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
+          [st_yr + '-' + x[0] + '00:00:00.00Z', x[1], x[2]]);
+          // [st_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
         if(nyrs > 1){
           b1 = dates.slice(0, 1);
           b2 = dates.indexOf(maxabb);
           rangesB = ranges.slice(b1, b2).map(x =>
-            [en_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
+            [en_yr + '-' + x[0] + '00:00:00.00Z', x[1], x[2]]);
           if(nyrs === 2){
             rangesA = rangesA.concat(rangesB);
           }
           if(nyrs >= 3){
             for(var i = 1; i < nyrs; i++){
               rangesA = rangesA.slice(b1, b2).map(x =>
-                [yrs[i] + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
+                [yrs[i] + '-' + x[0] + '00:00:00.00Z', x[1], x[2]]);
             }
             rangesA = rangesA.concat(rangesB);
           }
