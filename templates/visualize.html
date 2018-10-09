@@ -334,9 +334,11 @@ $('body').ready(function(){
     if($(this).attr('id').slice(0, 8) == 'interqDO'){
       // dat['var_arr'] = data.map(x => x['DO_mgL']);
       dat['variable'] = 'DO_mgL'
+      var requested_v = 'DO'
     } else {
       // dat['var_arr'] = data.map(x => x[current_plot]);
       dat['variable'] = current_plot
+      var requested_v = 'H'
     }
     dat['site'] = $('#dsite').val()
     // dat['var_arr'] = data.map(x => x[$('#interquartile').val()]);
@@ -393,7 +395,7 @@ $('body').ready(function(){
 
         // for (var i = 0; i < variables.length; ++i) {
           // Interquartile(variables[i], rangesA);
-        Interquartile(current_plot, rangesA);
+        Interquartile(current_plot, rangesA, req=requested_v);
         // }
 
       },

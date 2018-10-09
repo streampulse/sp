@@ -4,7 +4,7 @@ var margin = {top: 40, right: 60, bottom: 40, left: 40},
 var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
 var x = d3.scaleUtc().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
-    xAxis = d3.axisBottom().scale(x).ticks(6).tickFormat(function(date, i){
+    xAxis = d3.axisBottom().scale(x).ticks(10).tickFormat(function(date, i){
       //conditional date formatting on tickmarks
       return (i == 0 ? d3.utcFormat("%b %e, %Y") : d3.utcFormat("%b %e"))(date);
     });
@@ -230,12 +230,14 @@ function Plots(variables, data, flags, outliers, page){
           .attr('name', 'I' + vvv)
           .attr('class', 'btn btn-warning btn-block')
           .text('H');
-      d3.select('#sidebuttons_' + vvv)
-        .append('button')
-          .attr('id', 'interqDO_' + vvv)
-          .attr('name', 'I' + vvv)
-          .attr('class', 'btn btn-success btn-block')
-          .text('DO');
+      if(vvv != 'DO_mgL'){
+        d3.select('#sidebuttons_' + vvv)
+          .append('button')
+            .attr('id', 'interqDO_' + vvv)
+            .attr('name', 'I' + vvv)
+            .attr('class', 'btn btn-success btn-block')
+            .text('DO');
+      }
 
       d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
@@ -307,18 +309,25 @@ $(function(){
   });
 })
 
-function Interquartile(graph, ranges){
+function Interquartile(graph, ranges, req){
 
   //make new y axis scale and select graph
   var ynew = d3.scaleLinear().range([height, 0]);
+  var yold = d3.scaleLinear().range([height, 0]),
   cur_backgraph = d3.select("." + graph).select(".backgraph");
 
-  // remove previous graph and secondary axis if it exists
+  //remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove();
-  d3.select('#' + graph + 'rightaxis').empty();
+  d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
+  // //replace basis of secondary axis
+  // d3.select('div.' + graph).append("g")
+  //     .attr('id', graph + 'rightaxis')
+  //     .attr("class", "axis axis--y")
+  //     .attr("transform", "translate(" + width + ", 0)");
 
   flattened_ranges = [].concat(...ranges.map(x => [x[1], x[2]]));
   ynew.domain([d3.min(flattened_ranges), d3.max(flattened_ranges)]);
+  yold.domain(d3.extent(data, function(d) { return d[graph]; }));
 
   // ynew.domain(d3.extent(data, function(d) {
   //   return d[vvv]; }));
@@ -350,7 +359,6 @@ function Interquartile(graph, ranges){
   var area = d3.area()
       .defined(function(d){
         if(d[1]==null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-        // if(d[vvv]==null || d.date < x.domain()[0] || d.date > x.domain()[1]){
           rrr = false
         }else{
           rrr = true
@@ -359,20 +367,16 @@ function Interquartile(graph, ranges){
       });
   area.x(function(d) {
     return x(d[0]);
-    // return x(d.date);
   });
-  area.y(function(d){
-    return ynew(d[1]);
-    // return ynew(d[vvv]);
+  area.y0(function(d){
+    if(req == 'DO'){ return ynew(d[1]); } else { return yold(d[1]); }
   }).y1(function(d) {
-    return ynew(d[2]);
+    if(req == 'DO'){ return ynew(d[2]); } else { return yold(d[2]); }
   });
 
   cur_backgraph.append("path")
-    // .data(data)
     .datum(ranges)
     .attr("class", "interquartile")
-    // .attr("class", "line");
     .attr("d", area);
 
   // svg.selectAll(".vdot")
@@ -383,9 +387,22 @@ function Interquartile(graph, ranges){
   //   .attr("cy", line.y())
 
   // refresh right-hand axis
-  d3.select("#" + graph + 'rightaxis')
-      .call(d3.axisRight().scale(ynew).ticks(6))
-      .attr('class', 'interquartile interquart_axis');
+  if(req == 'DO'){
+    d3.select("#" + graph + 'rightaxis')
+        .call(d3.axisRight().scale(ynew).ticks(6))
+        .attr('class', 'interquartile interquart_axis')
+        .attr("visibility", "visible")
+        .append("text")
+          .attr("fill", "rgb(102, 153, 153)")
+          .attr("dy", "-0.71em")
+          .attr("dx", "-3em")
+          // .attr('class', vvv + '_txt')
+          .style("text-anchor", "start")
+          .text('DO_mgL');
+  } else {
+    d3.select("#" + graph + 'rightaxis').attr("visibility", "hidden");
+  }
+
 }
 
 function BackGraph(vvv, graph, data){
@@ -396,7 +413,12 @@ function BackGraph(vvv, graph, data){
 
   // remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove()
-  d3.select('#' + graph + 'rightaxis').empty();
+  d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
+  // //replace basis of secondary axis
+  // d3.select('svg.' + graph).append("g")
+  //     .attr('id', graph + 'rightaxis')
+  //     .attr("class", "axis axis--y")
+  //     .attr("transform", "translate(" + width + ", 0)");
 
   if(datna != null){
     ynew.domain(d3.extent(datna, function(d) { return d[vvv]; }));
@@ -427,7 +449,8 @@ function BackGraph(vvv, graph, data){
   // refresh right-hand axis
   d3.select("#" + graph + 'rightaxis')
       .call(d3.axisRight().scale(ynew).ticks(6))
-      .attr('class', 'backarea backarea_axis');
+      .attr('class', 'backarea backarea_axis')
+      .attr("visibility", "visible");
 }
 
 $(function(){

@@ -8,6 +8,8 @@ Input viz improvements:
  + added tooltups for each flagged point
  + Bad Data points are no longer plotted
  + changed aggregation bins to 1 day for interquartile plots because 1 hour bins resulted in too-thin overlay polygons. Anything between 1h and 1d would require lots of additional fiddling.
+ + fixed axis scaling. no new axis created if overlaying interquartile range for same variable, only if overlaying DO interquartile range
+ + DO interquartile plotting button only appears for plots that do not show DO
 ###fri20181005
  + variables not loaded initially can still be retrieved for overlays
  + finished interquartile range frontend with dropdown interface
