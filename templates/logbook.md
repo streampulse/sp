@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###tue20181009
+ + put Jim's cumulative continuous metabolism research figure on streampulse.org
 ###mon20181008
 Input viz improvements:
  + changed interquartile plot interface to buttons, rather than dropdown
