@@ -81,14 +81,14 @@
 </div>
 
 
-<div class="row">
-  <div class="col-md-11">
-    <div id="graphs"></div>
-  </div>
+<!-- <div class="row">
+  <div class="col-md-11"> -->
+<div id="graphs"></div>
+  <!-- </div>
   <div class="col-md-1">
     <div id="sidebuttons"></div>
   </div>
-</div>
+</div> -->
 
 <script src="static/js/graphs.js"></script>
 
@@ -165,8 +165,8 @@ $('#dsite').change(function(){
   $("#selectvarp").css('display', '');
   $('#backgraphlist').find('option').remove().end() //could use .empty()?
     .append('<option value="None" selected>None</option>');
-  $('#interquartile').empty()
-    .append('<option value="None" selected>None</option>');
+  // $('#interquartile').empty()
+  //   .append('<option value="None" selected>None</option>');
 
   var battery_ind = sitevars.indexOf('Battery_V')
   var sitevars_nobat = sitevars.slice(0, battery_ind)
@@ -185,8 +185,8 @@ $('#dsite').change(function(){
 
     $('#backgraphlist').append('<option value="' + sitevars[i] + '">' +
       sitevars[i] + '</option>');
-    $('#interquartile').append('<option value="' + sitevars_nobat[i] + '">' +
-      sitevars_nobat[i] + '</option>');
+    // $('#interquartile').append('<option value="' + sitevars_nobat[i] + '">' +
+    //   sitevars_nobat[i] + '</option>');
   }
 
   update_grabvars(regionsite=$('select[name=site]').val(),
@@ -316,76 +316,93 @@ $(function(){
   });
 });
 
-$(function(){
-  $("select[name=interquartile]").change(function(){
+// $(function(){
+  // $("select[name=interquartile]").change(function(){
+  // $("[id^='interq'").click(function(){
+$('body').ready(function(){
+  $('body').on("click", "[id^='interq']", function(){
 
-    //reset the other dropdowns
-    $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
+    //reset the dropdowns
+    $('#backgraphlist').val('None');
     $('#backgraphlist_grab').val('None');
 
-    if($(this).val() != 'None'){
-
-      var dat = {}
-      dat['time_arr'] = data.map(x => x.DateTime_UTC.slice(5, 13));
-      dat['var_arr'] = data.map(x => x[$('#interquartile').val()]);
-
-      $.ajax({
-        type: 'POST',
-        url:'/_interquartile',
-        data: JSON.stringify(dat),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(response){
-
-          //duplicate hourly aggregated values as necessary to reconstitute
-          //the full time range of already plotted series
-          ranges = JSON.parse(response.dat);
-          mindate = x.domain()[0];
-          minabb = mindate.toISOString().slice(5, 13);
-          maxdate = x.domain()[1];
-          maxabb = maxdate.toISOString().slice(5, 13);
-          st_yr = mindate.getFullYear();
-          en_yr = maxdate.getFullYear();
-          yrs = [];
-          for(var i = st_yr; i <= en_yr; i++){ yrs.push(i); }
-          dates = ranges.map(x => x[0]);
-
-          nyrs = yrs.length;
-          a1 = dates.indexOf(minabb);
-          a2 = nyrs > 1 ? dates.length : dates.indexOf(maxabb);
-          rangesA = ranges.slice(a1, a2).map(x =>
-            [st_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
-          if(nyrs > 1){
-            b1 = dates.slice(0, 1);
-            b2 = dates.indexOf(maxabb);
-            rangesB = ranges.slice(b1, b2).map(x =>
-              [en_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
-            if(nyrs === 2){
-              rangesA = rangesA.concat(rangesB);
-            }
-            if(nyrs >= 3){
-              for(var i = 1; i < nyrs; i++){
-                rangesA = rangesA.slice(b1, b2).map(x =>
-                  [yrs[i] + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
-              }
-              rangesA = rangesA.concat(rangesB);
-            }
-          }
-          rangesA = rangesA.map(x => [parseDate(x[0]), x[1], x[2]]);
-
-          var variables = $('#variables:checked').map(function(){
-            return this.value;
-          }).get();
-
-          for (var i = 0; i < variables.length; ++i) {
-            Interquartile(variables[i], rangesA);
-          }
-
-        },
-        error: function(error){
-          console.log(error);
-        }
-      });
+    //determine variable and site for which to retrieve entire data record
+    // //determine time slices and variables to send in ajax request
+    var dat = {}
+    // dat['time_arr'] = data.map(x => x.DateTime_UTC.slice(5, 13));
+    var current_plot = $(this).attr('name').slice(1)
+    if($(this).attr('id').slice(0, 8) == 'interqDO'){
+      // dat['var_arr'] = data.map(x => x['DO_mgL']);
+      dat['variable'] = 'DO_mgL'
+      var requested_v = 'DO'
+    } else {
+      // dat['var_arr'] = data.map(x => x[current_plot]);
+      dat['variable'] = current_plot
+      var requested_v = 'H'
     }
+    dat['site'] = $('#dsite').val()
+    // dat['var_arr'] = data.map(x => x[$('#interquartile').val()]);
+
+
+    $.ajax({
+      type: 'POST',
+      url:'/_interquartile',
+      data: JSON.stringify(dat),
+      contentType: 'application/json;charset=UTF-8',
+      success: function(response){
+
+        //duplicate hourly aggregated values as necessary to reconstitute
+        //the full time range of already plotted series
+        ranges = JSON.parse(response.dat);
+        mindate = x.domain()[0];
+        minabb = mindate.toISOString().slice(5, 11);
+        // minabb = mindate.toISOString().slice(5, 13);
+        maxdate = x.domain()[1];
+        maxabb = maxdate.toISOString().slice(5, 11);
+        st_yr = mindate.getFullYear();
+        en_yr = maxdate.getFullYear();
+        yrs = [];
+        for(var i = st_yr; i <= en_yr; i++){ yrs.push(i); }
+        dates = ranges.map(x => x[0]);
+
+        nyrs = yrs.length;
+        a1 = dates.indexOf(minabb);
+        a2 = nyrs > 1 ? dates.length : dates.indexOf(maxabb);
+        rangesA = ranges.slice(a1, a2).map(x =>
+          [st_yr + '-' + x[0] + '00:00:00.00Z', x[1], x[2]]);
+          // [st_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
+        if(nyrs > 1){
+          b1 = dates.slice(0, 1);
+          b2 = dates.indexOf(maxabb);
+          rangesB = ranges.slice(b1, b2).map(x =>
+            [en_yr + '-' + x[0] + '00:00:00.00Z', x[1], x[2]]);
+          if(nyrs === 2){
+            rangesA = rangesA.concat(rangesB);
+          }
+          if(nyrs >= 3){
+            for(var i = 1; i < nyrs; i++){
+              rangesA = rangesA.slice(b1, b2).map(x =>
+                [yrs[i] + '-' + x[0] + '00:00:00.00Z', x[1], x[2]]);
+            }
+            rangesA = rangesA.concat(rangesB);
+          }
+        }
+        rangesA = rangesA.map(x => [parseDate(x[0]), x[1], x[2]]);
+
+        // var variables = $('#variables:checked').map(function(){
+        //   return this.value;
+        // }).get();
+
+        // for (var i = 0; i < variables.length; ++i) {
+          // Interquartile(variables[i], rangesA);
+        Interquartile(current_plot, rangesA, req=requested_v);
+        // }
+
+      },
+      error: function(error){
+        console.log(error);
+      }
+    });
 
   });
 });

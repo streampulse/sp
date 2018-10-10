@@ -1,5 +1,25 @@
 #Mike's Logbook
 
+###tue20181009
+ + put Jim's cumulative continuous metabolism research figure on streampulse.org
+###mon20181008
+Input viz improvements:
+ + changed interquartile plot interface to buttons, rather than dropdown
+ + re-styled plots, colors
+ + added tooltip explanations for interquartile plotting buttons
+ + added tooltups for each flagged point
+ + Bad Data points are no longer plotted
+ + changed aggregation bins to 1 day for interquartile plots because 1 hour bins resulted in too-thin overlay polygons. Anything between 1h and 1d would require lots of additional fiddling.
+ + fixed axis scaling. no new axis created if overlaying interquartile range for same variable, only if overlaying DO interquartile range
+ + DO interquartile plotting button only appears for plots that do not show DO
+###fri20181005
+ + variables not loaded initially can still be retrieved for overlays
+ + finished interquartile range frontend with dropdown interface
+###thu20181004
+ + backend of interquartile range plotter complete
+###wed20181003
+ + input plot viz shows only most recent year by default
+ + full available time range is now displayed beside the date picker
 ###mon20181001
 Input viz improvements:
  + sorted variable checkboxes at top by importance, then alphabetically

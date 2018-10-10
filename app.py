@@ -2111,16 +2111,28 @@ def getvgrabviz():
 @app.route('/_interquartile',methods=["POST"])
 def interquartile():
 
-    dat = pd.DataFrame({'time':request.json['time_arr'],
-        'var':request.json['var_arr']})
+    # dat = pd.DataFrame({'time':request.json['time_arr'],
+    #     'var':request.json['var_arr']})
+    var = request.json['variable']
+    region, site = request.json['site'].split('_')
+
+    # full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
+    #     "'T', mid(DateTime_UTC, 12, 2)) as " +\
+    full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
+        "'T') as " +\
+        "time, value as val from data " +\
+        "where region='" + region + "' and site='" + site +\
+        "' and variable='" + var + "';", db.engine)
 
     def quant25(x):
         return x.quantile(.25)
     def quant75(x):
         return x.quantile(.75)
 
-    quantiles = dat.pivot_table(index='time', values='var',
+    quantiles = full_record.pivot_table(index='time', values='val',
         aggfunc=[quant25, quant75]).reset_index()
+
+    print quantiles
 
     return jsonify(dat=quantiles.to_json(orient='values'))
 
@@ -2132,21 +2144,47 @@ def getviz():
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
 
-    sqlq = "select * from data where region='" + region + "' and site='" +\
-        site + "' " + "and DateTime_UTC>'" + startDate + "' " +\
-        "and DateTime_UTC<'" + endDate + "' " +\
-        "and variable in ('" + "', '".join(variables) + "')"
-    xx = pd.read_sql(sqlq, db.engine)
 
-    xx.loc[xx.flag == 0, "value"] = None # set NaNs
-    flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
-        axis=1).to_json(orient='records',date_format='iso') # flag data
-    xx = xx.drop(['id', 'upload_id'], axis=1).drop_duplicates()\
-      .set_index(["DateTime_UTC", "variable"])\
-      .drop(['region', 'site', 'flag'], axis=1)
+    #this block shouldnt be necessary once data leveling is in place.
+    #you'll then be able to restore the block below, unless we still
+    #want to incorporate detailed flag info then, which I suppose we might
+    sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
+        "data.variable, data.value, data.flag as flagid, flag.flag, " +\
+        "flag.comment from data left join flag on data.flag=flag.id where " +\
+        "data.region='" + region + "' and data.site='" + site +\
+        "' and data.DateTime_UTC>'" + startDate + "' " +\
+        "and data.DateTime_UTC<'" + endDate + "' " +\
+        "and data.variable in ('" + "', '".join(variables) + "')"
+    xx = pd.read_sql(sqlq, db.engine)
+    xx.loc[xx.flag == 'Bad Data', "value"] = None # set NaNs
+    flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
+        'comment']].dropna().drop(['flagid'],
+        axis=1).to_json(orient='records', date_format='iso')
+
+    xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
+        .set_index(["DateTime_UTC", "variable"])\
+        .drop(['region', 'site', 'flagid'], axis=1)
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
+
+
+
+    # sqlq = "select * from data where region='" + region + "' and site='" +\
+    #     site + "' " + "and DateTime_UTC>'" + startDate + "' " +\
+    #     "and DateTime_UTC<'" + endDate + "' " +\
+    #     "and variable in ('" + "', '".join(variables) + "')"
+    # xx = pd.read_sql(sqlq, db.engine)
+    #
+    # xx.loc[xx.flag == 0, "value"] = None # set NaNs
+    # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
+    #     axis=1).to_json(orient='records',date_format='iso') # flag data
+    # xx = xx.drop(['id', 'upload_id'], axis=1).drop_duplicates()\
+    #   .set_index(["DateTime_UTC", "variable"])\
+    #   .drop(['region', 'site', 'flag'], axis=1)
+    # xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
+    # xx.columns = xx.columns.droplevel()
+    # xx = xx.reset_index()
 
     # Get sunrise sunset data
     sxx = pd.read_sql("select id, region, site, name, latitude, " +\
@@ -2200,29 +2238,17 @@ def qaqc():
 @app.route('/_getqaqc', methods=["POST"])
 def getqaqc():
 
-    # start_time2 = timeit.default_timer()
-
-    # region='AZ'; site='MV'
     region, site = request.json['site'].split(",")[0].split("_")
     sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
         "data.variable, data.value, data.flag as flagid, flag.flag, " +\
         "flag.comment from data left join flag on data.flag=flag.id where " +\
         "data.region='" + region + "' and data.site='" + site + "'"
-    # sqlq = "select * from data where region='"+region+"' and site='"+site+"'"
     xx = pd.read_sql(sqlq, db.engine) #this is what makes it take so long. read in 4w chunks
     xx.loc[xx.flag == 0, "value"] = None # set NaNs
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
         'comment']].dropna().drop(['flagid'],
         axis=1).to_json(orient='records', date_format='iso') # flag data
 
-    # flaginfoq = "select * from flag where region='" + region +\
-    #     "' and site='" + site + "';"
-    # flagtypes = pd.read_sql(flaginfoq, db.engine)
-    # flagtypes = flagtypes.drop(['id','region','site','by'],
-    #     axis=1).to_json(orient='records', date_format='iso')
-
-    #xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
-    # variables = list(set(xx['variable'].tolist()))
     variables = xx.loc[:,'variable'].unique().tolist()
 
     xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
@@ -2257,18 +2283,14 @@ def getqaqc():
     rss = pd.DataFrame(rss, columns=("rise", "set"))
     rss.set = rss.set.shift(1)
     sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
-    # Get 2wk plot intervals
+
+    # Get 2 week plot intervals
     def daterange(start, end):
         r = (end + timedelta(days=1) - start).days
         if r % 14 > 0:
             r = r + 14
         return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, r, 28)]
-    #drr = pd.date_range(sdt,edt,freq="14D").tolist()[::-1] # need to reverse
-    #drr = [da.strftime('%Y-%m-%d') for da in drr]
     drr = daterange(sdt, edt)
-
-    # elapsed2 = timeit.default_timer() - start_time2
-    # print 'qaqc', elapsed2
 
     return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
         sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)#, flagtypes=flagtypes)

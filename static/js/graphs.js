@@ -1,10 +1,10 @@
 var margin = {top: 40, right: 60, bottom: 40, left: 40},
-    width = $("#graphs").width() - margin.left - margin.right,
+    width = $("#graphs").width() - margin.left - margin.right - 45, //45 for buttons
     height = 250 - margin.top - margin.bottom;
 var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
 var x = d3.scaleUtc().range([0, width]),
     y = d3.scaleLinear().range([height, 0]),
-    xAxis = d3.axisBottom().scale(x).ticks(6).tickFormat(function(date, i){
+    xAxis = d3.axisBottom().scale(x).ticks(10).tickFormat(function(date, i){
       //conditional date formatting on tickmarks
       return (i == 0 ? d3.utcFormat("%b %e, %Y") : d3.utcFormat("%b %e"))(date);
     });
@@ -17,14 +17,17 @@ var selectedBrush;
 var data;
 var variables;
 var sundat;
-var flags;
+// var flags;
 var datna; //is this still needed?
 var zoom_in;
 var brushdown = false; //variable for if brushing all panels
 var dott_undef //for disabling popup options if no points selected
 // var flagdict = {}
-var div = d3.select("body").append("div")
+var point_tooltip = d3.select("body").append("div")
     .attr("class", "tooltip")
+    .style("opacity", 0);
+var button_tooltip = d3.select("body").append("div")
+    .attr("class", "tooltip button-tooltip")
     .style("opacity", 0);
 
 function Plots(variables, data, flags, outliers, page){
@@ -51,7 +54,10 @@ function Plots(variables, data, flags, outliers, page){
       .x(function(d) { return x(d.date); })
       .y(function(d) { return y(d[vvv]); });
 
-    var svg = d3.select("#graphs").append("svg")
+    var svg = d3.select("#graphs")
+      .append('div').attr('id', 'svgrow_' + vvv)
+      .append('div').attr('class', 'inline')
+      .append("svg")
       .datum(data) //initialize and position
         .attr("class", vvv)
         .attr("width", width + margin.left + margin.right)
@@ -145,16 +151,16 @@ function Plots(variables, data, flags, outliers, page){
             return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
           })[0];
 
-          div.transition()
+          point_tooltip.transition()
             .duration(200)
             .style("opacity", .9);
-          div.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+          point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
             this_point_flaginfo.comment)
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
           })
           .on("mouseout", function(d) {
-            div.transition()
+            point_tooltip.transition()
               .duration(500)
               .style("opacity", 0);
           });
@@ -173,8 +179,98 @@ function Plots(variables, data, flags, outliers, page){
           .attr("r", 2)
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
+        })
+        .filter('.flagdot')
+        .on("mouseover", function(d, j) {
+
+          //add mouseover tooltips for each flagged point:
+          //get the name (which for some reason is a class) of the svg under the mouse
+          var hovered_point = this.getBoundingClientRect();
+          var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+          for(var i = 0; i < elems.length; ++i){
+            if(elems[i].tagName.toLowerCase() == 'svg'){
+              var svgname = elems[i].classList[0];
+            }
+          }
+
+          var this_point_flaginfo = $.grep(flags, function(v) {
+            return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
+          })[0];
+
+          point_tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+          point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+            this_point_flaginfo.comment)
+            .style("left", (d3.event.pageX) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {
+            point_tooltip.transition()
+              .duration(500)
+              .style("opacity", 0);
+          });
+
+      //non-flagged points shouldnt register mouse activity
+      svg.selectAll('.dot:not(.flagdot)')
+        .attr('pointer-events', 'none');
+
+
+
+
+      // d3.select("#sidebuttons").append("div")
+      //   .attr("height", height + margin.top + margin.bottom)
+      //   .text('oi');
+      d3.select('#svgrow_' + vvv)
+        .append('div')
+          .attr('id', 'sidebuttons_' + vvv)
+          .attr('class', 'inline').style('width', '45px')
+        .append('button')
+          .attr('id', 'interq_' + vvv)
+          .attr('name', 'I' + vvv)
+          .attr('class', 'btn btn-warning btn-block')
+          .text('H');
+      if(vvv != 'DO_mgL'){
+        d3.select('#sidebuttons_' + vvv)
+          .append('button')
+            .attr('id', 'interqDO_' + vvv)
+            .attr('name', 'I' + vvv)
+            .attr('class', 'btn btn-success btn-block')
+            .text('DO');
+      }
+
+      d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#ffd68c')
+          .style("opacity", 1);
+          button_tooltip.html('View historical interquartile range ' +
+            '(25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+        })
+        .on("mouseout", function(d) {
+          button_tooltip.transition()
+            .duration(100)
+            .style("opacity", 0);
         });
-      d3.select("#sidebuttons").append("p").text('oi');
+
+      d3.selectAll("button[id^='interqDO_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+          button_tooltip.html('View historical interquartile range of ' +
+            'dissolved oxygen (25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+        })
+        .on("mouseout", function(d) {
+          button_tooltip.transition()
+            .duration(100)
+            .style("opacity", 0);
+        });
+
     }
   }
 }
@@ -213,25 +309,28 @@ $(function(){
   });
 })
 
-function Interquartile(graph, ranges){
+function Interquartile(graph, ranges, req){
 
   //make new y axis scale and select graph
   var ynew = d3.scaleLinear().range([height, 0]);
+  var yold = d3.scaleLinear().range([height, 0]),
   cur_backgraph = d3.select("." + graph).select(".backgraph");
 
-  // remove previous graph and secondary axis if it exists
+  //remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove();
-  d3.select('#' + graph + 'rightaxis').empty();
+  d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
+  // //replace basis of secondary axis
+  // d3.select('div.' + graph).append("g")
+  //     .attr('id', graph + 'rightaxis')
+  //     .attr("class", "axis axis--y")
+  //     .attr("transform", "translate(" + width + ", 0)");
 
-  //move this to flask
-  ///
-  ///
   flattened_ranges = [].concat(...ranges.map(x => [x[1], x[2]]));
   ynew.domain([d3.min(flattened_ranges), d3.max(flattened_ranges)]);
+  yold.domain(d3.extent(data, function(d) { return d[graph]; }));
 
-  //how does this know what data to use??
-  ///
-  ///
+  // ynew.domain(d3.extent(data, function(d) {
+  //   return d[vvv]; }));
 
   // var zz = d3.line();
   //   // .defined(function(d){
@@ -249,6 +348,7 @@ function Interquartile(graph, ranges){
   //   });
   //   zz.y(function(d) { return y(d.DO_mgL); });
   //
+  // // d3.select("." + graph).data(data).enter().append('circle')
   // cur_backgraph.data(data).enter().append('circle')
   // // data.filter(function(d) { return d[vvv]; })
   //   .attr("class", "vdot")
@@ -256,44 +356,9 @@ function Interquartile(graph, ranges){
   //   .attr("cy", zz.y())
   //   .attr("r", 2)
 
-  // var area = d3.area()
-  //   .defined(function(d){
-  //     if(d.DO_mgL == null || d.DateTime_UTC < x.domain()[0] || d.DateTime_UTC > x.domain()[1]){
-  //     // if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-  //       rrr = false
-  //     } else {
-  //       rrr = true
-  //     }
-  //     return rrr
-  //   });
-  // area.x(function(d) {
-  //   return x(d.DateTime_UTC);
-  //   // return x(d[0]);
-  // });
-  // area.y0(function(d) {
-  // // area.y(function(d) {
-  //   return ynew(d.DO_mgL); //bottom of polygon
-  // // });
-  //   // return ynew(d[1]); //bottom of polygon
-  // }).y1(function(d) {
-  //   return ynew(d.DO_mgL + 1); //top of polygon
-  //   // return ynew(d[2]); //top of polygon
-  // });
-  //
-  // cur_backgraph.append("path")
-  //   .datum(data)
-  //   .attr("class", "backarea")
-  //   .attr("d", area);
-  //
-  // // refresh right-hand axis
-  // d3.select("#" + graph + 'rightaxis')
-  //     .call(d3.axisRight().scale(ynew).ticks(6))
-  //     .attr('class', 'backarea backarea_axis');
-
   var area = d3.area()
       .defined(function(d){
         if(d[1]==null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-        // if(d[vvv]==null || d.date < x.domain()[0] || d.date > x.domain()[1]){
           rrr = false
         }else{
           rrr = true
@@ -302,24 +367,42 @@ function Interquartile(graph, ranges){
       });
   area.x(function(d) {
     return x(d[0]);
-    // return x(d.date);
   });
   area.y0(function(d){
-    return ynew(d[1]);
+    if(req == 'DO'){ return ynew(d[1]); } else { return yold(d[1]); }
   }).y1(function(d) {
-    return ynew(d[2]);
+    if(req == 'DO'){ return ynew(d[2]); } else { return yold(d[2]); }
   });
 
   cur_backgraph.append("path")
     .datum(ranges)
     .attr("class", "interquartile")
-    // .attr("class", "line")
     .attr("d", area);
 
+  // svg.selectAll(".vdot")
+  //   .data(data.filter(function(d) { return d[vvv]; }))
+  // .enter().append("circle")
+  //   .attr("class", "vdot")
+  //   .attr("cx", line.x())
+  //   .attr("cy", line.y())
+
   // refresh right-hand axis
-  d3.select("#" + graph + 'rightaxis')
-      .call(d3.axisRight().scale(ynew).ticks(6))
-      .attr('class', 'interquartile interquart_axis');
+  if(req == 'DO'){
+    d3.select("#" + graph + 'rightaxis')
+        .call(d3.axisRight().scale(ynew).ticks(6))
+        .attr('class', 'interquartile interquart_axis')
+        .attr("visibility", "visible")
+        .append("text")
+          .attr("fill", "rgb(102, 153, 153)")
+          .attr("dy", "-0.71em")
+          .attr("dx", "-3em")
+          // .attr('class', vvv + '_txt')
+          .style("text-anchor", "start")
+          .text('DO_mgL');
+  } else {
+    d3.select("#" + graph + 'rightaxis').attr("visibility", "hidden");
+  }
+
 }
 
 function BackGraph(vvv, graph, data){
@@ -330,7 +413,12 @@ function BackGraph(vvv, graph, data){
 
   // remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove()
-  d3.select('#' + graph + 'rightaxis').empty();
+  d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
+  // //replace basis of secondary axis
+  // d3.select('svg.' + graph).append("g")
+  //     .attr('id', graph + 'rightaxis')
+  //     .attr("class", "axis axis--y")
+  //     .attr("transform", "translate(" + width + ", 0)");
 
   if(datna != null){
     ynew.domain(d3.extent(datna, function(d) { return d[vvv]; }));
@@ -361,7 +449,8 @@ function BackGraph(vvv, graph, data){
   // refresh right-hand axis
   d3.select("#" + graph + 'rightaxis')
       .call(d3.axisRight().scale(ynew).ticks(6))
-      .attr('class', 'backarea backarea_axis');
+      .attr('class', 'backarea backarea_axis')
+      .attr("visibility", "visible");
 }
 
 $(function(){
