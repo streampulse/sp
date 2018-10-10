@@ -3,7 +3,6 @@ function(df){
     #read in r packages
     library(imputeTS)
     library(plotrix)
-    library(accelerometry)
 
     #remove date/time cols
     df = df[,-which(names(df) %in% c("DateTime_UTC","date"))]
@@ -73,7 +72,7 @@ function(df){
         #runs = rle2(as.numeric(jump_inds %in% pos_jumps), indices=TRUE) #function broken
         runs = rle(as.numeric(jump_inds %in% pos_jumps))
         ends = cumsum(runs$lengths)
-        runs = cbind(values=runs$values, starts=c(1, lag(ends)[-1] + 1),
+        runs = cbind(values=runs$values, starts=c(1, ends[-length(ends)] + 1),
             stops=ends, lengths=runs$lengths, deparse.level=1)
 
         lr = runs[,'lengths'] > 3 #runs > 3 are considered "long"
@@ -147,7 +146,7 @@ function(df){
                 #    return.list=FALSE)
                 jump_runs = rle(as.numeric(short_jumps))
                 ends2 = cumsum(jump_runs$lengths)
-                jump_runs = cbind(values=jump_runs$values, starts=c(1, lag(ends2)[-1] + 1),
+                jump_runs = cbind(values=jump_runs$values, starts=c(1, ends2[-length(ends2)] + 1),
                     stops=ends2, lengths=jump_runs$lengths, deparse.level=1)
 
                 multijumps = jump_runs[jump_runs[,'lengths'] > 1,
@@ -160,7 +159,9 @@ function(df){
 
                     #interpolate indices within multijumps that do not
                     #themselves represent jumps
-                    seq_list = mapply(function(x, y){ seq(x, y+1, 1) },
+                    seq_list = mapply(function(x, y){
+                        seq(x, y+1, 1)
+                        },
                         multijumps[,1], multijumps[,2],
                         SIMPLIFY=FALSE)
 
@@ -189,7 +190,7 @@ function(df){
                     #    return.list=TRUE)
                     same_sign_runs = rle(as.numeric(big_outdif))
                     same_sign_run_ends = cumsum(same_sign_runs$lengths)
-                    same_sign_run_starts = c(1, lag(same_sign_run_ends)[-1] + 1)
+                    same_sign_run_starts = c(1, same_sign_run_ends[-length(same_sign_run_ends)] + 1)
 
                     if(length(same_sign_runs)){
                         l = same_sign_runs$lengths
@@ -250,7 +251,8 @@ function(df){
         }
 
         #bring in the global outliers from above
-        if(outlier_ts == 'NONE'){
+        # print(big_outliers)
+        if(length(outlier_ts) == 1 && outlier_ts == 'NONE'){
             if(length(big_outliers)){
                 outlier_ts = unique(big_outliers)
             } else {
