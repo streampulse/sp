@@ -189,6 +189,8 @@ var sitedict = {}
 
 $('#dsite').change(function(){
 
+  $('#flagging').hide();
+
   //order site variables by importance for metabolism modeling, then alphabetically
   var sitevars = sitedict[$('select[name=site]').val()].split(',');
   var reference_vars = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
@@ -213,6 +215,9 @@ $('#dsite').change(function(){
 
   $("#qaqc_vars").empty();
   $("#selectvarp").css('display', '');
+  $("#graphs").empty();
+  $('#backgraphlist2').find('option').remove().end() //could use .empty()?
+    .append('<option value="None" selected>None</option>');
 
   for (var i = 0; i < sitevars.length; ++i) {
     if(reference_vars.includes(sitevars[i])){
