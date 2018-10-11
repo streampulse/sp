@@ -1,5 +1,12 @@
 #Mike's Logbook
 
+###thu20181011
+ + added year picker to qaqc. no more egregious speed issues? still don't really have a scalable solution to database reads. may attempt to partition soon
+###wed20181010
+ + changed time window on qaqc app to 2 weeks instead of 4
+ + variable selection now possible on qaqc page; by default only core metab variables are selected
+ + fixed issues with variable comparison on qaqc
+ + updated calls to rle() in outlier detector, in light of the retirement of accelerometry::rle2()
 ###tue20181009
  + put Jim's cumulative continuous metabolism research figure on streampulse.org
 ###mon20181008

@@ -42,15 +42,29 @@ drift.load('s2rst4h926mg');
         {% endfor %}
       </select>
       <br>
-      <p id="selectvarp" class="lead" style="display:none">
-        Select variables (core metabolism variables bolded):
-      </p>
-      <div id="qaqc_vars">
+      <div class="row">
+        <div class="col-md-6" style="border-right:1px solid gray;">
+          <p id="selectvarp" class="secondarytext" style="display:none">
+            Select variables (core metabolism variables bolded):
+          </p>
+          <div id="qaqc_vars">
+          </div>
+        </div>
+        <div class="col-md-6" id="selectyear" style="display:none">
+          <p class="secondarytext">
+            Select the year for which you want to clean data.
+          </p>
+          <select id="dyear" name="yr"></select>
+        </div>
       </div>
-      <br>
-      <button name="qaqcsite" class="btn btn-primary btn-block">
-        Select
-      </button>
+      <br><br>
+      <div class="row" id="gobutton" style="display:none">
+        <div class="col-md-10 col-md-offset-1">
+          <button name="qaqcsite" class="btn btn-primary btn-block">
+            Go
+          </button>
+        </div>
+      </div>
     </form>
   </div>
 </div>
@@ -175,8 +189,16 @@ drift.load('s2rst4h926mg');
 
 
 <script src="static/js/graphs.js"></script>
+
 <script>
+
 $('#dsite').selectize({
+    delimiter: ',',
+    persist: false,
+    create: function(input) { return {value: input,text: input} }
+});
+
+var dyear = $('#dyear').selectize({
     delimiter: ',',
     persist: false,
     create: function(input) { return {value: input,text: input} }
@@ -213,12 +235,20 @@ $('#dsite').change(function(){
 
   sitevars = metabvars.concat(sitevars);
 
+  //remove/reset previous display components
   $("#qaqc_vars").empty();
-  $("#selectvarp").css('display', '');
   $("#graphs").empty();
   $('#backgraphlist2').find('option').remove().end() //could use .empty()?
     .append('<option value="None" selected>None</option>');
+  dyear[0].selectize.clearOptions();
 
+  //show options
+  $("#gobutton").show();
+  $("#selectvarp").show();
+  $("#selectyear").show();
+  // $("#selectvarp").css('display', '');
+
+  //populate variable checkboxes and year dropdown
   for (var i = 0; i < sitevars.length; ++i) {
     if(reference_vars.includes(sitevars[i])){
       $('#qaqc_vars').append('<input type="checkbox" id="variables" value="' +
@@ -229,6 +259,28 @@ $('#dsite').change(function(){
         sitevars[i] + '"> ' + sitevars[i] + '<br>');
     }
   }
+
+  var dat = {}
+  dat['site'] = $('#dsite').val();
+
+  $.ajax({
+    type: 'POST',
+    url:'/_getqaqcyears',
+    data: JSON.stringify(dat),
+    contentType: 'application/json;charset=UTF-8',
+    success: function(response){
+      years = response.years;
+      for(var i in years){
+        dyear[0].selectize.addOption({'value':years[i], 'text':years[i]});
+        if(i == 0){
+          dyear[0].selectize.setValue(years[i]);
+        }
+      }
+    },
+    error: function(error){
+      console.log(error);
+    }
+  });
 
 });
 
@@ -272,6 +324,7 @@ $(function(){
     var dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['vars'] = $('#variables:checked').map(function() { return this.value; }).get();
+    dat['year'] = $('#dyear').val();
 
     $.ajax({
       type: 'POST',

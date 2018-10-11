@@ -413,7 +413,7 @@ function BackGraph(vvv, graph, data){
 
   // remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove()
-  d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
+  d3.select('[id$=rightaxis').attr("visibility", "hidden");
   // //replace basis of secondary axis
   // d3.select('svg.' + graph).append("g")
   //     .attr('id', graph + 'rightaxis')
