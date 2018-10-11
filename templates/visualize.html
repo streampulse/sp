@@ -32,14 +32,26 @@
       <div id="viz_vars">
       </div>
       <br>
-      <button name="getviz" class="btn btn-primary btn-block">
+      <button id="getviz" name="getviz" class="btn btn-primary btn-block"
+      style="display:none">
         View
       </button>
+      <br>
+      <p class="text-muted">
+        Note: if you suspect that you're seeing an old version of this app, delete
+        cookies and clear your web cache.
+        <a href="https://www.thewindowsclub.com/clear-cache-cookies-specific-website"
+        target="_bank" rel="noopener noreferrer">
+          Here's how
+        </a>
+        to do that for a specific website using Chrome or Firefox. Reload this
+        page when you're done.
+      </p>
+      <hr>
     </form>
   </div>
 </div>
 <br>
-<hr>
 
 <div id="graphcontrol" class="text-center">
   <div class="form-inline">
@@ -162,7 +174,9 @@ $('#dsite').change(function(){
 
   $("#graphs").empty();
   $("#viz_vars").empty();
-  $("#selectvarp").css('display', '');
+  // $("#selectvarp").css('display', '');
+  $("#selectvarp").show();
+  $("#getviz").show();
   $('#backgraphlist').find('option').remove().end() //could use .empty()?
     .append('<option value="None" selected>None</option>');
   // $('#interquartile').empty()
@@ -287,6 +301,8 @@ $(function(){
       grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
       grabdat['grabvars'] = [$(this).val()];
 
+      d3.selectAll('[id$=rightaxis]').attr("display", "none");
+
       $.ajax({
         type: 'POST',
         url:'/_getgrabviz',
@@ -327,22 +343,18 @@ $('body').ready(function(){
     $('#backgraphlist_grab').val('None');
 
     //determine variable and site for which to retrieve entire data record
-    // //determine time slices and variables to send in ajax request
     var dat = {}
-    // dat['time_arr'] = data.map(x => x.DateTime_UTC.slice(5, 13));
     var current_plot = $(this).attr('name').slice(1)
     if($(this).attr('id').slice(0, 8) == 'interqDO'){
-      // dat['var_arr'] = data.map(x => x['DO_mgL']);
       dat['variable'] = 'DO_mgL'
       var requested_v = 'DO'
     } else {
-      // dat['var_arr'] = data.map(x => x[current_plot]);
       dat['variable'] = current_plot
       var requested_v = 'H'
     }
     dat['site'] = $('#dsite').val()
-    // dat['var_arr'] = data.map(x => x[$('#interquartile').val()]);
 
+    d3.select('#' + current_plot + 'rightaxis').attr("display", "");
 
     $.ajax({
       type: 'POST',

@@ -228,7 +228,7 @@ function Plots(variables, data, flags, outliers, page){
         .append('button')
           .attr('id', 'interq_' + vvv)
           .attr('name', 'I' + vvv)
-          .attr('class', 'btn btn-warning btn-block')
+          .attr('class', 'btn btn-success btn-block')
           .text('H');
       if(vvv != 'DO_mgL'){
         d3.select('#sidebuttons_' + vvv)
@@ -242,7 +242,7 @@ function Plots(variables, data, flags, outliers, page){
       d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
           .duration(50)
-          .style('background', '#ffd68c')
+          .style('background', '#89e6a1')
           .style("opacity", 1);
           button_tooltip.html('View historical interquartile range ' +
             '(25th-75th percentile, binned by day).')
@@ -258,6 +258,7 @@ function Plots(variables, data, flags, outliers, page){
       d3.selectAll("button[id^='interqDO_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
           .duration(50)
+          // .style('background', '#ffd68c')
           .style('background', '#89e6a1')
           .style("opacity", 1);
           button_tooltip.html('View historical interquartile range of ' +
@@ -393,7 +394,9 @@ function Interquartile(graph, ranges, req){
         .attr('class', 'interquartile interquart_axis')
         .attr("visibility", "visible")
         .append("text")
-          .attr("fill", "rgb(102, 153, 153)")
+          // .attr("fill", "rgb(102, 153, 153)")
+          // .attr("fill", "rgb(237, 166, 10)")
+          .attr("fill", "rgb(30, 209, 44)")
           .attr("dy", "-0.71em")
           .attr("dx", "-3em")
           // .attr('class', vvv + '_txt')
@@ -413,7 +416,7 @@ function BackGraph(vvv, graph, data){
 
   // remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove()
-  d3.select('[id$=rightaxis').attr("visibility", "hidden");
+  // d3.select('[id$=rightaxis]').attr("visibility", "hidden");
   // //replace basis of secondary axis
   // d3.select('svg.' + graph).append("g")
   //     .attr('id', graph + 'rightaxis')
@@ -458,9 +461,9 @@ $(function(){
 
     var backfill = this.value;
 
-    //reset the other dropdown
+    //reset the other dropdown, clear existing secondary axes
     $('#backgraphlist_grab').val('None'); //why doesn't this set off a feedback loop?
-    // $('#interquartile').val('None');
+    d3.selectAll('[id$=rightaxis]').attr("display", "none");
 
     //if requested backfill var not already loaded, go get it
     if(!variables.includes(backfill)){
