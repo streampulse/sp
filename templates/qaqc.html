@@ -29,7 +29,34 @@ drift.load('s2rst4h926mg');
 
 {% block body %}
 
-<div class="row"><div class="col-md-6 col-md-offset-3">
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <h1>Clean Data</h1>
+    <p class="lead">Authorized users can visually clean data here.<br />This step is important for assuring data quality.</p>
+    <br>
+    <form id="qaqc2">
+      <select placeholder="Choose a site" id="dsite" name="site">
+        <option value="">Choose a site</option>
+        {% for sv, sn, va in sitedata %}
+          <option value="{{sv}}">{{sn}}</option>
+        {% endfor %}
+      </select>
+      <br>
+      <p id="selectvarp" class="lead" style="display:none">
+        Select variables (core metabolism variables bolded):
+      </p>
+      <div id="qaqc_vars">
+      </div>
+      <br>
+      <button name="qaqcsite" class="btn btn-primary btn-block">
+        Select
+      </button>
+    </form>
+  </div>
+</div>
+
+
+<!-- <div class="row"><div class="col-md-6 col-md-offset-3">
   <h1>Clean Data</h1>
   <p class="lead">Authorized users can visually clean data here.<br />This step is important for assuring data quality.</p>
 
@@ -46,7 +73,7 @@ drift.load('s2rst4h926mg');
       <button name="qaqcsite" class="btn btn-primary btn-block">Select</button>
     </div>
   </form>
-</div></div>
+</div></div> -->
 
 <br>
 <div class="col-md-2 col-md-offset-5 text-center">
@@ -73,7 +100,7 @@ drift.load('s2rst4h926mg');
           <option value="1h">1 hour</option>
           <option value="1d">1 day</option></select> &nbsp; -->
         <!-- Fill down marking brush: <input type="checkbox" id="fillbrush" value="yes"> &nbsp; -->
-        Compare variable: <select class="form-control" id="backgraphlist" name="backgraphlist"></select>
+        Compare variable: <select class="form-control" id="backgraphlist2" name="backgraphlist2"></select>
         <br>
         <!-- <button class="btn btn-danger" type="button" id="addna">Set NA values</button> -->
         <!-- <button class="btn btn-primary" type="button" id="zoomin">Zoom in to selected region</button> -->
@@ -155,6 +182,51 @@ $('#dsite').selectize({
     create: function(input) { return {value: input,text: input} }
 });
 
+var sitedict = {}
+{% for sv, sn, va in sitedata %}
+  sitedict['{{sv}}'] = '{{va}}'
+{% endfor %}
+
+$('#dsite').change(function(){
+
+  //order site variables by importance for metabolism modeling, then alphabetically
+  var sitevars = sitedict[$('select[name=site]').val()].split(',');
+  var reference_vars = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
+    'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux'];
+
+  var metabvars = [];
+  for (var i = sitevars.length; i >= 0; --i) {
+    if(reference_vars.includes(sitevars[i])){
+      metabvars.push(sitevars.splice(i, 1)[0]);
+    }
+  }
+
+  metabvars.sort(function(a, b) {
+    return reference_vars.indexOf(a) - reference_vars.indexOf(b);
+  });
+
+  sitevars.sort(function(a, b) {
+    return a.toLowerCase().localeCompare(b.toLowerCase());
+  });
+
+  sitevars = metabvars.concat(sitevars);
+
+  $("#qaqc_vars").empty();
+  $("#selectvarp").css('display', '');
+
+  for (var i = 0; i < sitevars.length; ++i) {
+    if(reference_vars.includes(sitevars[i])){
+      $('#qaqc_vars').append('<input type="checkbox" id="variables" value="' +
+        sitevars[i] + '" checked><span style="font-weight:bold">' +
+        sitevars[i] + '</span><br>');
+    } else {
+      $('#qaqc_vars').append('<input type="checkbox" id="variables" value="' +
+        sitevars[i] + '"> ' + sitevars[i] + '<br>');
+    }
+  }
+
+});
+
 // $('#flags2').selectize({
 //     delimiter: ',',
 //     persist: false,
@@ -194,6 +266,7 @@ $(function(){
   $("button[name=qaqcsite]").click(function(){
     var dat = {}
     dat['site'] = $('select[name=site]').val();
+    dat['vars'] = $('#variables:checked').map(function() { return this.value; }).get();
 
     $.ajax({
       type: 'POST',
@@ -236,11 +309,11 @@ $(function(){
             $('#flagging').show();
 
             //populate dropdown of potential comparison variables
-            $('#backgraphlist')
+            $('#backgraphlist2')
               .find('option').remove().end()
               .append('<option value="None" selected>None</option>');
             for (var i = 0; i < response.variables.length; ++i){
-              $('#backgraphlist').append('<option value="'+response.variables[i]+'">'+response.variables[i]+'</option>');
+              $('#backgraphlist2').append('<option value="'+response.variables[i]+'">'+response.variables[i]+'</option>');
             }
 
             //populate dropdown of potential date ranges to jump to.
@@ -312,11 +385,24 @@ $(function(){
 })
 
 $(function(){
-  $("#backgraphlist").change(function () {
-    var backfill = this.value;
-    for (var i = 0; i < variables.length; ++i) {
-      BackGraph(backfill, variables[i], data);
+  $("#backgraphlist2").change(function () {
+
+    console.log($(this).val())
+    if($(this).val() == 'None'){
+
+      // remove previous graph and secondary axis
+      d3.selectAll('.backgraph').select("path").remove()
+      d3.selectAll('[id*=rightaxis]').attr("visibility", "hidden");
+    } else {
+      console.log('here')
+
+      //plot polygon for secondary variable
+      var backfill = this.value;
+      for (var i = 0; i < variables.length; ++i) {
+        BackGraph(backfill, variables[i], data);
+      }
     }
+
   });
 })
 
@@ -336,14 +422,14 @@ function async_replot(data){
 
       //show panback if applicable
       if(plotstart != plotdates.slice(-1)[0]){
-        $('#panback').html('<< Previous four weeks')
+        $('#panback').html('<< Previous two weeks')
       } else {
         $('#panback').html('')
       }
 
       //show panforward if applicable
       if(plotend != plotdates[0]){
-        $('#panforward').html('Next four weeks >>')
+        $('#panforward').html('Next two weeks >>')
       } else {
         $('#panforward').html('')
       }

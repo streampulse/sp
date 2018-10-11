@@ -2223,26 +2223,38 @@ def print_log():
 @login_required
 def qaqc():
 
-    #acquire site data and filter by authenticated sites
-    all_sites = pd.read_sql("select concat(region, '_', site) as regionsite " +\
-        "from site;", db.engine).iloc[:,0].tolist()
+    #acquire site data and filter by authenticated sites; sort, convert to list
+    resp = pd.read_sql("select concat(region, '_', site) as regionsite, " +\
+        "concat(region, ' - ', name) as name, variableList from site;", db.engine)
+    # all_sites = resp.iloc[:,0].tolist()
+    all_sites = resp.regionsite.tolist()
+    # auth_sites = all_sites
     qaqcuser = current_user.qaqc_auth()
     auth_sites = [z for z in all_sites if z in qaqcuser]
+    # auth_sites = ['AZ_SC', 'AZ_OC', 'AZ_WB']
+    filt = resp[resp.regionsite.isin(auth_sites)]
+    srt = filt.iloc[np.argsort(filt.name),:]
+    tuples = list(srt.itertuples(index=False, name=None))
+    # srt = srt.to_json(orient='records')
 
     #generate basic flag types; convert site data to dict, pass on to html
     flags = ['Interesting', 'Questionable', 'Bad Data']
     sitedict = sorted([getsitenames(x) for x in auth_sites],
         key=lambda tup: tup[1])
-    return render_template('qaqc.html', sites=sitedict, flags=flags, tags=[''])
+    return render_template('qaqc.html', sites=sitedict, flags=flags,
+        tags=[''], sitedata=tuples)
 
 @app.route('/_getqaqc', methods=["POST"])
 def getqaqc():
 
     region, site = request.json['site'].split(",")[0].split("_")
+    vars = request.json['vars']
+
     sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
         "data.variable, data.value, data.flag as flagid, flag.flag, " +\
         "flag.comment from data left join flag on data.flag=flag.id where " +\
-        "data.region='" + region + "' and data.site='" + site + "'"
+        "data.region='" + region + "' and data.site='" + site +\
+        "' and data.variable in ('" + "','".join(vars) + "');"
     xx = pd.read_sql(sqlq, db.engine) #this is what makes it take so long. read in 4w chunks
     xx.loc[xx.flag == 0, "value"] = None # set NaNs
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
@@ -2289,7 +2301,8 @@ def getqaqc():
         r = (end + timedelta(days=1) - start).days
         if r % 14 > 0:
             r = r + 14
-        return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, r, 28)]
+        return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, r, 14)]
+
     drr = daterange(sdt, edt)
 
     return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
