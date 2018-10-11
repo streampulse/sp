@@ -570,7 +570,7 @@ function brushend(){
     + 'style="width: 26em;"'
     + 'placeholder=\'Opt. flag comments (e.g. "Sensor out of water")\'>'
     + '</div><div>'
-    + '<div class="v_align" style="width: .5em"></div><p class="v_align" style="font: 10pt sans-serif">Apply flag to <br> all variables:</p> <input type="checkbox" id="fillbrush" value="yes"><div class="v_align" style="width: .5em"></div>'
+    + '<div class="v_align" style="width: .5em"></div><p class="v_align" style="font: 10pt sans-serif">Apply flag to <br> all selected <br> variables:</p> <input type="checkbox" id="fillbrush" value="yes"><div class="v_align" style="width: .5em"></div>'
     + '<button class="btn btn-warning btn-xs v_align" type="button" '
     + 'id="addflag2">Flag all<br />selected points</button>'
     + '<button class="btn btn-danger btn-xs v_align" type="button" '

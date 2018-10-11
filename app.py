@@ -2132,8 +2132,6 @@ def interquartile():
     quantiles = full_record.pivot_table(index='time', values='val',
         aggfunc=[quant25, quant75]).reset_index()
 
-    print quantiles
-
     return jsonify(dat=quantiles.to_json(orient='values'))
 
 @app.route('/_getviz',methods=["POST"])
