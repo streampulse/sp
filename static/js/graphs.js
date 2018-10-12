@@ -215,9 +215,6 @@ function Plots(variables, data, flags, outliers, page){
       svg.selectAll('.dot:not(.flagdot)')
         .attr('pointer-events', 'none');
 
-
-
-
       // d3.select("#sidebuttons").append("div")
       //   .attr("height", height + margin.top + margin.bottom)
       //   .text('oi');
@@ -393,6 +390,9 @@ function Interquartile(graph, ranges, req){
         .call(d3.axisRight().scale(ynew).ticks(6))
         .attr('class', 'interquartile interquart_axis')
         .attr("visibility", "visible")
+        .select('text')
+        .remove();
+    d3.select("#" + graph + 'rightaxis')
         .append("text")
           // .attr("fill", "rgb(102, 153, 153)")
           // .attr("fill", "rgb(237, 166, 10)")
@@ -423,37 +423,53 @@ function BackGraph(vvv, graph, data){
   //     .attr("class", "axis axis--y")
   //     .attr("transform", "translate(" + width + ", 0)");
 
-  if(datna != null){
-    ynew.domain(d3.extent(datna, function(d) { return d[vvv]; }));
-  }else{
-    ynew.domain(d3.extent(data, function(d) {
-      return d[vvv]; }));
+  if(typeof data !== 'string' || data !== 'None'){
+
+    if(datna != null){
+      ynew.domain(d3.extent(datna, function(d) { return d[vvv]; }));
+    }else{
+      ynew.domain(d3.extent(data, function(d) {
+        return d[vvv]; }));
+    }
+
+    var area = d3.area()
+        .defined(function(d){
+          if(d[vvv]==null || d.date < x.domain()[0] || d.date > x.domain()[1]){
+            rrr = false
+          }else{
+            rrr = true
+          }
+          return rrr
+        });
+    area.x(function(d) {
+           return x(d.date); });
+    area.y0(height).y1(function(d) {
+          return ynew(d[vvv]); });
+
+    cur_backgraph.append("path")
+      .datum(data)
+      .attr("class", "backarea")
+      .attr("d", area);
   }
 
-  var area = d3.area()
-      .defined(function(d){
-        if(d[vvv]==null || d.date < x.domain()[0] || d.date > x.domain()[1]){
-          rrr = false
-        }else{
-          rrr = true
-        }
-        return rrr
-      });
-  area.x(function(d) {
-         return x(d.date); });
-  area.y0(height).y1(function(d) {
-        return ynew(d[vvv]); });
-
-  cur_backgraph.append("path")
-    .datum(data)
-    .attr("class", "backarea")
-    .attr("d", area);
-
-  // refresh right-hand axis
-  d3.select("#" + graph + 'rightaxis')
+  // refresh right axis
+  if(typeof data !== 'string' || data !== 'None'){
+    d3.select("#" + graph + 'rightaxis')
       .call(d3.axisRight().scale(ynew).ticks(6))
       .attr('class', 'backarea backarea_axis')
+      .attr("display", "")
       .attr("visibility", "visible");
+  }
+  d3.select("#" + graph + 'rightaxis')
+    .select('text')
+    .remove();
+  // d3.select("#" + graph + 'rightaxis')
+  //   .append("text")
+  //     .attr("fill", "rgb(173, 20, 219)")
+  //     .attr("dy", "-0.71em")
+  //     .attr("dx", "-3em")
+  //     .style("text-anchor", "start")
+  //     .text(vvv);
 }
 
 $(function(){

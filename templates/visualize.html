@@ -289,44 +289,51 @@ $(function(){
 $(function(){
   $("select[name=backgraphlist_grab]").change(function(){
 
-    //reset the other dropdowns
+    //reset the other dropdowns, clear existing secondary axes
     $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
     // $('#interquartile').val('None');
+    d3.selectAll('[id$=rightaxis]').attr("display", "none");
 
-    if($(this).val() != 'None'){
+    // if($(this).val() != 'None'){
 
-      var grabdat = {}
-      grabdat['regionsite'] = $('select[name=site]').val();
-      grabdat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
-      grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
-      grabdat['grabvars'] = [$(this).val()];
+    var grabdat = {}
+    grabdat['regionsite'] = $('select[name=site]').val();
+    grabdat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
+    grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
+    grabdat['grabvars'] = [$(this).val()];
 
-      d3.selectAll('[id$=rightaxis]').attr("display", "none");
+    d3.selectAll('[id$=rightaxis]').attr("display", "none");
 
-      $.ajax({
-        type: 'POST',
-        url:'/_getgrabviz',
-        data: JSON.stringify(grabdat),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(response){
+    $.ajax({
+      type: 'POST',
+      url:'/_getgrabviz',
+      data: JSON.stringify(grabdat),
+      contentType: 'application/json;charset=UTF-8',
+      success: function(response){
 
-          visdata = JSON.parse(response.grabdat);
+        visdata = response.grabdat;
+        if(typeof visdata !== 'string' || visdata !== 'None'){
+          visdata = JSON.parse(visdata);
           visdata.forEach(function(d){ d.date = parseDate(d['date']) });
-
-          var variables = $('#variables:checked').map(function(){
-            return this.value;
-          }).get();
-
-          for (var i = 0; i < variables.length; ++i) {
-            BackGraph('value', variables[i], visdata);
-          }
-
-        },
-        error: function(error){
-          console.log(error);
+        } else {
+          d3.selectAll("[id$=rightaxis]")
+            .attr('display', 'none');
         }
-      });
-    };
+
+        var variables = $('#variables:checked').map(function(){
+          return this.value;
+        }).get();
+
+        for (var i = 0; i < variables.length; ++i) {
+          BackGraph('value', variables[i], visdata);
+        }
+
+      },
+      error: function(error){
+        console.log(error);
+      }
+    });
+    // };
 
     return false
   });
@@ -339,8 +346,8 @@ $('body').ready(function(){
   $('body').on("click", "[id^='interq']", function(){
 
     //reset the dropdowns
-    $('#backgraphlist').val('None');
-    $('#backgraphlist_grab').val('None');
+    // $('#backgraphlist').val('None');
+    // $('#backgraphlist_grab').val('None');
 
     //determine variable and site for which to retrieve entire data record
     var dat = {}

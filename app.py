@@ -2088,23 +2088,27 @@ def getvgrabviz():
     endDate = request.json['endDate']
     variables = request.json['grabvars']
     # variables = variables] if len(variables)
-    # print region, site, startDate, endDate, variables
 
-    #query partly set up for when this function will need to handle multiple vars
-    sqlq = "select DateTime_UTC as date, value from grabdata where region='" +\
-        region + "' and site='" +\
-        site + "' " + "and DateTime_UTC>'" + startDate + "' "+\
-        "and DateTime_UTC<'" + endDate + "' "+\
-        "and variable in ('" + "', '".join(variables) + "');"
-    xx = pd.read_sql(sqlq, db.engine)
-    # xx.loc[xx.flag==0,"value"] = None # set NaNs
-    # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
-    #     axis=1).to_json(orient='records',date_format='iso') # flag data
-    # xx = xx.drop_duplicates().set_index(["DateTime_UTC","variable"])
+    if variables[0] != 'None':
 
-    # xx = xx.loc[xx.variable.isin(variables)]
-    xx = xx.groupby(xx.date).mean().reset_index()
-    xx = xx.to_json(orient='records', date_format='iso')
+        #query partly set up for when this function will need to handle multiple vars
+        sqlq = "select DateTime_UTC as date, value from grabdata where region='" +\
+            region + "' and site='" +\
+            site + "' " + "and DateTime_UTC>'" + startDate + "' "+\
+            "and DateTime_UTC<'" + endDate + "' "+\
+            "and variable in ('" + "', '".join(variables) + "');"
+        xx = pd.read_sql(sqlq, db.engine)
+        # xx.loc[xx.flag==0,"value"] = None # set NaNs
+        # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
+        #     axis=1).to_json(orient='records',date_format='iso') # flag data
+        # xx = xx.drop_duplicates().set_index(["DateTime_UTC","variable"])
+
+        # xx = xx.loc[xx.variable.isin(variables)]
+        xx = xx.groupby(xx.date).mean().reset_index()
+        xx = xx.to_json(orient='records', date_format='iso')
+
+    else:
+        xx = 'None'
 
     return jsonify(grabdat=xx)
 
@@ -2141,7 +2145,6 @@ def getviz():
     startDate = request.json['startDate']
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
-
 
     #this block shouldnt be necessary once data leveling is in place.
     #you'll then be able to restore the block below, unless we still
