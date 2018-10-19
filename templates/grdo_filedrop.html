@@ -26,6 +26,7 @@
     </button>
 
     <div id="coreinst" class="collapse" style='background-color: #F8F8FF'>
+      <br>
       <p><strong>Minimum site <u>metadata</u> for upload:</strong></p>
       <ul>
         <li>unique Site ID (e.g. name of river)</li>
@@ -73,29 +74,6 @@
           this amount, you'll get a "connection reset" error and have to try again.
           Contact Mike Vlah (vlahm13@gmail.com) to request an oversize upload.
       </ul>
-
-      <p>
-      Name: *text box* (required)
-      Email: *text box* (required)
-
-      Site Information
-      Select file(s) here:
-      *Upload Button*
-
-      Site Data
-      Select file(s) here:
-      *Upload Button*
-
-      Data Embargo:
-      We will not make your data publicly available through StreamPulse (data.streampulse.org) for the number of years you specify below.
-      *drop down with number of years up to 5*
-
-      Notes or comments about the uploaded data:
-      *paragraph text box*
-
-      Please contact Joanna Blaszczak by email at joanna.blaszczak@flbs.umt.edu with any questions.
-      </p>
-
 
       <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
         Hide requirements
@@ -154,15 +132,39 @@
         <option value="4">4 years</option>
         <option value="5">5 years</option>
       </select>
-      <br>
-      <hr>
-      <br>
-      <button id="upx" type="submit" value=Upload class="btn btn-primary btn-block">
-        Upload
-      </button>
+      <br><br><br>
+      <p>Additional notes or comments:</p>
+      <textarea class="form-control" rows="5" name="additional" id='additional'
+        maxlength="5000"></textarea>
+      <p id="charCounter"></p>
+      <br><br>
+      <div class='col-md-6 col-md-offset-3'>
+        <button id="upx" type="submit" value=Upload class="btn btn-success btn-block">
+          Upload
+        </button>
+      </div>
     </form>
+
+    <br><br><br><br>
+    <div class='row'>
+      <div class='col-md-12 text-center'>
+        <p style='color:gray'>
+          Please contact <a href="mailto:joanna.blaszczak@flbs.umt.edu">
+            Joanna Blaszczak
+          </a> with any questions.
+        </p>
+      </div>
+    </div>
 
   </div>
 </div>
+<br><br>
+
+<script type="text/javascript">
+  $('#additional').keyup(function () {
+      var left = 5000 - $(this).val().length;
+      $('#charCounter').text('Characters left: ' + left);
+  });
+</script>
 
 {% endblock %}
