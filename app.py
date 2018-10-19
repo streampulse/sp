@@ -853,7 +853,7 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
     xf = r.json()
     xx = map(lambda x: panda_usgs(x, xf), range(len(xf['value']['timeSeries'])))
     xoo = []
-    
+
     try:
         for s in sitex:
             x2 = [k.values()[0] for k in xx if k.keys()[0]==s]
@@ -861,7 +861,7 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
             x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
             x2['site']=sitedict[s]
             xoo.append(x2.reset_index())
-    
+
         xx = pd.concat(xoo)
         xx = xx.set_index(['DateTime_UTC','site'])
         xx.columns.name='variable'
@@ -870,9 +870,9 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
         xx = xx.reset_index()
         xx[['region','site']] = xx['site'].str.split("_",expand=True)
         # xx.head()
-    
+
         return xx[['DateTime_UTC','region','site','variable','value']]
-    
+
     except:
         return ['USGS_error']
 
@@ -1446,14 +1446,14 @@ def grdo_filedrop():
                 if file:
                     fn = file.filename
                     fn_secure = secure_filename(fn)
-                    fpath = os.path.join('/home/mike/Desktop/joanna/', fn_secure)
+                    fpath = os.path.join('/home/joanna/1_new/meta/', fn_secure)
                     file.save(fpath)
 
             for file in dfiles:
                 if file:
                     fn = file.filename
                     fn_secure = secure_filename(fn)
-                    fpath = os.path.join('/home/mike/Desktop/joanna2/', fn_secure)
+                    fpath = os.path.join('/home/joanna/1_new/meta/', fn_secure)
                     file.save(fpath)
 
         except:
