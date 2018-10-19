@@ -1,0 +1,170 @@
+{% extends "grdo_layout.html" %}
+{% block body %}
+
+<div id="loading">
+  <span id="loading-image">
+    <i class="fa fa-circle-o-notch fa-spin fa-5x fa-fw"></i>
+    <span class="sr-only">Loading...</span>
+  </span>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <h2>Global River Dissolved Oxygen Database</h2>
+    <p class='lead'>
+      Welcome! Thank you for contributing to the global river dissolved oxygen database.
+    </p>
+    <p style='color:gray'>
+      On this site you can easily upload .csv or Excel files
+      containing data, as well as any file that contains information about your
+      sites (i.e. metadata).
+    </p>
+
+    <br>
+    <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
+      Data Requirements
+    </button>
+
+    <div id="coreinst" class="collapse" style='background-color: #F8F8FF'>
+      <br>
+      <p><strong>Minimum site <u>metadata</u> for upload:</strong></p>
+      <ul>
+        <li>unique Site ID (e.g. name of river)</li>
+        <li>site latitude and longitude</li>
+      </ul>
+      <p>
+        <strong>We would appreciate additional metadata if available, such as:</strong>
+      </p>
+      <ul>
+        <li>channel gradient (slope)</li>
+        <li>channel width</li>
+        <li>channel depth</li>
+        <li>river order (Strahler number)</li>
+        <li>catchment area</li>
+        <li>catchment land use information</li>
+        <li>any other information that is available about your site</li>
+      </ul>
+      <p>
+        <strong>Minimum site <u>data</u>
+        for upload (should be in spreadsheet form)</strong>
+      </p>
+      <ul>
+        <li>date (and time if available)</li>
+        <li>dissolved oxygen (concentration in mg/L OR % saturation)</li>
+        <li>Water Temperature (°C)</li>
+      </ul>
+      <p>
+        <strong>We would appreciate additional data if available, such as:</strong>
+      </p>
+      <ul>
+        <li>discharge</li>
+        <li>stage</li>
+        <li>any other water quality parameters measured at the same time as DO</li>
+      </ul>
+      <p><strong>Other requirements:</strong></p>
+      <ul>
+        <li>
+          For spreadsheet data, each column should represent one variable,
+          with variable names in the first row.
+        </li>
+        <li>Each subsequent row should contain observations from a single time point.</li>
+        <li>Units must be specified for spreadsheet data.</li>
+        <li>
+          Max cumulative filesize per upload is 32Mb. If your upload exceeds
+          this amount, you'll get a "connection reset" error and have to try again.
+          Contact Mike Vlah (vlahm13@gmail.com) to request an oversize upload.
+      </ul>
+
+      <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
+        Hide requirements
+      </button>
+      <hr>
+    </div>
+  </div>
+</div>
+
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <hr>
+    <form action="" method=post enctype=multipart/form-data>
+      <div class='row'>
+        <div class='col-md-6'>
+          <div class="form-group">
+            Select metadata file(s) here:
+            <input type="file" class="form-control-file" name=metadataf multiple
+            style='color:gray'>
+          </div>
+        </div>
+        <div class='col-md-6'>
+          <div class="form-group">
+            Select data file(s) here:
+            <input type="file" class="form-control-file" name=dataf multiple
+            style='color:gray'>
+          </div>
+        </div>
+      </div>
+      <br>
+      <p>Please provide contact information for this dataset (required).</p>
+      <div class='row'>
+        <div class='col-md-6'>
+          <p style='color:gray'>Contact name:</p>
+          <input type="text" class="form-control" name="contactname"
+          aria-describedby="Contact name" maxlength="50" required>
+        </div>
+        <div class='col-md-6'>
+          <p style='color:gray'>Contact email:</p>
+          <input type="text" class="form-control" name="contactemail"
+          aria-describedby="Contact email" maxlength="50" required>
+        </div>
+      </div>
+      <br><br>
+      <p>
+        We will not make your data publicly available through
+        <a href=data.streampulse.org>StreamPULSE</a> for the number of years
+        you specify below.
+      </p>
+      <select id="embargo" name="embargo">
+        <option value="0">No embargo</option>
+        <option value="1">1 year</option>
+        <option value="2">2 years</option>
+        <option value="3">3 years</option>
+        <option value="4">4 years</option>
+        <option value="5">5 years</option>
+      </select>
+      <br><br><br>
+      <p>Additional notes or comments:</p>
+      <textarea class="form-control" rows="5" name="additional" id='additional'
+        maxlength="5000"></textarea>
+      <p id="charCounter"></p>
+      <br><br>
+      <div class='col-md-6 col-md-offset-3'>
+        <button id="upx" type="submit" value=Upload class="btn btn-success btn-block">
+          Upload
+        </button>
+      </div>
+    </form>
+
+    <br><br><br><br>
+    <div class='row'>
+      <div class='col-md-12 text-center'>
+        <p style='color:gray'>
+          Please contact <a href="mailto:joanna.blaszczak@flbs.umt.edu">
+            Joanna Blaszczak
+          </a> with any questions.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+<br><br>
+
+<script type="text/javascript">
+  $('#additional').keyup(function () {
+      var left = 5000 - $(this).val().length;
+      $('#charCounter').text('Characters left: ' + left);
+  });
+</script>
+
+{% endblock %}

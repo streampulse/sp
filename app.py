@@ -26,6 +26,7 @@ import shutil
 #import pysb
 import os
 import re
+import sys
 import config as cfg
 import logging
 import readline #needed for rpy2 import in conda env
@@ -114,7 +115,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATION
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16 MB
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # was 16 MB
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
 #app.config['PROPAGATE_EXCEPTIONS'] = True
 
@@ -459,6 +460,29 @@ class Grabupload(db.Model):
 
     def __repr__(self):
         return '<Grabupload %r>' % (self.filename)
+
+class Grdo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50))
+    email = db.Column(db.String(50))
+    addDate = db.Column(db.DateTime)
+    embargo = db.Column(db.Integer)
+    notes = db.Column(db.String(5000))
+    dataFiles = db.Column(db.String(5000))
+    metaFiles = db.Column(db.String(5000))
+
+    def __init__(self, name, email, addDate, embargo, notes, dataFiles, metaFiles):
+        self.name = name
+        self.email = email
+        self.addDate = addDate
+        self.embargo = embargo
+        self.notes = notes
+        self.dataFiles = dataFiles
+        self.metaFiles = metaFiles
+
+    def __repr__(self):
+        return '<Data %r, %r, %r>' % (self.name, self.email,
+        self.addDate)
 
 db.create_all()
 
@@ -1399,6 +1423,74 @@ def grab_upload():
             finally:
                 return redirect(request.url)
 
+@app.route('/grdo_filedrop', methods=['GET', 'POST'])
+def grdo_filedrop():
+
+    if request.method == 'POST':
+
+        #checks
+        if 'metadataf' not in request.files and 'dataf' not in request.files:
+            flash('No files detected','alert-danger')
+            return redirect(request.url)
+        mfiles = request.files.getlist("metadataf")
+        mfnms = [x.filename for x in mfiles]
+        dfiles = request.files.getlist("dataf")
+        dfnms = [x.filename for x in dfiles]
+        if len(mfnms[0]) == 0 and len(dfnms[0]) == 0:
+            flash('No files selected.','alert-danger')
+            return redirect(request.url)
+
+        #upload
+        try:
+            for file in mfiles:
+                if file:
+                    fn = file.filename
+                    fn_secure = secure_filename(fn)
+                    fpath = os.path.join('/home/mike/Desktop/joanna/', fn_secure)
+                    file.save(fpath)
+
+            for file in dfiles:
+                if file:
+                    fn = file.filename
+                    fn_secure = secure_filename(fn)
+                    fpath = os.path.join('/home/mike/Desktop/joanna2/', fn_secure)
+                    file.save(fpath)
+
+        except:
+            msg = Markup('There has been an error. Please notify site maintainer <a href=' +\
+                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+                'Mike Vlah</a>.')
+            flash(msg, 'alert-danger')
+            return redirect(request.url)
+
+        #populate database
+        contactname = request.form.get('contactname')
+        contactemail = request.form.get('contactemail')
+        embargo = request.form.get('embargo')
+        addtl = request.form.get('additional')
+        mfile_list = ', '.join(mfnms) if mfiles[0] else 'NA'
+        dfile_list = ', '.join(dfnms) if dfiles[0] else 'NA'
+
+        db_entry = Grdo(name=contactname, email=contactemail,
+            addDate=datetime.utcnow(), embargo=embargo, notes=addtl,
+            dataFiles=mfile_list, metaFiles=dfile_list)
+        db.session.add(db_entry)
+        db.session.commit()
+
+        mlen = len(mfiles) if mfiles[0] else 0
+        dlen = len(dfiles) if dfiles[0] else 0
+
+        if mlen + dlen > 0:
+            flash('Uploaded ' + str(mlen) + ' metadata file(s) and ' +\
+            str(dlen) + ' data file(s).', 'alert-success')
+
+        return render_template('grdo_filedrop.html')
+
+    if request.method == 'GET': #when first visiting the grdo upload page
+
+        return render_template('grdo_filedrop.html')
+
+
 @app.route("/upload_cancel",methods=["POST"])
 def cancelcolumns(): #only used when cancelling series_upload
     ofiles = request.form['ofiles'].split(",")
@@ -1662,6 +1754,7 @@ def confirmcolumns():
 
     except:
         msg = Markup('Error 009. This is a particularly nasty error. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file(s) you tried to upload.')
+        flash(msg, 'alert-danger')
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
         return redirect(url_for('series_upload'))
 
