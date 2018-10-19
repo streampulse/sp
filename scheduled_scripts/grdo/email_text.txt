@@ -1,0 +1,31 @@
+Hi Joanna,
+
+You received %s new submissions(s) this week.
+
+Attached is the full list of files uploaded so far.
+
+To download files, follow these steps:
+
+1. open command prompt (cmd)
+2. navigate to the download destination directory (optional)
+3. sftp joanna@45.55.47.104
+4. cd 1_new
+5. get -r *
+6. exit
+7. ssh joanna@45.55.47.104
+8. mv 1_new/data/* 2_downloaded
+9. mv 1_new/meta/* 2_downloaded
+
+To upload files, follow these steps:
+
+1. open command prompt (cmd)
+2. navigate to the directory from which you want to upload files (NOT optional this time)
+3. sftp joanna@45.55.47.104
+4. cd 3_processed
+5. put *
+6. you can then delete the files from your computer
+
+If something goes wrong and you need to remove files or reorganize, hit me up.
+
+Please avoid using any command that starts with "rm -rf", as untold destruction might ensue. 
+
