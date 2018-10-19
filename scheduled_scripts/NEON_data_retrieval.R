@@ -173,7 +173,7 @@ for(p in 1:length(products)){
 
             if(prods_abb[p] != 'DO'){
                 write(paste('Unknown site encountered for non-waterqual variable:',
-                    prods_abb[p], site, date), '. This should have been filtered.',
+                    prods_abb[p], site, date, '. This should have been filtered.'),
                     '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
                 next
             }

@@ -825,32 +825,32 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
     r = requests.get(url)
     print r.status_code
     if r.status_code != 200:
-        return 'USGS_error'
+        return ['USGS_error']
     xf = r.json()
     xx = map(lambda x: panda_usgs(x, xf), range(len(xf['value']['timeSeries'])))
     xoo = []
-    for s in sitex:
-        x2 = [k.values()[0] for k in xx if k.keys()[0]==s]
-        x2 = reduce(lambda x,y: x.merge(y,how='outer',left_index=True,right_index=True), x2)
-        x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
-        x2['site']=sitedict[s]
-        xoo.append(x2.reset_index())
-
-    xx = pd.concat(xoo)
-    xx = xx.set_index(['DateTime_UTC','site'])
-    xx.columns.name='variable'
-    xx = xx.stack()
-    xx.name="value"
-    xx = xx.reset_index()
-    xx[['region','site']] = xx['site'].str.split("_",expand=True)
-    # xx.head()
-
-    return xx[['DateTime_UTC','region','site','variable','value']]
-
-    # else:
-        # xx = pd.DataFrame({'DateTime_UTC':[], 'region':[], 'site':[],
-        #     'variable':[], 'value':[]})
-        # return xx
+    
+    try:
+        for s in sitex:
+            x2 = [k.values()[0] for k in xx if k.keys()[0]==s]
+            x2 = reduce(lambda x,y: x.merge(y,how='outer',left_index=True,right_index=True), x2)
+            x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
+            x2['site']=sitedict[s]
+            xoo.append(x2.reset_index())
+    
+        xx = pd.concat(xoo)
+        xx = xx.set_index(['DateTime_UTC','site'])
+        xx.columns.name='variable'
+        xx = xx.stack()
+        xx.name="value"
+        xx = xx.reset_index()
+        xx[['region','site']] = xx['site'].str.split("_",expand=True)
+        # xx.head()
+    
+        return xx[['DateTime_UTC','region','site','variable','value']]
+    
+    except:
+        return ['USGS_error']
 
 def authenticate_sites(sites,user=None,token=None):
 
@@ -2535,13 +2535,13 @@ def api():
         if "Discharge_m3s" in variables and "Discharge_m3s" not in vv:
             xu = get_usgs(sites, min(xx.DateTime_UTC).strftime("%Y-%m-%d"),
                 max(xx.DateTime_UTC).strftime("%Y-%m-%d"))
-            if len(xu) == 1 and xu == 'USGS_error':
-                return jsonify(data=xu)
+            if len(xu) == 1 and xu[0] == 'USGS_error':
+                return jsonify(data=xu[0])
         if "Depth_m" in variables and "Depth_m" not in vv and len(xu) is 0:
             xu = get_usgs(sites, min(xx.DateTime_UTC).strftime("%Y-%m-%d"),
                 max(xx.DateTime_UTC).strftime("%Y-%m-%d"))
-            if len(xu) == 1 and xu == 'USGS_error':
-                return jsonify(data=xu)
+            if len(xu) == 1 and xu[0] == 'USGS_error':
+                return jsonify(data=xu[0])
 
     if len(xu) is not 0:
         # subset usgs data based on each site's dates
