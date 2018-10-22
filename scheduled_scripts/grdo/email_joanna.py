@@ -10,8 +10,8 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
-#wrk_dir = '/home/aaron/sp'
-wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
+wrk_dir = '/home/aaron/sp'
+#wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, wrk_dir)
 os.chdir(wrk_dir)
 import config as cfg
@@ -63,6 +63,6 @@ server = smtplib.SMTP('smtp.gmail.com', 587)
 server.ehlo()
 server.starttls()
 server.login("streampulse.info@gmail.com", gmail_pw)
-server.sendmail('streampulse.info@gmail.com', ['vlahm13@gmail.com'],
+server.sendmail('streampulse.info@gmail.com', ['joanna.r.blaszczak@gmail.com'],
     msg.as_string())
 server.quit()
