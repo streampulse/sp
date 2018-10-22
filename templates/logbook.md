@@ -1,5 +1,11 @@
 #Mike's Logbook
 
+###mon20181022
+ + fixed oob error in usgs gage data pulls; added informative error messages
+ + StreamPULSE v. 0.0.0.9014: can now use pool_K600='none' in fit_metabolism
+ + usgs level data now used if depth missing and not estimating from discharge
+###20181015-19
+ + FLBS visit; meetings with Bob, Joanna, Maite
 ###thu20181011
  + added year picker to qaqc. no more egregious speed issues? still don't really have a scalable solution to database reads. may attempt to partition soon
 ###wed20181010
