@@ -106,7 +106,7 @@ Note that when a new site is added to the system, all of its data will be automa
   <li><code>HA</code>: Hobo air pressure logger</li>
   <li><code>HP</code>: Hobo light pendant logger</li>
   <li><code>EM</code>: Eureka Manta logger</li>
-  <li><code>XX</code>: Calibrated and formatted data</li>
+  <li><code>XX</code>: Calibrated and formatted data (literally "_XX")</li>
   </ul></li>
   <li>and <code>.xxx</code> is the file extension.
   <ul>
@@ -114,6 +114,7 @@ Note that when a new site is added to the system, all of its data will be automa
   </li></ul>
   <li><b>Note:</b> <code>LOGGERID</code> may include numbers if you have several of the same logger type at one site. For example, <code>LOGGERID</code> could be <code>CS4</code> or <code>HA12</code>.</li>
   <li><b>Example filename:</b> <code>NC_Eno_2017-12-06_HP.csv</code></li>
+  <li><b>Example filename 2:</b> <code>AZ_LV_2018-02-20_XX.csv</code></li>
   </ul>
 
   <h3>Calibrated and formatted data</h3>
@@ -240,6 +241,7 @@ The minimum set of variables for upload are:</p>
   <li><code>REGIONID</code> is the name of your region (US: <a href="https://en.wikipedia.org/wiki/Federal_Information_Processing_Standard_state_code">FIPS state code</a>; International: <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">ISO 3166-1 alpha-2 code</a>),</li>
   <li><code>SITEID</code> is your chosen unique site name (only alphanumeric characters, any length you want), and</li>
   <li><code>YYYY-MM-DD</code> is the download date or the last date in the timeseries.</li>
+  <li><b>Example filename:</b> <code>UK_Arun_2016-11-04.csv</code></li>
   </ul>
 
   <h3>Date formatting help</h3>
