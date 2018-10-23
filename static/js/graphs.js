@@ -166,10 +166,10 @@ function Plots(variables, data, flags, outliers, page){
           });
 
       //non-flagged points shouldnt register mouse activity
-      svg.selectAll('.dot:not(.flagdot)')
-        .attr('pointer-events', 'none');
+      // svg.selectAll('.dot:not(.flagdot)')
+      //   .attr('pointer-events', 'none');
 
-    }else{ // viz page
+    } else { // viz page
       svg.selectAll(".vdot")
           .data(data.filter(function(d) { return d[vvv]; }))
         .enter().append("circle")
@@ -181,6 +181,7 @@ function Plots(variables, data, flags, outliers, page){
           return vvv == dff[d.DateTime_UTC]
         })
         .filter('.flagdot')
+        .attr('r', 3)
         .on("mouseover", function(d, j) {
 
           //add mouseover tooltips for each flagged point:
@@ -202,7 +203,7 @@ function Plots(variables, data, flags, outliers, page){
             .style("opacity", .9);
           point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
             this_point_flaginfo.comment)
-            .style("left", (d3.event.pageX) + "px")
+            .style("left", (d3.event.pageX + 10) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
           })
           .on("mouseout", function(d) {
@@ -212,8 +213,8 @@ function Plots(variables, data, flags, outliers, page){
           });
 
       //non-flagged points shouldnt register mouse activity
-      svg.selectAll('.dot:not(.flagdot)')
-        .attr('pointer-events', 'none');
+      // svg.selectAll('.vdot:not(.flagdot)')
+      //   .attr('pointer-events', 'none');
 
       // d3.select("#sidebuttons").append("div")
       //   .attr("height", height + margin.top + margin.bottom)
