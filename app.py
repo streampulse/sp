@@ -100,7 +100,6 @@ import time
 #                             expires=cookie_exp, httponly=True,
 #                             domain=domain)
 
-
 # from rpy2.robjects.packages import importr
 
 pandas2ri.activate() #for converting pandas df to R df
@@ -2409,7 +2408,6 @@ def getqaqcyears():
 
     return jsonify(years=yrs)
 
-
 @app.route('/qaqc_help')
 def qaqc_help_page():
     return render_template('qaqc_help.html')
@@ -2679,6 +2677,111 @@ def api():
             sites=meta.to_dict(orient='records'))
 
     return resp
+
+@app.route('/query_available_data')
+def query_available_data():
+
+    #pull in requests
+    startDate = request.args.get('startdate')
+    endDate = request.args.get('enddate')
+    variable = request.args.get('variable')
+    region = request.args.get('region')
+    site = request.args.get('site')
+
+    # startDate = '2017-11-17'; endDate = '2018-01-04'
+    # startDate = '2017-01-01'; endDate = '2017-03-04'
+    # variable = 'DO_mgL'
+    # region = 'NC'
+    # site = 'Eno'
+
+    # #error checks (moved most to R)
+    # if startDate is None and endDate is not None:
+    #     return jsonify(error='If startdate is supplied, enddate must be too.')
+    # if endDate is None and startDate is not None:
+    #     return jsonify(error='If enddate is supplied, startdate must be too.')
+    # if startDate is not None and variable is not None and sitecode is not None:
+    #     return jsonify(error='Received arguments for dates, site, and variable.' +\
+    #         ' Omit at least one of these.')
+    if variable not in variables and variable is not None:
+        return jsonify(error='Unknown variable requested. Available ' +\
+            'variables are: ' + ', '.join(variables))
+
+    sites_available = pd.read_sql("select distinct region, site from site;",
+        db.engine)
+    if region is not None and region not in sites_available.region:
+        return jsonify(error='Unknown region requested.')
+    if site is not None:
+        sites_at_region = sites_available[sites_available.region == region].site.tolist()
+        if site not in sites_at_region:
+            return jsonify(error='No site "' + site + '" found for region "' +\
+                region + '".')
+
+    #only variable supplied = requesting sites
+    if variable is not None and startDate is None and sitecode is None:
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, contact, contactEmail, " +\
+            "embargo from site where " +\
+            "variableList like '%%" + variable + "%%';", db.engine)
+        r = r if list(r2.region) else 'No data available for requested variable.'
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #only sitecode supplied = requesting variables and date bounds
+    if sitecode is not None and startDate is None and variable is None:
+        region, site = sitecode.split('_')
+        r = pd.read_sql("select variableList from site where " +\
+            "region='" + region + "' and site='" + site + "';",
+            db.engine).variableList.tolist()
+        r2 = pd.read_sql("select firstRecord, lastRecord from site where " +\
+            "region='" + region + "' and site='" + site + "';",
+            db.engine)
+        r = r if r else 'No variables available for requested site.'
+        r2 = r2 if list(r2.firstRecord) else 'No data available for requested site.'
+        return jsonify(variables=r, datebounds=r2.to_json(orient='values',
+            date_format='iso'))
+
+    #only dates supplied = requesting sites
+    if startDate is not None and sitecode is None and variable is None:
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, contact, contactEmail, " +\
+            "embargo from site where " +\
+            "firstRecord <='" + startDate + "' and lastRecord >='" +\
+            endDate + "';", db.engine)
+        r = r if list(r.region) else 'No data available for entire requested timespan.'
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #sitecode and dates supplied = requesting variables
+    if startDate is not None and sitecode is not None and variable is None:
+        region, site = sitecode.split('_')
+        r = pd.read_sql("select variableList from site where " +\
+            "region='" + region + "' and site='" + site +\
+            "' and firstRecord <='" + startDate + "' and lastRecord >='" +\
+             endDate + "';", db.engine).variableList.tolist()
+        r = r if r else 'No data available for entire requested timespan and site.'
+        return jsonify(variables=r)
+
+    #sitecode and variable supplied = requesting date range for that variable
+    if startDate is None and sitecode is not None and variable is not None:
+        region, site = sitecode.split('_')
+        r = pd.read_sql("select min(DateTime_UTC) as firstRecord, " +\
+            "max(DateTime_UTC) as lastRecord from data where " +\
+            "region='" + region + "' and site='" + site +\
+            "' and variable='" + variable + "';", db.engine)
+        r = r if list(r.firstRecord) else 'No data available for requested site and variable.'
+        return jsonify(datebounds=r.to_json(orient='values', date_format='iso'))
+
+    #variable and dates supplied = requesting sites
+    if startDate is not None and sitecode is None and variable is not None:
+        r = pd.read_sql("select distinct site.region, site.site, site.latitude, " +\
+            "site.longitude, site.usgs as usgsGage, site.addDate, site.contact, site.contactEmail, " +\
+            "site.embargo from data left join site on (data.region=site.region and " +\
+            "data.site=site.site) where " +\
+            "data.DateTime_UTC >='" + startDate + "' and data.DateTime_UTC >='" +\
+             endDate + "' and data.variable='" + variable + "';", db.engine)
+         # r = pd.read_sql("select distinct region, site from data where " +\
+         #     "data.DateTime_UTC >='" + startDate + "' and data.DateTime_UTC >='" +\
+         #      endDate + "' and data.variable='" + variable + "';", db.engine)
+        r = r if list(r.region) else 'No data available for variable during requested timespan.'
+        return jsonify(sites=r.to_dict(orient='records'))
 
 @app.route('/api/model_details_download')
 def model_details_download():
