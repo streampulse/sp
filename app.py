@@ -2678,6 +2678,25 @@ def api():
 
     return resp
 
+def clean_query_response(r):
+
+    #replace NaT with None
+    r.firstRecord = r.firstRecord.astype(object)
+    r.firstRecord.loc[r.firstRecord.isnull()] = None
+    r.lastRecord = r.lastRecord.astype(object)
+    r.lastRecord.loc[r.lastRecord.isnull()] = None
+
+    #convert embargo years and addDate to days of embargo remaining
+    emb = []
+    for i in xrange(len(r.embargoDaysLeft)):
+        timediff = (r.addDate[i] + pd.Timedelta(days=365 * r.embargoDaysLeft[i])) -\
+            datetime.today()
+        emb.append(timediff.days)
+    r.loc[:,'embargoDaysLeft'] = [x if x > 0 else 0 for x in emb]
+
+    return r
+
+
 @app.route('/query_available_data')
 def query_available_data():
 
@@ -2695,39 +2714,57 @@ def query_available_data():
     # site = 'Eno'
 
     # #error checks (moved most to R)
-    # if startDate is None and endDate is not None:
-    #     return jsonify(error='If startdate is supplied, enddate must be too.')
-    # if endDate is None and startDate is not None:
-    #     return jsonify(error='If enddate is supplied, startdate must be too.')
-    # if startDate is not None and variable is not None and sitecode is not None:
-    #     return jsonify(error='Received arguments for dates, site, and variable.' +\
-    #         ' Omit at least one of these.')
     if variable not in variables and variable is not None:
         return jsonify(error='Unknown variable requested. Available ' +\
             'variables are: ' + ', '.join(variables))
 
-    sites_available = pd.read_sql("select distinct region, site from site;",
+    regsites = pd.read_sql("select distinct region, site from site;",
         db.engine)
-    if region is not None and region not in sites_available.region:
+    regions = list(set(regsites.region))
+    regions.append(u'all')
+    if region is not None and region not in regions:
         return jsonify(error='Unknown region requested.')
     if site is not None:
-        sites_at_region = sites_available[sites_available.region == region].site.tolist()
+        sites_at_region = regsites[regsites.region == region].site.tolist()
         if site not in sites_at_region:
             return jsonify(error='No site "' + site + '" found for region "' +\
                 region + '".')
 
-    #only variable supplied = requesting sites
-    if variable is not None and startDate is None and sitecode is None:
+    #only region supplied = requesting sites
+    if region is not None and region != 'all' and site is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, contact, contactEmail, " +\
-            "embargo from site where " +\
-            "variableList like '%%" + variable + "%%';", db.engine)
-        r = r if list(r2.region) else 'No data available for requested variable.'
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site where region='" + region + "';",
+            db.engine)
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for requested region.'
         return jsonify(sites=r.to_dict(orient='records'))
 
-    #only sitecode supplied = requesting variables and date bounds
-    if sitecode is not None and startDate is None and variable is None:
-        region, site = sitecode.split('_')
+    #only region supplied and region is 'all' = requesting sites
+    if region is not None and region=='all':
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site;", db.engine)
+
+        r = clean_query_response(r)
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #only variable supplied = requesting sites
+    if variable is not None and startDate is None and region is None:
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site where " +\
+            "variableList like '%%" + variable + "%%';", db.engine)
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for requested variable.'
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #only site code supplied = requesting variables and date bounds
+    if region is not None and startDate is None and variable is None:
         r = pd.read_sql("select variableList from site where " +\
             "region='" + region + "' and site='" + site + "';",
             db.engine).variableList.tolist()
@@ -2740,18 +2777,20 @@ def query_available_data():
             date_format='iso'))
 
     #only dates supplied = requesting sites
-    if startDate is not None and sitecode is None and variable is None:
+    if startDate is not None and region is None and variable is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, contact, contactEmail, " +\
-            "embargo from site where " +\
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site where " +\
             "firstRecord <='" + startDate + "' and lastRecord >='" +\
             endDate + "';", db.engine)
-        r = r if list(r.region) else 'No data available for entire requested timespan.'
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for entire requested timespan.'
         return jsonify(sites=r.to_dict(orient='records'))
 
-    #sitecode and dates supplied = requesting variables
-    if startDate is not None and sitecode is not None and variable is None:
-        region, site = sitecode.split('_')
+    #site code and dates supplied = requesting variables
+    if startDate is not None and region is not None and variable is None:
         r = pd.read_sql("select variableList from site where " +\
             "region='" + region + "' and site='" + site +\
             "' and firstRecord <='" + startDate + "' and lastRecord >='" +\
@@ -2759,28 +2798,30 @@ def query_available_data():
         r = r if r else 'No data available for entire requested timespan and site.'
         return jsonify(variables=r)
 
-    #sitecode and variable supplied = requesting date range for that variable
-    if startDate is None and sitecode is not None and variable is not None:
-        region, site = sitecode.split('_')
+    #site code and variable supplied = requesting date range for that variable
+    if startDate is None and region is not None and variable is not None:
+        print '1'
         r = pd.read_sql("select min(DateTime_UTC) as firstRecord, " +\
             "max(DateTime_UTC) as lastRecord from data where " +\
             "region='" + region + "' and site='" + site +\
             "' and variable='" + variable + "';", db.engine)
         r = r if list(r.firstRecord) else 'No data available for requested site and variable.'
+        print '2'
         return jsonify(datebounds=r.to_json(orient='values', date_format='iso'))
 
     #variable and dates supplied = requesting sites
-    if startDate is not None and sitecode is None and variable is not None:
+    if startDate is not None and region is None and variable is not None:
         r = pd.read_sql("select distinct site.region, site.site, site.latitude, " +\
-            "site.longitude, site.usgs as usgsGage, site.addDate, site.contact, site.contactEmail, " +\
-            "site.embargo from data left join site on (data.region=site.region and " +\
+            "site.longitude, site.usgs as usgsGage, site.addDate, site.firstRecord, " +\
+            "site.lastRecord, site.contact, site.contactEmail, " +\
+            "site.embargo as embargoDaysLeft from data left join site on (data.region=site.region and " +\
             "data.site=site.site) where " +\
             "data.DateTime_UTC >='" + startDate + "' and data.DateTime_UTC >='" +\
              endDate + "' and data.variable='" + variable + "';", db.engine)
-         # r = pd.read_sql("select distinct region, site from data where " +\
-         #     "data.DateTime_UTC >='" + startDate + "' and data.DateTime_UTC >='" +\
-         #      endDate + "' and data.variable='" + variable + "';", db.engine)
-        r = r if list(r.region) else 'No data available for variable during requested timespan.'
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for variable during requested timespan.'
         return jsonify(sites=r.to_dict(orient='records'))
 
 @app.route('/api/model_details_download')
