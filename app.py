@@ -2800,13 +2800,11 @@ def query_available_data():
 
     #site code and variable supplied = requesting date range for that variable
     if startDate is None and region is not None and variable is not None:
-        print '1'
         r = pd.read_sql("select min(DateTime_UTC) as firstRecord, " +\
             "max(DateTime_UTC) as lastRecord from data where " +\
             "region='" + region + "' and site='" + site +\
             "' and variable='" + variable + "';", db.engine)
         r = r if list(r.firstRecord) else 'No data available for requested site and variable.'
-        print '2'
         return jsonify(datebounds=r.to_json(orient='values', date_format='iso'))
 
     #variable and dates supplied = requesting sites
