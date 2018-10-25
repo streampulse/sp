@@ -2682,9 +2682,14 @@ def clean_query_response(r):
 
     #replace NaT with None
     r.firstRecord = r.firstRecord.astype(object)
-    r.firstRecord.loc[r.firstRecord.isnull()] = None
+    r.loc[r.firstRecord.isnull(),'firstRecord'] = None
     r.lastRecord = r.lastRecord.astype(object)
-    r.lastRecord.loc[r.lastRecord.isnull()] = None
+    r.loc[r.lastRecord.isnull(),'lastRecord'] = None
+    # r.lastRecord.loc[r.lastRecord.isnull()] = None
+
+    #replace NaN with None
+    r.latitude = r.latitude.where((pd.notnull(r.latitude)), None)
+    r.longitude = r.longitude.where((pd.notnull(r.longitude)), None)
 
     #convert embargo years and addDate to days of embargo remaining
     emb = []
