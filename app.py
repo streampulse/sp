@@ -513,8 +513,8 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
 'SpecCond_uScm', 'CO2_ppm', 'Light_lux', 'Light_PAR', 'underwater_PAR', 'Light2_lux',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
-'Light5_lux', 'Light5_PAR', 'Battery_V', 'O2GasTransferVelocity_ms',
-'ChlorophyllA_ugL']
+'Light5_lux', 'Light5_PAR', 'Battery_V', 'ChlorophyllA_ugL']
+# O2GasTransferVelocity_ms
 
 o = 'other'
 # fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer']
@@ -2696,7 +2696,6 @@ def clean_query_response(r):
 
     return r
 
-
 @app.route('/query_available_data')
 def query_available_data():
 
@@ -2707,14 +2706,8 @@ def query_available_data():
     region = request.args.get('region')
     site = request.args.get('site')
 
-    # startDate = '2017-11-17'; endDate = '2018-01-04'
-    # startDate = '2017-01-01'; endDate = '2017-03-04'
-    # variable = 'DO_mgL'
-    # region = 'NC'
-    # site = 'Eno'
-
     # #error checks (moved most to R)
-    if variable not in variables and variable is not None:
+    if variable not in variables and variable is not None and variable != 'all':
         return jsonify(error='Unknown variable requested. Available ' +\
             'variables are: ' + ', '.join(variables))
 
@@ -2743,13 +2736,16 @@ def query_available_data():
         return jsonify(sites=r.to_dict(orient='records'))
 
     #only region supplied and region is 'all' = requesting sites
-    if region is not None and region=='all':
+    if region is not None and region == 'all':
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
             "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site;", db.engine)
-
         r = clean_query_response(r)
         return jsonify(sites=r.to_dict(orient='records'))
+
+    #only variable supplied and variable is 'all' = requesting variables
+    if variable is not None and variable == 'all':
+        return jsonify(variables=','.join(variables))
 
     #only variable supplied = requesting sites
     if variable is not None and startDate is None and region is None:

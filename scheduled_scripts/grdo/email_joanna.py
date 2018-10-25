@@ -17,7 +17,7 @@ os.chdir(wrk_dir)
 import config as cfg
 
 mysql_pw = cfg.MYSQL_PW
-gmail_pw = cfg.GMAIL_PW
+gmail_pw = cfg.GRDO_GMAIL_PW
 
 db = MySQLdb.connect(host="localhost", user="root", passwd=mysql_pw, db="sp")
 cur = db.cursor()
@@ -47,7 +47,7 @@ with open('scheduled_scripts/grdo/email_text.txt', 'rb') as fp:
 
 #compose message
 msg['Subject'] = 'GRDO uploads'
-msg['From'] = 'streampulse.info@gmail.com'
+msg['From'] = 'grdouser@gmail.com'
 msg['To'] = 'joanna.r.blaszczak@gmail.com'
 with open('scheduled_scripts/grdo/grdo_uploads.csv', 'rb') as fp:
     csv = MIMEApplication(fp.read(), Name='grdo_uploads.csv')
@@ -62,7 +62,7 @@ msg.attach(csv)
 server = smtplib.SMTP('smtp.gmail.com', 587)
 server.ehlo()
 server.starttls()
-server.login("streampulse.info@gmail.com", gmail_pw)
-server.sendmail('streampulse.info@gmail.com', ['joanna.r.blaszczak@gmail.com'],
+server.login("grdouser@gmail.com", gmail_pw)
+server.sendmail('grdouser@gmail.com', ['joanna.r.blaszczak@gmail.com'],
     msg.as_string())
 server.quit()
