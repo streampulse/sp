@@ -22,10 +22,10 @@ To upload files, follow these steps:
 2. navigate to the directory from which you want to upload files (NOT optional this time)
 3. sftp joanna@45.55.47.104
 4. cd 3_processed
-5. put *
+5. put * (note that this will upload all files in your local directory)
 6. you can then delete the files from your computer
 
 If something goes wrong and you need to remove files or reorganize, hit me up.
 
-Please avoid using any command that starts with "rm -rf", as untold destruction might ensue. 
+Please avoid using any command that starts with "rm", especially "rm -rf", as untold destruction might ensue. 
 

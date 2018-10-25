@@ -100,7 +100,6 @@ import time
 #                             expires=cookie_exp, httponly=True,
 #                             domain=domain)
 
-
 # from rpy2.robjects.packages import importr
 
 pandas2ri.activate() #for converting pandas df to R df
@@ -514,8 +513,8 @@ variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
 'SpecCond_uScm', 'CO2_ppm', 'Light_lux', 'Light_PAR', 'underwater_PAR', 'Light2_lux',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
-'Light5_lux', 'Light5_PAR', 'Battery_V', 'O2GasTransferVelocity_ms',
-'ChlorophyllA_ugL']
+'Light5_lux', 'Light5_PAR', 'Battery_V', 'ChlorophyllA_ugL']
+# O2GasTransferVelocity_ms
 
 o = 'other'
 # fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer']
@@ -2409,7 +2408,6 @@ def getqaqcyears():
 
     return jsonify(years=yrs)
 
-
 @app.route('/qaqc_help')
 def qaqc_help_page():
     return render_template('qaqc_help.html')
@@ -2679,6 +2677,146 @@ def api():
             sites=meta.to_dict(orient='records'))
 
     return resp
+
+def clean_query_response(r):
+
+    #replace NaT with None
+    r.firstRecord = r.firstRecord.astype(object)
+    r.firstRecord.loc[r.firstRecord.isnull()] = None
+    r.lastRecord = r.lastRecord.astype(object)
+    r.lastRecord.loc[r.lastRecord.isnull()] = None
+
+    #convert embargo years and addDate to days of embargo remaining
+    emb = []
+    for i in xrange(len(r.embargoDaysLeft)):
+        timediff = (r.addDate[i] + pd.Timedelta(days=365 * r.embargoDaysLeft[i])) -\
+            datetime.today()
+        emb.append(timediff.days)
+    r.loc[:,'embargoDaysLeft'] = [x if x > 0 else 0 for x in emb]
+
+    return r
+
+@app.route('/query_available_data')
+def query_available_data():
+
+    #pull in requests
+    startDate = request.args.get('startdate')
+    endDate = request.args.get('enddate')
+    variable = request.args.get('variable')
+    region = request.args.get('region')
+    site = request.args.get('site')
+
+    # #error checks (moved most to R)
+    if variable not in variables and variable is not None and variable != 'all':
+        return jsonify(error='Unknown variable requested. Available ' +\
+            'variables are: ' + ', '.join(variables))
+
+    regsites = pd.read_sql("select distinct region, site from site;",
+        db.engine)
+    regions = list(set(regsites.region))
+    regions.append(u'all')
+    if region is not None and region not in regions:
+        return jsonify(error='Unknown region requested.')
+    if site is not None:
+        sites_at_region = regsites[regsites.region == region].site.tolist()
+        if site not in sites_at_region:
+            return jsonify(error='No site "' + site + '" found for region "' +\
+                region + '".')
+
+    #only region supplied = requesting sites
+    if region is not None and region != 'all' and site is None:
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site where region='" + region + "';",
+            db.engine)
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for requested region.'
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #only region supplied and region is 'all' = requesting sites
+    if region is not None and region == 'all':
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site;", db.engine)
+        r = clean_query_response(r)
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #only variable supplied and variable is 'all' = requesting variables
+    if variable is not None and variable == 'all':
+        return jsonify(variables=','.join(variables))
+
+    #only variable supplied = requesting sites
+    if variable is not None and startDate is None and region is None:
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site where " +\
+            "variableList like '%%" + variable + "%%';", db.engine)
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for requested variable.'
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #only site code supplied = requesting variables and date bounds
+    if region is not None and startDate is None and variable is None:
+        r = pd.read_sql("select variableList from site where " +\
+            "region='" + region + "' and site='" + site + "';",
+            db.engine).variableList.tolist()
+        r2 = pd.read_sql("select firstRecord, lastRecord from site where " +\
+            "region='" + region + "' and site='" + site + "';",
+            db.engine)
+        r = r if r else 'No variables available for requested site.'
+        r2 = r2 if list(r2.firstRecord) else 'No data available for requested site.'
+        return jsonify(variables=r, datebounds=r2.to_json(orient='values',
+            date_format='iso'))
+
+    #only dates supplied = requesting sites
+    if startDate is not None and region is None and variable is None:
+        r = pd.read_sql("select distinct region, site, name, latitude, " +\
+            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "embargo as embargoDaysLeft from site where " +\
+            "firstRecord <='" + startDate + "' and lastRecord >='" +\
+            endDate + "';", db.engine)
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for entire requested timespan.'
+        return jsonify(sites=r.to_dict(orient='records'))
+
+    #site code and dates supplied = requesting variables
+    if startDate is not None and region is not None and variable is None:
+        r = pd.read_sql("select variableList from site where " +\
+            "region='" + region + "' and site='" + site +\
+            "' and firstRecord <='" + startDate + "' and lastRecord >='" +\
+             endDate + "';", db.engine).variableList.tolist()
+        r = r if r else 'No data available for entire requested timespan and site.'
+        return jsonify(variables=r)
+
+    #site code and variable supplied = requesting date range for that variable
+    if startDate is None and region is not None and variable is not None:
+        r = pd.read_sql("select min(DateTime_UTC) as firstRecord, " +\
+            "max(DateTime_UTC) as lastRecord from data where " +\
+            "region='" + region + "' and site='" + site +\
+            "' and variable='" + variable + "';", db.engine)
+        r = r if list(r.firstRecord) else 'No data available for requested site and variable.'
+        return jsonify(datebounds=r.to_json(orient='values', date_format='iso'))
+
+    #variable and dates supplied = requesting sites
+    if startDate is not None and region is None and variable is not None:
+        r = pd.read_sql("select distinct site.region, site.site, site.latitude, " +\
+            "site.longitude, site.usgs as usgsGage, site.addDate, site.firstRecord, " +\
+            "site.lastRecord, site.contact, site.contactEmail, " +\
+            "site.embargo as embargoDaysLeft from data left join site on (data.region=site.region and " +\
+            "data.site=site.site) where " +\
+            "data.DateTime_UTC >='" + startDate + "' and data.DateTime_UTC >='" +\
+             endDate + "' and data.variable='" + variable + "';", db.engine)
+        if list(r.region):
+            r = clean_query_response(r)
+        else:
+            'No data available for variable during requested timespan.'
+        return jsonify(sites=r.to_dict(orient='records'))
 
 @app.route('/api/model_details_download')
 def model_details_download():
