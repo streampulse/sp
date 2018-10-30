@@ -114,6 +114,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATION
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
+app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # was 16 MB
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
 #app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -2711,7 +2712,7 @@ def query_available_data():
     region = request.args.get('region')
     site = request.args.get('site')
 
-    # #error checks (moved most to R)
+    #error checks (more in R code)
     if variable not in variables and variable is not None and variable != 'all':
         return jsonify(error='Unknown variable requested. Available ' +\
             'variables are: ' + ', '.join(variables))
@@ -2736,9 +2737,10 @@ def query_available_data():
             db.engine)
         if list(r.region):
             r = clean_query_response(r)
+            return jsonify(sites=r.to_dict(orient='records'))
         else:
-            'No data available for requested region.'
-        return jsonify(sites=r.to_dict(orient='records'))
+            r = 'No data available for requested region.'
+            return jsonify(error=r)
 
     #only region supplied and region is 'all' = requesting sites
     if region is not None and region == 'all':
@@ -2760,9 +2762,10 @@ def query_available_data():
             "variableList like '%%" + variable + "%%';", db.engine)
         if list(r.region):
             r = clean_query_response(r)
+            return jsonify(sites=r.to_dict(orient='records'))
         else:
-            'No data available for requested variable.'
-        return jsonify(sites=r.to_dict(orient='records'))
+            r = 'No data available for requested variable.'
+            return jsonify(error=r)
 
     #only site code supplied = requesting variables and date bounds
     if region is not None and startDate is None and variable is None:
@@ -2772,10 +2775,16 @@ def query_available_data():
         r2 = pd.read_sql("select firstRecord, lastRecord from site where " +\
             "region='" + region + "' and site='" + site + "';",
             db.engine)
-        r = r if r else 'No variables available for requested site.'
-        r2 = r2 if list(r2.firstRecord) else 'No data available for requested site.'
-        return jsonify(variables=r, datebounds=r2.to_json(orient='values',
-            date_format='iso'))
+        if r and list(r2.firstRecord):
+            return jsonify(variables=r, datebounds=r2.to_json(orient='values',
+                date_format='iso'))
+        else:
+            if not r:
+                r = 'No variables available for requested site.'
+                return jsonify(error=r)
+            if not list(r2.firstRecord):
+                r2 = 'No data available for requested site.'
+                return jsonify(error=r2)
 
     #only dates supplied = requesting sites
     if startDate is not None and region is None and variable is None:
@@ -2786,9 +2795,10 @@ def query_available_data():
             endDate + "';", db.engine)
         if list(r.region):
             r = clean_query_response(r)
+            return jsonify(sites=r.to_dict(orient='records'))
         else:
-            'No data available for entire requested timespan.'
-        return jsonify(sites=r.to_dict(orient='records'))
+            r = 'No data available for entire requested timespan.'
+            return jsonify(error=r)
 
     #site code and dates supplied = requesting variables
     if startDate is not None and region is not None and variable is None:
@@ -2796,8 +2806,11 @@ def query_available_data():
             "region='" + region + "' and site='" + site +\
             "' and firstRecord <='" + startDate + "' and lastRecord >='" +\
              endDate + "';", db.engine).variableList.tolist()
-        r = r if r else 'No data available for entire requested timespan and site.'
-        return jsonify(variables=r)
+        if r:
+            return jsonify(variables=r)
+        else:
+            r = 'No data available for entire requested timespan and site.'
+            return jsonify(error=r)
 
     #site code and variable supplied = requesting date range for that variable
     if startDate is None and region is not None and variable is not None:
@@ -2805,8 +2818,12 @@ def query_available_data():
             "max(DateTime_UTC) as lastRecord from data where " +\
             "region='" + region + "' and site='" + site +\
             "' and variable='" + variable + "';", db.engine)
-        r = r if list(r.firstRecord) else 'No data available for requested site and variable.'
-        return jsonify(datebounds=r.to_json(orient='values', date_format='iso'))
+        if list(r.firstRecord):
+            return jsonify(datebounds=r.to_json(orient='values',
+                date_format='iso'))
+        else:
+            r = 'No data available for requested site and variable.'
+            return jsonify(error=r)
 
     #variable and dates supplied = requesting sites
     if startDate is not None and region is None and variable is not None:
@@ -2819,9 +2836,86 @@ def query_available_data():
              endDate + "' and data.variable='" + variable + "';", db.engine)
         if list(r.region):
             r = clean_query_response(r)
+            return jsonify(sites=r.to_dict(orient='records'))
         else:
-            'No data available for variable during requested timespan.'
-        return jsonify(sites=r.to_dict(orient='records'))
+            r = 'No data available for variable during requested timespan.'
+            return jsonify(error=r)
+
+@app.route('/query_available_results')
+def query_available_results():
+
+    #pull in requests and list of model name components
+    region = request.args.get('region')
+    site = request.args.get('site')
+    year = request.args.get('year')
+
+    resdir = app.config['RESULTS_FOLDER']
+    d = os.listdir(resdir)
+    regsiteyr = [re.match('\w+_(\w+)_(\w+)_(\w+).rds', x).groups() for x in d]
+
+    #error checks (more in R code)
+    regsites = pd.read_sql("select distinct region, site from site;",
+        db.engine)
+    regions = list(set(regsites.region))
+    regions.append(u'all')
+    if region is not None and region not in regions:
+        return jsonify(error='Unknown region requested.')
+    if site is not None:
+        sites_at_region = regsites[regsites.region == region].site.tolist()
+        if site not in sites_at_region:
+            return jsonify(error='No site "' + site + '" found for region "' +\
+                region + '".')
+
+    #only region supplied
+    if region is not None and region != 'all' and site is None and year is None:
+        rsy = [x for x in regsiteyr if x[0] == region]
+        if rsy:
+            return jsonify(available_model_results=rsy)
+        else:
+            r = 'No data available for requested region.'
+            return jsonify(error=r)
+
+    #only region supplied and region is 'all'
+    if region is not None and region == 'all':
+        return jsonify(available_model_results=regsiteyr)
+
+    #only year supplied
+    if region is None and year is not None:
+        rsy = [x for x in regsiteyr if x[2] == year]
+        if rsy:
+            return jsonify(available_model_results=rsy)
+        else:
+            r = 'No data available for requested year.'
+            return jsonify(error=r)
+
+    #region and year supplied
+    if region is not None and site is None and year is not None:
+        rsy = [x for x in regsiteyr if x[2] == year and x[0] == region]
+        if rsy:
+            return jsonify(available_model_results=rsy)
+        else:
+            r = 'No data available for requested region and year.'
+            return jsonify(error=r)
+
+    #region and site supplied
+    if region is not None and site is not None and year is None:
+        rsy = [x for x in regsiteyr if x[1] == site and x[0] == region]
+        if rsy:
+            return jsonify(available_model_results=rsy)
+        else:
+            r = 'No data available for requestedregion and site.'
+            return jsonify(error=r)
+
+@app.route('/retrieve_results')
+def retrieve_results():
+
+    #pull in requests
+    # region = request.args.get('region')
+    # site = request.args.get('site')
+    # year = request.args.get('year')
+    pass
+
+
 
 @app.route('/api/model_details_download')
 def model_details_download():
