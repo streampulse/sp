@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # os.chdir('/home/mike/git/streampulse/server_copy/sp')
 # import timeit
-from flask import Flask, Markup, session, flash, render_template, request, jsonify, url_for, make_response, send_file, redirect, g
+from flask import (Flask, Markup, session, flash, render_template, request,
+    jsonify, url_for, make_response, send_file, redirect, g, send_from_directory)
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from sunrise_sunset import SunriseSunset as suns
@@ -2851,6 +2852,7 @@ def query_available_results():
 
     resdir = app.config['RESULTS_FOLDER']
     d = os.listdir(resdir)
+    d = [x for x in d if x[0:6] == 'modOut']
     regsiteyr = [re.match('\w+_(\w+)_(\w+)_(\w+).rds', x).groups() for x in d]
 
     #error checks (more in R code)
@@ -2903,17 +2905,42 @@ def query_available_results():
         if rsy:
             return jsonify(available_model_results=rsy)
         else:
-            r = 'No data available for requestedregion and site.'
+            r = 'No data available for requested region and site.'
             return jsonify(error=r)
 
-@app.route('/retrieve_results')
-def retrieve_results():
+@app.route('/request_results')
+def request_results():
 
-    #pull in requests
-    # region = request.args.get('region')
-    # site = request.args.get('site')
-    # year = request.args.get('year')
-    pass
+    #pull in requests and list of model result filenames
+    region, site = request.args.get('sitecode').split('_')
+    year = request.args.get('year')
+    requested_model = 'modOut_' + region + '_' + site + '_' + year + '.rds'
+
+    resdir = app.config['RESULTS_FOLDER']
+    mods_avail = os.listdir(resdir)
+    # d = [x for x in d if x[0:6] == 'modOut']
+
+    #error checks (more in R code)
+    regsites = pd.read_sql("select distinct region, site from site;",
+        db.engine)
+    regions = list(set(regsites.region))
+    regions.append(u'all')
+    if region is not None and region not in regions:
+        return jsonify(error='Unknown region requested.')
+    if site is not None:
+        sites_at_region = regsites[regsites.region == region].site.tolist()
+        if site not in sites_at_region:
+            return jsonify(error='No site "' + site + '" found for region "' +\
+                region + '".')
+
+    #region and site supplied
+    if requested_model in mods_avail:
+        return send_from_directory(resdir, requested_model, as_attachment=True)
+        # return send_file(tmp + '/' + zipname, 'application/zip',
+        #     as_attachment=True, attachment_filename=zipname)
+    else:
+        r = 'No model results available for requested region, site, year.'
+        return jsonify(error=r)
 
 
 
