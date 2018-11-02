@@ -876,12 +876,12 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
     except:
         return ['USGS_error:' + usgs]
 
-def authenticate_sites(sites,user=None,token=None):
+def authenticate_sites(sites, user=None, token=None):
 
     ss = []
     for site in sites:
-        r,s = site.split("_")
-        ss.append("(region='"+r+"' and site='"+s+"') ")
+        r, s = site.split("_")
+        ss.append("(region='" + r + "' and site='" + s + "') ")
 
     #get user id (if necessary) and sites they have access to
     qs = "or ".join(ss)
@@ -893,7 +893,7 @@ def authenticate_sites(sites,user=None,token=None):
             db.engine)
         if(len(tt) == 1):
             user = str(tt.id[0])
-        auth_sites = tt.qaqc[0].split(',')
+            auth_sites = tt.qaqc[0].split(',')
     elif user is not None:
         tt = pd.read_sql("select qaqc from user where id='" +\
             str(user) + "';", db.engine)
@@ -2911,14 +2911,25 @@ def query_available_results():
 @app.route('/request_results')
 def request_results():
 
-    #pull in requests and list of model result filenames
-    region, site = request.args.get('sitecode').split('_')
+    #pull in requests
+    regionsite = [request.args.get('sitecode')]
     year = request.args.get('year')
-    requested_model = 'modOut_' + region + '_' + site + '_' + year + '.rds'
+    requested_model = 'modOut_' + regionsite[0] + '_' + year + '.rds'
 
+    #user auth
+    if request.headers.get('Token') is not None:
+        regionsite = authenticate_sites(regionsite, token=request.headers['Token'])
+    else:
+        regionsite = authenticate_sites(regionsite)
+    print regionsite
+
+    if not regionsite:
+        return jsonify(error='This site is private and requires a valid user token.')
+
+    #split region and site; pull in list of model result filenames
+    region, site = regionsite[0].split('_')
     resdir = app.config['RESULTS_FOLDER']
     mods_avail = os.listdir(resdir)
-    # d = [x for x in d if x[0:6] == 'modOut']
 
     #error checks (more in R code)
     regsites = pd.read_sql("select distinct region, site from site;",
@@ -2936,13 +2947,9 @@ def request_results():
     #region and site supplied
     if requested_model in mods_avail:
         return send_from_directory(resdir, requested_model, as_attachment=True)
-        # return send_file(tmp + '/' + zipname, 'application/zip',
-        #     as_attachment=True, attachment_filename=zipname)
     else:
         r = 'No model results available for requested region, site, year.'
         return jsonify(error=r)
-
-
 
 @app.route('/api/model_details_download')
 def model_details_download():
