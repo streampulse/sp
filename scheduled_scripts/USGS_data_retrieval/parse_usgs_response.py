@@ -4,7 +4,6 @@ import simplejson
 
 def parse_usgs_response(x, usgs_raw):
 
-    print x
     ts = usgs_raw['value']['timeSeries'][x]
     usgst = pd.read_json(simplejson.dumps(ts['values'][0]['value']))
     vcode = ts['variable']['variableCode'][0]['value']

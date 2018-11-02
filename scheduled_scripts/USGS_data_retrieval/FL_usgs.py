@@ -3,6 +3,7 @@ import sys
 import MySQLdb
 import pandas as pd
 import requests
+import simplejson
 # wrk_dir = '/home/aaron/sp'
 wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, wrk_dir)
@@ -50,6 +51,60 @@ print r.status_code
 if r.status_code != 200:
     sys.exit('USGS_error')
 usgs_raw = r.json()
+
+
+def parse_usgs_response(x, usgs_raw):
+
+    x = 0
+    ts = usgs_raw['value']['timeSeries'][x]
+    usgst = pd.read_json(simplejson.dumps(ts['values'][0]['value']))
+    vcode = ts['variable']['variableCode'][0]['value']
+
+    # if vcode=='00060': # discharge
+    #     colnm = 'USGSDischarge_m3s'
+    #     if usgst.empty: #return empty df in dict
+    #         out = {ts['sourceInfo']['siteCode'][0]['value']:
+    #             pd.DataFrame({'DateTime_UTC':[],
+    #             colnm:[]}).set_index(["DateTime_UTC"])}
+    #         return out
+    #     else:
+    #         usgst.value = usgst.value / 35.3147
+    # elif vcode == '00065': #level
+    #     colnm = 'USGSLevel_m'
+    #     if usgst.empty:
+    #         out = {ts['sourceInfo']['siteCode'][0]['value']:
+    #             pd.DataFrame({'DateTime_UTC':[],
+    #             colnm:[]}).set_index(["DateTime_UTC"])}
+    #         return out
+    #     else:
+    #         usgst.value = usgst.value / 3.28084
+    elif vcode == '00010': #water tempSpecCond_mScm
+        colnm = 'WaterTemp_C'
+        if usgst.empty:
+            out = {ts['sourceInfo']['siteCode'][0]['value']:
+                pd.DataFrame({'DateTime_UTC':[],
+                colnm:[]}).set_index(["DateTime_UTC"])}
+            sys.exit('watertemp df is empty')
+        else:
+            usgst.value = usgst.value / 3.28084
+    elif vcode == '00095': #spec cond
+        colnm = 'SpecCond_mScm'
+        if usgst.empty:
+            out = {ts['sourceInfo']['siteCode'][0]['value']:
+                pd.DataFrame({'DateTime_UTC':[],
+                colnm:[]}).set_index(["DateTime_UTC"])}
+            return out
+        else:
+            usgst.value = usgst.value / 3.28084
+    else:
+        pass
+
+    # usgst['site'] = ts['sourceInfo']['siteCode'][0]['value'] # site code
+    out = {ts['sourceInfo']['siteCode'][0]['value']:usgst[['dateTime',
+        'value']].rename(columns={'dateTime':'DateTime_UTC',
+        'value':colnm}).set_index(["DateTime_UTC"])}
+    return out
+
 
 xx = map(lambda x: parse_usgs_response(x, usgs_raw=usgs_raw),
     range(len(usgs_raw['value']['timeSeries'])))
