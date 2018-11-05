@@ -8,27 +8,21 @@ def parse_usgs_response(x, usgs_raw):
     usgst = pd.read_json(simplejson.dumps(ts['values'][0]['value']))
     vcode = ts['variable']['variableCode'][0]['value']
 
-    if vcode=='00060': # discharge
-        colnm = 'USGSDischarge_m3s'
-        if usgst.empty: #return empty df in dict
-            out = {ts['sourceInfo']['siteCode'][0]['value']:
-                pd.DataFrame({'DateTime_UTC':[],
-                colnm:[]}).set_index(["DateTime_UTC"])}
-            return out
-        else:
-            usgst.value = usgst.value / 35.3147
-    else:
-        colnm = 'USGSLevel_m'
+    if vcode == '00010': #water tempSpecCond_mScm
+        colnm = 'WaterTemp_C'
         if usgst.empty:
-            out = {ts['sourceInfo']['siteCode'][0]['value']:
-                pd.DataFrame({'DateTime_UTC':[],
-                colnm:[]}).set_index(["DateTime_UTC"])}
-            return out
-        else:
-            usgst.value = usgst.value / 3.28084
+            logging.debug('watertemp df is empty')
+    elif vcode == '00095': #spec cond
+        colnm = 'SpecCond_mScm'
+        if usgst.empty:
+            logging.debug('spcond df is empty')
+    else:
+        logging.debug('vcode other than watertemp and spcond')
 
-    # usgst['site'] = ts['sourceInfo']['siteCode'][0]['value'] # site code
-    out = {ts['sourceInfo']['siteCode'][0]['value']:usgst[['dateTime',
-        'value']].rename(columns={'dateTime':'DateTime_UTC',
-        'value':colnm}).set_index(["DateTime_UTC"])}
+    site_id = ts['sourceInfo']['siteCode'][0]['value']
+    variable_df = usgst[['dateTime',
+        'value']].rename(columns={'dateTime': 'DateTime_UTC',
+        'value': colnm}).set_index(["DateTime_UTC"])
+    out = {site_id: variable_df}
+
     return out
