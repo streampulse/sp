@@ -1,72 +1,14 @@
 import os
-import sys
-import pandas as pd
-import requests
-import simplejson
-import logging
-import copy
-from datetime import datetime, timedelta
-import sqlalchemy as sa
-from sqlalchemy.ext.declarative import declarative_base
 
-#import credentials from streampulse flask app config file, helper functions
-# app_dir = '/home/aaron/sp'
+#see usgs_sync_setup
+
+#import setup and helper funcs
 app_dir = '/home/mike/git/streampulse/server_copy/sp'
-os.chdir(app_dir)
-import config as cfg
 wrk_dir = app_dir + '/scheduled_scripts/USGS_data_retrieval'
 os.chdir(wrk_dir)
-from helper_funcs import parse_usgs_response, chunker_ingester
+from usgs_sync_setup import *
 
-#configure database connection
-pw = cfg.MYSQL_PW
-db = sa.create_engine('mysql://root:{0}@localhost/sp'.format(pw))
-session = sa.orm.Session(bind=db.engine) #for bulk insertion
-Base = declarative_base() #for defining ORM
-Base.metadata.bind = db #necessary for some reason
-class Data(Base):
-
-    __tablename__ = 'data'
-
-    id = sa.Column(sa.Integer, primary_key=True)
-    region = sa.Column(sa.String(10))
-    site = sa.Column(sa.String(50))
-    DateTime_UTC = sa.Column(sa.DateTime)
-    variable = sa.Column(sa.String(50))
-    value = sa.Column(sa.Float)
-    flag = sa.Column(sa.Integer)
-    upload_id = sa.Column(sa.Integer)
-
-    def __init__(self, region, site, DateTime_UTC, variable, value, flag, upid):
-        self.region = region
-        self.site = site
-        self.DateTime_UTC = DateTime_UTC
-        self.variable = variable
-        self.value = value
-        self.flag = flag
-        self.upload_id = upid
-
-    def __repr__(self):
-        return '<Data %r, %r, %r, %r, %r>' % (self.region, self.site,
-        self.DateTime_UTC, self.variable, self.upload_id)
-Base.metadata.create_all()
-
-#configure logging
-logging.basicConfig(filename='usgs_sync.log', level=logging.WARNING,
-    format='%(asctime)s - %(levelname)s - %(message)s')
-
-#define sites and corresponding variables to be synced here. explanation below:
-#discharge, gage height, water temp, spec cond, nitrate+nitrite
-#'00060', '00065', '00010', '00095', '99133'
-regionsite = ['FL_ICHE2700',
-    'FL_SF2500',
-    'FL_SF2800',
-    'FL_WS1500']
-regionsite_update = copy.copy(regionsite)
-variables = [['00010', '00095', '99133'],
-    ['00010', '00095'],
-    ['00010', '00095', '99133'],
-    ['00010', '00095']]
+logging.warning('\nstarting script')
 
 #get site data from database
 sitedf = pd.read_sql('select id, region, site, name, latitude, ' +\
@@ -76,14 +18,15 @@ sitedf = pd.read_sql('select id, region, site, name, latitude, ' +\
 #assemble dict of gageid, name, vars and data coverage for each site
 sitedf['regionsite'] = sitedf["region"].map(str) + "_" + sitedf["site"]
 gageid = sitedf.loc[sitedf.regionsite.isin(regionsite)].usgs.tolist()
-firstrec = sitedf.loc[sitedf.regionsite.isin(regionsite)].firstRecord.tolist()
 firstrec = sitedf.loc[sitedf.regionsite.isin(regionsite)].firstRecord.dt.\
     strftime('%Y-%m-%d').tolist()
 lastrec = sitedf.loc[sitedf.regionsite.isin(regionsite)].lastRecord.dt.\
     strftime('%Y-%m-%d').tolist()
 sitedict = {}
 for i in xrange(len(regionsite)):
-    sitedict[gageid[i]] = (regionsite[i], variables[i],
+    df_ind = [j for j in xrange(len(sitedf)) if sitedf.usgs[j] == gageid[i]][0]
+    rs_ind = [j for j in xrange(len(regionsite)) if regionsite[j] == sitedf.regionsite[df_ind]][0]
+    sitedict[gageid[i]] = (regionsite[rs_ind], variables[rs_ind],
         firstrec[i], lastrec[i])
 
 #bring in records of which dates have already been collected for each site.
@@ -97,6 +40,7 @@ except IOError:
 
 #assemble list of dataframes, one for each site-variable combo
 gage_df_list = []
+# g=gageid[5]
 for g in gageid:
 
     site_name = sitedict[g][0]
@@ -107,7 +51,7 @@ for g in gageid:
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
 
     #adjust start and end dates for data pull so we dont get redundant records
-    if coverage_file_found:
+    if coverage_file_found and site_name in coverage.site.tolist():
         coverage_start, coverage_end = coverage.loc[coverage.site == site_name,
             ['coverage_start', 'coverage_end']].squeeze().tolist()
         coverage_start = datetime.strptime(coverage_start, '%Y-%m-%d')
@@ -128,6 +72,7 @@ for g in gageid:
         else:
             logging.warning('nothing to do for ' + g)
             regionsite_update = [x for x in regionsite_update if x != site_name]
+            continue
     else:
         logging.warning('retrieving full span of records for ' + g)
 
@@ -141,9 +86,14 @@ for g in gageid:
         logging.error('USGS server error: ' + g)
     usgs_raw = r.json()
 
-
-    xx = map(lambda x: parse_usgs_response(x, usgs_raw=usgs_raw, g=g),
-        range(len(usgs_raw['value']['timeSeries'])))
+    xx = []
+    for i in xrange(len(usgs_raw['value']['timeSeries'])):
+        try:
+            xx.append(parse_usgs_response(i, usgs_raw=usgs_raw, g=g))
+        except ValueError:
+            continue
+    # xx = map(lambda x: parse_usgs_response(x, usgs_raw=usgs_raw, g=g),
+    #     range(len(usgs_raw['value']['timeSeries'])))
 
     #merge dfs for each variable into a single df and then append to list
     gage_df = [k.values()[0] for k in xx if k.keys()[0] == g]
@@ -154,36 +104,43 @@ for g in gageid:
     gage_df['site'] = site_name
     gage_df_list.append(gage_df.reset_index())
 
-#combine list of dfs into one df; final organizing, supplementing, formatting
-out = pd.concat(gage_df_list)
-out = out.set_index(['DateTime_UTC', 'site'])
-out.columns.name = 'variable'
-out = out.stack()
-out.name = "value"
-out = out.reset_index()
-out[['region','site']] = out['site'].str.split("_", expand=True)
-out = out[['region','site','DateTime_UTC','variable','value']]
-out['flag'] = None
-out['upload_id'] = -901
+if gage_df_list:
 
-#write to database in chunks of 100,000 records each
-chunker_ingester(out)
-session.commit()
+    #combine list of dfs into one df; final organizing, supplementing, formatting
+    out = pd.concat(gage_df_list)
+    out = out.set_index(['DateTime_UTC', 'site'])
+    out.columns.name = 'variable'
+    out = out.stack()
+    out.name = "value"
+    out = out.reset_index()
+    out[['region','site']] = out['site'].str.split('_', expand=True)
+    out = out[['region','site','DateTime_UTC','variable','value']]
+    out['flag'] = None
+    out['upload_id'] = -901
 
-#update variableList and coverage columns in site table
-for u in regionsite_update:
-    with open('../../site_update_stored_procedure.sql', 'r') as f:
-        t = f.read()
-    t = t.replace('RR', u.split('_')[0])
-    t = t.replace('SS', u.split('_')[1])
+    #write to database in chunks of 100,000 records each
+    chunker_ingester(out)
+    # session.commit()
 
-    session.execute(t)
-    session.execute('CALL update_site_table();')
+    #update variableList and coverage columns in site table
+    for u in regionsite_update:
+        with open('../../site_update_stored_procedure.sql', 'r') as f:
+            t = f.read()
+        t = t.replace('RR', u.split('_')[0])
+        t = t.replace('SS', u.split('_')[1])
 
-session.close()
+        session.execute(t)
+        session.execute('CALL update_site_table();')
+        session.commit()
 
-#store record of which time ranges have been pulled from usgs for each site
-coverage_tracking = pd.DataFrame({'site': regionsite,
-    'coverage_start': firstrec, 'coverage_end': lastrec})
-coverage_tracking = coverage_tracking[['site', 'coverage_start', 'coverage_end']]
-coverage_tracking.to_csv('coverage_tracking.csv', index=False)
+    session.close()
+    sitedict
+    #store record of which time ranges have been pulled from usgs for each site
+    coverage_tracking = pd.DataFrame({'site': [x[0] for x in sitedict.values()],
+        'coverage_start': [x[2] for x in sitedict.values()],
+        'coverage_end': [x[3] for x in sitedict.values()]})
+    coverage_tracking = coverage_tracking[['site', 'coverage_start', 'coverage_end']]
+    coverage_tracking.to_csv('coverage_tracking.csv', index=False)
+
+else:
+    logging.warning('Nothing to do. done.')
