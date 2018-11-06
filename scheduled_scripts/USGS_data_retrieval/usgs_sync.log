@@ -5,3 +5,46 @@
 2018-11-05 09:29:48,451 - DEBUG - No gage ids
 2018-11-05 09:30:35,355 - ERROR - USGS server error?
 2018-11-05 12:06:49,050 - ERROR - vcode other than watertemp and spcond
+2018-11-05 17:11:01,527 - ERROR - USGS server error: 02322800
+2018-11-05 17:14:04,874 - WARNING - No coverage tracking file found
+2018-11-05 18:25:07,503 - INFO - nothing to do for 02322500
+2018-11-05 18:25:15,983 - INFO - nothing to do for 02322500
+2018-11-05 18:30:50,895 - INFO - nothing to do for 02322500
+2018-11-05 18:32:34,075 - INFO - nothing to do for 02322500
+2018-11-05 18:32:34,107 - INFO - Starting new HTTPS connection (1): nwis.waterservices.usgs.gov
+2018-11-05 18:32:46,266 - INFO - nothing to do for 02321500
+2018-11-05 18:32:46,270 - INFO - Starting new HTTPS connection (1): nwis.waterservices.usgs.gov
+2018-11-05 18:32:58,201 - INFO - nothing to do for 02322700
+2018-11-05 18:32:58,203 - INFO - Starting new HTTPS connection (1): nwis.waterservices.usgs.gov
+2018-11-05 18:33:08,751 - INFO - nothing to do for 02322800
+2018-11-05 18:33:08,752 - INFO - Starting new HTTPS connection (1): nwis.waterservices.usgs.gov
+2018-11-05 18:34:11,321 - WARNING - No coverage tracking file found
+2018-11-05 18:53:06,038 - WARNING - No coverage tracking file found
+2018-11-05 19:29:07,104 - WARNING - No coverage tracking file found
+2018-11-05 21:18:50,608 - WARNING - nothing to do for 02322500
+2018-11-05 21:42:29,810 - WARNING - nothing to do for 02322500
+2018-11-05 21:42:41,842 - WARNING - nothing to do for 02321500
+2018-11-05 21:42:53,333 - WARNING - nothing to do for 02322700
+2018-11-05 21:44:46,089 - WARNING - nothing to do for 02322500
+2018-11-05 21:44:58,132 - WARNING - nothing to do for 02321500
+2018-11-05 21:45:09,509 - WARNING - nothing to do for 02322700
+2018-11-05 21:46:38,350 - WARNING - nothing to do for 02322500
+2018-11-05 21:46:50,071 - WARNING - nothing to do for 02321500
+2018-11-05 21:47:01,180 - WARNING - nothing to do for 02322700
+2018-11-05 22:05:20,646 - WARNING - nothing to do for 02322500
+2018-11-05 22:05:33,216 - WARNING - nothing to do for 02321500
+2018-11-05 22:05:47,280 - WARNING - nothing to do for 02322700
+2018-11-06 08:33:45,426 - WARNING - nothing to do for 02322500
+2018-11-06 08:34:45,509 - WARNING - nothing to do for 02322500
+2018-11-06 08:34:53,934 - ERROR - test: 02322500
+2018-11-06 08:34:56,017 - ERROR - test: 02322500
+2018-11-06 08:34:57,827 - WARNING - nothing to do for 02321500
+2018-11-06 08:35:07,116 - ERROR - test: 02321500
+2018-11-06 08:35:08,982 - ERROR - test: 02321500
+2018-11-06 08:35:10,707 - WARNING - nothing to do for 02322700
+2018-11-06 08:35:19,157 - ERROR - test: 02322700
+2018-11-06 08:35:20,555 - ERROR - test: 02322700
+2018-11-06 08:35:22,156 - ERROR - test: 02322700
+2018-11-06 08:35:23,393 - WARNING - nothing to do for 02322800
+2018-11-06 08:35:29,658 - ERROR - test: 02322800
+2018-11-06 08:35:31,046 - ERROR - test: 02322800

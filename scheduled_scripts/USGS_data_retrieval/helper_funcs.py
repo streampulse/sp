@@ -3,7 +3,8 @@ import pandas as pd
 import simplejson
 import logging
 
-def parse_usgs_response(i, usgs_raw):
+def parse_usgs_response(i, usgs_raw, g):
+    logging.error('test: ' + g)
 
     ts = usgs_raw['value']['timeSeries'][i]
     usgst = pd.read_json(simplejson.dumps(ts['values'][0]['value']))
