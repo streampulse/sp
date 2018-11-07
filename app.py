@@ -1453,7 +1453,7 @@ def grdo_filedrop():
                 if file:
                     fn = file.filename
                     fn_secure = secure_filename(fn)
-                    fpath = os.path.join('/home/joanna/1_new/meta/', fn_secure)
+                    fpath = os.path.join('/home/joanna/1_new/data/', fn_secure)
                     file.save(fpath)
 
         except:
@@ -1484,11 +1484,29 @@ def grdo_filedrop():
             flash('Uploaded ' + str(mlen) + ' metadata file(s) and ' +\
             str(dlen) + ' data file(s).', 'alert-success')
 
-        return render_template('grdo_filedrop.html')
+        meta = pd.read_sql("select metaFiles from grdo", db.engine).metaFiles.tolist()
+        listoflists = [x.split(', ') for x in meta]
+        metafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
+
+        data = pd.read_sql("select dataFiles from grdo", db.engine).dataFiles.tolist()
+        listoflists = [x.split(', ') for x in data]
+        datafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
+
+        return render_template('grdo_filedrop.html', nmeta=len(metafiles),
+            ndata=len(datafiles))
 
     if request.method == 'GET': #when first visiting the grdo upload page
 
-        return render_template('grdo_filedrop.html')
+        meta = pd.read_sql("select metaFiles from grdo", db.engine).metaFiles.tolist()
+        listoflists = [x.split(', ') for x in meta]
+        metafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
+
+        data = pd.read_sql("select dataFiles from grdo", db.engine).dataFiles.tolist()
+        listoflists = [x.split(', ') for x in data]
+        datafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
+
+        return render_template('grdo_filedrop.html', nmeta=len(metafiles),
+            ndata=len(datafiles))
 
 @app.route("/upload_cancel",methods=["POST"])
 def cancelcolumns(): #only used when cancelling series_upload
@@ -1970,7 +1988,7 @@ def download():
 
     return render_template('download.html', sites=sitedict)
 
-@app.route('/_getstats',methods=['POST'])
+@app.route('/_getstats', methods=['POST'])
 def getstats():
     sitenm = request.json['site']
     xx = pd.read_sql("select * from data where concat(region,'_',site) in ('"+"', '".join(sitenm)+"') and flag is NULL", db.engine)
@@ -1981,7 +1999,7 @@ def getstats():
     variables = list(set(xx.variable))#xx['variable'].tolist()
     return jsonify(result="Success", startDate=startDate, endDate=endDate, initDate=initDate, variables=variables, site=sitenm)
 
-@app.route('/_getcsv',methods=["POST"])
+@app.route('/_getcsv', methods=["POST"])
 def getcsv():
 
     #retrieve form specifications
@@ -2951,6 +2969,18 @@ def request_results():
     else:
         r = 'No model results available for requested region, site, year.'
         return jsonify(error=r)
+
+@app.route('/_grdo_metatemplate_download', methods=['POST'])
+def grdo_metatemplate_download():
+
+    return send_from_directory('static/grdo', 'GRDO_MetaData_Template.xlsx',
+        as_attachment=True)
+
+@app.route('/_grdo_datatemplate_download', methods=['POST'])
+def grdo_datatemplate_download():
+
+    return send_from_directory('static/grdo', 'GRDO_TimeseriesData_Template.xlsx',
+        as_attachment=True)
 
 @app.route('/request_predictions')
 def request_predictions():

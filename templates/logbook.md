@@ -1,15 +1,18 @@
 #Mike's Logbook
 
+###wed20181107
+ + incorporated Global River Dissolved Oxygen team feedback into the GRDO upload app
 ###tue20181106
  + usgs level and discharge also now autosynced for FL sites
+ + updated R package to v 0.0.0.9019 - request_results now acquires model predictions (i.e. output of streamMetabolizer::predict_metab) in addition to model results (i.e. abridged output of streamMetabolizer::metab)
 ###mon20181105
  + usgs watertemp, spcond, nitrate now autosynced for FL sites
 ###mon20181029
- + can now download available model outputs with r package
+ + can now download available model outputs with R package
 ###wed20181024
- + can now query avaiable model outputs with r package
+ + can now query avaiable model outputs with R package
 ###tue20181023
- + can now query available data with r package
+ + can now query available data with R package
 ###mon20181022
  + fixed oob error in usgs gage data pulls; added informative error messages
  + StreamPULSE v. 0.0.0.9014: can now use pool_K600='none' in fit_metabolism

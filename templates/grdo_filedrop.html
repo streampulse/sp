@@ -9,19 +9,60 @@
 </div>
 
 <div class="row">
-  <div class="col-md-6 col-md-offset-3">
+  <div class="col-md-8 col-md-offset-2">
     <h2>Global River Dissolved Oxygen Database</h2>
-    <p class='lead'>
-      Welcome! Thank you for contributing to the global river dissolved oxygen database.
+    <hr>
+    <p class='lead' style='color:#008080'>
+      Welcome and thank you for contributing to the Global River Dissolved Oxygen (GRDO) database!
+      We are a group of river ecologists and biogeochemists interested in the spatial and temporal
+      extent of hypoxia in rivers around the globe.
     </p>
-    <p style='color:gray'>
-      On this site you can easily upload .csv or Excel files
-      containing data, as well as any file that contains information about your
-      sites (i.e. metadata).
-    </p>
-
+    <div class='text-center'>
+      <p>
+        The GRDO community has contributed
+        <span class='h1' style='color:#008080'>{{ndata}}</span>
+        time series data files and
+        <span class='h1' style='color:#008080'>{{nmeta}}</span>
+        metadata files so far!
+      </p>
+    </div>
     <br>
-    <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
+    <!-- <button data-toggle="collapse" class="btn btn-default" data-target="#whatisGRDO">
+      Toggle more information
+    </button>
+    <div id="whatisGRDO" class="collapse" style='background-color: #F8F8FF'> -->
+    <div style='background-color: #F8F8FF'>
+      <br>
+      <p>
+        This project got started in September 2018 at the
+        “Respiration Regimes in River Networks: A cross-biome perspective”
+        workshop funded by the Swiss National Foundation and the National Science Foundation Macrosystems program.
+      </p>
+      <p>
+        By contributing to this database, you are not only helping our current efforts in investigating global
+        riverine hypoxia, but also contributing to a larger world-wide database of dissolved oxygen data that
+        is publicly available (following an embargo period) called <a href=http://streampulse.org/>StreamPULSE</a>.
+        Any data uploaded to this portal can be set to have a specified embargo period before it is publicly
+        available on StreamPULSE. We have created a separate portal to make the upload process easier for you
+        (no username required, simpler data requirements).
+      </p>
+      <p>
+        Other project members include (in alphabetical order): Alice Carter (Duke University),
+        Matthew Cohen (University of Florida), Christopher Dutton (Yale University),
+        Lluís Gómez-Gener (Umeå University), Nancy Grimm (Arizona State University),
+        Jud Harvey (US Geological Survey), Ashley Helton (University of Connecticut),
+        Lauren Koenig (University of Connecticut), Francine Mejia (US Geological Survey)
+      </p>
+      <!-- <p style='color:gray'>
+        On this site you can easily upload .csv or Excel files
+        containing data, as well as any file that contains information about your
+        sites (i.e. metadata).
+      </p> -->
+      <br>
+    </div>
+    <br><br>
+
+    <!-- <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
       Click here for data requirements
     </button>
 
@@ -79,14 +120,51 @@
         Hide requirements
       </button>
       <hr>
-    </div>
+    </div> -->
   </div>
 </div>
 
+<!-- GRDO Metadata Template - template for site-specific information for each time series
+GRDO Time Series Template - template for each separate time series data -->
 
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
+
+    <p class='lead'>
+      <strong>Step 1:</strong> Please download and copy and paste your data into
+      the following two templates:
+    </p>
+
+    <div class='row text-center'>
+      <div class='col-md-6'>
+        <form id='metadnld' action="/_grdo_metatemplate_download" method="POST"
+          class="form-horizontal">
+          <div class="form-group">
+            <p>Metadata template:</p>
+            <button id="metatemplate" type="submit" value=Download class="btn btn-primary">
+              Download
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class='col-md-6'>
+        <form id='datadnld' action="/_grdo_datatemplate_download" method="POST"
+          class="form-horizontal">
+          <div class="form-group">
+            <p>Time series data template:</p>
+            <button id="seriestemplate" type="submit" value=Download class="btn btn-primary">
+              Download
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <hr>
+    <p class='lead'>
+      <strong>Step 2:</strong> Once your template files are filled in, upload
+      them using the buttons below.
+    </p>
     <form action="" method=post enctype=multipart/form-data>
       <div class='row'>
         <div class='col-md-6'>
@@ -98,14 +176,20 @@
         </div>
         <div class='col-md-6'>
           <div class="form-group">
-            Select data file(s) here:
+            Select time series data file(s) here:
             <input type="file" class="form-control-file" name=dataf multiple
             style='color:gray'>
           </div>
         </div>
       </div>
       <br>
-      <p>Please provide contact information for this dataset (required).</p>
+
+      <hr>
+      <p class='lead'>
+        <strong>Step 3:</strong> Please provide additional information and preferences.
+        Then click the "Upload" button at the bottom.
+      </p>
+      <p>Contact information for this dataset (required)</p>
       <div class='row'>
         <div class='col-md-6'>
           <p style='color:gray'>Contact name:</p>
@@ -120,9 +204,9 @@
       </div>
       <br><br>
       <p>
-        We will not make your data publicly available through
-        <a href=data.streampulse.org>StreamPULSE</a> for the number of years
-        you specify below.
+        We will not make your data publicly available through the
+        <a href=https://data.streampulse.org>StreamPULSE data portal</a>
+        for the number of years you specify below.
       </p>
       <select id="embargo" name="embargo">
         <option value="0">No embargo</option>
@@ -133,7 +217,10 @@
         <option value="5">5 years</option>
       </select>
       <br><br><br>
-      <p>Additional notes or comments:</p>
+      <p>
+        Additional notes or comments, including DOIs for any published or
+        forthcoming manuscripts related to these data:
+      </p>
       <textarea class="form-control" rows="5" name="additional" id='additional'
         maxlength="5000"></textarea>
       <p id="charCounter"></p>
@@ -151,7 +238,8 @@
         <p style='color:gray'>
           Please contact <a href="mailto:joanna.blaszczak@flbs.umt.edu">
             Joanna Blaszczak
-          </a> with any questions.
+          </a> with any questions.<br>
+          We welcome inquiries into future collaborative work with the database!
         </p>
       </div>
     </div>
