@@ -1442,19 +1442,28 @@ def grdo_filedrop():
 
         #upload
         try:
+            timestamp = datetime.now().strftime('%m-%d-%Y_%H%M%S%f')
+            mfnms_secure = []
             for file in mfiles:
                 if file:
                     fn = file.filename
-                    fn_secure = secure_filename(fn)
+                    if fn == 'NA':
+                        fn = 'na'
+                    fn_secure = secure_filename(fn) + '_' + timestamp
                     fpath = os.path.join('/home/joanna/1_new/meta/', fn_secure)
                     file.save(fpath)
+                    mfnms_secure.append(fn_secure)
 
+            dfnms_secure = []
             for file in dfiles:
                 if file:
                     fn = file.filename
-                    fn_secure = secure_filename(fn)
+                    if fn == 'NA':
+                        fn = 'na'
+                    fn_secure = secure_filename(fn) + '_' + timestamp
                     fpath = os.path.join('/home/joanna/1_new/data/', fn_secure)
                     file.save(fpath)
+                    dfnms_secure.append(fn_secure)
 
         except:
             msg = Markup('There has been an error. Please notify site maintainer <a href=' +\
@@ -1468,8 +1477,8 @@ def grdo_filedrop():
         contactemail = request.form.get('contactemail')
         embargo = request.form.get('embargo')
         addtl = request.form.get('additional')
-        mfile_list = ', '.join(mfnms) if mfiles[0] else 'NA'
-        dfile_list = ', '.join(dfnms) if dfiles[0] else 'NA'
+        mfile_list = ', '.join(mfnms_secure) if mfiles[0] else 'NA'
+        dfile_list = ', '.join(dfnms_secure) if dfiles[0] else 'NA'
 
         db_entry = Grdo(name=contactname, email=contactemail,
             addDate=datetime.utcnow(), embargo=embargo, notes=addtl,
