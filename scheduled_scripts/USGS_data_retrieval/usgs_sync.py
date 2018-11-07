@@ -143,5 +143,7 @@ if gage_df_list:
     coverage_tracking = coverage_tracking[['site', 'coverage_start', 'coverage_end']]
     coverage_tracking.to_csv('coverage_tracking.csv', index=False)
 
+    logging.warning('done.')
+
 else:
     logging.warning('Nothing to do. done.')

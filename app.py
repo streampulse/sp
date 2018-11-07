@@ -2912,6 +2912,7 @@ def query_available_results():
 def request_results():
 
     #pull in requests
+    # regionsite=['NC_Eno']; year='2017'
     regionsite = [request.args.get('sitecode')]
     year = request.args.get('year')
     requested_model = 'modOut_' + regionsite[0] + '_' + year + '.rds'
@@ -2949,6 +2950,49 @@ def request_results():
         return send_from_directory(resdir, requested_model, as_attachment=True)
     else:
         r = 'No model results available for requested region, site, year.'
+        return jsonify(error=r)
+
+@app.route('/request_predictions')
+def request_predictions():
+
+    #pull in requests
+    regionsite = [request.args.get('sitecode')]
+    year = request.args.get('year')
+    requested_model = 'predictions_' + regionsite[0] + '_' + year + '.rds'
+
+    #user auth
+    if request.headers.get('Token') is not None:
+        regionsite = authenticate_sites(regionsite, token=request.headers['Token'])
+    else:
+        regionsite = authenticate_sites(regionsite)
+    print regionsite
+
+    if not regionsite:
+        return jsonify(error='This site is private and requires a valid user token.')
+
+    #split region and site; pull in list of model result filenames
+    region, site = regionsite[0].split('_')
+    resdir = app.config['RESULTS_FOLDER']
+    mods_avail = os.listdir(resdir)
+
+    #error checks (more in R code)
+    regsites = pd.read_sql("select distinct region, site from site;",
+        db.engine)
+    regions = list(set(regsites.region))
+    regions.append(u'all')
+    if region is not None and region not in regions:
+        return jsonify(error='Unknown region requested.')
+    if site is not None:
+        sites_at_region = regsites[regsites.region == region].site.tolist()
+        if site not in sites_at_region:
+            return jsonify(error='No site "' + site + '" found for region "' +\
+                region + '".')
+
+    #region and site supplied
+    if requested_model in mods_avail:
+        return send_from_directory(resdir, requested_model, as_attachment=True)
+    else:
+        r = 'No model predictions available for requested region, site, year.'
         return jsonify(error=r)
 
 @app.route('/api/model_details_download')
