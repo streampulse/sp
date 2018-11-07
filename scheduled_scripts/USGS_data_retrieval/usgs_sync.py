@@ -135,7 +135,7 @@ if gage_df_list:
         session.commit()
 
     session.close()
-    sitedict
+
     #store record of which time ranges have been pulled from usgs for each site
     coverage_tracking = pd.DataFrame({'site': [x[0] for x in sitedict.values()],
         'coverage_start': [x[2] for x in sitedict.values()],
