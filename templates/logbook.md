@@ -1,5 +1,15 @@
 #Mike's Logbook
 
+###tue20181106
+ + usgs level and discharge also now autosynced for FL sites
+###mon20181105
+ + usgs watertemp, spcond, nitrate now autosynced for FL sites
+###mon20181029
+ + can now download available model outputs with r package
+###wed20181024
+ + can now query avaiable model outputs with r package
+###tue20181023
+ + can now query available data with r package
 ###mon20181022
  + fixed oob error in usgs gage data pulls; added informative error messages
  + StreamPULSE v. 0.0.0.9014: can now use pool_K600='none' in fit_metabolism
