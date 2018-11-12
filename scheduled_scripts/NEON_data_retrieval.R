@@ -67,8 +67,10 @@ dbClearResult(res)
 known_sites = resout$site
 
 # p=i=j=1;k=3
+# p=1;i=1;j=1;k=5
 
 for(p in 1:length(products)){
+    # print(paste('p=',p))
 
     if(prods_abb[p] == 'O2GasTransferVelocity'){
         write('Skipping K for now.',
@@ -103,10 +105,10 @@ for(p in 1:length(products)){
 
     #determine which are new and worth grabbing (represented in DO dataset)
     sets_to_grab = vector()
-    for(i in 1:nrow(avail_sets)){
-        avail_sitemo = paste(avail_sets[i,2], avail_sets[i,3])
+    for(ii in 1:nrow(avail_sets)){
+        avail_sitemo = paste(avail_sets[ii,2], avail_sets[ii,3])
         if(! avail_sitemo %in% retrieved_sets){
-            sets_to_grab = append(sets_to_grab, i)
+            sets_to_grab = append(sets_to_grab, ii)
         }
     }
     sets_to_grab = as.data.frame(avail_sets[sets_to_grab,],
@@ -132,6 +134,7 @@ for(p in 1:length(products)){
         '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
 
     for(i in 1:nrow(sets_to_grab)){
+        # print(paste('i=',i))
 
         url = sets_to_grab[i,1]
         site = sets_to_grab[i,2]
@@ -227,6 +230,7 @@ for(p in 1:length(products)){
         }
 
         for(j in 1:length(data_inds)){
+            # print(paste('j=',j))
 
             #add appropriate suffix for upstream/downstream sites
             if(prods_abb[p] %in% c('Nitrate', 'Discharge')){
@@ -263,6 +267,7 @@ for(p in 1:length(products)){
             }
 
             for(k in 1:length(varlist)){
+                # print(paste('k=',k))
 
                 current_var = varlist[k]
                 current_var_u = varname_mappings[[varlist[k]]]
@@ -324,7 +329,9 @@ for(p in 1:length(products)){
                 }
 
                 #reformat colnames, etc.
-                if('startDate' %in% colnames(na_filt)){
+                if('startDateTime' %in% colnames(na_filt)){
+                    NULL #do nothing
+                } else if('startDate' %in% colnames(na_filt)){
                     colnames(na_filt)[which(colnames(na_filt) == 'startDate')] =
                         'startDateTime'
                 } else if('endDate' %in% colnames(na_filt)){
@@ -347,7 +354,13 @@ for(p in 1:length(products)){
                 if(any(na_filt$flag == 1)){
 
                     #locate blocks of flagged data
-                    r = rle2(na_filt$flag, indices=TRUE, return.list=TRUE)
+                    # r = rle2(na_filt$flag, indices=TRUE, return.list=TRUE)
+                    r = rle(na_filt$flag)
+                    ends = cumsum(r$lengths)
+                    r = list(values=r$values,
+                        starts=c(1, ends[-length(ends)] + 1),
+                        stops=ends, lengths=r$lengths)
+
                     rlog = as.logical(r$values)
                     flag_run_starts = na_filt$startDateTime[r$starts[rlog]]
                     flag_run_ends = na_filt$startDateTime[r$stops[rlog]]
