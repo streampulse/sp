@@ -252,7 +252,7 @@ class Site(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     region = db.Column(db.String(10))
     site = db.Column(db.String(50))
-    name = db.Column(db.String(50))
+    name = db.Column(db.String(100))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     usgs = db.Column(db.String(20))
