@@ -930,7 +930,7 @@ def confirm_token(token, expiration=3600*24): # expires in one day
 #     mail.send_message(subject, recipients=[to], html=template)
 
 ########## PAGES
-@app.route('/register' , methods=['GET','POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'GET':
         return render_template('register.html')
@@ -953,40 +953,130 @@ def register():
 
         return redirect(url_for('register'))
 
-@app.route('/_reset_sp_pass', methods=['GET','POST'])
+@app.route('/_reset_sp_pass', methods=['GET', 'POST'])
 @login_required
 def resetpass():
-    if request.method == 'GET':
-        return render_template('reset.html')
-    email = request.form['email']
-    try:
-        user = User.query.filter(User.email==email).first_or_404()
-    except: # email is not confirmed
-        flash("We couldn't find an account with that email.", 'alert-danger')
-        return redirect(url_for('resetpass'))
-    token = generate_confirmation_token(email)
-    register_url = url_for('resetpass_confirm', token=token, _external=True)
-    return jsonify(account=email, reset_url=register_url, note="This link is valid for 24 hours.")
 
-@app.route('/resetpass/<token>' , methods=['GET','POST'])
+    if request.method == 'GET':
+        return render_template('reset.html', email=current_user.email)
+
+    try:
+        user = User.query.filter(User.email == current_user.email).first_or_404()
+    except: #this should never happen
+        flash("We couldn't find an account with that email.", 'alert-danger')
+        return render_template('reset.html', email=current_user.email)
+
+    token = generate_confirmation_token(current_user.email)
+    reset_url = url_for('resetpass_confirm', token=token, _external=True)
+
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.application import MIMEApplication
+        from email.mime.multipart import MIMEMultipart
+        gmail_pw = cfg.GRDO_GMAIL_PW
+        msg = MIMEMultipart()
+        msg.attach(MIMEText("<p>Follow this link to reset your StreamPULSE " +\
+            "password:<br><a href='" + reset_url + "'>" + reset_url + "</a></p>" +\
+            "<p>The link is valid for 24 hours.</p>", 'html'))
+
+        #compose message
+        msg['Subject'] = 'StreamPULSE Password Reset'
+        msg['From'] = 'grdouser@gmail.com'
+        # msg['From'] = 'donotreply@streampulse.org'
+        msg['To'] = current_user.email
+
+        #log in to gmail, send email
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.ehlo()
+        server.starttls()
+        server.login("grdouser@gmail.com", gmail_pw)
+        server.sendmail('grdouser@gmail.com', [current_user.email],
+            msg.as_string())
+        server.quit()
+
+        flash("Email sent.", 'alert-success')
+        return redirect(url_for('account'))
+
+    except:
+        msg = Markup("There has been an error. Please <a href=" +\
+            "'mailto:vlahm13@gmail.com' class='alert-link'>notify us</a> " +\
+            "so that we can resolve the issue.")
+        flash(msg, 'alert-danger')
+        return redirect(url_for('account'))
+
+    # return render_template('resetpass.html', email=current_user.email)
+
+
+# @app.route('/forgot_pass', methods=['GET', 'POST'])
+# def forgotpass():
+#
+#
+#     try:
+#         import smtplib
+#         from email.mime.text import MIMEText
+#         from email.mime.application import MIMEApplication
+#         from email.mime.multipart import MIMEMultipart
+#         gmail_pw = cfg.GRDO_GMAIL_PW
+#         msg = MIMEMultipart()
+#         msg.attach(MIMEText("<p>Follow this link to reset your StreamPULSE " +\
+#             "password:<br><a href='" + reset_url + "'>" + reset_url + "</a></p>" +\
+#             "<p>The link is valid for 24 hours.</p>", 'html'))
+#
+#         #compose message
+#         msg['Subject'] = 'StreamPULSE Password Reset'
+#         msg['From'] = 'grdouser@gmail.com'
+#         # msg['From'] = 'donotreply@streampulse.org'
+#         msg['To'] = current_user.email
+#
+#         #log in to gmail, send email
+#         server = smtplib.SMTP('smtp.gmail.com', 587)
+#         server.ehlo()
+#         server.starttls()
+#         server.login("grdouser@gmail.com", gmail_pw)
+#         server.sendmail('grdouser@gmail.com', [current_user.email],
+#             msg.as_string())
+#         server.quit()
+#
+#         flash("Email sent.", 'alert-success')
+#         return redirect(url_for('account'))
+#
+#     except:
+#         msg = Markup("There has been an error. Please <a href=" +\
+#             "'mailto:vlahm13@gmail.com' class='alert-link'>notify us</a> " +\
+#             "so that we can resolve the issue.")
+#         flash(msg, 'alert-danger')
+#         return redirect(url_for('account'))
+
+@app.route('/resetpass/<string:token>', methods=['GET', 'POST'])
 def resetpass_confirm(token):
+
     if request.method == 'GET':
         try:
             email = confirm_token(token)
-            user = User.query.filter(User.email==email).first_or_404()
-        except: # email is not confirmed
-            flash('The confirmation link is invalid or has expired.', 'alert-danger')
+            user = User.query.filter(User.email == email).first_or_404()
+        except:
+            flash('The confirmation link is invalid or has expired.',
+                'alert-danger')
             return redirect(url_for('index'))
-        return render_template('resetpass.html', email=email) # email is good.
+
+        return render_template('resetpass.html', email=email)
+
     # posting new password
-    user = User.query.filter(User.email==request.form['email']).first_or_404()
+    user = User.query.filter(User.email == request.form['email']).first_or_404()
+    if request.form['password'] != request.form['password2']:
+        flash('The passwords do not match.', 'alert-danger')
+        return redirect(url_for('resetpass'))
+
     user.password = generate_password_hash(request.form['password'])
     db.session.add(user)
     db.session.commit()
-    flash('Successfully reset, please login.', 'alert-success')
+
+    flash('Successfully reset password; please log in.', 'alert-success')
+
     return redirect(url_for('login'))
 
-@app.route('/login',methods=['GET','POST'])
+@app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'GET':
         return render_template('login.html')
@@ -1007,6 +1097,66 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+@app.route('/account')
+@login_required
+def account():
+
+    print current_user.username
+    print current_user.token
+    print current_user.email
+    print current_user.registered_on
+    # print current_user.confirmed
+    # print current_user.qaqc
+    # print current_user.check_password(current_user.password)
+    # print current_user.password
+    # print current_user.is_authenticated()
+    # print current_user.is_active()
+    # print current_user.is_anonymous()
+    print current_user.get_id()
+    print current_user.qaqc_auth()
+
+    regdate = current_user.registered_on.strftime('%Y-%m-%d')
+
+    return render_template('account.html', username=current_user.username,
+        token=current_user.token, email=current_user.email,
+        regdate=regdate, id=current_user.get_id(),
+        authsites=current_user.qaqc_auth())
+
+@app.route('/email_change')
+@login_required
+def email_change():
+
+    return render_template('email_change.html', email=current_user.email)
+
+@app.route('/email_change_submit', methods=['POST'])
+@login_required
+def email_change_submit():
+
+    e1 = request.form.get('email1')
+    e2 = request.form.get('email2')
+    former_email = current_user.email
+    emailList = pd.read_sql('select distinct contactEmail from site;',
+        db.engine).contactEmail.tolist()
+
+    if e1 != e2:
+        flash('New email addresses do not match.', 'alert-danger')
+    elif e1 in emailList:
+        flash('That email address is already in use.', 'alert-danger')
+    else:
+        u = User.query.filter(User.email == former_email).one()
+        u.email = e1 #this updates current_user.email
+
+        s = Site.query.filter(Site.contactEmail == former_email).all()
+        for rec in s:
+            rec.contactEmail = e1
+            db.session.add(rec)
+
+        db.session.commit()
+
+        flash('Successfully updated email address.', 'alert-success')
+
+    return render_template('email_change.html', email=current_user.email)
 
 @app.route('/')
 @app.route('/index')
@@ -1049,12 +1199,6 @@ def sitelist():
 @app.route('/upload_choice')
 def upload_choice():
     return render_template('upload_choice.html')
-
-@app.route('/example')
-def example():
-    flash('Uploaded 1840 values, thank you!',
-        'alert-success')
-    return render_template('example.html')
 
 @app.route('/viz_choice')
 def viz_choice():
@@ -1292,7 +1436,7 @@ def grab_upload():
                 flash('No files selected.','alert-danger')
                 return redirect(request.url)
 
-            #list format no longer useful; extract items
+            #list format no longer uUserul; extract items
             ufile = ufile[0]
             ufnm = ufnm[0]
 

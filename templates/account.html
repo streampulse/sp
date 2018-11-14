@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<br>
+<h3>Account details</h3>
+<table class='pretty'>
+ <tr class='pretty'>
+   <td class='pretty'><strong>Username</strong></td>
+   <td class='pretty'>{{username}}</td>
+ </tr>
+ <tr class='pretty'>
+   <td class='pretty'><strong>Token</strong></td>
+   <td class='pretty'>{{token}}</td>
+ </tr>
+ <tr class='pretty'>
+   <td class='pretty'><strong>Email</strong></td>
+   <td class='pretty'>
+     {{email}}&nbsp&nbsp
+     <!-- <a class="btn btn-md btn-info" href="https://data.streampulse.org/email_change"> -->
+     <a class="btn btn-md btn-info" href="/email_change">
+       Change
+     </a>
+   </td>
+ </tr>
+ <tr class='pretty'>
+   <td class='pretty'><strong>Registered on</strong></td>
+   <td class='pretty'>{{regdate}}</td>
+ </tr>
+ <tr class='pretty'>
+   <td class='pretty'><strong>User ID</strong></td>
+   <td class='pretty'>{{id}}</td>
+ </tr>
+ <tr class='pretty'>
+   <td class='pretty'><strong>Site permissions*</strong></td>
+   <td class='pretty'>{{authsites|sort|join(', ')}}</td>
+ </tr>
+</table>
+<p>
+  <strong>*</strong>
+  You are authorized to clean (QA/QC) data for these sites. You may also access
+  data and model outputs for these sites, even if they are embargoed. Contact
+  <a href='mailto:streampulse.info@gmail.com'>StreamPULSE</a> if you encounter
+  issues with your site permissions.
+</p>
+
+<br><br>
+<div class="row">
+  <div class="col-md-2 col-md-offset-5 text-center">
+    <a class="btn btn-md btn-danger btn-block" href="/_reset_sp_pass">
+      Reset password
+    </a>
+  </div>
+</div>
+
+</div>
+
+<!-- <script>
+
+</script> -->
+
+{% endblock %}
