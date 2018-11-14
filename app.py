@@ -953,9 +953,62 @@ def register():
 
         return redirect(url_for('register'))
 
-@app.route('/_reset_sp_pass', methods=['GET', 'POST'])
-@login_required
-def resetpass():
+# @app.route('/_reset_sp_pass', methods=['GET', 'POST'])
+# @login_required
+# def resetpass():
+#
+#     if request.method == 'GET':
+#         return render_template('reset.html', email=current_user.email)
+#
+#     try:
+#         user = User.query.filter(User.email == current_user.email).first_or_404()
+#     except: #this should never happen
+#         flash("We couldn't find an account with that email.", 'alert-danger')
+#         return render_template('reset.html', email=current_user.email)
+#
+#     token = generate_confirmation_token(current_user.email)
+#     reset_url = url_for('resetpass_confirm', token=token, _external=True)
+#
+#     try:
+#         import smtplib
+#         from email.mime.text import MIMEText
+#         from email.mime.application import MIMEApplication
+#         from email.mime.multipart import MIMEMultipart
+#         gmail_pw = cfg.GRDO_GMAIL_PW
+#         msg = MIMEMultipart()
+#         msg.attach(MIMEText("<p>Follow this link to reset your StreamPULSE " +\
+#             "password:<br><a href='" + reset_url + "'>" + reset_url + "</a></p>" +\
+#             "<p>The link is valid for 24 hours.</p>", 'html'))
+#
+#         #compose message
+#         msg['Subject'] = 'StreamPULSE Password Reset'
+#         msg['From'] = 'grdouser@gmail.com'
+#         # msg['From'] = 'donotreply@streampulse.org'
+#         msg['To'] = current_user.email
+#
+#         #log in to gmail, send email
+#         server = smtplib.SMTP('smtp.gmail.com', 587)
+#         server.ehlo()
+#         server.starttls()
+#         server.login("grdouser@gmail.com", gmail_pw)
+#         server.sendmail('grdouser@gmail.com', [current_user.email],
+#             msg.as_string())
+#         server.quit()
+#
+#         flash("Email sent.", 'alert-success')
+#         return redirect(url_for('account'))
+#
+#     except:
+#         msg = Markup("There has been an error. Please <a href=" +\
+#             "'mailto:vlahm13@gmail.com' class='alert-link'>notify us</a> " +\
+#             "so that we can resolve the issue.")
+#         flash(msg, 'alert-danger')
+#         return redirect(url_for('account'))
+#
+#     # return render_template('resetpass.html', email=current_user.email)
+
+@app.route('/lost_pass', methods=['GET', 'POST'])
+def lostpass():
 
     if request.method == 'GET':
         return render_template('reset.html', email=current_user.email)
@@ -1007,74 +1060,62 @@ def resetpass():
 
     # return render_template('resetpass.html', email=current_user.email)
 
-
-# @app.route('/forgot_pass', methods=['GET', 'POST'])
-# def forgotpass():
-#
-#
-#     try:
-#         import smtplib
-#         from email.mime.text import MIMEText
-#         from email.mime.application import MIMEApplication
-#         from email.mime.multipart import MIMEMultipart
-#         gmail_pw = cfg.GRDO_GMAIL_PW
-#         msg = MIMEMultipart()
-#         msg.attach(MIMEText("<p>Follow this link to reset your StreamPULSE " +\
-#             "password:<br><a href='" + reset_url + "'>" + reset_url + "</a></p>" +\
-#             "<p>The link is valid for 24 hours.</p>", 'html'))
-#
-#         #compose message
-#         msg['Subject'] = 'StreamPULSE Password Reset'
-#         msg['From'] = 'grdouser@gmail.com'
-#         # msg['From'] = 'donotreply@streampulse.org'
-#         msg['To'] = current_user.email
-#
-#         #log in to gmail, send email
-#         server = smtplib.SMTP('smtp.gmail.com', 587)
-#         server.ehlo()
-#         server.starttls()
-#         server.login("grdouser@gmail.com", gmail_pw)
-#         server.sendmail('grdouser@gmail.com', [current_user.email],
-#             msg.as_string())
-#         server.quit()
-#
-#         flash("Email sent.", 'alert-success')
-#         return redirect(url_for('account'))
-#
-#     except:
-#         msg = Markup("There has been an error. Please <a href=" +\
-#             "'mailto:vlahm13@gmail.com' class='alert-link'>notify us</a> " +\
-#             "so that we can resolve the issue.")
-#         flash(msg, 'alert-danger')
-#         return redirect(url_for('account'))
-
-@app.route('/resetpass/<string:token>', methods=['GET', 'POST'])
-def resetpass_confirm(token):
+@app.route('/resetpass_loggedin', methods=['GET', 'POST'])
+def resetpass_loggedin():
 
     if request.method == 'GET':
-        try:
-            email = confirm_token(token)
-            user = User.query.filter(User.email == email).first_or_404()
-        except:
-            flash('The confirmation link is invalid or has expired.',
-                'alert-danger')
-            return redirect(url_for('index'))
+        return render_template('resetpass.html', email=current_user.email)
 
-        return render_template('resetpass.html', email=email)
+    try:
+        user = User.query.filter(User.email == current_user.email).first_or_404()
+    except: #this should never happen
+        flash("We couldn't find an account with that email.", 'alert-danger')
+        return render_template('reset.html', email=current_user.email)
 
-    # posting new password
-    user = User.query.filter(User.email == request.form['email']).first_or_404()
     if request.form['password'] != request.form['password2']:
         flash('The passwords do not match.', 'alert-danger')
-        return redirect(url_for('resetpass'))
+        return redirect(url_for('resetpass_loggedin'))
 
     user.password = generate_password_hash(request.form['password'])
     db.session.add(user)
     db.session.commit()
 
-    flash('Successfully reset password; please log in.', 'alert-success')
+    flash('Password successfully reset.', 'alert-success')
 
-    return redirect(url_for('login'))
+    regdate = current_user.registered_on.strftime('%Y-%m-%d')
+
+    return render_template('account.html', username=current_user.username,
+        token=current_user.token, email=current_user.email,
+        regdate=regdate, id=current_user.get_id(),
+        authsites=current_user.qaqc_auth())
+
+# @app.route('/resetpass/<string:token>', methods=['GET', 'POST'])
+# def resetpass_confirm(token):
+#
+#     if request.method == 'GET':
+#         try:
+#             email = confirm_token(token)
+#             user = User.query.filter(User.email == email).first_or_404()
+#         except:
+#             flash('The confirmation link is invalid or has expired.',
+#                 'alert-danger')
+#             return redirect(url_for('index'))
+#
+#         return render_template('resetpass.html', email=email)
+#
+#     # posting new password
+#     user = User.query.filter(User.email == request.form['email']).first_or_404()
+#     if request.form['password'] != request.form['password2']:
+#         flash('The passwords do not match.', 'alert-danger')
+#         return redirect(url_for('resetpass'))
+#
+#     user.password = generate_password_hash(request.form['password'])
+#     db.session.add(user)
+#     db.session.commit()
+#
+#     flash('Successfully reset password; please log in.', 'alert-success')
+#
+#     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET','POST'])
 def login():
