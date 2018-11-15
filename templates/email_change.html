@@ -1,0 +1,48 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<br>
+
+<form action="/email_change_submit" method=post enctype=multipart/form-data>
+  <div class='row text-left'>
+    <div class='col-md-2'>
+      <strong>Current email</strong>
+    </div>
+    <div class='col-md-4'>
+      {{email}}
+    </div>
+  </div>
+  <br>
+  <div class='row text-left'>
+    <div class='col-md-2'>
+      <strong>New email</strong>
+    </div>
+    <div class='col-md-4'>
+      <input type="text" class="form-control" name="email1"
+      aria-describedby="New email1" required>
+    </div>
+  </div>
+  <br>
+  <div class='row text-left'>
+    <div class='col-md-2'>
+      <strong>New email again</strong>
+    </div>
+    <div class='col-md-4'>
+      <input type="text" class="form-control" name="email2"
+      aria-describedby="New email2" required>
+    </div>
+  </div>
+  <br><br>
+  <div class='row text-left'>
+    <div class='col-md-2'>
+      <button id="emailsubmit" type="submit" value=Email
+        class="btn btn-primary btn-block">
+        Submit
+      </button>
+    </div>
+  </div>
+</form>
+
+</div>
+
+{% endblock %}

@@ -67,7 +67,8 @@ dbClearResult(res)
 known_sites = resout$site
 
 # p=i=j=1;k=3
-# p=1;i=1;j=1;k=5
+# p=1;i=1;j=1;k=1
+# sets_to_grab = sets_to_grab[61,]
 
 for(p in 1:length(products)){
     # print(paste('p=',p))
@@ -132,6 +133,10 @@ for(p in 1:length(products)){
     #process new datasets one at a time
     write(paste(nrow(sets_to_grab), 'new', prods_abb[p], 'set(s) to add.'),
         '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+
+    if(nrow(sets_to_grab) == 0){
+        next
+    }
 
     for(i in 1:nrow(sets_to_grab)){
         # print(paste('i=',i))

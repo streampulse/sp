@@ -1,5 +1,13 @@
 #Mike's Logbook
 
+###tue20181113
+ + added Account page with user details, email change feature
+ + added password reset for logged-in user
+ + working on password reset for users who have forgotten password
+###mon20181112
+ + resolved NEON ingestion bug and redid coverage analysis again
+###fri20191109
+ + redid NEON DO coverage analysis
 ###wed20181107
  + incorporated Global River Dissolved Oxygen team feedback into the GRDO upload app
 ###tue20181106
