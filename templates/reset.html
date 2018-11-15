@@ -6,12 +6,15 @@
     <form action="" method=post>
       <h3>Reset your password</h3>
       <div class="form-group">
+
+
+
         <p>
-          A password reset email will be sent to <strong>{{email}}</strong>.
-          If this is not an appropriate email address, change it
+          A password reset link will be sent to the email you specify below.
+          <!-- If this is not an appropriate email address, change it
           <a href="/email_change">
             here.
-          </a>
+          </a> -->
         </p>
         <p>
           Please note that your password reset email will be from
@@ -22,6 +25,14 @@
           placeholder="Email" value="{{ request.form.username }}"
           required> -->
       </div>
+      <div class="form-group">
+        <input type="email" id="email" name="email" class="form-control"
+          placeholder="Enter your email here" required>
+      </div>
+      <div class="form-group">
+        <input type="email" id="email2" name="email2" class="form-control"
+          placeholder="Enter email again" required>
+      </div>
       <br>
       <!-- <button id="resetpass" type="link" value=reset class="btn btn-default btn-block">
         Send reset email
@@ -29,8 +40,12 @@
       <!-- <a class="btn btn-md btn-default btn-block" href="/_reset_sp_pass">
         Send reset email
       </a> -->
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-2 col-md-offset-5">
       <div class="form-group">
-        <button type="submit" class="btn btn-default btn-block">Send reset email</button>
+        <button type="submit" class="btn btn-info btn-block">Send reset email</button>
       </div>
     </form>
   </div>
