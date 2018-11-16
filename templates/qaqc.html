@@ -52,7 +52,7 @@ drift.load('s2rst4h926mg');
         </div>
         <div class="col-md-6" id="selectyear" style="display:none">
           <p class="secondarytext">
-            Select the year for which you want to clean data.
+            Select the year for which you want to clean data:
           </p>
           <select id="dyear" name="yr"></select>
         </div>
@@ -461,19 +461,17 @@ $(function(){
 $(function(){
   $("#backgraphlist2").change(function () {
 
-    console.log($(this).val())
     if($(this).val() == 'None'){
 
       // remove previous graph and secondary axis
       d3.selectAll('.backgraph').select("path").remove()
       d3.selectAll('[id*=rightaxis]').attr("visibility", "hidden");
     } else {
-      console.log('here')
 
       //plot polygon for secondary variable
       var backfill = this.value;
       for (var i = 0; i < variables.length; ++i) {
-        BackGraph(backfill, variables[i], data);
+        BackGraph(backfill, variables[i], data, type='polygon');
       }
     }
 

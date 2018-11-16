@@ -110,8 +110,10 @@ function Plots(variables, data, flags, outliers, page){
     });
     // code for qaqc page
     if(page=="qaqc"){
-      svg.on('dblclick',function(){ redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true) });
-      svg.append("g").attr("class","brush")
+      svg.on('dblclick',function(){
+        redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true)
+      });
+      svg.append("g").attr("class", "brush")
         .attr("id", vvv)
         .call(brush);
       svg.selectAll(".dot")
@@ -317,6 +319,7 @@ function Interquartile(graph, ranges, req){
 
   //remove previous graph and secondary axis if it exists
   cur_backgraph.select("path").remove();
+  cur_backgraph.selectAll("circle").remove();
   d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
   // //replace basis of secondary axis
   // d3.select('div.' + graph).append("g")
@@ -409,14 +412,15 @@ function Interquartile(graph, ranges, req){
 
 }
 
-function BackGraph(vvv, graph, data){
+function BackGraph(vvv, graph, data, type){
 
   //make new y axis scale and select graph
   var ynew = d3.scaleLinear().range([height, 0]);
   cur_backgraph = d3.select("." + graph).select(".backgraph")
 
   // remove previous graph and secondary axis if it exists
-  cur_backgraph.select("path").remove()
+  cur_backgraph.select("path").remove();
+  cur_backgraph.selectAll("circle").remove();
   // d3.select('[id$=rightaxis]').attr("visibility", "hidden");
   // //replace basis of secondary axis
   // d3.select('svg.' + graph).append("g")
@@ -433,24 +437,41 @@ function BackGraph(vvv, graph, data){
         return d[vvv]; }));
     }
 
-    var area = d3.area()
+    if(type == 'polygon'){
+      var area = d3.area()
         .defined(function(d){
-          if(d[vvv]==null || d.date < x.domain()[0] || d.date > x.domain()[1]){
+          if(d[vvv] == null || d.date < x.domain()[0] || d.date > x.domain()[1]){
             rrr = false
-          }else{
+          } else {
             rrr = true
           }
           return rrr
         });
-    area.x(function(d) {
-           return x(d.date); });
-    area.y0(height).y1(function(d) {
-          return ynew(d[vvv]); });
+      area.x(function(d) {
+        return x(d.date); });
+      area.y0(height).y1(function(d) {
+        return ynew(d[vvv]); });
 
-    cur_backgraph.append("path")
-      .datum(data)
-      .attr("class", "backarea")
-      .attr("d", area);
+      cur_backgraph.append("path")
+        .datum(data)
+        .attr("class", "backarea")
+        .attr("d", area);
+
+    } else { //type == 'point'
+
+      var grabline = d3.line()
+        .defined(function(d){ return d[vvv]; })
+        .x(function(d){ return x(d.date); })
+        .y(function(d){ return ynew(d[vvv]); });
+
+      cur_backgraph.selectAll(".grabdot")
+        .data(data.filter(function(d) { return d[vvv]; }))
+        .enter().append("circle")
+          .attr("class", "grabdot")
+          .attr("cx", grabline.x())
+          .attr("cy", grabline.y())
+          .attr("r", 5);
+    }
   }
 
   // refresh right axis
@@ -505,7 +526,7 @@ $(function(){
           });
 
           for(var i = 0; i < variables.length; ++i) {
-            BackGraph(backfill, variables[i], backfilldata);
+            BackGraph(backfill, variables[i], backfilldata, type='polygon');
           }
         },
         error: function(error){
@@ -515,7 +536,7 @@ $(function(){
 
     } else {
       for (var i = 0; i < variables.length; ++i) {
-        BackGraph(backfill, variables[i], data);
+        BackGraph(backfill, variables[i], data, type='polygon');
       }
     }
 
@@ -714,7 +735,7 @@ function redrawPoints(zoom_in, sbrush, reset){
       // var bf2 = $("#backgraphlist_grab").val();
       // var bf_val = [bf1, bf2].find( function(x){ x != 'None' } );
       // var backfill = (bf_val != 'none' && bf_val != null) ? bf_val : 'None';
-      BackGraph(backfill, vvv, data);
+      BackGraph(backfill, vvv, data, type='polygon');
     }
   }
   d3.selectAll(".dot").classed("selected", false);
