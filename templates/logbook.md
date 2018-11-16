@@ -1,5 +1,10 @@
 #Mike's Logbook
 
+###thu20181115
+ + changed grab sample overlay from polygon to point
+###wed20181114
+ + simplified pw reset for logged in user
+ + build email-link password reset feature for users who have lost their passwords
 ###tue20181113
  + added Account page with user details, email change feature
  + added password reset for logged-in user
