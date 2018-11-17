@@ -236,10 +236,17 @@ function Plots(variables, data, flags, outliers, page){
         d3.select('#sidebuttons_' + vvv)
           .append('button')
             .attr('id', 'interqQ_' + vvv)
-            .attr('name', 'I' + vvv)
+            .attr('name', 'I' + vvv);
+        if
             .attr('class', 'btn btn-success btn-block')
             .text('Q');
       }
+      d3.select('#sidebuttons_' + vvv)
+        .append('button')
+          .attr('id', 'interqER' + vvv)
+          .attr('name', 'I' + vvv)
+          .attr('class', 'btn btn-success btn-block')
+          .text('ER');
 
       //side button mouseover tooltips
       d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
@@ -291,6 +298,24 @@ function Plots(variables, data, flags, outliers, page){
             .duration(100)
             .style("opacity", 0);
         });
+
+        d3.selectAll("button[id^='interqER']").on("mouseover", function(d, j) {
+          button_tooltip.transition()
+            .duration(50)
+            // .style('background', '#ffd68c')
+            .style('background', '#89e6a1')
+            .style("opacity", 1);
+            button_tooltip.html('View historical interquartile range of ' +
+              'model-estimated ecosystem respiration ' +\
+              '(25th-75th percentile, binned by day).')
+            .style("left", (d3.event.pageX - 230) + "px")
+            .style("top", (d3.event.pageY - 50) + "px");
+          })
+          .on("mouseout", function(d) {
+            button_tooltip.transition()
+              .duration(100)
+              .style("opacity", 0);
+          });
 
     }
   }

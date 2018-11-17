@@ -349,12 +349,16 @@ $('body').ready(function(){
     //determine variable and site for which to retrieve entire data record
     var dat = {}
     var current_plot = $(this).attr('name').slice(1)
-    if($(this).attr('id').slice(0, 8) == 'interqDO'){
+    var slice = $(this).attr('id').slice(0, 8)
+    if(slice == 'interqDO'){
       dat['variable'] = 'DO_mgL'
       var requested_v = 'DO'
-    } else if($(this).attr('id').slice(0, 7) == 'interqQ'){
+    } else if(slice == 'interqQ_'){
       dat['variable'] = 'Discharge_m3s'
       var requested_v = 'Q'
+    // } else if(slice == 'interqER'){
+    //   dat['variable'] = 'Discharge_m3s'
+    //   var requested_v = 'Q'
     } else {
       dat['variable'] = current_plot
       var requested_v = 'H'
