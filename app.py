@@ -1846,11 +1846,11 @@ def confirmcolumns():
 
         if request.form['existing'] == "no":
             # add new site to database
-            embargo = 1 # automatically embargo for 1 year, can change later in database...
-            usgss = None if request.form['usgs']=="" else request.form['usgs']
+            usgss = None if request.form['usgs'] == "" else request.form['usgs']
             sx = Site(region=region, site=site, name=request.form['sitename'],
                 latitude=request.form['lat'], longitude=request.form['lng'],
-                usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
+                usgs=usgss, addDate=datetime.utcnow(),
+                embargo=request.form['embargo'],
                 by=current_user.get_id(), contact=request.form['contactName'],
                 contactEmail=request.form['contactEmail'])
             db.session.add(sx)
@@ -1969,9 +1969,6 @@ def grab_confirmcolumns():
         #if there are new sites, process them
         if request.form['new_sites'] == "true":
 
-            # automatically embargo for 1 year
-            embargo = 1
-
             #for each new site included in the uploaded csv...
             newsitelist = []
             for i in xrange(int(request.form['newlen'])):
@@ -1991,7 +1988,8 @@ def grab_confirmcolumns():
                     name=request.form['sitename' + str(i)],
                     latitude=request.form['lat' + str(i)],
                     longitude=request.form['lng' + str(i)],
-                    usgs=usgss, addDate=datetime.utcnow(), embargo=embargo,
+                    usgs=usgss, addDate=datetime.utcnow(),
+                    embargo=request.form['embargo' + str(i)],
                     contact=request.form['contactName' + str(i)],
                     contactEmail=request.form['contactEmail' + str(i)])
                 db.session.add(sx)

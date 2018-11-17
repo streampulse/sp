@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###fri20181116
+ + added option to select embargo period when uploading data for a new site; either series or grab
 ###thu20181115
  + changed grab sample overlay from polygon to point
 ###wed20181114
