@@ -54,7 +54,7 @@ drift.load('s2rst4h926mg');
         {% for i in range(newlen) %}
           <input type="hidden" name="newsite{{i}}" value="{{newsites[i]}}">
           <p class="lead text-success">
-            Please supply the following metadata for new site
+            Please supply the following metadata and preferences for new site
             <strong>{{ newsites[i] }}</strong>:
           </p>
           <div class="input-group input-group-sm">
@@ -63,20 +63,19 @@ drift.load('s2rst4h926mg');
               aria-describedby="Site name" maxlength="50" required>
           </div>
           <br>
-          <em>Coordinates in decimal degrees:</em>
           <div class="input-group input-group-sm">
             <span class="input-group-addon">Latitude</span>
             <input type="text" class="form-control" name="lat{{i}}"
-              placeholder="e.g. 36.00" aria-describedby="Latitude" required>
+              placeholder="decimal degrees, e.g. 36.01" aria-describedby="Latitude" required>
             <span class="input-group-addon">Longitude</span>
             <input type="text" class="form-control" name="lng{{i}}"
-              placeholder="e.g. -78.97" aria-describedby="Longitude" required>
+              placeholder="decimal degrees, e.g. -78.97" aria-describedby="Longitude" required>
           </div>
           <br>
           <div class="input-group input-group-sm">
-            <span class="input-group-addon">Associated USGS gauge ID</span>
+            <span class="input-group-addon">Associated USGS gauge ID (optional)</span>
             <input type="text" class="form-control" name="usgs{{i}}"
-              placeholder="e.g. 02085000 (if none, leave blank)"
+              placeholder="e.g. 02085000"
               aria-describedby="USGS site #" maxlength="20">
           </div>
           <br>
@@ -89,7 +88,7 @@ drift.load('s2rst4h926mg');
               required></textarea>
           </div>
           <br>
-          <em>Site contact person:</em>
+          <strong>Site contact person</strong>
           <div class="input-group input-group-sm">
             <span class="input-group-addon">Full name</span>
             <input type="text" class="form-control" name="contactName{{i}}"
@@ -98,12 +97,31 @@ drift.load('s2rst4h926mg');
               <input type="text" class="form-control" name="contactEmail{{i}}"
                 aria-describedby="Contact email" maxlength="255" required>
           </div>
-          <br><br>
-          <hr>
+          <br>
+
+          <p>
+            <strong>Data embargo</strong>
+          </p>
+          <p>
+            We will not make data from this study site publicly available
+            for the number of years you specify below. Only you and any users to whom
+            you explicitly grant permission can view, download, clean,
+            or in any way access data or model outputs from this study site.
+          </p>
+          <div class="col-md-6">
+            <select id="embargo{{i}}" name="embargo{{i}}">
+              <option value="0">No embargo</option>
+              <option value="1">1 year</option>
+              {% for j in range(2, 6) %}
+                <option value="{{j}}">{{j}} years</option>
+              {% endfor %}
+            </select>
+          </div>
+          <br><br><hr><br>
         {% endfor %}
       {% endif %}
 
-      <em>Data sharing policy:</em>
+      <strong>Data sharing policy:</strong>
       <div class="checkbox">
         <label>
           <input type="checkbox" name="policy" required>
@@ -344,6 +362,16 @@ drift.load('s2rst4h926mg');
 <!-- <input type='button' id='test'> -->
 
 <script>
+$("[id^='embargo']").selectize({
+    delimiter: ',',
+    persist: false,
+    create: function(input) {
+        return {
+            value: input,
+            text: input
+        }
+    }
+});
 
 function alertbox(alrt, msg){
   return '<div class="alert alert-dismissible alert-' + alrt + '">\
