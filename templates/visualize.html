@@ -339,9 +339,6 @@ $(function(){
   });
 });
 
-// $(function(){
-  // $("select[name=interquartile]").change(function(){
-  // $("[id^='interq'").click(function(){
 $('body').ready(function(){
   $('body').on("click", "[id^='interq']", function(){
 
@@ -355,6 +352,9 @@ $('body').ready(function(){
     if($(this).attr('id').slice(0, 8) == 'interqDO'){
       dat['variable'] = 'DO_mgL'
       var requested_v = 'DO'
+    } else if($(this).attr('id').slice(0, 7) == 'interqQ'){
+      dat['variable'] = 'Discharge_m3s'
+      var requested_v = 'Q'
     } else {
       dat['variable'] = current_plot
       var requested_v = 'H'

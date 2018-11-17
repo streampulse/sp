@@ -214,13 +214,7 @@ function Plots(variables, data, flags, outliers, page){
               .style("opacity", 0);
           });
 
-      //non-flagged points shouldnt register mouse activity
-      // svg.selectAll('.vdot:not(.flagdot)')
-      //   .attr('pointer-events', 'none');
-
-      // d3.select("#sidebuttons").append("div")
-      //   .attr("height", height + margin.top + margin.bottom)
-      //   .text('oi');
+      //side buttons
       d3.select('#svgrow_' + vvv)
         .append('div')
           .attr('id', 'sidebuttons_' + vvv)
@@ -238,7 +232,16 @@ function Plots(variables, data, flags, outliers, page){
             .attr('class', 'btn btn-success btn-block')
             .text('DO');
       }
+      if(vvv != 'Discharge_m3s'){
+        d3.select('#sidebuttons_' + vvv)
+          .append('button')
+            .attr('id', 'interqQ_' + vvv)
+            .attr('name', 'I' + vvv)
+            .attr('class', 'btn btn-success btn-block')
+            .text('Q');
+      }
 
+      //side button mouseover tooltips
       d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
           .duration(50)
@@ -263,6 +266,23 @@ function Plots(variables, data, flags, outliers, page){
           .style("opacity", 1);
           button_tooltip.html('View historical interquartile range of ' +
             'dissolved oxygen (25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+        })
+        .on("mouseout", function(d) {
+          button_tooltip.transition()
+            .duration(100)
+            .style("opacity", 0);
+        });
+
+      d3.selectAll("button[id^='interqQ_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          // .style('background', '#ffd68c')
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+          button_tooltip.html('View historical interquartile range of ' +
+            'discharge (25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
         })
