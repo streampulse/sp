@@ -16,6 +16,7 @@ var brush = d3.brushX()
 var selectedBrush;
 var data;
 var variables;
+var fullvarlist = []
 var sundat;
 // var flags;
 var datna; //is this still needed?
@@ -34,6 +35,12 @@ function Plots(variables, data, flags, outliers, page){
 
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+
+  //populate full list of variables
+  fullvarlist = []
+  $('#viz_vars').children('#variables').each(function(){
+    fullvarlist.push($(this).val())
+  })
 
   //set x domain to extent of dates
   x.domain(d3.extent(data, function(d) { return d.date; }));
@@ -236,17 +243,30 @@ function Plots(variables, data, flags, outliers, page){
         d3.select('#sidebuttons_' + vvv)
           .append('button')
             .attr('id', 'interqQ_' + vvv)
-            .attr('name', 'I' + vvv);
-        if
+            .attr('name', 'I' + vvv)
             .attr('class', 'btn btn-success btn-block')
+            .property('disabled', function(d){
+              if(! fullvarlist.includes('Discharge_m3s')){
+                return true;
+              }
+            })
             .text('Q');
+        // if(fullvarlist.includes('Discharge_m3s')){
+        //   d3.select('#interQ_' + vvv)
+        //     .attr('class', 'btn btn-success btn-block');
+        //     // .text('Q');
+        // } else {
+        //   d3.select('#interQ_' + vvv)
+        //     .attr('class', 'btn btn-success btn-block');
+        //     // .text('Q');
+        // }
       }
-      d3.select('#sidebuttons_' + vvv)
-        .append('button')
-          .attr('id', 'interqER' + vvv)
-          .attr('name', 'I' + vvv)
-          .attr('class', 'btn btn-success btn-block')
-          .text('ER');
+      // d3.select('#sidebuttons_' + vvv)
+      //   .append('button')
+      //     .attr('id', 'interqER' + vvv)
+      //     .attr('name', 'I' + vvv)
+      //     .attr('class', 'btn btn-success btn-block')
+      //     .text('ER');
 
       //side button mouseover tooltips
       d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
@@ -299,23 +319,23 @@ function Plots(variables, data, flags, outliers, page){
             .style("opacity", 0);
         });
 
-        d3.selectAll("button[id^='interqER']").on("mouseover", function(d, j) {
-          button_tooltip.transition()
-            .duration(50)
-            // .style('background', '#ffd68c')
-            .style('background', '#89e6a1')
-            .style("opacity", 1);
-            button_tooltip.html('View historical interquartile range of ' +
-              'model-estimated ecosystem respiration ' +\
-              '(25th-75th percentile, binned by day).')
-            .style("left", (d3.event.pageX - 230) + "px")
-            .style("top", (d3.event.pageY - 50) + "px");
-          })
-          .on("mouseout", function(d) {
-            button_tooltip.transition()
-              .duration(100)
-              .style("opacity", 0);
-          });
+        // d3.selectAll("button[id^='interqER']").on("mouseover", function(d, j) {
+        //   button_tooltip.transition()
+        //     .duration(50)
+        //     // .style('background', '#ffd68c')
+        //     .style('background', '#89e6a1')
+        //     .style("opacity", 1);
+        //     button_tooltip.html('View historical interquartile range of ' +
+        //       'model-estimated ecosystem respiration ' +\
+        //       '(25th-75th percentile, binned by day).')
+        //     .style("left", (d3.event.pageX - 230) + "px")
+        //     .style("top", (d3.event.pageY - 50) + "px");
+        //   })
+        //   .on("mouseout", function(d) {
+        //     button_tooltip.transition()
+        //       .duration(100)
+        //       .style("opacity", 0);
+        //   });
 
     }
   }
@@ -416,9 +436,13 @@ function Interquartile(graph, ranges, req){
     return x(d[0]);
   });
   area.y0(function(d){
-    if(req == 'DO'){ return ynew(d[1]); } else { return yold(d[1]); }
+    if(['DO', 'Q', 'ER', 'GPP'].includes(req)){
+      return ynew(d[1]); } else { return yold(d[1]);
+    }
   }).y1(function(d) {
-    if(req == 'DO'){ return ynew(d[2]); } else { return yold(d[2]); }
+    if(['DO', 'Q', 'ER', 'GPP'].includes(req)){
+      return ynew(d[2]); } else { return yold(d[2]);
+    }
   });
 
   cur_backgraph.append("path")
@@ -434,7 +458,7 @@ function Interquartile(graph, ranges, req){
   //   .attr("cy", line.y())
 
   // refresh right-hand axis
-  if(req == 'DO'){
+  if(['DO', 'Q', 'ER', 'GPP'].includes(req)){
     d3.select("#" + graph + 'rightaxis')
         .call(d3.axisRight().scale(ynew).ticks(6))
         .attr('class', 'interquartile interquart_axis')
@@ -450,7 +474,17 @@ function Interquartile(graph, ranges, req){
           .attr("dx", "-3em")
           // .attr('class', vvv + '_txt')
           .style("text-anchor", "start")
-          .text('DO_mgL');
+          .html(function(d){
+            if(req == 'DO'){return 'DO_mgL'} else if(req == 'Q'){return 'Discharge_m3s'}
+            else if(req == 'ER'){
+              return 'O<tspan dy ="5">2</tspan><tspan dy ="-5"> gm</tspan>' +
+              '<tspan dy ="-5">-2</tspan><tspan dy ="5">d</tspan><tspan dy ="-5">-1</tspan>'
+            }
+            else if(req == 'GPP'){
+              return 'O<tspan dy ="5">2</tspan><tspan dy ="-5"> gm</tspan>' +
+              '<tspan dy ="-5">-2</tspan><tspan dy ="5">d</tspan><tspan dy ="-5">-1</tspan>'
+            }
+          });
   } else {
     d3.select("#" + graph + 'rightaxis').attr("visibility", "hidden");
   }
