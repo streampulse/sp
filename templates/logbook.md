@@ -1,5 +1,9 @@
 #Mike's Logbook
 
+###fri20181123
+ + added historic interquartile range overlay for discharge 
+ + disabled button for discharge overlay when discharge data not available
+ + wrote script to incorporate Australia data when it's available
 ###fri20181116
  + added option to select embargo period when uploading data for a new site; either series or grab
 ###thu20181115

@@ -2355,18 +2355,32 @@ def getvgrabviz():
 @app.route('/_interquartile',methods=["POST"])
 def interquartile():
 
-    # dat = pd.DataFrame({'time':request.json['time_arr'],
-    #     'var':request.json['var_arr']})
     var = request.json['variable']
     region, site = request.json['site'].split('_')
+    # region='WI'; site='BEC'; var='DO_mgL'
 
-    # full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
-    #     "'T', mid(DateTime_UTC, 12, 2)) as " +\
-    full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
-        "'T') as " +\
-        "time, value as val from data " +\
-        "where region='" + region + "' and site='" + site +\
-        "' and variable='" + var + "';", db.engine)
+    if(var not in ['ER', 'GPP']):
+        full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
+            "'T') as " +\
+            "time, value as val from data " +\
+            "where region='" + region + "' and site='" + site +\
+            "' and variable='" + var + "';", db.engine)
+    else:
+        # full_record.head()
+        outputs = os.listdir(cfg.RESULTS_FOLDER)
+        o = outputs[0]
+        o = outputs[1]
+        outputs_keep = []
+        for o in outputs:
+            m = re.match('predictions_([a-zA-Z]{2})_([a-zA-Z]+).*', o)
+            if m:
+                reg, sit = m.groups()
+                if sit == site and reg == region:
+                    outputs_keep.append(o)
+
+        for o in outputs_keep:
+            
+
 
     def quant25(x):
         return x.quantile(.25)
