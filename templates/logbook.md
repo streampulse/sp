@@ -1,5 +1,9 @@
 #Mike's Logbook
 
+###tue20181127
+ + brought grabdata backgraph to the front, made clearer
+ + fixed bug that resulted in Bad Data flags still appearing in input viz
+ + fixed bug with interquartile range polygons not plotting when y0 == y1
 ###mon20181126
  + fixed axis tickmark plotting bug in viz overlays
  + added interquartile range overlay for model estimated ER and GPP

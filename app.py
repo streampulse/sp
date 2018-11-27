@@ -2406,9 +2406,7 @@ def interquartile():
             pre_agg = pre_agg.append(o_pre_agg, ignore_index=True)
 
         pre_agg.columns = ['time', 'val']
-        pre_agg = pre_agg.reset_index(drop=True)
-        pre_agg = pre_agg.dropna(how='any')
-        print pre_agg.shape
+        pre_agg = pre_agg.dropna(how='any').reset_index(drop=True)
 
     def quant25(x):
         return x.quantile(.25)
@@ -2428,7 +2426,7 @@ def getviz():
     startDate = request.json['startDate']
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
-    # region='NC'; site='Eno'; startDate='2016-10-20'; endDate='2017-10-20'; variables=['DO_mgL','WaterTemp_C']
+    # region='NC'; site='Eno'; startDate='2016-10-21'; endDate='2016-10-22'; variables=['DO_mgL','WaterTemp_C','Light_lux']
 
     #this block shouldnt be necessary once data leveling is in place.
     #you'll then be able to restore the block below, unless we still
@@ -2441,10 +2439,14 @@ def getviz():
         "and data.DateTime_UTC<'" + endDate + "' " +\
         "and data.variable in ('" + "', '".join(variables) + "')"
     xx = pd.read_sql(sqlq, db.engine)
-    xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs
+    # xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs so bad datapoints dont plot
+    xx = xx[xx.flag != 'Bad Data'] #instead, just remove bad data rows
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
         'comment']].dropna().drop(['flagid'], axis=1)
-    flagdat = flagdat[flagdat.flag != 'Bad Data'] #no need to send flag data for bad points
+
+    #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
+    #data results in good points receiving "bad data" labels, so remove those flags
+    flagdat = flagdat[flagdat.flag != 'Bad Data']
 
     xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
         .set_index(["DateTime_UTC", "variable"])\

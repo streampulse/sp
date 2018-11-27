@@ -364,6 +364,7 @@ function Plots(variables, data, flags, outliers, page){
 
           d3.selectAll("button[id^='interqGP_']").on("mouseover", function(d, j) {
             button_tooltip.transition()
+      .attr("class", "maybe_outl")
               .duration(50)
               // .style('background', '#ffd68c')
               .style('background', '#89e6a1')
@@ -435,34 +436,12 @@ function Interquartile(graph, ranges, req){
   cur_foregraph.selectAll("circle").remove();
   d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
 
+  //set domains for left and right (old and new) y-axes
   flattened_ranges = [].concat(...ranges.map(x => [x[1], x[2]]));
   ynew.domain([d3.min(flattened_ranges), d3.max(flattened_ranges)]);
   yold.domain(d3.extent(data, function(d) { return d[graph]; }));
 
-  // var zz = d3.line();
-  //   // .defined(function(d){
-  //   //   if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-  //   //     rrr = false
-  //   //   } else {
-  //   //     rrr = true
-  //   //   }
-  //   //   return rrr
-  //   // });
-  //   // zz.x(function(d) { return x(d[0]); });
-  //   // zz.y(function(d) { return y(d[1]); });
-  //   zz.x(function(d) {
-  //     return x(d.DateTime_UTC);
-  //   });
-  //   zz.y(function(d) { return y(d.DO_mgL); });
-  //
-  // // d3.select("." + graph).data(data).enter().append('circle')
-  // cur_backgraph.data(data).enter().append('circle')
-  // // data.filter(function(d) { return d[vvv]; })
-  //   .attr("class", "vdot")
-  //   .attr("cx", zz.x())
-  //   .attr("cy", zz.y())
-  //   .attr("r", 2)
-
+  //create accessor for interquartile range polygon
   var area = d3.area()
     .defined(function(d){
       if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
@@ -472,19 +451,12 @@ function Interquartile(graph, ranges, req){
       }
       return rrr
     });
-  area.x(function(d) {
-    return x(d[0]);
-  });
-  area.y0(function(d){
-    if(['DO', 'Q', 'ER', 'GPP'].includes(req)){
-      return ynew(d[1]); } else { return yold(d[1]);
-    }
-  }).y1(function(d) {
-    if(['DO', 'Q', 'ER', 'GPP'].includes(req)){
-      return ynew(d[2]); } else { return yold(d[2]);
-    }
-  });
+  area.x(d => x(d[0]));
+  area.y0(d => ['DO', 'Q', 'ER', 'GPP'].includes(req) ? ynew(d[1]) : yold(d[1]))
+  .y1(d => ['DO', 'Q', 'ER', 'GPP'].includes(req) ? ynew(d[2]) : yold(d[2]));
 
+
+  //split interquartile data into chunks so that gaps can be shown
   var diffs = timeDiffArray(ranges.map(x => x[0]))
   var gapinds = diffs.map((x, i) => x == 86400000 ? null : i).filter(x => x != null)
   var bounds = [0].concat(gapinds).concat(diffs.length)
@@ -494,6 +466,7 @@ function Interquartile(graph, ranges, req){
       //+ 1 above converts from diff index to ranges index
   }
 
+  //plot interquartile polygon in chunks
   for(r in ranges_chunked){
     if(ranges_chunked[r].length){
       cur_foregraph.append("path")
@@ -503,12 +476,19 @@ function Interquartile(graph, ranges, req){
     }
   }
 
-  // svg.selectAll(".vdot")
-  //   .data(data.filter(function(d) { return d[vvv]; }))
-  // .enter().append("circle")
-  //   .attr("class", "vdot")
-  //   .attr("cx", line.x())
-  //   .attr("cy", line.y())
+  //create line accessor and plot line for polygon portions where y0 == y1
+  var intline = d3.line()
+    .defined(d => d[2] == null ? false : true);
+  intline.x(d => x(d[0]));
+  intline.y(d => ['DO', 'Q', 'ER', 'GPP'].includes(req) ? ynew(d[2]) : yold(d[2]));
+
+  for(r in ranges_chunked){
+    if(ranges_chunked[r].length){
+      cur_foregraph.append('path')
+        .attr("d", intline(ranges_chunked[r]))
+        .attr("class", 'interquartile_line');
+    }
+  }
 
   // refresh right-hand axis
   if(['DO', 'Q', 'ER', 'GPP'].includes(req)){
@@ -609,7 +589,7 @@ function BackGraph(vvv, graph, data, type){
         .x(function(d){ return x(d.date); })
         .y(function(d){ return ynew(d[vvv]); });
 
-      cur_backgraph.selectAll(".grabdot")
+      cur_foregraph.selectAll(".grabdot")
         .data(data.filter(function(d) { return d[vvv]; }))
         .enter().append("circle")
           .attr("class", "grabdot")
@@ -634,7 +614,7 @@ function BackGraph(vvv, graph, data, type){
       .append("text")
         .attr("fill", "rgb(173, 20, 219)")
         .attr("dy", "-0.71em")
-        .attr("dx", "-3em")
+        .attr("dx", "-1em")
         .attr('class', 'varlab')
         .style("text-anchor", "start")
         .text(vvv);

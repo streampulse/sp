@@ -383,7 +383,6 @@ $('body').ready(function(){
         //duplicate hourly aggregated values as necessary to reconstitute
         //the full time range of already plotted series
         ranges = JSON.parse(response.dat);
-        console.log(ranges)
         mindate = x.domain()[0];
         minabb = mindate.toISOString().slice(5, 11);
         // minabb = mindate.toISOString().slice(5, 13);
@@ -397,7 +396,9 @@ $('body').ready(function(){
 
         nyrs = yrs.length;
         a1 = dates.indexOf(minabb);
+        if(a1 == -1){a1 = 0}
         a2 = nyrs > 1 ? dates.length : dates.indexOf(maxabb);
+        if(a2 == -1){a2 = dates.length}
         rangesA = ranges.slice(a1, a2).map(x =>
           [st_yr + '-' + x[0] + '00:00:00.00Z', x[1], x[2]]);
           // [st_yr + '-' + x[0] + ':00:00.00Z', x[1], x[2]]);
