@@ -2293,7 +2293,12 @@ def visualize():
     dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
 
-    return render_template('visualize.html', sites=sitedict)
+    #get set of sites for which models have been fit
+    outputs = os.listdir(cfg.RESULTS_FOLDER)
+    avail_mods = list(set([o[7:len(o) - 9] for o in outputs if o[0:3] == 'mod']))
+
+    return render_template('visualize.html', sites=sitedict,
+        avail_mods=avail_mods)
 
 @app.route('/_getgrabvars', methods=["POST"])
 def getgrabvars():
@@ -2328,6 +2333,7 @@ def getvgrabviz():
     endDate = request.json['endDate']
     variables = request.json['grabvars']
     # variables = variables] if len(variables)
+    # region='NC'; site='Eno'; startDate='2017-06-01'; endDate='2017-07-01'; variables=['K']
 
     if variables[0] != 'None':
 
@@ -2338,6 +2344,7 @@ def getvgrabviz():
             "and DateTime_UTC<'" + endDate + "' "+\
             "and variable in ('" + "', '".join(variables) + "');"
         xx = pd.read_sql(sqlq, db.engine)
+        xx.columns = ['date', variables[0]]
         # xx.loc[xx.flag==0,"value"] = None # set NaNs
         # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
         #     axis=1).to_json(orient='records',date_format='iso') # flag data
@@ -2350,26 +2357,23 @@ def getvgrabviz():
     else:
         xx = 'None'
 
-    return jsonify(grabdat=xx)
+    return jsonify(grabdat=xx, var=variables[0]) #if this ever takes mult vars, change
 
 @app.route('/_interquartile',methods=["POST"])
 def interquartile():
 
     var = request.json['variable']
     region, site = request.json['site'].split('_')
-    # region='WI'; site='BEC'; var='DO_mgL'
+    # region='VT'; site='Pass'; var='DO_mgL'
 
     if(var not in ['ER', 'GPP']):
-        full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
+        pre_agg = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
             "'T') as " +\
             "time, value as val from data " +\
             "where region='" + region + "' and site='" + site +\
             "' and variable='" + var + "';", db.engine)
     else:
-        # full_record.head()
         outputs = os.listdir(cfg.RESULTS_FOLDER)
-        o = outputs[0]
-        o = outputs[1]
         outputs_keep = []
         for o in outputs:
             m = re.match('predictions_([a-zA-Z]{2})_([a-zA-Z]+).*', o)
@@ -2378,16 +2382,34 @@ def interquartile():
                 if sit == site and reg == region:
                     outputs_keep.append(o)
 
+        pre_agg = pd.DataFrame()
         for o in outputs_keep:
-            
+            r_func_def = 'function(file){' +\
+                             'x = readRDS(file);' +\
+                             'x$date = as.character(x$date);' +\
+                             'return(x);' +\
+                         '}'
+            r_func = robjects.r(r_func_def)
+            df = r_func(cfg.RESULTS_FOLDER + '/' + o)
+            df = pandas2ri.ri2py(df)
 
+            if var == 'ER':
+                o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.ER], axis=1)
+            else:
+                o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.GPP], axis=1)
+
+            pre_agg = pre_agg.append(o_pre_agg, ignore_index=True)
+
+        pre_agg.columns = ['time', 'val']
+        pre_agg = pre_agg.reset_index(drop=True)
+        pre_agg = pre_agg.dropna(how='any')
 
     def quant25(x):
         return x.quantile(.25)
     def quant75(x):
         return x.quantile(.75)
 
-    quantiles = full_record.pivot_table(index='time', values='val',
+    quantiles = pre_agg.pivot_table(index='time', values='val',
         aggfunc=[quant25, quant75]).reset_index()
 
     return jsonify(dat=quantiles.to_json(orient='values'))

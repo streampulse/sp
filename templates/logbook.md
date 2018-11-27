@@ -1,5 +1,12 @@
 #Mike's Logbook
 
+###mon20181126
+ + fixed axis tickmark plotting bug in viz overlays
+ + added interquartile range overlay for model estimated ER and GPP
+ + interquartile overlays now show gaps
+ + interquartile now appears in front of points, rather than behind
+ + variable comparison polygons now show gaps
+ + fixed right axis label bugs, added labels for backgraphs
 ###fri20181123
  + added historic interquartile range overlay for discharge 
  + disabled button for discharge overlay when discharge data not available

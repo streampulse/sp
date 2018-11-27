@@ -105,6 +105,8 @@
 <script src="static/js/graphs.js"></script>
 
 <script>
+var avail_mods = {{ avail_mods|safe }}
+
 $('#dsite').selectize({
     delimiter: ',',
     persist: false,
@@ -312,6 +314,7 @@ $(function(){
       success: function(response){
 
         visdata = response.grabdat;
+        graphvar = response.var;
         if(typeof visdata !== 'string' || visdata !== 'None'){
           visdata = JSON.parse(visdata);
           visdata.forEach(function(d){ d.date = parseDate(d['date']) });
@@ -325,7 +328,7 @@ $(function(){
         }).get();
 
         for (var i = 0; i < variables.length; ++i) {
-          BackGraph('value', variables[i], visdata, type='point');
+          BackGraph(graphvar, variables[i], visdata, type='point');
         }
 
       },
@@ -359,6 +362,9 @@ $('body').ready(function(){
     } else if(slice == 'interqER'){
       dat['variable'] = 'ER'
       var requested_v = 'ER'
+    } else if(slice == 'interqGP'){
+      dat['variable'] = 'GPP'
+      var requested_v = 'GPP'
     } else {
       dat['variable'] = current_plot
       var requested_v = 'H'
@@ -412,15 +418,7 @@ $('body').ready(function(){
         }
         rangesA = rangesA.map(x => [parseDate(x[0]), x[1], x[2]]);
 
-        // var variables = $('#variables:checked').map(function(){
-        //   return this.value;
-        // }).get();
-
-        // for (var i = 0; i < variables.length; ++i) {
-          // Interquartile(variables[i], rangesA);
         Interquartile(current_plot, rangesA, req=requested_v);
-        // }
-
       },
       error: function(error){
         console.log(error);
