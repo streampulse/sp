@@ -2365,6 +2365,8 @@ def interquartile():
     var = request.json['variable']
     region, site = request.json['site'].split('_')
     # region='VT'; site='Pass'; var='DO_mgL'
+    # region='NC'; site='Eno'
+    print var, region, site
 
     if(var not in ['ER', 'GPP']):
         pre_agg = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
@@ -2381,15 +2383,17 @@ def interquartile():
                 reg, sit = m.groups()
                 if sit == site and reg == region:
                     outputs_keep.append(o)
+        print outputs_keep
+
+        r_func_def = 'function(file){' +\
+                         'x = readRDS(file);' +\
+                         'x$date = as.character(x$date);' +\
+                         'return(x);' +\
+                     '}'
+        r_func = robjects.r(r_func_def)
 
         pre_agg = pd.DataFrame()
         for o in outputs_keep:
-            r_func_def = 'function(file){' +\
-                             'x = readRDS(file);' +\
-                             'x$date = as.character(x$date);' +\
-                             'return(x);' +\
-                         '}'
-            r_func = robjects.r(r_func_def)
             df = r_func(cfg.RESULTS_FOLDER + '/' + o)
             df = pandas2ri.ri2py(df)
 
@@ -2397,12 +2401,14 @@ def interquartile():
                 o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.ER], axis=1)
             else:
                 o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.GPP], axis=1)
+            print o_pre_agg.shape
 
             pre_agg = pre_agg.append(o_pre_agg, ignore_index=True)
 
         pre_agg.columns = ['time', 'val']
         pre_agg = pre_agg.reset_index(drop=True)
         pre_agg = pre_agg.dropna(how='any')
+        print pre_agg.shape
 
     def quant25(x):
         return x.quantile(.25)
@@ -2411,6 +2417,7 @@ def interquartile():
 
     quantiles = pre_agg.pivot_table(index='time', values='val',
         aggfunc=[quant25, quant75]).reset_index()
+    print quantiles.to_json(orient='values')
 
     return jsonify(dat=quantiles.to_json(orient='values'))
 
@@ -2421,6 +2428,7 @@ def getviz():
     startDate = request.json['startDate']
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
+    # region='NC'; site='Eno'; startDate='2016-10-20'; endDate='2017-10-20'; variables=['DO_mgL','WaterTemp_C']
 
     #this block shouldnt be necessary once data leveling is in place.
     #you'll then be able to restore the block below, unless we still
@@ -2433,10 +2441,10 @@ def getviz():
         "and data.DateTime_UTC<'" + endDate + "' " +\
         "and data.variable in ('" + "', '".join(variables) + "')"
     xx = pd.read_sql(sqlq, db.engine)
-    xx.loc[xx.flag == 'Bad Data', "value"] = None # set NaNs
+    xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
-        'comment']].dropna().drop(['flagid'],
-        axis=1).to_json(orient='records', date_format='iso')
+        'comment']].dropna().drop(['flagid'], axis=1)
+    flagdat = flagdat[flagdat.flag != 'Bad Data'] #no need to send flag data for bad points
 
     xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
         .set_index(["DateTime_UTC", "variable"])\
@@ -2444,8 +2452,6 @@ def getviz():
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
-
-
 
     # sqlq = "select * from data where region='" + region + "' and site='" +\
     #     site + "' " + "and DateTime_UTC>'" + startDate + "' " +\
@@ -2486,8 +2492,9 @@ def getviz():
     rss.set = rss.set.shift(1)
     sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
 
-    return jsonify(variables=variables, dat=xx.to_json(orient='records',
-        date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
+    return jsonify(variables=variables, sunriseset=sunriseset,
+        dat=xx.to_json(orient='records', date_format='iso'),
+        flagdat=flagdat.to_json(orient='records', date_format='iso'))
 
 @app.route('/logbook')
 def print_log():

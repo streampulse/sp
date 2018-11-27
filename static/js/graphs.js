@@ -112,7 +112,7 @@ function Plots(variables, data, flags, outliers, page){
         .style("text-anchor", "start")
         .text(vvv);
 
-    svg.append("g") //secondary axis for overlays (technically underlays)
+    svg.append("g") //secondary axis for backgraphs and overlays
         .attr('id', vvv + 'rightaxis')
         .attr("class", "axis axis--y")
         .attr("transform", "translate(" + width + ", 0)");
@@ -495,10 +495,12 @@ function Interquartile(graph, ranges, req){
   }
 
   for(r in ranges_chunked){
-    cur_foregraph.append("path")
-      .datum(ranges_chunked[r])
-      .attr("class", "interquartile")
-      .attr("d", area);
+    if(ranges_chunked[r].length){
+      cur_foregraph.append("path")
+        .datum(ranges_chunked[r])
+        .attr("class", "interquartile")
+        .attr("d", area);
+    }
   }
 
   // svg.selectAll(".vdot")
@@ -592,10 +594,12 @@ function BackGraph(vvv, graph, data, type){
       }
 
       for(d in data_chunked){
-        cur_backgraph.append("path")
-          .datum(data_chunked[d])
-          .attr("class", "backarea")
-          .attr("d", area);
+        if(data_chunked[d].length){
+          cur_backgraph.append("path")
+            .datum(data_chunked[d])
+            .attr("class", "backarea")
+            .attr("d", area);
+        }
       }
 
     } else { //type == 'point'

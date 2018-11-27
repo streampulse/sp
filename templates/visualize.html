@@ -383,6 +383,7 @@ $('body').ready(function(){
         //duplicate hourly aggregated values as necessary to reconstitute
         //the full time range of already plotted series
         ranges = JSON.parse(response.dat);
+        console.log(ranges)
         mindate = x.domain()[0];
         minabb = mindate.toISOString().slice(5, 11);
         // minabb = mindate.toISOString().slice(5, 13);
