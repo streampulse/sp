@@ -2376,7 +2376,7 @@ def interquartile():
         outputs = os.listdir(cfg.RESULTS_FOLDER)
         outputs_keep = []
         for o in outputs:
-            m = re.match('predictions_([a-zA-Z0-9]{2})_([a-zA-Z0-9]+).*', o)
+            m = re.match('predictions_([a-zA-Z0-9]{2})_(.+)_[0-9]{4}.rds$', o)
             if m:
                 reg, sit = m.groups()
                 if sit == site and reg == region:
