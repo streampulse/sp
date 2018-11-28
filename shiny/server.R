@@ -33,6 +33,7 @@ shinyServer(function(input, output, session){
     js$getHeight10()
     js$getHeight05()
 
+    #determine which models the user has access to, based on their token
     viewable_mods = reactive({
 
         input$submit_token
@@ -87,6 +88,7 @@ shinyServer(function(input, output, session){
         return(out)
     })
 
+    #trigger updates if user submits a token
     observeEvent(input$submit_token, {
         viewable_mods()
 
@@ -98,64 +100,6 @@ shinyServer(function(input, output, session){
         updateTextInput(session, 'MPhidden_counter2', label=NULL,
             value=as.numeric(MPcounter2) + 1)
     })
-
-    # observeEvent(input$MPinput_site, {
-    #     MPv = viewable_mods()
-    #     updateSelectizeInput(session, 'MPinput_year',
-    #         choices=MPv$siteyears[MPv$sitenames == input$MPinput_site])
-    # })
-    #
-    # update_pg1 = reactive({
-    #
-    #     MPv = viewable_mods()
-    #
-    #     MPregionsite = input$MPinput_site
-    #     MPyear = input$MPinput_year
-    #
-    #     #input_year depends on input_site, but server must call to ui and
-    #     #hear back before year can update, so the following is needed:
-    #     # legit_year = year %in% siteyears[sitenames == input$MPinput_site]
-    #     MPlegit_year = MPyear %in% MPv$siteyears[MPv$sitenames == input$MPinput_site]
-    #
-    #     if(MPregionsite != '' && MPyear != '' && MPlegit_year){
-    #         MPmodOut_ind = grep(paste0('modOut_', MPregionsite, '_', MPyear,
-    #             '.*'), fnames)
-    #         MPmodOut = readRDS(paste0('data/', fnames[MPmodOut_ind[1]]))
-    #     } else {
-    #         MPmodOut = NULL
-    #     }
-    #
-    #     return(MPmodOut)
-    # })
-
-    # output$time_slider = renderUI({
-    #
-    #     modpred = update_pg2()
-    #     mod_out = modpred$mod_out
-    #
-    #     slider_toggleA <<- !slider_toggleA
-    #     # print(paste('sliderA', slider_toggleA))
-    #
-    #     if(!is.null(mod_out$data$solar.time[1])){
-    #
-    #         slider_toggleB <<- !slider_toggleB
-    #         # print(paste('sliderB', slider_toggleB))
-    #
-    #         #convert POSIX time to DOY and UNIX time
-    #         DOY = as.numeric(gsub('^0+', '',
-    #             strftime(mod_out$data$solar.time, format="%j")))
-    #
-    #         #get DOY bounds for slider
-    #         DOYmin = ifelse(DOY[1] %in% 365:366, 1, DOY[1])
-    #         DOYmax = DOY[length(DOY)]
-    #
-    #         sliderInput("range", label=NULL,
-    #             min=DOYmin, max=DOYmax, value=c(DOYmin, DOYmax),
-    #             ticks=TRUE, step=6,
-    #             animate=animationOptions(interval=2000)
-    #         )
-    #     }
-    # })
 
     #update year input and trigger update of slider + plots if site changes (o2 and metab page)
     observeEvent(input$input_site, {
@@ -356,6 +300,7 @@ shinyServer(function(input, output, session){
         }
     })
 
+    #o2 and metab plots
     observeEvent({
         input$range
         input$hidden_counter2
@@ -454,7 +399,7 @@ shinyServer(function(input, output, session){
 
     })
 
-
+    #model performance plots
     observeEvent({
         input$MPrange
         input$MPhidden_counter2
@@ -479,19 +424,13 @@ shinyServer(function(input, output, session){
 
                 output$KvQvER = renderPlot({
                     if(!is.null(MPfitpred$mod_out)){
-                        KvQvER_plot(mod_out=MPfitpred$mod_out)
+                        KvQvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
+                            en=MPend)
                     }
                 }, height=height50)
             }
         }
     })
-
-    # output$KvQvER = renderPlot({
-    #     mod_out = update_pg1()
-    #     if(!is.null(mod_out)){
-    #         KvQvER_plot(mod_out=mod_out)
-    #     }
-    # }, height=height50)
 
 })
 

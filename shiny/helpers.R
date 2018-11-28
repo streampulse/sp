@@ -304,12 +304,46 @@ O2_legend = function(){
         lwd=c(6,1), box.col='transparent')
 }
 
-KvQvER_plot = function(mod_out){
+KvQvER_plot = function(mod_out, st, en){
+    # print(st); print(en)
+    # mm <<- mod_out
+    # st=3; en=94
+
+    #convert POSIX time to DOY and UNIX time
+    DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
+        format="%j")))
+    date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
+        format="%Y-%m-%d")))
+    # ustamp = as.numeric(as.POSIXct(mod_out$data$solar.time, tz='UTC'))
+
+    # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
+    if(DOY[1] %in% 365:366){
+        DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
+    }
+
+    #filter data by date bounds specified in time slider
+    xmin_ind = match(st, DOY)
+    if(is.na(xmin_ind)) xmin_ind = 1
+    xmin = date[xmin_ind]
+
+    xmax_ind = length(DOY) - match(en, rev(DOY)) + 1
+    if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
+    xmax = date[xmax_ind]
+
+    daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
+            mod_out$fit$daily$date >= xmin,]
+    data_daily_slice = mod_out$data_daily[mod_out$data_daily$date <= xmax &
+            mod_out$data_daily$date >= xmin,]
+
+    # slice = mod_out$data[xmin_ind:xmax_ind, c('DO.obs', 'DO.mod')]#, 'solar.time')]
+    # yrng = range(c(slice$DO.obs, slice$DO.mod), na.rm=TRUE)
+
+    #plot
     par(mfrow=c(1,2))
-    mod = lm(mod_out$fit$daily$ER_mean ~
-            mod_out$fit$daily$K600_daily_mean)
+    mod = lm(daily_slice$ER_mean ~
+            daily_slice$K600_daily_mean)
     R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
-    plot(mod_out$fit$daily$K600_daily_mean, mod_out$fit$daily$ER_mean,
+    plot(daily_slice$K600_daily_mean, daily_slice$ER_mean,
         col='darkgreen', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
     mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2,
@@ -317,8 +351,8 @@ KvQvER_plot = function(mod_out){
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
     abline(mod, lty=2, col='gray50', lwd=2)
-    plot(log(mod_out$data_daily$discharge.daily),
-        mod_out$fit$daily$K600_daily_mean,
+    plot(log(data_daily_slice$discharge.daily),
+        daily_slice$K600_daily_mean,
         col='purple4', xlab='Daily mean Q (log cms)', ylab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
 }
