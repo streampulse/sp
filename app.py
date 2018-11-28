@@ -2365,8 +2365,6 @@ def interquartile():
     var = request.json['variable']
     region, site = request.json['site'].split('_')
     # region='VT'; site='Pass'; var='DO_mgL'
-    # region='NC'; site='Eno'
-    print var, region, site
 
     if(var not in ['ER', 'GPP']):
         pre_agg = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
@@ -2378,12 +2376,11 @@ def interquartile():
         outputs = os.listdir(cfg.RESULTS_FOLDER)
         outputs_keep = []
         for o in outputs:
-            m = re.match('predictions_([a-zA-Z]{2})_([a-zA-Z]+).*', o)
+            m = re.match('predictions_([a-zA-Z0-9]{2})_([a-zA-Z0-9]+).*', o)
             if m:
                 reg, sit = m.groups()
                 if sit == site and reg == region:
                     outputs_keep.append(o)
-        print outputs_keep
 
         r_func_def = 'function(file){' +\
                          'x = readRDS(file);' +\
@@ -2401,7 +2398,6 @@ def interquartile():
                 o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.ER], axis=1)
             else:
                 o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.GPP], axis=1)
-            print o_pre_agg.shape
 
             pre_agg = pre_agg.append(o_pre_agg, ignore_index=True)
 
