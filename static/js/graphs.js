@@ -272,7 +272,7 @@ function Plots(variables, data, flags, outliers, page){
       }
       d3.select('#sidebuttons_' + vvv)
         .append('button')
-          .attr('id', 'interqER' + vvv)
+          .attr('id', 'interqER_' + vvv)
           .attr('name', 'I' + vvv)
           .attr('class', 'btn btn-success btn-block')
           .property('disabled', function(d){
@@ -283,7 +283,7 @@ function Plots(variables, data, flags, outliers, page){
           .text('ER');
       d3.select('#sidebuttons_' + vvv)
         .append('button')
-          .attr('id', 'interqGP' + vvv)
+          .attr('id', 'interqGP_' + vvv)
           .attr('name', 'I' + vvv)
           .attr('class', 'btn btn-success btn-block')
           .property('disabled', function(d){
@@ -299,16 +299,15 @@ function Plots(variables, data, flags, outliers, page){
           .duration(50)
           .style('background', '#89e6a1')
           .style("opacity", 1);
-          button_tooltip.html('View historical interquartile range ' +
-            '(25th-75th percentile, binned by day).')
+        button_tooltip.html('View historical interquartile range ' +
+          '(25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
-        })
-        .on("mouseout", function(d) {
-          button_tooltip.transition()
-            .duration(100)
-            .style("opacity", 0);
-        });
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
 
       d3.selectAll("button[id^='interqDO_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
@@ -316,70 +315,62 @@ function Plots(variables, data, flags, outliers, page){
           // .style('background', '#ffd68c')
           .style('background', '#89e6a1')
           .style("opacity", 1);
-          button_tooltip.html('View historical interquartile range of ' +
-            'dissolved oxygen (25th-75th percentile, binned by day).')
+        button_tooltip.html('View historical interquartile range of ' +
+          'dissolved oxygen (25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
-        })
-        .on("mouseout", function(d) {
-          button_tooltip.transition()
-            .duration(100)
-            .style("opacity", 0);
-        });
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
 
       d3.selectAll("button[id^='interqQ_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
           .duration(50)
-          // .style('background', '#ffd68c')
           .style('background', '#89e6a1')
           .style("opacity", 1);
-          button_tooltip.html('View historical interquartile range of ' +
-            'discharge (25th-75th percentile, binned by day).')
+        button_tooltip.html('View historical interquartile range of ' +
+          'discharge (25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
-        })
-        .on("mouseout", function(d) {
-          button_tooltip.transition()
-            .duration(100)
-            .style("opacity", 0);
-        });
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
 
-        d3.selectAll("button[id^='interqER_']").on("mouseover", function(d, j) {
-          button_tooltip.transition()
-            .duration(50)
-            // .style('background', '#ffd68c')
-            .style('background', '#89e6a1')
-            .style("opacity", 1);
-            button_tooltip.html('View historical interquartile range of ' +
-              'model-estimated ecosystem respiration ' +
-              '(25th-75th percentile, binned by day).')
-            .style("left", (d3.event.pageX - 230) + "px")
-            .style("top", (d3.event.pageY - 50) + "px");
-          })
-          .on("mouseout", function(d) {
-            button_tooltip.transition()
-              .duration(100)
-              .style("opacity", 0);
-          });
+      d3.selectAll("button[id^='interqER_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+        button_tooltip.html('View historical interquartile range of ' +
+          'model-estimated ecosystem respiration ' +
+          '(25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
 
-          d3.selectAll("button[id^='interqGP_']").on("mouseover", function(d, j) {
-            button_tooltip.transition()
-      .attr("class", "maybe_outl")
-              .duration(50)
-              // .style('background', '#ffd68c')
-              .style('background', '#89e6a1')
-              .style("opacity", 1);
-              button_tooltip.html('View historical interquartile range of ' +
-                'model-estimated gross primary productivity ' +
-                '(25th-75th percentile, binned by day).')
-              .style("left", (d3.event.pageX - 230) + "px")
-              .style("top", (d3.event.pageY - 50) + "px");
-            })
-            .on("mouseout", function(d) {
-              button_tooltip.transition()
-                .duration(100)
-                .style("opacity", 0);
-            });
+      d3.selectAll("button[id^='interqGP_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+        button_tooltip.html('View historical interquartile range of ' +
+          'model-estimated gross primary productivity ' +
+          '(25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
     }
 
     svg.append("g")
@@ -503,10 +494,10 @@ function Interquartile(graph, ranges, req){
       .append("text")
         .attr("fill", "rgb(30, 209, 44)")
         .attr("dy", "-0.71em")
-        .attr("dx", "-3em")
+        .attr("dx", "0em")
         // .attr('class', vvv + '_txt')
         .attr('class', 'varlab')
-        .style("text-anchor", "start")
+        .style("text-anchor", "middle")
         .html(function(d){
           if(req == 'DO'){return 'DO_mgL'} else if(req == 'Q'){return 'Discharge_m3s'}
           else if(req == 'ER'){
@@ -614,9 +605,9 @@ function BackGraph(vvv, graph, data, type){
       .append("text")
         .attr("fill", "rgb(173, 20, 219)")
         .attr("dy", "-0.71em")
-        .attr("dx", "-1em")
+        .attr("dx", "0em")
         .attr('class', 'varlab')
-        .style("text-anchor", "start")
+        .style("text-anchor", "middle")
         .text(vvv);
   }
 
