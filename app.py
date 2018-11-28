@@ -2293,7 +2293,12 @@ def visualize():
     dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
 
-    return render_template('visualize.html', sites=sitedict)
+    #get set of sites for which models have been fit
+    outputs = os.listdir(cfg.RESULTS_FOLDER)
+    avail_mods = list(set([o[7:len(o) - 9] for o in outputs if o[0:3] == 'mod']))
+
+    return render_template('visualize.html', sites=sitedict,
+        avail_mods=avail_mods)
 
 @app.route('/_getgrabvars', methods=["POST"])
 def getgrabvars():
@@ -2328,6 +2333,7 @@ def getvgrabviz():
     endDate = request.json['endDate']
     variables = request.json['grabvars']
     # variables = variables] if len(variables)
+    # region='NC'; site='Eno'; startDate='2017-06-01'; endDate='2017-07-01'; variables=['K']
 
     if variables[0] != 'None':
 
@@ -2338,6 +2344,7 @@ def getvgrabviz():
             "and DateTime_UTC<'" + endDate + "' "+\
             "and variable in ('" + "', '".join(variables) + "');"
         xx = pd.read_sql(sqlq, db.engine)
+        xx.columns = ['date', variables[0]]
         # xx.loc[xx.flag==0,"value"] = None # set NaNs
         # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
         #     axis=1).to_json(orient='records',date_format='iso') # flag data
@@ -2350,31 +2357,65 @@ def getvgrabviz():
     else:
         xx = 'None'
 
-    return jsonify(grabdat=xx)
+    return jsonify(grabdat=xx, var=variables[0]) #if this ever takes mult vars, change
 
 @app.route('/_interquartile',methods=["POST"])
 def interquartile():
 
-    # dat = pd.DataFrame({'time':request.json['time_arr'],
-    #     'var':request.json['var_arr']})
     var = request.json['variable']
     region, site = request.json['site'].split('_')
+    # region='VT'; site='Pass'; var='DO_mgL'
+    # region='NC'; site='Eno'
+    print var, region, site
 
-    # full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
-    #     "'T', mid(DateTime_UTC, 12, 2)) as " +\
-    full_record = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
-        "'T') as " +\
-        "time, value as val from data " +\
-        "where region='" + region + "' and site='" + site +\
-        "' and variable='" + var + "';", db.engine)
+    if(var not in ['ER', 'GPP']):
+        pre_agg = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
+            "'T') as " +\
+            "time, value as val from data " +\
+            "where region='" + region + "' and site='" + site +\
+            "' and variable='" + var + "';", db.engine)
+    else:
+        outputs = os.listdir(cfg.RESULTS_FOLDER)
+        outputs_keep = []
+        for o in outputs:
+            m = re.match('predictions_([a-zA-Z]{2})_([a-zA-Z]+).*', o)
+            if m:
+                reg, sit = m.groups()
+                if sit == site and reg == region:
+                    outputs_keep.append(o)
+        print outputs_keep
+
+        r_func_def = 'function(file){' +\
+                         'x = readRDS(file);' +\
+                         'x$date = as.character(x$date);' +\
+                         'return(x);' +\
+                     '}'
+        r_func = robjects.r(r_func_def)
+
+        pre_agg = pd.DataFrame()
+        for o in outputs_keep:
+            df = r_func(cfg.RESULTS_FOLDER + '/' + o)
+            df = pandas2ri.ri2py(df)
+
+            if var == 'ER':
+                o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.ER], axis=1)
+            else:
+                o_pre_agg = pd.concat([df.date.str[5:10] + 'T', df.GPP], axis=1)
+            print o_pre_agg.shape
+
+            pre_agg = pre_agg.append(o_pre_agg, ignore_index=True)
+
+        pre_agg.columns = ['time', 'val']
+        pre_agg = pre_agg.dropna(how='any').reset_index(drop=True)
 
     def quant25(x):
         return x.quantile(.25)
     def quant75(x):
         return x.quantile(.75)
 
-    quantiles = full_record.pivot_table(index='time', values='val',
+    quantiles = pre_agg.pivot_table(index='time', values='val',
         aggfunc=[quant25, quant75]).reset_index()
+    print quantiles.to_json(orient='values')
 
     return jsonify(dat=quantiles.to_json(orient='values'))
 
@@ -2385,6 +2426,7 @@ def getviz():
     startDate = request.json['startDate']
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
+    # region='NC'; site='Eno'; startDate='2016-10-21'; endDate='2016-10-22'; variables=['DO_mgL','WaterTemp_C','Light_lux']
 
     #this block shouldnt be necessary once data leveling is in place.
     #you'll then be able to restore the block below, unless we still
@@ -2397,10 +2439,14 @@ def getviz():
         "and data.DateTime_UTC<'" + endDate + "' " +\
         "and data.variable in ('" + "', '".join(variables) + "')"
     xx = pd.read_sql(sqlq, db.engine)
-    xx.loc[xx.flag == 'Bad Data', "value"] = None # set NaNs
+    # xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs so bad datapoints dont plot
+    xx = xx[xx.flag != 'Bad Data'] #instead, just remove bad data rows
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
-        'comment']].dropna().drop(['flagid'],
-        axis=1).to_json(orient='records', date_format='iso')
+        'comment']].dropna().drop(['flagid'], axis=1)
+
+    #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
+    #data results in good points receiving "bad data" labels, so remove those flags
+    flagdat = flagdat[flagdat.flag != 'Bad Data']
 
     xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
         .set_index(["DateTime_UTC", "variable"])\
@@ -2408,8 +2454,6 @@ def getviz():
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
-
-
 
     # sqlq = "select * from data where region='" + region + "' and site='" +\
     #     site + "' " + "and DateTime_UTC>'" + startDate + "' " +\
@@ -2450,8 +2494,9 @@ def getviz():
     rss.set = rss.set.shift(1)
     sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
 
-    return jsonify(variables=variables, dat=xx.to_json(orient='records',
-        date_format='iso'), sunriseset=sunriseset, flagdat=flagdat)
+    return jsonify(variables=variables, sunriseset=sunriseset,
+        dat=xx.to_json(orient='records', date_format='iso'),
+        flagdat=flagdat.to_json(orient='records', date_format='iso'))
 
 @app.route('/logbook')
 def print_log():

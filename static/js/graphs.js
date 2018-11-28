@@ -16,6 +16,7 @@ var brush = d3.brushX()
 var selectedBrush;
 var data;
 var variables;
+var fullvarlist = []
 var sundat;
 // var flags;
 var datna; //is this still needed?
@@ -29,11 +30,35 @@ var point_tooltip = d3.select("body").append("div")
 var button_tooltip = d3.select("body").append("div")
     .attr("class", "tooltip button-tooltip")
     .style("opacity", 0);
+var timeDiffArray = function(x){
+  padright = x.concat(null)
+  padleft = [null].concat(x)
+  diffs = []
+  for(var i = 0; i < padright.length; i++){
+    diffs.push(padright[i] - padleft[i])
+  }
+  diffs = diffs.slice(1, diffs.length - 1)
+  return(diffs)
+}
+var modeVal = function mode(arr){
+    return arr.sort((a,b) =>
+          arr.filter(v => v===a).length
+        - arr.filter(v => v===b).length
+    ).pop();
+}
 
 function Plots(variables, data, flags, outliers, page){
 
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+
+  //populate full list of variables and determine whether model outputs exist
+  fullvarlist = []
+  $('#viz_vars').children('#variables').each(function(){
+    fullvarlist.push($(this).val())
+  })
+  var sitecode = dsite.selectize.getValue()
+  var model_exists = avail_mods.includes(sitecode) ? true : false
 
   //set x domain to extent of dates
   x.domain(d3.extent(data, function(d) { return d.date; }));
@@ -87,7 +112,7 @@ function Plots(variables, data, flags, outliers, page){
         .style("text-anchor", "start")
         .text(vvv);
 
-    svg.append("g") //secondary axis for overlays (technically underlays)
+    svg.append("g") //secondary axis for backgraphs and overlays
         .attr('id', vvv + 'rightaxis')
         .attr("class", "axis axis--y")
         .attr("transform", "translate(" + width + ", 0)");
@@ -214,13 +239,7 @@ function Plots(variables, data, flags, outliers, page){
               .style("opacity", 0);
           });
 
-      //non-flagged points shouldnt register mouse activity
-      // svg.selectAll('.vdot:not(.flagdot)')
-      //   .attr('pointer-events', 'none');
-
-      // d3.select("#sidebuttons").append("div")
-      //   .attr("height", height + margin.top + margin.bottom)
-      //   .text('oi');
+      //side buttons
       d3.select('#svgrow_' + vvv)
         .append('div')
           .attr('id', 'sidebuttons_' + vvv)
@@ -238,22 +257,57 @@ function Plots(variables, data, flags, outliers, page){
             .attr('class', 'btn btn-success btn-block')
             .text('DO');
       }
+      if(vvv != 'Discharge_m3s'){
+        d3.select('#sidebuttons_' + vvv)
+          .append('button')
+            .attr('id', 'interqQ_' + vvv)
+            .attr('name', 'I' + vvv)
+            .attr('class', 'btn btn-success btn-block')
+            .property('disabled', function(d){
+              if(! fullvarlist.includes('Discharge_m3s')){
+                return true;
+              }
+            })
+            .text('Q');
+      }
+      d3.select('#sidebuttons_' + vvv)
+        .append('button')
+          .attr('id', 'interqER_' + vvv)
+          .attr('name', 'I' + vvv)
+          .attr('class', 'btn btn-success btn-block')
+          .property('disabled', function(d){
+            if(! model_exists){
+              return true;
+            }
+          })
+          .text('ER');
+      d3.select('#sidebuttons_' + vvv)
+        .append('button')
+          .attr('id', 'interqGP_' + vvv)
+          .attr('name', 'I' + vvv)
+          .attr('class', 'btn btn-success btn-block')
+          .property('disabled', function(d){
+            if(! model_exists){
+              return true;
+            }
+          })
+          .text('PP');
 
+      //side button mouseover tooltips
       d3.selectAll("button[id^='interq_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
           .duration(50)
           .style('background', '#89e6a1')
           .style("opacity", 1);
-          button_tooltip.html('View historical interquartile range ' +
-            '(25th-75th percentile, binned by day).')
+        button_tooltip.html('View historical interquartile range ' +
+          '(25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
-        })
-        .on("mouseout", function(d) {
-          button_tooltip.transition()
-            .duration(100)
-            .style("opacity", 0);
-        });
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
 
       d3.selectAll("button[id^='interqDO_']").on("mouseover", function(d, j) {
         button_tooltip.transition()
@@ -261,18 +315,66 @@ function Plots(variables, data, flags, outliers, page){
           // .style('background', '#ffd68c')
           .style('background', '#89e6a1')
           .style("opacity", 1);
-          button_tooltip.html('View historical interquartile range of ' +
-            'dissolved oxygen (25th-75th percentile, binned by day).')
+        button_tooltip.html('View historical interquartile range of ' +
+          'dissolved oxygen (25th-75th percentile, binned by day).')
           .style("left", (d3.event.pageX - 230) + "px")
           .style("top", (d3.event.pageY - 50) + "px");
-        })
-        .on("mouseout", function(d) {
-          button_tooltip.transition()
-            .duration(100)
-            .style("opacity", 0);
-        });
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
 
+      d3.selectAll("button[id^='interqQ_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+        button_tooltip.html('View historical interquartile range of ' +
+          'discharge (25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
+
+      d3.selectAll("button[id^='interqER_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+        button_tooltip.html('View historical interquartile range of ' +
+          'model-estimated ecosystem respiration ' +
+          '(25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
+
+      d3.selectAll("button[id^='interqGP_']").on("mouseover", function(d, j) {
+        button_tooltip.transition()
+          .duration(50)
+          .style('background', '#89e6a1')
+          .style("opacity", 1);
+        button_tooltip.html('View historical interquartile range of ' +
+          'model-estimated gross primary productivity ' +
+          '(25th-75th percentile, binned by day).')
+          .style("left", (d3.event.pageX - 230) + "px")
+          .style("top", (d3.event.pageY - 50) + "px");
+      }).on("mouseout", function(d) {
+        button_tooltip.transition()
+          .duration(100)
+          .style("opacity", 0);
+      });
     }
+
+    svg.append("g")
+        .attr("class", "foregraph");
   }
 }
 
@@ -315,97 +417,98 @@ function Interquartile(graph, ranges, req){
   //make new y axis scale and select graph
   var ynew = d3.scaleLinear().range([height, 0]);
   var yold = d3.scaleLinear().range([height, 0]),
+  cur_foregraph = d3.select("." + graph).select(".foregraph");
   cur_backgraph = d3.select("." + graph).select(".backgraph");
 
   //remove previous graph and secondary axis if it exists
-  cur_backgraph.select("path").remove();
+  cur_backgraph.selectAll("path").remove();
   cur_backgraph.selectAll("circle").remove();
+  cur_foregraph.selectAll("path").remove();
+  cur_foregraph.selectAll("circle").remove();
   d3.select('#' + graph + 'rightaxis').attr("visibility", "hidden");
-  // //replace basis of secondary axis
-  // d3.select('div.' + graph).append("g")
-  //     .attr('id', graph + 'rightaxis')
-  //     .attr("class", "axis axis--y")
-  //     .attr("transform", "translate(" + width + ", 0)");
 
+  //set domains for left and right (old and new) y-axes
   flattened_ranges = [].concat(...ranges.map(x => [x[1], x[2]]));
   ynew.domain([d3.min(flattened_ranges), d3.max(flattened_ranges)]);
   yold.domain(d3.extent(data, function(d) { return d[graph]; }));
 
-  // ynew.domain(d3.extent(data, function(d) {
-  //   return d[vvv]; }));
-
-  // var zz = d3.line();
-  //   // .defined(function(d){
-  //   //   if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-  //   //     rrr = false
-  //   //   } else {
-  //   //     rrr = true
-  //   //   }
-  //   //   return rrr
-  //   // });
-  //   // zz.x(function(d) { return x(d[0]); });
-  //   // zz.y(function(d) { return y(d[1]); });
-  //   zz.x(function(d) {
-  //     return x(d.DateTime_UTC);
-  //   });
-  //   zz.y(function(d) { return y(d.DO_mgL); });
-  //
-  // // d3.select("." + graph).data(data).enter().append('circle')
-  // cur_backgraph.data(data).enter().append('circle')
-  // // data.filter(function(d) { return d[vvv]; })
-  //   .attr("class", "vdot")
-  //   .attr("cx", zz.x())
-  //   .attr("cy", zz.y())
-  //   .attr("r", 2)
-
+  //create accessor for interquartile range polygon
   var area = d3.area()
-      .defined(function(d){
-        if(d[1]==null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
-          rrr = false
-        }else{
-          rrr = true
-        }
-        return rrr
-      });
-  area.x(function(d) {
-    return x(d[0]);
-  });
-  area.y0(function(d){
-    if(req == 'DO'){ return ynew(d[1]); } else { return yold(d[1]); }
-  }).y1(function(d) {
-    if(req == 'DO'){ return ynew(d[2]); } else { return yold(d[2]); }
-  });
+    .defined(function(d){
+      if(d[1] == null || d[0] < x.domain()[0] || d[0] > x.domain()[1]){
+        rrr = false
+      } else {
+        rrr = true
+      }
+      return rrr
+    });
+  area.x(d => x(d[0]));
+  area.y0(d => ['DO', 'Q', 'ER', 'GPP'].includes(req) ? ynew(d[1]) : yold(d[1]))
+  .y1(d => ['DO', 'Q', 'ER', 'GPP'].includes(req) ? ynew(d[2]) : yold(d[2]));
 
-  cur_backgraph.append("path")
-    .datum(ranges)
-    .attr("class", "interquartile")
-    .attr("d", area);
 
-  // svg.selectAll(".vdot")
-  //   .data(data.filter(function(d) { return d[vvv]; }))
-  // .enter().append("circle")
-  //   .attr("class", "vdot")
-  //   .attr("cx", line.x())
-  //   .attr("cy", line.y())
+  //split interquartile data into chunks so that gaps can be shown
+  var diffs = timeDiffArray(ranges.map(x => x[0]))
+  var gapinds = diffs.map((x, i) => x == 86400000 ? null : i).filter(x => x != null)
+  var bounds = [0].concat(gapinds).concat(diffs.length)
+  var ranges_chunked = []
+  for(var i = 0; i < bounds.length - 1; i++){
+    ranges_chunked.push(ranges.slice(bounds[i] + 1, bounds[i+1] + 1))
+      //+ 1 above converts from diff index to ranges index
+  }
+
+  //plot interquartile polygon in chunks
+  for(r in ranges_chunked){
+    if(ranges_chunked[r].length){
+      cur_foregraph.append("path")
+        .datum(ranges_chunked[r])
+        .attr("class", "interquartile")
+        .attr("d", area);
+    }
+  }
+
+  //create line accessor and plot line for polygon portions where y0 == y1
+  var intline = d3.line()
+    .defined(d => d[2] == null ? false : true);
+  intline.x(d => x(d[0]));
+  intline.y(d => ['DO', 'Q', 'ER', 'GPP'].includes(req) ? ynew(d[2]) : yold(d[2]));
+
+  for(r in ranges_chunked){
+    if(ranges_chunked[r].length){
+      cur_foregraph.append('path')
+        .attr("d", intline(ranges_chunked[r]))
+        .attr("class", 'interquartile_line');
+    }
+  }
 
   // refresh right-hand axis
-  if(req == 'DO'){
+  if(['DO', 'Q', 'ER', 'GPP'].includes(req)){
     d3.select("#" + graph + 'rightaxis')
-        .call(d3.axisRight().scale(ynew).ticks(6))
-        .attr('class', 'interquartile interquart_axis')
-        .attr("visibility", "visible")
-        .select('text')
-        .remove();
+      .call(d3.axisRight().scale(ynew).ticks(6))
+      .attr('class', 'interquartile interquart_axis')
+      .attr("visibility", "visible")
+      .selectAll('text')
+      .filter('.varlab')
+      .remove();
     d3.select("#" + graph + 'rightaxis')
-        .append("text")
-          // .attr("fill", "rgb(102, 153, 153)")
-          // .attr("fill", "rgb(237, 166, 10)")
-          .attr("fill", "rgb(30, 209, 44)")
-          .attr("dy", "-0.71em")
-          .attr("dx", "-3em")
-          // .attr('class', vvv + '_txt')
-          .style("text-anchor", "start")
-          .text('DO_mgL');
+      .append("text")
+        .attr("fill", "rgb(30, 209, 44)")
+        .attr("dy", "-0.71em")
+        .attr("dx", "0em")
+        // .attr('class', vvv + '_txt')
+        .attr('class', 'varlab')
+        .style("text-anchor", "middle")
+        .html(function(d){
+          if(req == 'DO'){return 'DO_mgL'} else if(req == 'Q'){return 'Discharge_m3s'}
+          else if(req == 'ER'){
+            return 'O<tspan dy ="5">2</tspan><tspan dy ="-5"> gm</tspan>' +
+            '<tspan dy ="-5">-2</tspan><tspan dy ="5">d</tspan><tspan dy ="-5">-1</tspan>'
+          }
+          else if(req == 'GPP'){
+            return 'O<tspan dy ="5">2</tspan><tspan dy ="-5"> gm</tspan>' +
+            '<tspan dy ="-5">-2</tspan><tspan dy ="5">d</tspan><tspan dy ="-5">-1</tspan>'
+          }
+        });
   } else {
     d3.select("#" + graph + 'rightaxis').attr("visibility", "hidden");
   }
@@ -417,16 +520,13 @@ function BackGraph(vvv, graph, data, type){
   //make new y axis scale and select graph
   var ynew = d3.scaleLinear().range([height, 0]);
   cur_backgraph = d3.select("." + graph).select(".backgraph")
+  cur_foregraph = d3.select("." + graph).select(".foregraph");
 
   // remove previous graph and secondary axis if it exists
-  cur_backgraph.select("path").remove();
+  cur_backgraph.selectAll("path").remove();
   cur_backgraph.selectAll("circle").remove();
-  // d3.select('[id$=rightaxis]').attr("visibility", "hidden");
-  // //replace basis of secondary axis
-  // d3.select('svg.' + graph).append("g")
-  //     .attr('id', graph + 'rightaxis')
-  //     .attr("class", "axis axis--y")
-  //     .attr("transform", "translate(" + width + ", 0)");
+  cur_foregraph.selectAll("path").remove();
+  cur_foregraph.selectAll("circle").remove();
 
   if(typeof data !== 'string' || data !== 'None'){
 
@@ -448,14 +548,30 @@ function BackGraph(vvv, graph, data, type){
           return rrr
         });
       area.x(function(d) {
-        return x(d.date); });
+        return x(d.date);
+      });
       area.y0(height).y1(function(d) {
-        return ynew(d[vvv]); });
+        return ynew(d[vvv]);
+      });
 
-      cur_backgraph.append("path")
-        .datum(data)
-        .attr("class", "backarea")
-        .attr("d", area);
+      var diffs = timeDiffArray(data.map(x => x.date))
+      mode_val = modeVal(diffs.slice(0, 25))
+      var gapinds = diffs.map((x, i) => x == mode_val ? null : i).filter(x => x != null)
+      var bounds = [0].concat(gapinds).concat(diffs.length)
+      var data_chunked = []
+      for(var i = 0; i < bounds.length - 1; i++){
+        data_chunked.push(data.slice(bounds[i] + 1, bounds[i+1] + 1))
+          //+ 1 above converts from diff index to ranges index
+      }
+
+      for(d in data_chunked){
+        if(data_chunked[d].length){
+          cur_backgraph.append("path")
+            .datum(data_chunked[d])
+            .attr("class", "backarea")
+            .attr("d", area);
+        }
+      }
 
     } else { //type == 'point'
 
@@ -464,7 +580,7 @@ function BackGraph(vvv, graph, data, type){
         .x(function(d){ return x(d.date); })
         .y(function(d){ return ynew(d[vvv]); });
 
-      cur_backgraph.selectAll(".grabdot")
+      cur_foregraph.selectAll(".grabdot")
         .data(data.filter(function(d) { return d[vvv]; }))
         .enter().append("circle")
           .attr("class", "grabdot")
@@ -475,23 +591,26 @@ function BackGraph(vvv, graph, data, type){
   }
 
   // refresh right axis
+  d3.select("#" + graph + 'rightaxis')
+    .selectAll('text')
+    .filter('.varlab')
+    .remove();
   if(typeof data !== 'string' || data !== 'None'){
     d3.select("#" + graph + 'rightaxis')
       .call(d3.axisRight().scale(ynew).ticks(6))
       .attr('class', 'backarea backarea_axis')
       .attr("display", "")
       .attr("visibility", "visible");
+    d3.select("#" + graph + 'rightaxis')
+      .append("text")
+        .attr("fill", "rgb(173, 20, 219)")
+        .attr("dy", "-0.71em")
+        .attr("dx", "0em")
+        .attr('class', 'varlab')
+        .style("text-anchor", "middle")
+        .text(vvv);
   }
-  d3.select("#" + graph + 'rightaxis')
-    .select('text')
-    .remove();
-  // d3.select("#" + graph + 'rightaxis')
-  //   .append("text")
-  //     .attr("fill", "rgb(173, 20, 219)")
-  //     .attr("dy", "-0.71em")
-  //     .attr("dx", "-3em")
-  //     .style("text-anchor", "start")
-  //     .text(vvv);
+
 }
 
 $(function(){

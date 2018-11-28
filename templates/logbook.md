@@ -1,5 +1,20 @@
 #Mike's Logbook
 
+###tue20181127
+ + brought grabdata backgraph to the front, made clearer
+ + fixed bug that resulted in Bad Data flags still appearing in input viz
+ + fixed bug with interquartile range polygons not plotting when y0 == y1
+###mon20181126
+ + fixed axis tickmark plotting bug in viz overlays
+ + added interquartile range overlay for model estimated ER and GPP
+ + interquartile overlays now show gaps
+ + interquartile now appears in front of points, rather than behind
+ + variable comparison polygons now show gaps
+ + fixed right axis label bugs, added labels for backgraphs
+###fri20181123
+ + added historic interquartile range overlay for discharge 
+ + disabled button for discharge overlay when discharge data not available
+ + wrote script to incorporate Australia data when it's available
 ###fri20181116
  + added option to select embargo period when uploading data for a new site; either series or grab
 ###thu20181115
