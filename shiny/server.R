@@ -421,6 +421,15 @@ shinyServer(function(input, output, session){
     #         value=as.numeric(MPcounter3) + 1)
     # })
 
+    # source_coords <- reactiveValues(xy=data.frame(x=c(1,1),  y=c(1,1)))
+    #
+    # observeEvent(input$KvER_click$x, {
+    #     source_coords$xy[2,] <- c(input$KvER_click$x, input$KvER_click$y)
+    #     print(input$KvER_click$x)
+    #     print(input$KvER_click$y)
+    #     # source_coords$xy[2,] <- c(6, -4)
+    # })
+
     #model performance plots
     observeEvent({
         input$MPrange
@@ -446,9 +455,9 @@ shinyServer(function(input, output, session){
         } else {
             if(!is.null(MPstart) && !is.null(MPend)){
 
-                # output$click_DOY = renderText({
-                #     paste(input$KvER_click$x)
-                # })
+                output$click_DOY = renderText({
+                    paste('default text')
+                })
 
                 output$KvER = renderPlot({
 
@@ -467,7 +476,12 @@ shinyServer(function(input, output, session){
                             # par(new=TRUE)
                         # }
                         KvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                            en=MPend, click=input$KvER_click)
+                            en=MPend)#, click=input$KvER_click)
+                        #
+                        # print(source_coords$xy[1,1])
+                        # print(source_coords$xy[1,2])
+                        # points(source_coords$xy[1,1], source_coords$xy[1,2], cex=3)
+
                         # MPcounter3 = isolate(input$MPhidden_counter3)
                         # updateTextInput(session, 'MPhidden_counter3', label=NULL,
                         #     value=as.numeric(MPcounter3) + 1)
@@ -483,6 +497,25 @@ shinyServer(function(input, output, session){
                 }, height=height50)
             }
         }
+    })
+
+    #replot KvER when a click is registered
+    observeEvent({
+        input$KvER_click$x
+    }, {
+        output$click_DOY = renderText({
+            paste(isolate(input$KvER_click$x))
+        })
+
+        MPfitpred = MPfitpred()
+
+        MPstart = input$MPrange[1]
+        MPend = input$MPrange[2]
+
+        output$KvER = renderPlot({
+            KvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
+                en=MPend, click=isolate(input$KvER_click))
+        }, height=height50)
     })
 
 })

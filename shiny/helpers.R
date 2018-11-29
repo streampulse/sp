@@ -225,7 +225,7 @@ kernel_legend = function(){
         seg.len=1, box.col='transparent', horiz=TRUE)
 }
 
-O2_plot = function(mod_out, st, en, brush){
+O2_plot = function(mod_out, st, en, brush, click){
     # st=0; en=366
     # brush = list(xmin=1460617508, xmax=1464058124, ymin=8.816155, ymax=14.45195)
 
@@ -304,7 +304,7 @@ O2_legend = function(){
         lwd=c(6,1), box.col='transparent')
 }
 
-KvER_plot = function(mod_out, st, en, click){
+KvER_plot = function(mod_out, st, en, click=NULL){
     # print(st); print(en)
     # mm <<- mod_out
     # st=3; en=94
@@ -346,19 +346,19 @@ KvER_plot = function(mod_out, st, en, click){
     abline(mod, lty=2, col='gray50', lwd=2)
 
     #highlight point on click
-    if(! is.null(click$x)){
+    if(! is.null(click) && ! is.null(click$x)){
         xrng = max(daily_slice$K600_daily_mean, na.rm=TRUE) -
             min(daily_slice$K600_daily_mean, na.rm=TRUE)
         yrng = max(daily_slice$ER_mean, na.rm=TRUE) -
             min(daily_slice$ER_mean, na.rm=TRUE)
 
-        hov_ind = which(daily_slice$ER_mean < click$y + 0.01 * yrng &
+        click_ind = which(daily_slice$ER_mean < click$y + 0.01 * yrng &
                 daily_slice$ER_mean > click$y - 0.01 * yrng &
                 daily_slice$K600_daily_mean < click$x + 0.01 * xrng &
                 daily_slice$K600_daily_mean > click$x - 0.01 * xrng)
-        hov_x = daily_slice$K600_daily_mean[hov_ind]
-        hov_y = daily_slice$ER_mean[hov_ind]
-        points(hov_x, hov_y, col='goldenrod1', pch=19, cex=3)
+        click_x = daily_slice$K600_daily_mean[click_ind]
+        click_y = daily_slice$ER_mean[click_ind]
+        points(click_x, click_y, col='goldenrod1', pch=19, cex=3)
     }
 }
 
