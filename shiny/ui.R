@@ -78,6 +78,7 @@ shinyUI(
                         div(style=paste0(style='display:none;'),
                             textInput('MPhidden_counter', label=NULL, value=0),
                             textInput('MPhidden_counter2', label=NULL, value=0)
+                            # textInput('MPhidden_counter3', label=NULL, value=0)
                         ),
                         selectInput('MPinput_site', label='Select site',
                             choices=c('No site selected' = '',
@@ -102,7 +103,9 @@ shinyUI(
                         width = 3
                     ),
                     mainPanel(
-                        plotOutput('KvQvER', height='auto')
+                        verbatimTextOutput('click_DOY'),
+                        plotOutput('KvER', height='auto', click='KvER_click'),
+                        plotOutput('KvQ', height='auto', click='KvQ_click')
                     )
                 )
             ),

@@ -219,7 +219,7 @@ shinyServer(function(input, output, session){
 
     })
 
-    #this allows incrementing of the counter without causing feedback loop
+    #this allows incrementing of counter 2 without causing feedback loop
     #inside renderUI below; unfortunately roundabout
     fitpred2 = eventReactive(fitpred(), {
 
@@ -385,7 +385,7 @@ shinyServer(function(input, output, session){
                 output$O2_plot = renderPlot({
                     par(mar=c(3,4,0,1), oma=rep(0,4))
                     O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
-                        input$O2_brush)
+                        brush=input$O2_brush)
                 }, height=height35)
 
                 output$kernel_plot = renderPlot({
@@ -398,6 +398,28 @@ shinyServer(function(input, output, session){
         }
 
     })
+
+    # # after the plots have generated for the first time, require click to replot
+    # observeEvent({
+    #     input$MPrange
+    #     # input$MPhidden_counter2
+    # }, {
+    #     updateTextInput(session, 'MPhidden_bool', label=NULL, value='FALSE')
+    # })
+
+    #this allows incrementing of counter 3 (model performance page only)
+    #without causing feedback loop inside observeEvent below
+    # MPupdate_counter3 = reactive({a = 1; print('a')}) #a = 1 is an arbitrary expression
+    # MPupdate_counter3 = reactive({
+    #     MPcounter3 = input$MPhidden_counter3
+    #     updateTextInput(session, 'MPhidden_counter3', label=NULL,
+    #         value=as.numeric(MPcounter3) + 1)
+    # })
+    # observeEvent(MPupdate_counter3(), {
+    #     MPcounter3 = input$MPhidden_counter3
+    #     updateTextInput(session, 'MPhidden_counter3', label=NULL,
+    #         value=as.numeric(MPcounter3) + 1)
+    # })
 
     #model performance plots
     observeEvent({
@@ -413,19 +435,50 @@ shinyServer(function(input, output, session){
 
             #all blank plots for the rare case in which someone anonymously
             #chooses a model, then enters a token.
-            output$KvQvER = renderPlot({
-                if(!is.null(MPfitpred$mod_out)){
-                    plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
-                }
+            output$KvER = renderPlot({
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+            }, height=height50)
+
+            output$KvQ = renderPlot({
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height50)
 
         } else {
             if(!is.null(MPstart) && !is.null(MPend)){
 
-                output$KvQvER = renderPlot({
+                # output$click_DOY = renderText({
+                #     paste(input$KvER_click$x)
+                # })
+
+                output$KvER = renderPlot({
+
+                    # initial_plot = as.numeric(isolate(input$MPhidden_counter3)) == 0
+                    # click_registered = !is.null(isolate(input$KvER_click$x))
+                    # click_sent = as.numeric(isolate(input$MPhidden_counter3)) %% 2 == 1
+                    # # print(as.numeric(isolate(input$MPhidden_counter3)))
+                    # print(initial_plot)
+                    # print(click_registered)
+                    # print(click_sent)
+
                     if(!is.null(MPfitpred$mod_out)){
-                        KvQvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                            en=MPend)
+                    # if(!is.null(MPfitpred$mod_out) &&
+                    #     (initial_plot || click_registered || click_sent)){
+                        # if(initial_plot || click_registered || click_sent){
+                            # par(new=TRUE)
+                        # }
+                        KvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
+                            en=MPend, click=input$KvER_click)
+                        # MPcounter3 = isolate(input$MPhidden_counter3)
+                        # updateTextInput(session, 'MPhidden_counter3', label=NULL,
+                        #     value=as.numeric(MPcounter3) + 1)
+                        # MPupdate_counter3()
+                    }
+                }, height=height50)
+
+                output$KvQ = renderPlot({
+                    if(!is.null(MPfitpred$mod_out)){
+                        KvQ_plot(mod_out=MPfitpred$mod_out, st=MPstart,
+                            en=MPend, click=input$KvQ_click)
                     }
                 }, height=height50)
             }
@@ -434,4 +487,7 @@ shinyServer(function(input, output, session){
 
 })
 
-
+# mm <<- MPfitpred$mod_out
+# ss <<- MPstart
+# ee <<- MPend
+# ii <<- input$KvER_click

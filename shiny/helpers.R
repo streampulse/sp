@@ -304,7 +304,7 @@ O2_legend = function(){
         lwd=c(6,1), box.col='transparent')
 }
 
-KvQvER_plot = function(mod_out, st, en){
+KvER_plot = function(mod_out, st, en, click){
     # print(st); print(en)
     # mm <<- mod_out
     # st=3; en=94
@@ -314,7 +314,107 @@ KvQvER_plot = function(mod_out, st, en){
         format="%j")))
     date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
         format="%Y-%m-%d")))
-    # ustamp = as.numeric(as.POSIXct(mod_out$data$solar.time, tz='UTC'))
+
+    # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
+    if(DOY[1] %in% 365:366){
+        DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
+    }
+
+    #filter data by date bounds specified in time slider
+    xmin_ind = match(st, DOY)
+    if(is.na(xmin_ind)) xmin_ind = 1
+    xmin = date[xmin_ind]
+
+    xmax_ind = length(DOY) - match(en, rev(DOY)) + 1
+    if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
+    xmax = date[xmax_ind]
+
+    daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
+            mod_out$fit$daily$date >= xmin,]
+
+    #plot
+    mod = lm(daily_slice$ER_mean ~
+            daily_slice$K600_daily_mean)
+    R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
+    plot(daily_slice$K600_daily_mean, daily_slice$ER_mean,
+        col='darkgreen', ylab='', xlab='Daily mean K600',
+        bty='l', font.lab=1, cex.axis=0.8, las=1)
+    mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2,
+        line=2.5)
+    mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
+        cex=0.8, col='gray50')
+    abline(mod, lty=2, col='gray50', lwd=2)
+
+    #highlight point on click
+    if(! is.null(click$x)){
+        xrng = max(daily_slice$K600_daily_mean, na.rm=TRUE) -
+            min(daily_slice$K600_daily_mean, na.rm=TRUE)
+        yrng = max(daily_slice$ER_mean, na.rm=TRUE) -
+            min(daily_slice$ER_mean, na.rm=TRUE)
+
+        hov_ind = which(daily_slice$ER_mean < click$y + 0.01 * yrng &
+                daily_slice$ER_mean > click$y - 0.01 * yrng &
+                daily_slice$K600_daily_mean < click$x + 0.01 * xrng &
+                daily_slice$K600_daily_mean > click$x - 0.01 * xrng)
+        hov_x = daily_slice$K600_daily_mean[hov_ind]
+        hov_y = daily_slice$ER_mean[hov_ind]
+        points(hov_x, hov_y, col='goldenrod1', pch=19, cex=3)
+    }
+}
+
+# KvER_point = function(mod_out, st, en, click){
+#
+#     #convert POSIX time to DOY and UNIX time
+#     DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
+#         format="%j")))
+#     date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
+#         format="%Y-%m-%d")))
+#
+#     # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
+#     if(DOY[1] %in% 365:366){
+#         DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
+#     }
+#
+#     #filter data by date bounds specified in time slider
+#     xmin_ind = match(st, DOY)
+#     if(is.na(xmin_ind)) xmin_ind = 1
+#     xmin = date[xmin_ind]
+#
+#     xmax_ind = length(DOY) - match(en, rev(DOY)) + 1
+#     if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
+#     xmax = date[xmax_ind]
+#
+#     daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
+#             mod_out$fit$daily$date >= xmin,]
+#
+#     #plot
+#     plot(daily_slice$K600_daily_mean, daily_slice$ER_mean,
+#         ylab='', xlab='', type='n', axes=FALSE)
+#
+#     #highlight point on click
+#     if(! is.null(click$x)){
+#         xrng = max(daily_slice$K600_daily_mean, na.rm=TRUE) -
+#             min(daily_slice$K600_daily_mean, na.rm=TRUE)
+#         yrng = max(daily_slice$ER_mean, na.rm=TRUE) -
+#             min(daily_slice$ER_mean, na.rm=TRUE)
+#
+#         hov_ind = which(daily_slice$ER_mean < click$y + 0.01 * yrng &
+#                 daily_slice$ER_mean > click$y - 0.01 * yrng &
+#                 daily_slice$K600_daily_mean < click$x + 0.01 * xrng &
+#                 daily_slice$K600_daily_mean > click$x - 0.01 * xrng)
+#         hov_x = daily_slice$K600_daily_mean[hov_ind]
+#         hov_y = daily_slice$ER_mean[hov_ind]
+#         points(hov_x, hov_y, col='goldenrod1', pch=19, cex=3)
+#     }
+# }
+
+KvQ_plot = function(mod_out, st, en, click){
+
+    #convert POSIX time to DOY and UNIX time
+    DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
+        format="%j")))
+    date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
+        format="%Y-%m-%d")))
 
     # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
     if(DOY[1] %in% 365:366){
@@ -335,25 +435,18 @@ KvQvER_plot = function(mod_out, st, en){
     data_daily_slice = mod_out$data_daily[mod_out$data_daily$date <= xmax &
             mod_out$data_daily$date >= xmin,]
 
-    # slice = mod_out$data[xmin_ind:xmax_ind, c('DO.obs', 'DO.mod')]#, 'solar.time')]
-    # yrng = range(c(slice$DO.obs, slice$DO.mod), na.rm=TRUE)
-
     #plot
-    par(mfrow=c(1,2))
-    mod = lm(daily_slice$ER_mean ~
-            daily_slice$K600_daily_mean)
-    R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
-    plot(daily_slice$K600_daily_mean, daily_slice$ER_mean,
-        col='darkgreen', ylab='', xlab='Daily mean K600',
-        bty='l', font.lab=1, cex.axis=0.8, las=1)
-    mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2,
-        line=2.5)
-    mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
-        cex=0.8, col='gray50')
-    abline(mod, lty=2, col='gray50', lwd=2)
     plot(log(data_daily_slice$discharge.daily),
         daily_slice$K600_daily_mean,
         col='purple4', xlab='Daily mean Q (log cms)', ylab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-}
 
+    #show date of each point on hover
+    # print(paste('x', click$x))
+    # hl_log_ind = which(mod_out$data$DO.mod < brush$ymax &
+    #         mod_out$data$DO.mod > brush$ymin &
+    #         ustamp < brush$xmax & ustamp > brush$xmin)
+    # hl_x = ustamp[hl_log_ind]
+    # hl_y = mod_out$data$DO.mod[hl_log_ind]
+    # points(hl_x, hl_y, col='goldenrod1', cex=0.3, pch=20)
+}
