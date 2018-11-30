@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###wed20181128
+ + added registration link to login page
 ###tue20181127
  + brought grabdata backgraph to the front, made clearer
  + fixed bug that resulted in Bad Data flags still appearing in input viz

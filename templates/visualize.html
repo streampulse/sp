@@ -26,9 +26,13 @@
           value="" placeholder="Select date range">
       </div>
       <br><br><br><br>
-      <p id="selectvarp" class="lead" style="display:none">
+      <p id="selectvarp" class="lead" style="display:none; margin-bottom:0px">
         Select variables (core metabolism variables bolded):
       </p>
+      <p id='loadtime_msg' class='text-muted' style='display:none'>
+        Loading time increases with time range and number of variables.
+      </p>
+      <br>
       <div id="viz_vars">
       </div>
       <br>
@@ -178,6 +182,7 @@ $('#dsite').change(function(){
   $("#viz_vars").empty();
   // $("#selectvarp").css('display', '');
   $("#selectvarp").show();
+  $('#loadtime_msg').show();
   $("#getviz").show();
   $('#backgraphlist').find('option').remove().end() //could use .empty()?
     .append('<option value="None" selected>None</option>');

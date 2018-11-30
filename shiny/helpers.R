@@ -60,7 +60,7 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
         ylab='', xaxs='i', yaxs='i',
         ylim=c(llim, ulim), lwd=2, xaxt='n', bty='l',
         xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
-    mtext(expression(paste("O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')), side=2,
+    mtext(expression(paste("O"[2] * " (gm"^"-2" * " d"^"-1" * ')')), side=2,
         line=2.5, font=2)
 
     #split time and DO series into NA-less chunks for plotting polygons
@@ -174,7 +174,7 @@ cumulative_func = function (ts_full, st, en){
     #     horiz=TRUE)
 
     # mtext('Time', 1, line=1.8)
-    mtext(expression(paste("Cumulative O"[2] * " m"^"-2" * " d"^"-1" ~ '(g)')),
+    mtext(expression(paste("Cumulative O"[2] * " (gm"^"-2" * " d"^"-1" * ')')),
         2, line=2.3)
 
     axis(2, tcl=-0.2, hadj=0.7, las=1, cex.axis=0.7)
@@ -206,9 +206,9 @@ kernel_func = function(ts_full, main){
         col=c(NA, "purple1", "purple3", "purple4"))
     axis(1, tcl=-0.2, padj=-1)
     axis(2, tcl=-0.2, hadj=0.5, las=1)
-    mtext(expression(paste("GPP (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),
+    mtext(expression(paste("GPP (gm"^"-2" * " d"^"-1" * ")")),
         1, line=1.8)
-    mtext(expression(paste("ER (gO"[2] * " m"^"-2" * " d"^"-1" * ")")),
+    mtext(expression(paste("ER (gm"^"-2" * " d"^"-1" * ")")),
         2, line=2)
     # mtext(main, 3, line=-2)
     abline(0, -1, col='black', lty=3)
@@ -225,7 +225,7 @@ kernel_legend = function(){
         seg.len=1, box.col='transparent', horiz=TRUE)
 }
 
-O2_plot = function(mod_out, st, en, brush){
+O2_plot = function(mod_out, st, en, brush, click){
     # st=0; en=366
     # brush = list(xmin=1460617508, xmax=1464058124, ymin=8.816155, ymax=14.45195)
 
@@ -273,7 +273,7 @@ O2_plot = function(mod_out, st, en, brush){
     }
 
     mtext('DOY', 1, font=1, line=1.5)
-    mtext('DO (mg/L)', 2, font=1, line=3)
+    mtext(expression(paste('DO (mgL'^'-1' * ')')), 2, font=1, line=2.5)
     # lines(mod_out$data$solar.time, mod_out$data$DO.mod,
     lines(ustamp, mod_out$data$DO.mod,
         col='royalblue4')
@@ -304,22 +304,109 @@ O2_legend = function(){
         lwd=c(6,1), box.col='transparent')
 }
 
-KvQvER_plot = function(mod_out){
-    par(mfrow=c(1,2))
-    mod = lm(mod_out$fit$daily$ER_mean ~
-            mod_out$fit$daily$K600_daily_mean)
+KvER_plot = function(mod_out, slice, click=NULL){
+
+    mod = lm(slice$ER_mean ~ slice$K600_daily_mean)
     R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
-    plot(mod_out$fit$daily$K600_daily_mean, mod_out$fit$daily$ER_mean,
+    plot(slice$K600_daily_mean, slice$ER_mean,
         col='darkgreen', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-    mtext(expression(paste("Daily mean ER (g O"[2] * " m"^"-2" ~ ")")), side=2,
-        line=2.5)
+    mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2, line=2.5)
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
     abline(mod, lty=2, col='gray50', lwd=2)
-    plot(log(mod_out$data_daily$discharge.daily),
-        mod_out$fit$daily$K600_daily_mean,
-        col='purple4', xlab='Daily mean Q (ln cms)', ylab='Daily mean K600',
-        bty='l', font.lab=1, cex.axis=0.8, las=1)
+
+    #highlight point and display date on click
+    if(! is.null(click) && ! is.null(click$x)){
+        xmax = max(slice$K600_daily_mean, na.rm=TRUE)
+        xmin = min(slice$K600_daily_mean, na.rm=TRUE)
+        ymax = max(slice$ER_mean, na.rm=TRUE)
+        ymin = min(slice$ER_mean, na.rm=TRUE)
+        xrng = xmax - xmin
+        yrng = ymax - ymin
+
+        click_ind = which(slice$ER_mean < click$y + 0.01 * yrng &
+                slice$ER_mean > click$y - 0.01 * yrng &
+                slice$K600_daily_mean < click$x + 0.01 * xrng &
+                slice$K600_daily_mean > click$x - 0.01 * xrng)[1]
+        click_x = slice$K600_daily_mean[click_ind]
+        click_y = slice$ER_mean[click_ind]
+        points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
+        x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
+        if(! is.na(x_prop) && x_prop > 0.5){
+            text(click_x, click_y, slice$date[click_ind], pos=2, font=2)
+        } else {
+            text(click_x, click_y, slice$date[click_ind], pos=4, font=2)
+        }
+    }
 }
 
+KvGPP_plot = function(mod_out, slice, click=NULL){
+
+    plot(slice$K600_daily_mean, slice$GPP_mean,
+        col='darkblue', ylab='', xlab='Daily mean K600',
+        bty='l', font.lab=1, cex.axis=0.8, las=1)
+    mtext(expression(paste("Daily mean GPP (gm"^"-2" ~ ")")), side=2, line=2.5)
+
+    #highlight point and display date on click
+    if(! is.null(click) && ! is.null(click$x)){
+        xmax = max(slice$K600_daily_mean, na.rm=TRUE)
+        xmin = min(slice$K600_daily_mean, na.rm=TRUE)
+        ymax = max(slice$GPP_mean, na.rm=TRUE)
+        ymin = min(slice$GPP_mean, na.rm=TRUE)
+        xrng = xmax - xmin
+        yrng = ymax - ymin
+
+        click_ind = which(slice$GPP_mean < click$y + 0.01 * yrng &
+                slice$GPP_mean > click$y - 0.01 * yrng &
+                slice$K600_daily_mean < click$x + 0.01 * xrng &
+                slice$K600_daily_mean > click$x - 0.01 * xrng)[1]
+        click_x = slice$K600_daily_mean[click_ind]
+        click_y = slice$GPP_mean[click_ind]
+        points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
+        x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
+        if(! is.na(x_prop) && x_prop > 0.5){
+            text(click_x, click_y, slice$date[click_ind], pos=2, font=2)
+        } else {
+            text(click_x, click_y, slice$date[click_ind], pos=4, font=2)
+        }
+    }
+}
+
+KvQ_plot = function(mod_out, slicex, slicey, click=NULL){
+
+    nodes = mod_out$fit$KQ_binned$lnK600_lnQ_nodes_mean
+    log_Q = log(slicex$discharge.daily)
+    xminplot = min(c(log_Q, nodes), na.rm=TRUE)
+    xmaxplot = max(c(log_Q, nodes), na.rm=TRUE)
+    plot(log_Q, slicey$K600_daily_mean, xlim=c(xminplot, xmaxplot),
+        col='purple4', xlab='Daily mean Q (log cms)', ylab='Daily mean K600',
+        bty='l', font.lab=1, cex.axis=0.8, las=1)
+    abline(v=nodes, lty=2, col='gray50')
+    mtext('log Q node centers', side=3, line=0, adj=1, cex=0.8, col='gray50')
+    # legend('topright', legend='log Q node centers', bty='n', lty=2, col='gray')
+
+    #highlight point and display date on click
+    if(! is.null(click) && ! is.null(click$x)){
+        xmax = max(log_Q, na.rm=TRUE)
+        xmin = min(log_Q, na.rm=TRUE)
+        ymax = max(slicey$K600_daily_mean, na.rm=TRUE)
+        ymin = min(slicey$K600_daily_mean, na.rm=TRUE)
+        xrng = xmax - xmin
+        yrng = ymax - ymin
+
+        click_ind_x = which(log_Q < click$x + 0.01 * xrng & log_Q >
+            click$x - 0.01 * xrng)[1]
+        click_ind_y = which(slicey$K600_daily_mean < click$y + 0.01 * yrng &
+                slicey$K600_daily_mean > click$y - 0.01 * yrng)[1]
+        click_x = log_Q[click_ind_x]
+        click_y = slicey$K600_daily_mean[click_ind_y]
+        points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
+        x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
+        if(! is.na(x_prop) && x_prop > 0.5){
+            text(click_x, click_y, slicey$date[click_ind_y], pos=2, font=2)
+        } else {
+            text(click_x, click_y, slicey$date[click_ind_y], pos=4, font=2)
+        }
+    }
+}
