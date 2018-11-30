@@ -400,41 +400,47 @@ shinyServer(function(input, output, session){
     })
 
     #update data frames based on time range selection
-    get_slices = eventReactive(input$MPrange, {
+    get_slices = eventReactive({
+        input$MPrange
+        input$MPhidden_counter2
+    }, {
 
         MPfitpred = MPfitpred()
-        mod_out = MPfitpred$mod_out
 
-        MPstart = input$MPrange[1]
-        MPend = input$MPrange[2]
+        if(! is.null(MPfitpred)){
+            mod_out = MPfitpred$mod_out
 
-        #convert POSIX time to DOY and UNIX time
-        DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
-            format="%j")))
-        date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
-            format="%Y-%m-%d")))
+            MPstart = input$MPrange[1]
+            MPend = input$MPrange[2]
 
-        # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
-        if(DOY[1] %in% 365:366){
-            DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
+            #convert POSIX time to DOY and UNIX time
+            DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
+                format="%j")))
+            date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
+                format="%Y-%m-%d")))
+
+            # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
+            if(DOY[1] %in% 365:366){
+                DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
+            }
+
+            #filter data by date bounds specified in time slider
+            xmin_ind = match(MPstart, DOY)
+            if(is.na(xmin_ind)) xmin_ind = 1
+            xmin = date[xmin_ind]
+
+            xmax_ind = length(DOY) - match(MPend, rev(DOY)) + 1
+            if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
+            xmax = date[xmax_ind]
+
+            daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
+                    mod_out$fit$daily$date >= xmin,]
+            data_daily_slice = mod_out$data_daily[mod_out$data_daily$date <= xmax &
+                    mod_out$data_daily$date >= xmin,]
+
+            out = list(daily_slice=daily_slice, data_daily_slice=data_daily_slice,
+                mod_out=mod_out)
         }
-
-        #filter data by date bounds specified in time slider
-        xmin_ind = match(MPstart, DOY)
-        if(is.na(xmin_ind)) xmin_ind = 1
-        xmin = date[xmin_ind]
-
-        xmax_ind = length(DOY) - match(MPend, rev(DOY)) + 1
-        if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
-        xmax = date[xmax_ind]
-
-        daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
-                mod_out$fit$daily$date >= xmin,]
-        data_daily_slice = mod_out$data_daily[mod_out$data_daily$date <= xmax &
-                mod_out$data_daily$date >= xmin,]
-
-        out = list(daily_slice=daily_slice, data_daily_slice=data_daily_slice,
-            mod_out=mod_out)
     })
 
     #model performance plots
