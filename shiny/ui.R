@@ -93,13 +93,14 @@ shinyUI(
                         conditionalPanel(condition="input.MPinput_site != ''",
                             p(strong('Select DOY range:')),
                             p('Drag blue bar to move fixed range',
-                                style=paste0(
-                                    'color:gray; font-size:80%;',
+                                style=paste0('color:gray; font-size:80%;',
                                     'padding:0; margin:0')),
                             p('Press play to autoscroll*',
                                 style='color:gray; font-size:80%'),
                             htmlOutput('MPtime_slider')
                         ),
+                        p('Click any point to view its date.',
+                            style=paste0('color:gray; font-size:80%;')),
                         width = 3
                     ),
                     mainPanel(

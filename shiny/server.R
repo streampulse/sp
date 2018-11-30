@@ -478,21 +478,21 @@ shinyServer(function(input, output, session){
                         KvER_plot(mod_out=mod_out,
                             slice=slices$daily_slice)
                     }
-                }, height=height50)
+                }, height=height40)
 
                 output$KvQ = renderPlot({
                     if(!is.null(mod_out)){
                         KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
                             slicey=slices$daily_slice)
                     }
-                }, height=height50)
+                }, height=height40)
 
                 output$KvGPP = renderPlot({
                     if(!is.null(mod_out)){
                         KvGPP_plot(mod_out=mod_out,
                             slice=slices$daily_slice)
                     }
-                }, height=height50)
+                }, height=height40)
             }
         }
     })
@@ -513,17 +513,17 @@ shinyServer(function(input, output, session){
         output$KvER = renderPlot({
             KvER_plot(mod_out=mod_out,
                 slice=slices$daily_slice, click=isolate(input$KvER_click))
-        }, height=height50)
+        }, height=height40)
 
         output$KvQ = renderPlot({
             KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
                 slicey=slices$daily_slice, click=isolate(input$KvQ_click))
-        }, height=height50)
+        }, height=height40)
 
         output$KvGPP = renderPlot({
             KvGPP_plot(mod_out=mod_out,
                 slice=slices$daily_slice, click=isolate(input$KvGPP_click))
-        }, height=height50)
+        }, height=height40)
 
     }, ignoreNULL=TRUE)
 
