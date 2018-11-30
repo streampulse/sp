@@ -103,9 +103,18 @@ shinyUI(
                         width = 3
                     ),
                     mainPanel(
-                        verbatimTextOutput('click_DOY'),
-                        plotOutput('KvER', height='auto', click='KvER_click'),
-                        plotOutput('KvQ', height='auto', click='KvQ_click')
+                        fluidRow(
+                            column(6, align='left',
+                                plotOutput('KvER', height='auto',
+                                    click='KvER_click'),
+                                plotOutput('KvGPP', height='auto',
+                                    click='KvGPP_click')
+                            ),
+                            column(6, align='left',
+                                plotOutput('KvQ', height='auto',
+                                    click='KvQ_click')
+                            )
+                        )
                     )
                 )
             ),

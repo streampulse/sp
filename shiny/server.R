@@ -399,37 +399,6 @@ shinyServer(function(input, output, session){
 
     })
 
-    # # after the plots have generated for the first time, require click to replot
-    # observeEvent({
-    #     input$MPrange
-    #     # input$MPhidden_counter2
-    # }, {
-    #     updateTextInput(session, 'MPhidden_bool', label=NULL, value='FALSE')
-    # })
-
-    #this allows incrementing of counter 3 (model performance page only)
-    #without causing feedback loop inside observeEvent below
-    # MPupdate_counter3 = reactive({a = 1; print('a')}) #a = 1 is an arbitrary expression
-    # MPupdate_counter3 = reactive({
-    #     MPcounter3 = input$MPhidden_counter3
-    #     updateTextInput(session, 'MPhidden_counter3', label=NULL,
-    #         value=as.numeric(MPcounter3) + 1)
-    # })
-    # observeEvent(MPupdate_counter3(), {
-    #     MPcounter3 = input$MPhidden_counter3
-    #     updateTextInput(session, 'MPhidden_counter3', label=NULL,
-    #         value=as.numeric(MPcounter3) + 1)
-    # })
-
-    # source_coords <- reactiveValues(xy=data.frame(x=c(1,1),  y=c(1,1)))
-    #
-    # observeEvent(input$KvER_click$x, {
-    #     source_coords$xy[2,] <- c(input$KvER_click$x, input$KvER_click$y)
-    #     print(input$KvER_click$x)
-    #     print(input$KvER_click$y)
-    #     # source_coords$xy[2,] <- c(6, -4)
-    # })
-
     #model performance plots
     observeEvent({
         input$MPrange
@@ -452,47 +421,31 @@ shinyServer(function(input, output, session){
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height50)
 
+            output$KvGPP = renderPlot({
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+            }, height=height50)
+
         } else {
             if(!is.null(MPstart) && !is.null(MPend)){
 
-                output$click_DOY = renderText({
-                    paste('default text')
-                })
-
                 output$KvER = renderPlot({
-
-                    # initial_plot = as.numeric(isolate(input$MPhidden_counter3)) == 0
-                    # click_registered = !is.null(isolate(input$KvER_click$x))
-                    # click_sent = as.numeric(isolate(input$MPhidden_counter3)) %% 2 == 1
-                    # # print(as.numeric(isolate(input$MPhidden_counter3)))
-                    # print(initial_plot)
-                    # print(click_registered)
-                    # print(click_sent)
-
                     if(!is.null(MPfitpred$mod_out)){
-                    # if(!is.null(MPfitpred$mod_out) &&
-                    #     (initial_plot || click_registered || click_sent)){
-                        # if(initial_plot || click_registered || click_sent){
-                            # par(new=TRUE)
-                        # }
                         KvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                            en=MPend)#, click=input$KvER_click)
-                        #
-                        # print(source_coords$xy[1,1])
-                        # print(source_coords$xy[1,2])
-                        # points(source_coords$xy[1,1], source_coords$xy[1,2], cex=3)
-
-                        # MPcounter3 = isolate(input$MPhidden_counter3)
-                        # updateTextInput(session, 'MPhidden_counter3', label=NULL,
-                        #     value=as.numeric(MPcounter3) + 1)
-                        # MPupdate_counter3()
+                            en=MPend)
                     }
                 }, height=height50)
 
                 output$KvQ = renderPlot({
                     if(!is.null(MPfitpred$mod_out)){
                         KvQ_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                            en=MPend, click=input$KvQ_click)
+                            en=MPend)
+                    }
+                }, height=height50)
+
+                output$KvGPP = renderPlot({
+                    if(!is.null(MPfitpred$mod_out)){
+                        KvGPP_plot(mod_out=MPfitpred$mod_out, st=MPstart,
+                            en=MPend)
                     }
                 }, height=height50)
             }
@@ -500,13 +453,10 @@ shinyServer(function(input, output, session){
     })
 
     #replot KvER when a click is registered
+    #(don't react when the click object resets to NULL)
     observeEvent({
         input$KvER_click$x
     }, {
-        output$click_DOY = renderText({
-            paste(isolate(input$KvER_click$x))
-        })
-
         MPfitpred = MPfitpred()
 
         MPstart = input$MPrange[1]
@@ -516,11 +466,38 @@ shinyServer(function(input, output, session){
             KvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
                 en=MPend, click=isolate(input$KvER_click))
         }, height=height50)
-    })
+    }, ignoreNULL=TRUE)
+
+    #replot KvQ when a click is registered
+    #(don't react when the click object resets to NULL)
+    observeEvent({
+        input$KvQ_click$x
+    }, {
+        MPfitpred = MPfitpred()
+
+        MPstart = input$MPrange[1]
+        MPend = input$MPrange[2]
+
+        output$KvQ = renderPlot({
+            KvQ_plot(mod_out=MPfitpred$mod_out, st=MPstart, en=MPend,
+                click=isolate(input$KvQ_click))
+        }, height=height50)
+    }, ignoreNULL=TRUE)
+
+    #replot KvGPP when a click is registered
+    #(don't react when the click object resets to NULL)
+    observeEvent({
+        input$KvGPP_click$x
+    }, {
+        MPfitpred = MPfitpred()
+
+        MPstart = input$MPrange[1]
+        MPend = input$MPrange[2]
+
+        output$KvGPP = renderPlot({
+            KvGPP_plot(mod_out=MPfitpred$mod_out, st=MPstart,
+                en=MPend, click=isolate(input$KvGPP_click))
+        }, height=height50)
+    }, ignoreNULL=TRUE)
 
 })
-
-# mm <<- MPfitpred$mod_out
-# ss <<- MPstart
-# ee <<- MPend
-# ii <<- input$KvER_click
