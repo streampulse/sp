@@ -399,13 +399,52 @@ shinyServer(function(input, output, session){
 
     })
 
+    #update data frames based on time range selection
+    get_slices = eventReactive(input$MPrange, {
+
+        MPfitpred = MPfitpred()
+        mod_out = MPfitpred$mod_out
+
+        MPstart = input$MPrange[1]
+        MPend = input$MPrange[2]
+
+        #convert POSIX time to DOY and UNIX time
+        DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
+            format="%j")))
+        date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
+            format="%Y-%m-%d")))
+
+        # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
+        if(DOY[1] %in% 365:366){
+            DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
+        }
+
+        #filter data by date bounds specified in time slider
+        xmin_ind = match(MPstart, DOY)
+        if(is.na(xmin_ind)) xmin_ind = 1
+        xmin = date[xmin_ind]
+
+        xmax_ind = length(DOY) - match(MPend, rev(DOY)) + 1
+        if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
+        xmax = date[xmax_ind]
+
+        daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
+                mod_out$fit$daily$date >= xmin,]
+        data_daily_slice = mod_out$data_daily[mod_out$data_daily$date <= xmax &
+                mod_out$data_daily$date >= xmin,]
+
+        out = list(daily_slice=daily_slice, data_daily_slice=data_daily_slice,
+            mod_out=mod_out)
+    })
+
     #model performance plots
     observeEvent({
         input$MPrange
         input$MPhidden_counter2
     }, {
-        MPfitpred = MPfitpred()
 
+        slices = get_slices()
+        mod_out = slices$mod_out
         MPstart = input$MPrange[1]
         MPend = input$MPrange[2]
 
@@ -429,75 +468,57 @@ shinyServer(function(input, output, session){
             if(!is.null(MPstart) && !is.null(MPend)){
 
                 output$KvER = renderPlot({
-                    if(!is.null(MPfitpred$mod_out)){
-                        KvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                            en=MPend)
+                    if(!is.null(mod_out)){
+                        KvER_plot(mod_out=mod_out,
+                            slice=slices$daily_slice)
                     }
                 }, height=height50)
 
                 output$KvQ = renderPlot({
-                    if(!is.null(MPfitpred$mod_out)){
-                        KvQ_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                            en=MPend)
+                    if(!is.null(mod_out)){
+                        KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
+                            slicey=slices$daily_slice)
                     }
                 }, height=height50)
 
                 output$KvGPP = renderPlot({
-                    if(!is.null(MPfitpred$mod_out)){
-                        KvGPP_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                            en=MPend)
+                    if(!is.null(mod_out)){
+                        KvGPP_plot(mod_out=mod_out,
+                            slice=slices$daily_slice)
                     }
                 }, height=height50)
             }
         }
     })
 
-    #replot KvER when a click is registered
-    #(don't react when the click object resets to NULL)
+    #replot when a click is registered; don't react when click handler flushes
     observeEvent({
-        input$KvER_click$x
+        if (! is.null(input$KvER_click$x) ||
+            ! is.null(input$KvQ_click$x) ||
+            ! is.null(input$KvGPP_click$x)) TRUE
+        else NULL
     }, {
-        MPfitpred = MPfitpred()
 
+        slices = get_slices()
+        mod_out = slices$mod_out
         MPstart = input$MPrange[1]
         MPend = input$MPrange[2]
 
         output$KvER = renderPlot({
-            KvER_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                en=MPend, click=isolate(input$KvER_click))
+            KvER_plot(mod_out=mod_out,
+                slice=slices$daily_slice, click=isolate(input$KvER_click))
         }, height=height50)
-    }, ignoreNULL=TRUE)
-
-    #replot KvQ when a click is registered
-    #(don't react when the click object resets to NULL)
-    observeEvent({
-        input$KvQ_click$x
-    }, {
-        MPfitpred = MPfitpred()
-
-        MPstart = input$MPrange[1]
-        MPend = input$MPrange[2]
 
         output$KvQ = renderPlot({
-            KvQ_plot(mod_out=MPfitpred$mod_out, st=MPstart, en=MPend,
-                click=isolate(input$KvQ_click))
+            KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
+                slicey=slices$daily_slice, click=isolate(input$KvQ_click))
         }, height=height50)
-    }, ignoreNULL=TRUE)
-
-    #replot KvGPP when a click is registered
-    #(don't react when the click object resets to NULL)
-    observeEvent({
-        input$KvGPP_click$x
-    }, {
-        MPfitpred = MPfitpred()
-
-        MPstart = input$MPrange[1]
-        MPend = input$MPrange[2]
 
         output$KvGPP = renderPlot({
-            KvGPP_plot(mod_out=MPfitpred$mod_out, st=MPstart,
-                en=MPend, click=isolate(input$KvGPP_click))
+            KvGPP_plot(mod_out=mod_out,
+                slice=slices$daily_slice, click=isolate(input$KvGPP_click))
         }, height=height50)
+
     }, ignoreNULL=TRUE)
 
 })

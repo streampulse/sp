@@ -304,183 +304,109 @@ O2_legend = function(){
         lwd=c(6,1), box.col='transparent')
 }
 
-KvER_plot = function(mod_out, st, en, click=NULL){
-    # print(st); print(en)
-    # mm <<- mod_out
-    # st=3; en=94
+KvER_plot = function(mod_out, slice, click=NULL){
 
-    #convert POSIX time to DOY and UNIX time
-    DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
-        format="%j")))
-    date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
-        format="%Y-%m-%d")))
-
-    # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
-    if(DOY[1] %in% 365:366){
-        DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
-    }
-
-    #filter data by date bounds specified in time slider
-    xmin_ind = match(st, DOY)
-    if(is.na(xmin_ind)) xmin_ind = 1
-    xmin = date[xmin_ind]
-
-    xmax_ind = length(DOY) - match(en, rev(DOY)) + 1
-    if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
-    xmax = date[xmax_ind]
-
-    daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
-            mod_out$fit$daily$date >= xmin,]
-
-    #plot
-    mod = lm(daily_slice$ER_mean ~
-            daily_slice$K600_daily_mean)
+    mod = lm(slice$ER_mean ~ slice$K600_daily_mean)
     R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
-    plot(daily_slice$K600_daily_mean, daily_slice$ER_mean,
+    plot(slice$K600_daily_mean, slice$ER_mean,
         col='darkgreen', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-    mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2,
-        line=2.5)
+    mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2, line=2.5)
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
     abline(mod, lty=2, col='gray50', lwd=2)
 
     #highlight point and display date on click
     if(! is.null(click) && ! is.null(click$x)){
-        xmax = max(daily_slice$K600_daily_mean, na.rm=TRUE)
-        xmin = min(daily_slice$K600_daily_mean, na.rm=TRUE)
-        ymax = max(daily_slice$ER_mean, na.rm=TRUE)
-        ymin = min(daily_slice$ER_mean, na.rm=TRUE)
+        xmax = max(slice$K600_daily_mean, na.rm=TRUE)
+        xmin = min(slice$K600_daily_mean, na.rm=TRUE)
+        ymax = max(slice$ER_mean, na.rm=TRUE)
+        ymin = min(slice$ER_mean, na.rm=TRUE)
         xrng = xmax - xmin
         yrng = ymax - ymin
 
-        click_ind = which(daily_slice$ER_mean < click$y + 0.01 * yrng &
-                daily_slice$ER_mean > click$y - 0.01 * yrng &
-                daily_slice$K600_daily_mean < click$x + 0.01 * xrng &
-                daily_slice$K600_daily_mean > click$x - 0.01 * xrng)[1]
-        click_x = daily_slice$K600_daily_mean[click_ind]
-        click_y = daily_slice$ER_mean[click_ind]
+        click_ind = which(slice$ER_mean < click$y + 0.01 * yrng &
+                slice$ER_mean > click$y - 0.01 * yrng &
+                slice$K600_daily_mean < click$x + 0.01 * xrng &
+                slice$K600_daily_mean > click$x - 0.01 * xrng)[1]
+        click_x = slice$K600_daily_mean[click_ind]
+        click_y = slice$ER_mean[click_ind]
         points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
         x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
         if(! is.na(x_prop) && x_prop > 0.5){
-            text(click_x, click_y, daily_slice$date[click_ind], pos=2, font=2)
+            text(click_x, click_y, slice$date[click_ind], pos=2, font=2)
         } else {
-            text(click_x, click_y, daily_slice$date[click_ind], pos=4, font=2)
+            text(click_x, click_y, slice$date[click_ind], pos=4, font=2)
         }
     }
 }
 
-KvGPP_plot = function(mod_out, st, en, click=NULL){
+KvGPP_plot = function(mod_out, slice, click=NULL){
 
-    #convert POSIX time to DOY and UNIX time
-    DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
-        format="%j")))
-    date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
-        format="%Y-%m-%d")))
-
-    # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
-    if(DOY[1] %in% 365:366){
-        DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
-    }
-
-    #filter data by date bounds specified in time slider
-    xmin_ind = match(st, DOY)
-    if(is.na(xmin_ind)) xmin_ind = 1
-    xmin = date[xmin_ind]
-
-    xmax_ind = length(DOY) - match(en, rev(DOY)) + 1
-    if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
-    xmax = date[xmax_ind]
-
-    daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
-            mod_out$fit$daily$date >= xmin,]
-
-    #plot
-    plot(daily_slice$K600_daily_mean, daily_slice$GPP_mean,
+    plot(slice$K600_daily_mean, slice$GPP_mean,
         col='darkblue', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-    mtext(expression(paste("Daily mean GPP (gm"^"-2" ~ ")")), side=2,
-        line=2.5)
+    mtext(expression(paste("Daily mean GPP (gm"^"-2" ~ ")")), side=2, line=2.5)
 
     #highlight point and display date on click
     if(! is.null(click) && ! is.null(click$x)){
-        xmax = max(daily_slice$K600_daily_mean, na.rm=TRUE)
-        xmin = min(daily_slice$K600_daily_mean, na.rm=TRUE)
-        ymax = max(daily_slice$GPP_mean, na.rm=TRUE)
-        ymin = min(daily_slice$GPP_mean, na.rm=TRUE)
+        xmax = max(slice$K600_daily_mean, na.rm=TRUE)
+        xmin = min(slice$K600_daily_mean, na.rm=TRUE)
+        ymax = max(slice$GPP_mean, na.rm=TRUE)
+        ymin = min(slice$GPP_mean, na.rm=TRUE)
         xrng = xmax - xmin
         yrng = ymax - ymin
 
-        click_ind = which(daily_slice$GPP_mean < click$y + 0.01 * yrng &
-                daily_slice$GPP_mean > click$y - 0.01 * yrng &
-                daily_slice$K600_daily_mean < click$x + 0.01 * xrng &
-                daily_slice$K600_daily_mean > click$x - 0.01 * xrng)[1]
-        click_x = daily_slice$K600_daily_mean[click_ind]
-        click_y = daily_slice$GPP_mean[click_ind]
+        click_ind = which(slice$GPP_mean < click$y + 0.01 * yrng &
+                slice$GPP_mean > click$y - 0.01 * yrng &
+                slice$K600_daily_mean < click$x + 0.01 * xrng &
+                slice$K600_daily_mean > click$x - 0.01 * xrng)[1]
+        click_x = slice$K600_daily_mean[click_ind]
+        click_y = slice$GPP_mean[click_ind]
         points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
         x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
         if(! is.na(x_prop) && x_prop > 0.5){
-            text(click_x, click_y, daily_slice$date[click_ind], pos=2, font=2)
+            text(click_x, click_y, slice$date[click_ind], pos=2, font=2)
         } else {
-            text(click_x, click_y, daily_slice$date[click_ind], pos=4, font=2)
+            text(click_x, click_y, slice$date[click_ind], pos=4, font=2)
         }
     }
 }
 
-KvQ_plot = function(mod_out, st, en, click=NULL){
+KvQ_plot = function(mod_out, slicex, slicey, click=NULL){
 
-    #convert POSIX time to DOY and UNIX time
-    DOY = as.numeric(gsub('^0+', '', strftime(mod_out$data$solar.time,
-        format="%j")))
-    date = as.Date(gsub('^0+', '', strftime(mod_out$data$solar.time,
-        format="%Y-%m-%d")))
-
-    # replace initial DOYs of 365 or 366 (solar date in previous calendar year) with 1
-    if(DOY[1] %in% 365:366){
-        DOY[DOY %in% 365:366 & 1:length(DOY) < length(DOY)/2] = 1
-    }
-
-    #filter data by date bounds specified in time slider
-    xmin_ind = match(st, DOY)
-    if(is.na(xmin_ind)) xmin_ind = 1
-    xmin = date[xmin_ind]
-
-    xmax_ind = length(DOY) - match(en, rev(DOY)) + 1
-    if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
-    xmax = date[xmax_ind]
-
-    daily_slice = mod_out$fit$daily[mod_out$fit$daily$date <= xmax &
-            mod_out$fit$daily$date >= xmin,]
-    data_daily_slice = mod_out$data_daily[mod_out$data_daily$date <= xmax &
-            mod_out$data_daily$date >= xmin,]
-
-    #plot
-    log_Q = log(data_daily_slice$discharge.daily)
-    plot(log_Q, daily_slice$K600_daily_mean,
+    nodes = mod_out$fit$KQ_binned$lnK600_lnQ_nodes_mean
+    log_Q = log(slicex$discharge.daily)
+    xminplot = min(c(log_Q, nodes), na.rm=TRUE)
+    xmaxplot = max(c(log_Q, nodes), na.rm=TRUE)
+    plot(log_Q, slicey$K600_daily_mean, xlim=c(xminplot, xmaxplot),
         col='purple4', xlab='Daily mean Q (log cms)', ylab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
+    abline(v=nodes, lty=2, col='gray50')
+    mtext('log Q node centers', side=3, line=0, adj=1, cex=0.8, col='gray50')
+    # legend('topright', legend='log Q node centers', bty='n', lty=2, col='gray')
 
     #highlight point and display date on click
     if(! is.null(click) && ! is.null(click$x)){
         xmax = max(log_Q, na.rm=TRUE)
         xmin = min(log_Q, na.rm=TRUE)
-        ymax = max(daily_slice$K600_daily_mean, na.rm=TRUE)
-        ymin = min(daily_slice$K600_daily_mean, na.rm=TRUE)
+        ymax = max(slicey$K600_daily_mean, na.rm=TRUE)
+        ymin = min(slicey$K600_daily_mean, na.rm=TRUE)
         xrng = xmax - xmin
         yrng = ymax - ymin
 
         click_ind_x = which(log_Q < click$x + 0.01 * xrng & log_Q >
             click$x - 0.01 * xrng)[1]
-        click_ind_y = which(daily_slice$K600_daily_mean < click$y + 0.01 * yrng &
-            daily_slice$K600_daily_mean > click$y - 0.01 * yrng)[1]
+        click_ind_y = which(slicey$K600_daily_mean < click$y + 0.01 * yrng &
+                slicey$K600_daily_mean > click$y - 0.01 * yrng)[1]
         click_x = log_Q[click_ind_x]
-        click_y = daily_slice$K600_daily_mean[click_ind_y]
+        click_y = slicey$K600_daily_mean[click_ind_y]
         points(click_x, click_y, col='goldenrod1', pch=19, cex=2)
         x_prop = rescale(click_x, c(0, 1), c(xmin, xmax))
         if(! is.na(x_prop) && x_prop > 0.5){
-            text(click_x, click_y, daily_slice$date[click_ind_y], pos=2, font=2)
+            text(click_x, click_y, slicey$date[click_ind_y], pos=2, font=2)
         } else {
-            text(click_x, click_y, daily_slice$date[click_ind_y], pos=4, font=2)
+            text(click_x, click_y, slicey$date[click_ind_y], pos=4, font=2)
         }
     }
 }
