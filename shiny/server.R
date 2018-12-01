@@ -319,18 +319,18 @@ shinyServer(function(input, output, session){
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
-            output$cumul_legend = renderPlot({
-                defpar = par(mar=rep(0,4), oma=rep(0,4))
-                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
-            }, height=height05)
+            # output$cumul_legend = renderPlot({
+            #     defpar = par(mar=rep(0,4), oma=rep(0,4))
+            #     plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+            # }, height=height05)
 
             output$metab_plot = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
 
-            output$cumul_plot = renderPlot({
-                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
-            }, height=height35)
+            # output$cumul_plot = renderPlot({
+            #     plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+            # }, height=height35)
 
             output$O2_legend = renderPlot({
                 defpar = par(mar=rep(0,4), oma=rep(0,4))
@@ -356,30 +356,38 @@ shinyServer(function(input, output, session){
                     metab_legend()
                 }, height=height05)
 
-                output$cumul_legend = renderPlot({
-                    cumul_legend()
-                }, height=height05)
+                # output$cumul_legend = renderPlot({
+                #     cumul_legend()
+                # }, height=height05)
 
                 output$metab_plot = renderPlot({
                     ts_full = processing_func(fitpred$predictions, st=start,
                         en=end)
                     par(mar=c(1,4,0,1), oma=rep(0,4))
-                    season_ts_func(ts_full, TRUE, st=start, en=end)
+                    season_ts_func(ts_full, st=start, en=end)
+                    # season_ts_func(ts_full, fitpred$mod_out, st=start, en=end)
                 }, height=height35)
 
-                output$cumul_plot = renderPlot({
+                # output$cumul_plot = renderPlot({
+                #     ts_full = processing_func(fitpred$predictions, st=start,
+                #         en=end)
+                #     par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
+                #     cumulative_func(ts_full, st=start, en=end)
+                # }, height=height35)
+
+                output$kernel_legend = renderPlot({
+                    kernel_legend()
+                }, height=height05)
+
+                output$kernel_plot = renderPlot({
                     ts_full = processing_func(fitpred$predictions, st=start,
                         en=end)
-                    par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
-                    cumulative_func(ts_full, st=start, en=end)
+                    par(mar=c(3,3.5,0,.5), oma=rep(0,4))
+                    kernel_func(ts_full, 'Name and Year')
                 }, height=height35)
 
                 output$O2_legend = renderPlot({
                     O2_legend()
-                }, height=height05)
-
-                output$kernel_legend = renderPlot({
-                    kernel_legend()
                 }, height=height05)
 
                 output$O2_plot = renderPlot({
@@ -388,18 +396,51 @@ shinyServer(function(input, output, session){
                         brush=input$O2_brush)
                 }, height=height35)
 
-                output$kernel_plot = renderPlot({
+                output$cumul_metab = renderTable({
                     ts_full = processing_func(fitpred$predictions, st=start,
                         en=end)
-                    par(mar=c(3,3.5,0,.5), oma=rep(0,4))
-                    kernel_func(ts_full, 'Name and Year')
+                    na_rm = na.omit(ts_full)
+                    gppsum = sum(na_rm$GPP, na.rm=TRUE)
+                    ersum = sum(na_rm$ER, na.rm=TRUE)
+                    nepsum = sum(na_rm$NPP, na.rm=TRUE)
+                    return(data.frame('GPP'=gppsum, 'ER'=ersum, 'NEP'=nepsum))
+                })
+
+            }
+        }
+
+    })
+
+    #metab plot overlay
+    observeEvent(input$metab_overlay, {
+
+        fitpred = fitpred()
+
+        start = input$range[1]
+        end = input$range[2]
+
+        if(input$input_site == '' && !is.null(start) && !is.null(end)){
+
+            #all blank plots for the rare case in which someone anonymously
+            #chooses a model, then enters a token.
+            output$metab_plot = renderPlot({
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+            }, height=height35)
+        } else {
+            if(!is.null(start) && !is.null(end)){
+                output$metab_plot = renderPlot({
+                    ts_full = processing_func(fitpred$predictions,
+                        st=start, en=end)
+                    par(mar=c(1,4,0,1), oma=rep(0,4))
+                    season_ts_func(ts_full, mod=fitpred$mod_out,
+                        st=start, en=end, overlay=input$metab_overlay)
                 }, height=height35)
             }
         }
 
     })
 
-    #update data frames based on time range selection
+    #update model performance data frames based on time range selection
     get_slices = eventReactive({
         input$MPrange
         input$MPhidden_counter2

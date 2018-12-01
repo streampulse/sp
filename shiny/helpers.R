@@ -31,7 +31,8 @@ processing_func = function (ts, st, en) {
     return(ts_full)
 }
 
-season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
+season_ts_func = function (ts_full, mod, st, en, overlay=NULL){
+# season_ts_func = function (ts_full, mod, st, en, overlay=NULL){
     # print(paste('time2_toggleA', 'time2_toggleB', 'slider_toggleA', 'slider_toggleB'))
     # print(paste(time2_toggleA, time2_toggleB, slider_toggleA, slider_toggleB))
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10,11)]
@@ -83,38 +84,12 @@ season_ts_func = function (ts_full, suppress_NEP=FALSE, st, en){
 
     lines(doy, avg_trajectory$ER, col="blue", lwd=2)
     abline(h=0, lty=3, col='gray50')
-    # if(suppress_NEP){
-    #     # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
-    #     # legend("bottomleft", ncol=2, xpd=FALSE,
-    #     #     legend=c("GPP", "ER"), bty="n", lty=1,
-    #     #     lwd=2, col=c("red", "blue"),
-    #     #     x.intersp=c(.5,.5))#, inset=c(0, -0.13), text.width=.05)
-    #     # legend('bottomright', horiz=TRUE, seg.len=1,
-    #     #     bty="n", lty=1, title='95% CIs', legend=c('',''),
-    #     #     col=c(adjustcolor('red', alpha.f=0.3),
-    #     #         adjustcolor('blue', alpha.f=0.3)),
-    #     #     lwd=6)
-    #     # legend('bottomright', ncol=2, xpd=FALSE, #inset=c(0.1, 0),#-0.13),
-    #     #     bty="n", lty=1, title='95% CIs', legend=c('',''),#'95% CIs'),
-    #     #     col=c(adjustcolor('red', alpha.f=0.3),
-    #     #         adjustcolor('blue', alpha.f=0.3)),
-    #     #     x.intersp=c(-.1,.5), text.width=.05, lwd=6, xjust=0)
-    #
-    # } else {
-    #     lines(avg_trajectory$DOY, avg_trajectory$NPP, col="purple", lwd=2)
-    #     # plot(1,1, col=adjustcolor('red',alpha.f=0.2))
-    #     legend("bottomleft", ncol=3, xpd=FALSE,
-    #     # legend("topleft", ncol=5, xpd=TRUE,
-    #         c("GPP", "NEP", "ER"), bty="n", lty=1,
-    #         # c("GPP", "NEP", "ER", '', '95CI'), bty="n", lty=1,
-    #         lwd=2, col=c("red", "purple", "blue"))#, inset=c(0, -0.13))
-    #             # adjustcolor('red', alpha.f=0.3),
-    #             # adjustcolor('steelblue', alpha.f=0.3)),
-    #     # x.intersp=c(.5,.5,.5,.3,1.3), text.width=.05)
-    # }
-    # month_labs = month.abb
-    # month_labs[seq(2, 12, 2)] = ''
-    # axis(1, seq(1, 365, length.out=12), month_labs)
+
+    #overlay user selected variable
+    if(! is.null(overlay) && overlay != 'None'){
+        lines(mod$data[,overlay])
+    }
+
 }
 
 metab_legend = function(){
@@ -129,68 +104,6 @@ metab_legend = function(){
         col=c(adjustcolor('red', alpha.f=0.3),
             adjustcolor('blue', alpha.f=0.3)),
         lwd=6)
-}
-
-cumulative_func = function (ts_full, st, en){
-
-    # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
-    na_rm = na.omit(ts_full)
-    na_rm$csum_gpp = ave(na_rm$GPP, na_rm$Year, FUN=cumsum)
-    na_rm$csum_er = ave(na_rm$ER, na_rm$Year, FUN=cumsum)
-    na_rm$csum_npp = ave(na_rm$NPP, na_rm$Year, FUN=cumsum)
-
-    lim = range(na_rm[, c('csum_gpp', 'csum_er', 'csum_npp')], na.rm=TRUE)
-    # lim_gpp = range(na_rm$csum_gpp, na.rm=TRUE)
-    # lim_er = range(na_rm$csum_er, na.rm=TRUE)
-    # lim_npp = range(na_rm$csum_npp, na.rm=TRUE)
-
-    # lim_gpp = max(abs(na_rm[, c("csum_gpp", "csum_er")]))
-    # pal = rev(brewer.pal(7, "Spectral"))
-    # cols = setNames(data.frame(unique(na_rm$Year), pal[1:length(unique(na_rm[,
-    #     "Year"]))]), c("Year", "color"))
-    # csum_merge = merge(na_rm, cols, by="Year", type="left")
-
-    plot(na_rm$DOY, na_rm$csum_gpp, pch=20, xlab='', bty='l',
-        # cex=1.5, col=paste(csum_merge$color), type='p', las=1,
-        cex=1, type='p', las=1, ylim=c(lim[1], lim[2]),
-        xaxt='n', yaxt='n', xlim=c(st, en), ylab='', col='red')
-        # col=adjustcolor('red', alpha.f=0.4))
-    # legend("topleft", paste(c(cols$Year)), lwd=c(1, 1),
-    #     col=paste(cols$color), cex=0.9)
-    points(na_rm$DOY, na_rm$csum_er, pch=20, cex=1, col='blue')
-        # col=adjustcolor('blue', alpha.f=0.4))
-        # type='p', las=1,
-        # ylim=c(lim_er[1], lim_er[2]), xaxt="n", xlim=c(st, en), ylab="Cumulative ER")
-    points(na_rm$DOY, na_rm$csum_npp, pch=20, cex=1, col='purple')
-        # col=adjustcolor('purple', alpha.f=0.4))
-        # las=1, ylim=c(lim_npp[1], lim_npp[2]),
-        # ylab="Cumulative NEP", xlim=c(st, en), xlab='', type='p', xaxt='n')
-    maxcumul = na_rm[nrow(na_rm), c('csum_gpp', 'csum_er', 'csum_npp')]
-    text(rep(max(na_rm$DOY), 3), maxcumul, labels=round(maxcumul),
-        pos=2, cex=0.8)
-
-    # legend("top", legend=c('GPP', 'ER', 'NEP'), seg.len=1, inset=c(0,-0.0),
-    #     col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=TRUE,
-    #     horiz=TRUE)
-
-    # mtext('Time', 1, line=1.8)
-    mtext(expression(paste("Cumulative O"[2] * " (gm"^"-2" * " d"^"-1" * ')')),
-        2, line=2.3)
-
-    axis(2, tcl=-0.2, hadj=0.7, las=1, cex.axis=0.7)
-    month_labs = substr(month.abb, 0, 1)
-    # month_labs[seq(2, 12, 2)] = ''
-    axis(1, seq(1, 365, length.out=12), month_labs, tcl=-0.2, padj=-1,
-        cex.axis=0.6)
-    abline(h=0, col="grey50", lty=3)
-}
-
-cumul_legend = function(){
-    par(mar = rep(0,4), oma = rep(0,4))
-    plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
-    legend("bottomright", legend=c('GPP', 'ER', 'NEP'), seg.len=1,
-        col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=FALSE,
-        horiz=TRUE)
 }
 
 kernel_func = function(ts_full, main){
@@ -410,3 +323,39 @@ KvQ_plot = function(mod_out, slicex, slicey, click=NULL){
         }
     }
 }
+
+# cumulative_func = function (ts_full, st, en){
+#
+#     na_rm = na.omit(ts_full)
+#     na_rm$csum_gpp = ave(na_rm$GPP, na_rm$Year, FUN=cumsum)
+#     na_rm$csum_er = ave(na_rm$ER, na_rm$Year, FUN=cumsum)
+#     na_rm$csum_npp = ave(na_rm$NPP, na_rm$Year, FUN=cumsum)
+#
+#     lim = range(na_rm[, c('csum_gpp', 'csum_er', 'csum_npp')], na.rm=TRUE)
+#
+#     plot(na_rm$DOY, na_rm$csum_gpp, pch=20, xlab='', bty='l',
+#         cex=1, type='p', las=1, ylim=c(lim[1], lim[2]),
+#         xaxt='n', yaxt='n', xlim=c(st, en), ylab='', col='red')
+#     points(na_rm$DOY, na_rm$csum_er, pch=20, cex=1, col='blue')
+#     points(na_rm$DOY, na_rm$csum_npp, pch=20, cex=1, col='purple')
+#     maxcumul = na_rm[nrow(na_rm), c('csum_gpp', 'csum_er', 'csum_npp')]
+#     text(rep(max(na_rm$DOY), 3), maxcumul, labels=round(maxcumul),
+#         pos=2, cex=0.8)
+#
+#     mtext(expression(paste("Cumulative O"[2] * " (gm"^"-2" * " d"^"-1" * ')')),
+#         2, line=2.3)
+#
+#     axis(2, tcl=-0.2, hadj=0.7, las=1, cex.axis=0.7)
+#     month_labs = substr(month.abb, 0, 1)
+#     axis(1, seq(1, 365, length.out=12), month_labs, tcl=-0.2, padj=-1,
+#         cex.axis=0.6)
+#     abline(h=0, col="grey50", lty=3)
+# }
+#
+# cumul_legend = function(){
+#     par(mar = rep(0,4), oma = rep(0,4))
+#     plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
+#     legend("bottomright", legend=c('GPP', 'ER', 'NEP'), seg.len=1,
+#         col=c('red', 'blue', 'purple'), lty=1, lwd=3, bty='n', xpd=FALSE,
+#         horiz=TRUE)
+# }
