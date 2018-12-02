@@ -213,8 +213,9 @@ shinyUI(
                             # plotOutput('cumul_plot', height='auto', width='auto'),
                             tableOutput('cumul_metab'),
                             selectInput('metab_overlay', 'metab',
-                                list('None', 'light'), selected='None'),
-                            selectInput('O2_overlay', 'O2', NULL)
+                                list('None', 'mean daily K600'), selected='None'),
+                            selectInput('O2_overlay', 'O2',
+                                list('None'), selected='None')
                         )
                     )
                 ),

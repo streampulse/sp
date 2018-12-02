@@ -353,7 +353,11 @@ shinyServer(function(input, output, session){
         } else {
             if(!is.null(start) && !is.null(end)){
                 output$metab_legend = renderPlot({
-                    metab_legend()
+                    if(input$metab_overlay != 'None'){
+                        metab_legend(show_K600=TRUE)
+                    } else {
+                        metab_legend(show_K600=FALSE)
+                    }
                 }, height=height05)
 
                 # output$cumul_legend = renderPlot({
@@ -363,9 +367,13 @@ shinyServer(function(input, output, session){
                 output$metab_plot = renderPlot({
                     ts_full = processing_func(fitpred$predictions, st=start,
                         en=end)
-                    par(mar=c(1,4,0,1), oma=rep(0,4))
-                    season_ts_func(ts_full, st=start, en=end)
-                    # season_ts_func(ts_full, fitpred$mod_out, st=start, en=end)
+                    par(mar=c(1,4,0,4), oma=rep(0,4))
+                    daily = fitpred$mod_out$fit$daily
+                    daily$doy = as.numeric(gsub('^0+', '',
+                        strftime(daily$date, format="%j")))
+                    daily = daily[daily$doy > start & daily$doy < end,]
+                    season_ts_func(ts_full, daily, st=start, en=end,
+                        input$metab_overlay)
                 }, height=height35)
 
                 # output$cumul_plot = renderPlot({
@@ -387,13 +395,18 @@ shinyServer(function(input, output, session){
                 }, height=height35)
 
                 output$O2_legend = renderPlot({
+                    if(input$O2_overlay != 'None'){
+                        metab_legend(overlay=TRUE)
+                    } else {
+                        metab_legend(overlay=FALSE)
+                    }
                     O2_legend()
                 }, height=height05)
 
                 output$O2_plot = renderPlot({
-                    par(mar=c(3,4,0,1), oma=rep(0,4))
+                    par(mar=c(3,4,0,4), oma=rep(0,4))
                     O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
-                        brush=input$O2_brush)
+                        brush=input$O2_brush, overlay=input$O2_overlay)
                 }, height=height35)
 
                 output$cumul_metab = renderTable({
@@ -419,23 +432,23 @@ shinyServer(function(input, output, session){
         start = input$range[1]
         end = input$range[2]
 
-        if(input$input_site == '' && !is.null(start) && !is.null(end)){
+        if(!is.null(start) && !is.null(end)){
 
-            #all blank plots for the rare case in which someone anonymously
-            #chooses a model, then enters a token.
+            output$metab_legend = renderPlot({
+                if(input$metab_overlay != 'None'){
+                    metab_legend(show_K600=TRUE)
+                } else {
+                    metab_legend(show_K600=FALSE)
+                }
+            }, height=height05)
+
             output$metab_plot = renderPlot({
-                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+                ts_full = processing_func(fitpred$predictions,
+                    st=start, en=end)
+                par(mar=c(1,4,0,4), oma=rep(0,4))
+                season_ts_func(ts_full, fitpred$mod_out$fit$daily,
+                    st=start, en=end, overlay=input$metab_overlay)
             }, height=height35)
-        } else {
-            if(!is.null(start) && !is.null(end)){
-                output$metab_plot = renderPlot({
-                    ts_full = processing_func(fitpred$predictions,
-                        st=start, en=end)
-                    par(mar=c(1,4,0,1), oma=rep(0,4))
-                    season_ts_func(ts_full, mod=fitpred$mod_out,
-                        st=start, en=end, overlay=input$metab_overlay)
-                }, height=height35)
-            }
         }
 
     })

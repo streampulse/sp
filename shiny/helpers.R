@@ -31,7 +31,7 @@ processing_func = function (ts, st, en) {
     return(ts_full)
 }
 
-season_ts_func = function (ts_full, mod, st, en, overlay=NULL){
+season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
 # season_ts_func = function (ts_full, mod, st, en, overlay=NULL){
     # print(paste('time2_toggleA', 'time2_toggleB', 'slider_toggleA', 'slider_toggleB'))
     # print(paste(time2_toggleA, time2_toggleB, slider_toggleA, slider_toggleB))
@@ -40,6 +40,7 @@ season_ts_func = function (ts_full, mod, st, en, overlay=NULL){
 
     avg_trajectory = aggregate(ts_full, by=list(ts_full$DOY),
         FUN=mean, na.rm=TRUE)
+    # print(head(avg_trajectory))
 
     gpp = avg_trajectory$GPP
     gppup = avg_trajectory$GPP.upper; gpplo = avg_trajectory$GPP.lower
@@ -66,6 +67,11 @@ season_ts_func = function (ts_full, mod, st, en, overlay=NULL){
 
     #split time and DO series into NA-less chunks for plotting polygons
     ff = data.frame(doy=doy, gpplo=gpplo, gppup=gppup, erlo=erlo, erup=erup)
+    if(! is.null(overlay) && overlay == 'mean daily K600'){
+        ff$Kup = na.omit(fit_daily$K600_daily_97.5pct)
+        ff$Klo = na.omit(fit_daily$K600_daily_2.5pct)
+        print(head(fit_daily))
+    }
     rl = rle(is.na(ff$gpplo))
     vv = !rl$values
     chunkfac = rep(cumsum(vv), rl$lengths)
@@ -86,24 +92,52 @@ season_ts_func = function (ts_full, mod, st, en, overlay=NULL){
     abline(h=0, lty=3, col='gray50')
 
     #overlay user selected variable
-    if(! is.null(overlay) && overlay != 'None'){
-        lines(mod$data[,overlay])
+    if(! is.null(overlay) && overlay == 'mean daily K600'){
+        par(new=TRUE)
+        llim2 = min(ff$Klo, na.rm=TRUE)
+        ulim2 = max(ff$Kup, na.rm=TRUE)
+        plot(doy, na.omit(fit_daily$K600_daily_mean), col='orange',
+            type='l', xlab='', las=0, ylab='', xaxs='i', yaxs='i',
+            lwd=2, xaxt='n', bty='u', yaxt='n', ylim=c(llim2, ulim2),
+            xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
+        axis(4)#, col.axis='orange')
+        mtext(expression(paste('K600 (d'^'-1' * ')')), side=4,
+            line=2.5, font=2)#, col='orange')
+        for(i in 1:length(noNAchunks)){
+            polygon(x=c(noNAchunks[[i]]$doy, rev(noNAchunks[[i]]$doy)),
+                y=c(noNAchunks[[i]]$Klo, rev(noNAchunks[[i]]$Kup)),
+                col=adjustcolor('orange', alpha.f=0.3), border=NA)
+        }
+        # lines(mod$data[,overlay])
     }
 
 }
 
-metab_legend = function(){
+metab_legend = function(show_K600=FALSE){
     par(mar=c(0,4,0,1), oma=rep(0,4))
     plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
-    legend("bottomleft", ncol=2, xpd=FALSE,
-        legend=c("GPP", "ER"), bty="n", lty=1,
-        lwd=2, col=c("red", "blue"),
-        x.intersp=c(.5,.5))
-    legend('bottomright', horiz=TRUE, seg.len=1,
-        bty="n", lty=1, legend=c('95% CIs',''),
-        col=c(adjustcolor('red', alpha.f=0.3),
-            adjustcolor('blue', alpha.f=0.3)),
-        lwd=6)
+    if(show_K600 == FALSE){
+        legend("bottomleft", ncol=2, xpd=FALSE,
+            legend=c("GPP", "ER"), bty="n", lty=1,
+            lwd=2, col=c("red", "blue"),
+            x.intersp=c(.5,.5))
+        legend('bottomright', horiz=TRUE, seg.len=1,
+            bty="n", lty=1, legend=c('95% CIs',''),
+            col=c(adjustcolor('red', alpha.f=0.3),
+                adjustcolor('blue', alpha.f=0.3)),
+            lwd=6)
+    } else {
+        legend("bottomleft", ncol=3, xpd=FALSE,
+            legend=c("GPP", "ER", 'K600'), bty="n", lty=1,
+            lwd=2, col=c("red", "blue", 'orange'),
+            x.intersp=c(.5,.5,.5))
+        legend("bottom", ncol=3, xpd=FALSE,
+            legend=c('', '', '95% CIs'), bty='n', lty=1, lwd=6,
+            col=c(adjustcolor('red', alpha.f=0.3),
+                adjustcolor('blue', alpha.f=0.3),
+                adjustcolor('orange', alpha.f=0.3)),
+            x.intersp=c(0,0,0), text.width=c(0,0,0))
+    }
 }
 
 kernel_func = function(ts_full, main){
