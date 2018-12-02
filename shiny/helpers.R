@@ -70,7 +70,6 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
     if(! is.null(overlay) && overlay == 'mean daily K600'){
         ff$Kup = na.omit(fit_daily$K600_daily_97.5pct)
         ff$Klo = na.omit(fit_daily$K600_daily_2.5pct)
-        print(head(fit_daily))
     }
     rl = rle(is.na(ff$gpplo))
     vv = !rl$values
@@ -172,7 +171,7 @@ kernel_legend = function(){
         seg.len=1, box.col='transparent', horiz=TRUE)
 }
 
-O2_plot = function(mod_out, st, en, brush, click){
+O2_plot = function(mod_out, st, en, brush, click, overlay='None'){
     # st=0; en=366
     # brush = list(xmin=1460617508, xmax=1464058124, ymin=8.816155, ymax=14.45195)
 
@@ -195,7 +194,11 @@ O2_plot = function(mod_out, st, en, brush, click){
     if(is.na(xmax_ind)) xmax_ind = nrow(mod_out$data)
     xmax = ustamp[xmax_ind]
 
-    slice = mod_out$data[xmin_ind:xmax_ind, c('DO.obs', 'DO.mod')]#, 'solar.time')]
+    if(overlay != 'None'){
+        slice = mod_out$data[xmin_ind:xmax_ind, c('DO.obs', 'DO.mod', overlay)]
+    } else {
+        slice = mod_out$data[xmin_ind:xmax_ind, c('DO.obs', 'DO.mod')]
+    }
     yrng = range(c(slice$DO.obs, slice$DO.mod), na.rm=TRUE)
 
     #window, series, axis labels
@@ -204,8 +207,8 @@ O2_plot = function(mod_out, st, en, brush, click){
         xaxs='i', yaxs='i', xlim=c(xmin, xmax))
 
     #split time and DO series into NA-less chunks for plotting polygons
-    ff = data.frame(ustamp=ustamp, DO=mod_out$data$DO.obs,
-        zero=rep(0, length(mod_out$data$DO.obs)))
+    ff = data.frame(ustamp=ustamp, DO=mod_out$data$DO.mod,
+        zero=rep(0, length(mod_out$data$DO.mod)))
     rl = rle(is.na(ff$DO))
     vv = !rl$values
     chunkfac = rep(cumsum(vv), rl$lengths)
@@ -216,22 +219,28 @@ O2_plot = function(mod_out, st, en, brush, click){
     for(i in 1:length(noNAchunks)){
         polygon(x=c(noNAchunks[[i]]$ustamp, rev(noNAchunks[[i]]$ustamp)),
             y=c(noNAchunks[[i]]$DO, rep(0, nrow(noNAchunks[[i]]))),
-            col='gray70', border='gray70')
+            col='gray75', border='gray75')
     }
 
     mtext('DOY', 1, font=1, line=1.5)
     mtext(expression(paste('DO (mgL'^'-1' * ')')), 2, font=1, line=2.5)
-    # lines(mod_out$data$solar.time, mod_out$data$DO.mod,
-    lines(ustamp, mod_out$data$DO.mod,
-        col='royalblue4')
-    # legend(x='bottomleft', legend=c('Obs', 'Pred'), bg='white',
-    #     cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='o', horiz=TRUE,
-    #     lwd=c(6,1), box.col='transparent')#, inset=c(0,-0.0), xpd=TRUE)
+    lines(ustamp, mod_out$data$DO.obs, col='cyan4')
 
     #get seq of 10 UNIX timestamps and use their corresponding DOYs as ticks
     tcs = seq(xmin, xmax, length.out=10)
     near_ind = findInterval(tcs, ustamp)
     axis(1, ustamp[near_ind], DOY[near_ind], tcl=-0.2, padj=-1)
+
+    # overlay user selected variable
+    if(overlay != 'None'){
+        par(new=TRUE)
+        yrng2 = range(slice[,overlay], na.rm=TRUE)
+        plot(ustamp, mod_out$data[,overlay], xaxt='n', las=0, yaxt='n',
+            type='l', xlab='', ylab='', bty='u', ylim=c(yrng2[1], yrng2[2]),
+            xaxs='i', yaxs='i', xlim=c(xmin, xmax), col='coral4')
+        axis(4)
+        mtext(varmap[[overlay]][[2]], side=4, line=2.5, font=2)
+    }
 
     #highlight brushed points
     hl_log_ind = which(mod_out$data$DO.mod < brush$ymax &
@@ -243,12 +252,20 @@ O2_plot = function(mod_out, st, en, brush, click){
 
 }
 
-O2_legend = function(){
+O2_legend = function(overlay){
     par(mar=c(0,4,0,1), oma=rep(0,4))
     plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
-    legend(x='bottomleft', legend=c('Obs', 'Pred'), bg='white',
-        cex=0.8, col=c('gray70', 'royalblue4'), lty=1, bty='o', horiz=TRUE,
-        lwd=c(6,1), box.col='transparent')
+    if(overlay == 'None'){
+        legend(x='bottomleft', legend=c('Pred', 'Obs'), bg='white',
+            cex=0.8, col=c('gray75', 'cyan4'), lty=1, bty='o', horiz=TRUE,
+            lwd=c(6,2), box.col='transparent')
+    } else {
+        legend(x='bottomleft', legend=c('Pred DO', 'Obs DO',
+            varmap[[overlay]][[1]]),
+            bg='white', cex=0.8, col=c('gray75', 'cyan4', 'coral4'),
+            lty=1, bty='o', horiz=TRUE,
+            lwd=c(6,2,2), box.col='transparent')
+    }
 }
 
 KvER_plot = function(mod_out, slice, click=NULL){

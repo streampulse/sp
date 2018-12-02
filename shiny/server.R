@@ -156,6 +156,7 @@ shinyServer(function(input, output, session){
     })
 
     #get model fits and predictions for specified siteyear (for o2 and metab page)
+    #whenever input year or input site change
     fitpred = eventReactive({
         input$input_year
         input$hidden_counter
@@ -178,6 +179,18 @@ shinyServer(function(input, output, session){
             mod_out = readRDS(paste0('data/', fnames[modOut_ind[1]]))
             predictions = readRDS(paste0('data/',
                 fnames[predictions_ind[1]]))
+
+            #populate overlay selector
+            vars_etc = colnames(mod_out$data)
+            varinds = ! vars_etc %in% c('date', 'solar.time', 'DO.obs', 'DO.mod')
+            vars = vars_etc[varinds]
+
+            ####RIGHT HERE####
+            vars = lapply(varmap, function(x) {
+                if(x[[1]] %in% vars) return(x[[1]])
+            })
+            updateSelectizeInput(session, 'O2_overlay',
+                choices=c('None', unlist(vars)), selected='None')
 
             return(list('mod_out'=mod_out, 'predictions'=predictions))
 
@@ -395,12 +408,7 @@ shinyServer(function(input, output, session){
                 }, height=height35)
 
                 output$O2_legend = renderPlot({
-                    if(input$O2_overlay != 'None'){
-                        metab_legend(overlay=TRUE)
-                    } else {
-                        metab_legend(overlay=FALSE)
-                    }
-                    O2_legend()
+                    O2_legend(overlay=input$O2_overlay)
                 }, height=height05)
 
                 output$O2_plot = renderPlot({
@@ -448,6 +456,31 @@ shinyServer(function(input, output, session){
                 par(mar=c(1,4,0,4), oma=rep(0,4))
                 season_ts_func(ts_full, fitpred$mod_out$fit$daily,
                     st=start, en=end, overlay=input$metab_overlay)
+            }, height=height35)
+        }
+
+    })
+
+    #O2 plot overlay
+    observeEvent(input$O2_overlay, {
+
+        fitpred = fitpred()
+
+        start = input$range[1]
+        end = input$range[2]
+
+        if(!is.null(start) && !is.null(end)){
+
+            output$O2_legend = renderPlot({
+                O2_legend(overlay=input$O2_overlay)
+            }, height=height05)
+
+            output$O2_plot = renderPlot({
+                ts_full = processing_func(fitpred$predictions,
+                    st=start, en=end)
+                par(mar=c(3,4,0,4), oma=rep(0,4))
+                O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
+                    brush=input$O2_brush, overlay=input$O2_overlay)
             }, height=height35)
         }
 

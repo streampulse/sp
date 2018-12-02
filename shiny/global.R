@@ -31,7 +31,14 @@ sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_public,]
 sitenames = sitenmyr[,1]
 siteyears = sitenmyr[,2]
 defaultv = list(sitenames=sitenames, siteyears=siteyears)
-# sitenames = sitenmyr[,1]
-# siteyears = sitenmyr[,2]
+
+#create mapping of input data fields and their pretty equivalents
+varmap = list('DO.sat'=list('DO sat', 'DO sat (%)'),
+    'depth'=list('Depth', 'Depth (m)'),
+    'temp.water'=list('Water temp',
+        expression(paste('Water temp (', degree, 'C)'))),
+    'light'=list('PAR', 'Light (PAR)'),
+    'discharge'=list('Discharge',
+        expression(paste('Discharge (m'^3, 's'^-1, ')'))))
 
 dbDisconnect(con)
