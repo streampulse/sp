@@ -185,12 +185,14 @@ shinyServer(function(input, output, session){
             varinds = ! vars_etc %in% c('date', 'solar.time', 'DO.obs', 'DO.mod')
             vars = vars_etc[varinds]
 
-            ####RIGHT HERE####
-            vars = lapply(varmap, function(x) {
-                if(x[[1]] %in% vars) return(x[[1]])
-            })
+            select_vars = vector('character', length=length(vars))
+            for(i in 1:length(vars)){
+                if(vars[i] %in% names(varmap)){
+                    select_vars[i] = varmap[[vars[i]]][[1]]
+                }
+            }
             updateSelectizeInput(session, 'O2_overlay',
-                choices=c('None', unlist(vars)), selected='None')
+                choices=c('None', select_vars), selected='None')
 
             return(list('mod_out'=mod_out, 'predictions'=predictions))
 
@@ -414,7 +416,8 @@ shinyServer(function(input, output, session){
                 output$O2_plot = renderPlot({
                     par(mar=c(3,4,0,4), oma=rep(0,4))
                     O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
-                        brush=input$O2_brush, overlay=input$O2_overlay)
+                        brush=input$O2_brush, overlay=input$O2_overlay,
+                        xformat=input$xformat)
                 }, height=height35)
 
                 output$cumul_metab = renderTable({
@@ -425,7 +428,7 @@ shinyServer(function(input, output, session){
                     ersum = sum(na_rm$ER, na.rm=TRUE)
                     nepsum = sum(na_rm$NPP, na.rm=TRUE)
                     return(data.frame('GPP'=gppsum, 'ER'=ersum, 'NEP'=nepsum))
-                })
+                }, striped=TRUE)
 
             }
         }
@@ -453,8 +456,12 @@ shinyServer(function(input, output, session){
             output$metab_plot = renderPlot({
                 ts_full = processing_func(fitpred$predictions,
                     st=start, en=end)
+                daily = fitpred$mod_out$fit$daily
+                daily$doy = as.numeric(gsub('^0+', '',
+                    strftime(daily$date, format="%j")))
+                daily = daily[daily$doy > start & daily$doy < end,]
                 par(mar=c(1,4,0,4), oma=rep(0,4))
-                season_ts_func(ts_full, fitpred$mod_out$fit$daily,
+                season_ts_func(ts_full, daily,
                     st=start, en=end, overlay=input$metab_overlay)
             }, height=height35)
         }
@@ -480,7 +487,8 @@ shinyServer(function(input, output, session){
                     st=start, en=end)
                 par(mar=c(3,4,0,4), oma=rep(0,4))
                 O2_plot(mod_out=fitpred$mod_out, st=start, en=end,
-                    brush=input$O2_brush, overlay=input$O2_overlay)
+                    brush=input$O2_brush, overlay=input$O2_overlay,
+                    xformat=input$xformat)
             }, height=height35)
         }
 
@@ -557,6 +565,10 @@ shinyServer(function(input, output, session){
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height50)
 
+            output$QvKres = renderPlot({
+                plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+            }, height=height50)
+
         } else {
             if(!is.null(MPstart) && !is.null(MPend)){
 
@@ -580,6 +592,13 @@ shinyServer(function(input, output, session){
                             slice=slices$daily_slice)
                     }
                 }, height=height40)
+
+                output$QvKres = renderPlot({
+                    if(!is.null(mod_out)){
+                        QvKres_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
+                            slicey=slices$daily_slice)
+                    }
+                }, height=height40)
             }
         }
     })
@@ -588,6 +607,7 @@ shinyServer(function(input, output, session){
     observeEvent({
         if (! is.null(input$KvER_click$x) ||
             ! is.null(input$KvQ_click$x) ||
+            ! is.null(input$QvKres_click$x) ||
             ! is.null(input$KvGPP_click$x)) TRUE
         else NULL
     }, {
@@ -610,6 +630,13 @@ shinyServer(function(input, output, session){
         output$KvGPP = renderPlot({
             KvGPP_plot(mod_out=mod_out,
                 slice=slices$daily_slice, click=isolate(input$KvGPP_click))
+        }, height=height40)
+
+        output$QvKres = renderPlot({
+            if(!is.null(mod_out)){
+                QvKres_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
+                    slicey=slices$daily_slice, click=isolate(input$QvKres_click))
+            }
         }, height=height40)
 
     }, ignoreNULL=TRUE)
