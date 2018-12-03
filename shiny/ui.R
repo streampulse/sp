@@ -101,6 +101,10 @@ shinyUI(
                         ),
                         p('Click any point to view its date.',
                             style=paste0('color:gray; font-size:80%;')),
+                        hr(),
+                        p(paste('*Residuals based on linear relationship',
+                            'between daily mean K600 and log daily mean Q.'),
+                            style=paste0('color:gray; font-size:80%;')),
                         width = 3
                     ),
                     mainPanel(
@@ -113,7 +117,9 @@ shinyUI(
                             ),
                             column(6, align='left',
                                 plotOutput('KvQ', height='auto',
-                                    click='KvQ_click')
+                                    click='KvQ_click'),
+                                plotOutput('QvKres', height='auto',
+                                    click='QvKres_click')
                             )
                         )
                     )
@@ -195,23 +201,34 @@ shinyUI(
                         ),
                         plotOutput('metab_plot', height='auto', width='auto'),
                         conditionalPanel(condition="input.input_site != ''",
-                            plotOutput('O2_legend', height='auto',
-                                width='auto')
+                            plotOutput('O2_legend', height='auto', width='auto')
                         ),
                         plotOutput('O2_plot', brush='O2_brush',
                             height='auto', width='auto')
                     ),
                     column(3, align='center',
                         conditionalPanel(condition="input.input_site != ''",
-                            plotOutput('cumul_legend', height='auto',
-                                width='auto')
+                            p(strong(HTML('Cumulative O<sub>2</sub> (gm<sup>-2</sup>d<sup>-1</sup>)'))),
+                            tableOutput('cumul_metab'),
+                            br()
                         ),
-                        plotOutput('cumul_plot', height='auto', width='auto'),
                         conditionalPanel(condition="input.input_site != ''",
                             plotOutput('kernel_legend', height='auto',
                                 width='auto')
                         ),
-                        plotOutput('kernel_plot', height='auto', width='auto')
+                        plotOutput('kernel_plot', height='auto', width='auto'),
+                        conditionalPanel(condition="input.input_site != ''",
+                            # plotOutput('cumul_legend', height='auto',
+                            #     width='auto')
+                            # plotOutput('cumul_plot', height='auto', width='auto'),
+                            br(),
+                            selectInput('metab_overlay', 'Model param overlay',
+                                list('None', 'mean daily K600'), selected='None'),
+                            selectInput('O2_overlay', 'Input data overlay',
+                                list('None'), selected='None'),
+                            radioButtons('xformat', 'Series x-axis', inline=TRUE,
+                                list('DOY', 'Date'), selected='DOY')
+                        )
                     )
                 ),
                 br(),
