@@ -101,10 +101,11 @@ shinyUI(
                         ),
                         p('Click any point to view its date.',
                             style=paste0('color:gray; font-size:80%;')),
-                        hr(),
-                        p(paste('*Residuals based on linear relationship',
-                            'between daily mean K600 and log daily mean Q.'),
-                            style=paste0('color:gray; font-size:80%;')),
+                        conditionalPanel(condition="input.MPinput_site != ''",
+                            p(paste('*Residuals based on linear relationship',
+                                'between daily mean K600 and log daily mean Q.'),
+                                style=paste0('color:gray; font-size:80%;'))
+                        ),
                         width = 3
                     ),
                     mainPanel(
