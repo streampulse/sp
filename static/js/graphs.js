@@ -52,14 +52,6 @@ function Plots(variables, data, flags, outliers, page){
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
 
-  //populate full list of variables and determine whether model outputs exist
-  fullvarlist = []
-  $('#viz_vars').children('#variables').each(function(){
-    fullvarlist.push($(this).val())
-  })
-  var sitecode = dsite.selectize.getValue()
-  var model_exists = avail_mods.includes(sitecode) ? true : false
-
   //set x domain to extent of dates
   x.domain(d3.extent(data, function(d) { return d.date; }));
 
@@ -197,6 +189,15 @@ function Plots(variables, data, flags, outliers, page){
       //   .attr('pointer-events', 'none');
 
     } else { // viz page
+
+      //populate full list of variables and determine whether model outputs exist
+      fullvarlist = []
+      $('#viz_vars').children('#variables').each(function(){
+        fullvarlist.push($(this).val())
+      })
+      var sitecode = dsite.selectize.getValue()
+      var model_exists = avail_mods.includes(sitecode) ? true : false
+
       svg.selectAll(".vdot")
           .data(data.filter(function(d) { return d[vvv]; }))
         .enter().append("circle")
