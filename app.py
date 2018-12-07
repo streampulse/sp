@@ -1604,7 +1604,7 @@ def grdo_filedrop():
 
         db_entry = Grdo(name=contactname, email=contactemail,
             addDate=datetime.utcnow(), embargo=embargo, notes=addtl,
-            dataFiles=mfile_list, metaFiles=dfile_list)
+            dataFiles=dfile_list, metaFiles=mfile_list)
         db.session.add(db_entry)
         db.session.commit()
 

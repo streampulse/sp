@@ -25,7 +25,8 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 
 #read in all site data from site table
 res = dbSendQuery(con, paste("SELECT CONCAT(region, '_', site) AS site,",
-    "ROUND(latitude, 5) AS lat, ROUND(longitude, 6) AS lon FROM site;"))
+    "ROUND(latitude, 5) AS lat, ROUND(longitude, 6) AS lon FROM site;",
+    # "embargo, addDate FROM site;"))
 sites = dbFetch(res)
 # sites = sites[-c(5, 55, 62:64),]
 dbClearResult(res)
@@ -44,27 +45,26 @@ r = httr::GET(askGeoReq_summer)
 json = httr::content(r, as="text", encoding="UTF-8")
 d_summer = try(jsonlite::fromJSON(json), silent=TRUE)
 # ds_bak = d_summer
+# d_summer = ds_bak
 # head(d_summer)
 
 r = httr::GET(askGeoReq_winter)
 json = httr::content(r, as="text", encoding="UTF-8")
 d_winter = try(jsonlite::fromJSON(json), silent=TRUE)
 # dw_bak = d_winter
+# d_winter = dw_bak
 # head(d_winter)
 
 #read series data from database, remove bad data records
 res = dbSendQuery(con, paste("SELECT data.value AS DataValue,",
-    "data.DateTime_UTC AS DateTimeUTC,",
+    "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
     "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
-    "flag.flag AS QualityControlLevelCode FROM data LEFT JOIN flag ON",
+    "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
     "data.flag=flag.id WHERE data.region='NC';"))
 resout = dbFetch(res)
 dbClearResult(res)
-resout = resout[resout$QualityControlLevelCode != 'Bad Data',]
-# head(resout)
-# d_backup = d
-# d = d_backup
-# d_summer = d
+resout = resout[is.na(resout$QualifierCode) |
+    resout$QualifierCode != 'Bad Data',]
 
 #convert offsets to hours, bind with latlongs, bind with site data
 d_summer = d_summer$data$TimeZone %>%
@@ -78,8 +78,10 @@ d = left_join(d, d_winter, by=c('lat'='Latitude', 'lon'='Longitude'),
     suffix=c('.summer', '.winter'))
 
 #make df of dates, weekdays, months from minyear to maxyear in set
-mindate = as.Date(paste0(substr(min(resout$DateTimeUTC), 1, 4), '-01-01'))
-maxdate = as.Date(paste0(substr(max(resout$DateTimeUTC), 1, 4), '-12-31'))
+mindate = as.Date(paste0(substr(min(resout$DateTimeUTC, na.rm=TRUE), 1, 4),
+    '-01-01'))
+maxdate = as.Date(paste0(substr(max(resout$DateTimeUTC, na.rm=TRUE), 1, 4),
+    '-12-31'))
 tm = data.frame(unix=mindate:maxdate)
 tm$date = as.Date(tm$unix, origin='1970-01-01')
 tm$wkday = strftime(tm$date, format='%a')
@@ -162,7 +164,42 @@ coresites = paste(core$REGIONID, core$SITEID, sep='_')
 d$MethodCode[! d$SiteCode %in% coresites] = '0'
 
 #join sources data to set
-##ADD OTHER SOURCES; DETERMINE PROGRAMMATICALLY? ADD FIELDS TO UPLOAD PAGE?
+smap = list('ASU'=c('AZ_SC','AZ_OC','AZ_WB','AZ_LV','AZ_AF','AZ_MV'),
+    'Duke'=c('NC_UEno','NC_Eno','NC_Mud','NC_NHC','NC_UNHC','NC_Stony'),
+    'UFL'=c('FL_SF2500','FL_SF700','FL_NR1000','FL_WS1500','FL_ICHE2700',
+        'FL_SF2800'),
+    'UNH'=c('PR_QS','PR_Icacos','VT_Pass','VT_SLPR','VT_POPE','VT_MOOS',
+        'PR_RioIcacosTrib','PR_Prieta','NH_BDC','NH_BEF','NH_DCF','NH_GOF',
+        'NH_HBF','NH_MCQ','NH_SBM','NH_TPB','NH_WGB'),
+    'UWIS'=c('WI_BEC','WI_BRW'),
+    'EPFL'=c('YRN16','YRN19','YRN42','YRN47','YRN51','YRN56','YRN62','YRN68',
+        'YRN83','YRN86','YRN93','YRN96','YRN116','YRN127','YRN137'),
+    'URI'=c('RI_CorkBrk','MD_BARN','MD_DRKR','MD_POBR','MD_GFCP','MD_GFGB',
+        'MD_GFVN'),
+    'Yale'=c('CT_Unio','CT_FARM','CT_BUNN','CT_STIL','CT_HUBB')
+    # 'NEON'=c(''),
+    # 'USGS'=c(''),
+    )
+# res = dbSendQuery(con, paste("select concat(region, '_', site) from site",
+#     "where region='CT';"))
+# aa = dbFetch(res)
+# paste(unname(unlist(aa)), collapse="','")
+# dbClearResult(res)
+unname(unlist(smap))
+source_map = data.frame(sites=unname(unlist(smap)),
+    SourceCode=rep(names(smap), times=unlist(lapply(smap, length))),
+    stringsAsFactors=FALSE)
+d = left_join(d, source_map, by=c('SiteCode'='sites'))
+d$SourceCode[d$upload_id == -900] = 'NEON'
+d$SourceCode[d$upload_id == -901] = 'USGS'
+
+#join QC level data to set
+d$QualityControlLevelCode = '0'
+
+d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
+    VariableCode, QualifierCode, MethodCode, SourceCode,
+    QualityControlLevelCode)
+
 
 #load excel worksheets into dataframes and export as csv
 '/home/mike/Dropbox/streampulse/data/cuahsi_connection/hydroserver_templates'
