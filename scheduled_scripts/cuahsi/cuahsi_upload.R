@@ -196,32 +196,19 @@ d$SourceCode[d$upload_id == -901] = 'USGS'
 #join QC level data to set
 d$QualityControlLevelCode = '0'
 
+#clean up and arrange columns, write to CSV, zip
+d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
+d$DataValue[is.na(d$DataValue)] = -9999
 d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
     VariableCode, QualifierCode, MethodCode, SourceCode,
     QualityControlLevelCode)
+setwd(paste0('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/',
+    'cuahsi/', date))
+# datafn = paste0('scheduled_scripts/cuahsi/', date, '/DataValues.csv')
+write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
+system('zip DataValues.csv.zip DataValues.csv')
 
-
-#load excel worksheets into dataframes and export as csv
-'/home/mike/Dropbox/streampulse/data/cuahsi_connection/hydroserver_templates'
-
-wb = loadWorkbook('NC_Advanced.xlsx')
-shtnames = names(wb)[-(1:2)]
-shtnames = shtnames[-which(shtnames == 'DataValues')]
-dir.create(date)
-for(s in shtnames){
-    dat = read.xlsx('NC_Advanced.xlsx', s)
-    dat = dat[-(1:4),-1]
-    write.csv(dat, paste0(date, '/', s, '.csv'))
-}
-
-#read in datavalues worksheet as dataframe
-dat = read.xlsx('NC_Advanced.xlsx', 'DataValues')
-dat = dat[-(1:4),-1]
-
-
-resout$UTCOffset =
-select(resout, value, )
-colnames(resout)
+# setwd('/home/mike/git/streampulse/server_copy/sp')
 
 #remove directory
-unlink(date, recursive='TRUE')
+# unlink(date, recursive='TRUE')
