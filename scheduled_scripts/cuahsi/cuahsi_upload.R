@@ -10,7 +10,7 @@ library(jsonlite)
 setwd('/home/mike/git/streampulse/server_copy/sp')
 logfile = 'scheduled_scripts/cuahsi/cuahsi_upload.log'
 write(paste('\n\tRunning script at:', Sys.time()), logfile, append=TRUE)
-date = as.character(Sys.Date())
+today = Sys.Date()
 
 #connect to database
 # conf = readLines('/home/aaron/sp/scheduled_scripts/')
@@ -25,11 +25,18 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 
 #read in all site data from site table
 res = dbSendQuery(con, paste("SELECT CONCAT(region, '_', site) AS site,",
-    "ROUND(latitude, 5) AS lat, ROUND(longitude, 6) AS lon FROM site;",
-    # "embargo, addDate FROM site;"))
+    "ROUND(latitude, 5) AS lat, ROUND(longitude, 6) AS lon,",
+    "embargo, addDate FROM site;"))
 sites = dbFetch(res)
 # sites = sites[-c(5, 55, 62:64),]
 dbClearResult(res)
+
+#filter embargoed sites
+embargo_end = sites$addDate + as.difftime(sites$embargo * 365, units='days')
+public_sites = embargo_end < as.POSIXct(today)
+embargoed_sites = sites[! public_sites, 'site']
+sites = sites[public_sites,]
+sites = sites[,!colnames(sites) %in% c('embargo', 'addDate')]
 
 #query Ask Geo database for UTC offsets associated with each site's lat/long
 accnt_id = '2023'
@@ -60,11 +67,12 @@ res = dbSendQuery(con, paste("SELECT data.value AS DataValue,",
     "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
     "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
     "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
-    "data.flag=flag.id WHERE data.region='NC';"))
+    "data.flag=flag.id;"))# WHERE data.region='NC';"))
 resout = dbFetch(res)
 dbClearResult(res)
 resout = resout[is.na(resout$QualifierCode) |
     resout$QualifierCode != 'Bad Data',]
+resout = resout[esout$SiteCode %in% embargoed_sites,]
 
 #convert offsets to hours, bind with latlongs, bind with site data
 d_summer = d_summer$data$TimeZone %>%
@@ -195,6 +203,16 @@ d$SourceCode[d$upload_id == -901] = 'USGS'
 
 #join QC level data to set
 d$QualityControlLevelCode = '0'
+#gotta sort out the below; also add in differentiators for sub/super canopy PAR/lux
+# mmap = list('0'=c('WaterPres_kPa','WaterTemp_C','DO_mgL','CDOM_mV',
+#     'SpecCond_mScm','Turbidity_mV','pH','AirPres_kPa','AirTemp_C','CO2_ppm',
+#     'Light_lux','Nitrate_mgL','Light2_lux','satDO_mgL','DOsat_pct',
+#     'WaterTemp2_C','WaterTemp3_C','Light3_lux','Light4_lux','Light5_lux',
+#     'satDO_mgL','DOsat_pct','Level_m','pH_mV','CDOM_ppb','Battery_V',
+#     'ChlorophyllA_ugL','SpecCond_uScm','Turbidity_FNU','Turbidity_NTU'),
+#     '2'=c('Depth_m','Discharge_m3s','Velocity_ms'),
+#     '3'=c('Light_PAR','Light2_PAR','Light3_PAR','Light4_PAR','Light5_PAR',
+#         'underwater_PAR','O2GasTransferVelocity_ms'))
 
 #clean up and arrange columns, write to CSV, zip
 d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
@@ -203,12 +221,12 @@ d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
     VariableCode, QualifierCode, MethodCode, SourceCode,
     QualityControlLevelCode)
 setwd(paste0('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/',
-    'cuahsi/', date))
-# datafn = paste0('scheduled_scripts/cuahsi/', date, '/DataValues.csv')
+    'cuahsi/', as.character(today)))
+# datafn = paste0('scheduled_scripts/cuahsi/', today, '/DataValues.csv')
 write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
 system('zip DataValues.csv.zip DataValues.csv')
 
 # setwd('/home/mike/git/streampulse/server_copy/sp')
 
 #remove directory
-# unlink(date, recursive='TRUE')
+# unlink(today, recursive='TRUE')
