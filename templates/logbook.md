@@ -1,5 +1,17 @@
 #Mike's Logbook
 
+###mon20181210
+ + disallowed [-_ ] in sitenames
+ + fixed bugs in grdo filedrop system:
+   + timestamp now comes before file extension
+   + non-utf symbols now handled in to_csv
+   + email schedule corrected to weekly
+###fri20181207
+ + tested CUAHSI upload with 750k points, ready for beta testimg of upload API when it's ready
+###wed20181205
+ + got method and source data structured for CUAHSI
+###tue20181204
+ + got data structured for CUAHSI HydroServer upload: site, time zone/local time
 ###mon20181203
  + fixed bug preventing qaqc page from loading after last viz update (whoops)
 ###sun20181202
