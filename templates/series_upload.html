@@ -1,32 +1,5 @@
 {% extends "layout.html" %}
 
-{% block chatbot %}
-<!-- Start of Async Drift Code -->
-<script>
-!function() {
-  var t;
-  if (t = window.driftt = window.drift = window.driftt || [], !t.init) return t.invoked ? void (window.console && console.error && console.error("Drift snippet included twice.")) : (t.invoked = !0,
-  t.methods = [ "identify", "config", "track", "reset", "debug", "show", "ping", "page", "hide", "off", "on" ],
-  t.factory = function(e) {
-    return function() {
-      var n;
-      return n = Array.prototype.slice.call(arguments), n.unshift(e), t.push(n), t;
-    };
-  }, t.methods.forEach(function(e) {
-    t[e] = t.factory(e);
-  }), t.load = function(t) {
-    var e, n, o, i;
-    e = 3e5, i = Math.ceil(new Date() / e) * e, o = document.createElement("script"),
-    o.type = "text/javascript", o.async = !0, o.crossorigin = "anonymous", o.src = "https://js.driftt.com/include/" + i + "/" + t + ".js",
-    n = document.getElementsByTagName("script")[0], n.parentNode.insertBefore(o, n);
-  });
-}();
-drift.SNIPPET_VERSION = '0.3.1';
-drift.load('s2rst4h926mg');
-</script>
-<!-- End of Async Drift Code -->
-{% endblock %}
-
 {% block headcode %}
 <script src="static/hot/handsontable.full.js"></script>
 <link rel="stylesheet" media="screen" href="static/hot/handsontable.full.css">
@@ -108,7 +81,10 @@ type='video/mp4' />
         </li>
       </ul>
     </li>
-    <li><code>SITEID</code> is a unique abbreviation for the name of your site,</li>
+    <li>
+      <code>SITEID</code> is a unique abbreviation for the name of your site
+      (must not contain space, dash, or underscore characters),
+    </li>
     <li><code>YYYY-MM-DD</code> is the download date,</li>
     <li><code>LOGGERID</code> is the logger routing code,
       <ul>
@@ -257,9 +233,20 @@ The minimum set of variables for upload are:</p>
   <h3>File naming</h3>
   <p>Name your upload file &ndash; <code>REGIONID_SITEID_YYYY-MM-DD.csv</code> &ndash; where</p>
   <ul>
-  <li><code>REGIONID</code> is the name of your region (US: <a href="https://en.wikipedia.org/wiki/Federal_Information_Processing_Standard_state_code">FIPS state code</a>; International: <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">ISO 3166-1 alpha-2 code</a>),</li>
-  <li><code>SITEID</code> is your chosen unique site name (only alphanumeric characters, any length you want), and</li>
-  <li><code>YYYY-MM-DD</code> is the download date or the last date in the timeseries.</li>
+  <li>
+    <code>REGIONID</code> is the name of your region (US:
+    <a href="https://en.wikipedia.org/wiki/Federal_Information_Processing_Standard_state_code">
+      FIPS state code
+    </a>; International:
+    <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">
+      ISO 3166-1 alpha-2 code
+    </a>),
+  </li>
+  <li>
+    <code>SITEID</code> is your chosen unique site name
+    (must not contain space, dash, or underscore characters), and
+  </li>
+  <li><code>YYYY-MM-DD</code> can be the logger download date or the last date in the timeseries.</li>
   <li><b>Example filename:</b> <code>UK_Arun_2016-11-04.csv</code></li>
   </ul>
 

@@ -31,7 +31,7 @@ uploads.columns = ['name', 'email', 'addDate', 'embargo', 'notes', 'dataFiles', 
 
 db.close()
 
-uploads.to_csv('scheduled_scripts/grdo/grdo_uploads.csv', index=False, encoding='utf-8')
+uploads.to_csv('scheduled_scripts/grdo/grdo_uploads.csv', index=False)
 
 rn = datetime.datetime.utcnow()
 new_rows = [(rn - x).days <= 7 for x in uploads.addDate]

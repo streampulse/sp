@@ -482,8 +482,7 @@ class Grdo(db.Model):
         self.metaFiles = metaFiles
 
     def __repr__(self):
-        return '<Data %r, %r, %r>' % (self.name, self.email,
-        self.addDate)
+        return '<Data %r, %r, %r>' % (self.name, self.email, self.addDate)
 
 db.create_all()
 
@@ -1156,7 +1155,8 @@ def sitelist():
 
     #pull in all site data
     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
-        'Name, latitude as Lat, longitude as Lon, usgs as `USGS gage`, ' +\
+        'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
+        'contactEmail as Email, usgs as `USGS gage`, ' +\
         'embargo as `Embargo (days)`, addDate from site;', db.engine)
 
     #calculate remaining embargo days
@@ -1200,6 +1200,9 @@ def series_upload():
             return redirect(request.url)
         ufiles = request.files.getlist("file")
         ufnms = [x.filename for x in ufiles]
+        # ufnms = ['SR_GG_2017-12-22_XX.csv','SR_G-f_2017-12-22_XX.csv']
+        # f=ufnms[0]
+        # f = 'ss d_-d'
         if len(ufnms[0]) == 0:
             flash('No files selected.','alert-danger')
             return redirect(request.url)
@@ -1209,14 +1212,34 @@ def series_upload():
         ld = os.listdir(upfold)
 
         #check names of uploaded files
-        ffregex = "^[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
-            "(?:[0-9]+)?.[a-zA-Z]{3}$" # core sites
-        ffregex2 = "^[A-Z]{2}_.*_[0-9]{4}-[0-9]{2}-[0-9]{2}.csv$" #leveraged sites
-        pattern = re.compile(ffregex+"|"+ffregex2)
-        if not all([pattern.match(f) is not None for f in ufnms]):
-            flash('Please name your files in the specified format.',
-                'alert-danger')
-            return redirect(request.url)
+        core_regex = "^[A-Z]{2}_(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
+            "(?:[0-9]+)?.[a-zA-Z]{3}$"
+        lev_regex = "^[A-Z]{2}_(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}.csv$"
+
+        for f in ufnms:
+            core_match = re.match(core_regex, f)
+            lev_match = re.match(lev_regex, f)
+
+            if core_match is not None:
+                site_match = core_match.group(1)
+                illegal_match = re.search('([-_ ])', site_match)
+                if illegal_match is not None:
+                    illegal = illegal_match.group(0)
+                    flash('Illegal character "' + illegal +\
+                    '" found in site name.', 'alert-danger')
+                    return redirect(request.url)
+            elif lev_match is not None:
+                site_match = lev_match.group(1)
+                illegal_match = re.search('([-_ ])', site_match)
+                if illegal_match is not None:
+                    illegal = illegal_match.group(0)
+                    flash('Illegal character "' + illegal +\
+                    '" found in site name.', 'alert-danger')
+                    return redirect(request.url)
+            else:
+                flash('Filename "' + f + '" does not match the required format.',
+                    'alert-danger')
+                return redirect(request.url)
 
         if not replace: #if user has not checked replace box
 
@@ -1492,6 +1515,12 @@ def grab_upload():
                 ['DateTime_UTC','Sitecode']]
             ureg = filename.split('_')[0]
             usites = list(x.Sitecode)
+
+            if any([re.search('([-_ ])', s) is not None for s in set(usites)]):
+                flash('Illegal character (dash, space, or underscore) found ' +\
+                    'in at least one site name.', 'alert-danger')
+                return redirect(request.url)
+
             urs = [ureg + '_' + s for s in usites]
             coldict = pd.read_sql("select * from grabcols where site in ('" +\
                 "', '".join(usites) + "') and region='" + ureg + "';",
@@ -1571,7 +1600,13 @@ def grdo_filedrop():
                     fn = file.filename
                     if fn == 'NA':
                         fn = 'na'
-                    fn_secure = secure_filename(fn) + '_' + timestamp
+                    fn_secure = secure_filename(fn)
+                    base, extn = re.match('^(.*?)(\..+)?$', fn_secure).groups()
+                    if extn:
+                        fn_secure = base + '_' + timestamp + extn
+                    else:
+                        fn_secure = base + '_' + timestamp
+                    # fpath = os.path.join('/home/mike/Desktop/meta/', fn_secure)
                     fpath = os.path.join('/home/joanna/1_new/meta/', fn_secure)
                     file.save(fpath)
                     mfnms_secure.append(fn_secure)
@@ -1583,6 +1618,12 @@ def grdo_filedrop():
                     if fn == 'NA':
                         fn = 'na'
                     fn_secure = secure_filename(fn) + '_' + timestamp
+                    base, extn = re.match('^(.*?)(\..+)?$', fn_secure).groups()
+                    if extn:
+                        fn_secure = base + '_' + timestamp + extn
+                    else:
+                        fn_secure = base + '_' + timestamp
+                    # fpath = os.path.join('/home/mike/Desktop/data/', fn_secure)
                     fpath = os.path.join('/home/joanna/1_new/data/', fn_secure)
                     file.save(fpath)
                     dfnms_secure.append(fn_secure)
@@ -1599,12 +1640,12 @@ def grdo_filedrop():
         contactemail = request.form.get('contactemail')
         embargo = request.form.get('embargo')
         addtl = request.form.get('additional')
-        mfile_list = ', '.join(mfnms_secure) if mfiles[0] else 'NA'
-        dfile_list = ', '.join(dfnms_secure) if dfiles[0] else 'NA'
+        mfile_str = ', '.join(mfnms_secure) if mfiles[0] else 'NA'
+        dfile_str = ', '.join(dfnms_secure) if dfiles[0] else 'NA'
 
         db_entry = Grdo(name=contactname, email=contactemail,
             addDate=datetime.utcnow(), embargo=embargo, notes=addtl,
-            dataFiles=mfile_list, metaFiles=dfile_list)
+            dataFiles=dfile_str, metaFiles=mfile_str)
         db.session.add(db_entry)
         db.session.commit()
 
