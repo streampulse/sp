@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###wed20181212
+ + updated shiny app in R package to mirror changes in website model viz
 ###mon20181210
  + disallowed [-_ ] in sitenames
  + fixed bugs in grdo filedrop system:

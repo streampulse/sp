@@ -399,18 +399,18 @@ QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
     log_Q = log(slicex$discharge.daily)
 
     #get K residuals (based on K-Q linear relationship)
-    KQmod = lm(slicey$K600_daily_mean ~ log_Q)
+    KQmod = lm(slicey$K600_daily_mean ~ log_Q, na.action=na.exclude)
     KQrelat = fitted(KQmod)
-    if(length(KQrelat) != length(slicey$K600_daily_mean)){
-        if(is.na(slicey$K600_daily_mean[1])){
-            KQrelat = c(NA, KQrelat)
-        } else {
-            KQrelat = c(KQrelat, NA)
-        }
-    }
-    if(length(KQrelat) != length(slicey$K600_daily_mean)){
-        KQrelat = c(KQrelat, NA)
-    }
+    # if(length(KQrelat) != length(slicey$K600_daily_mean)){
+    #     if(is.na(slicey$K600_daily_mean[1])){
+    #         KQrelat = c(NA, KQrelat)
+    #     } else {
+    #         KQrelat = c(KQrelat, NA)
+    #     }
+    # }
+    # if(length(KQrelat) != length(slicey$K600_daily_mean)){
+    #     KQrelat = c(KQrelat, NA)
+    # }
 
     resid = slicey$K600_daily_mean - KQrelat
 
