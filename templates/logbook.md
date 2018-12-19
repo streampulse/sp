@@ -1,7 +1,11 @@
 #Mike's Logbook
 
+###thu20181213
+ + configured DNS records for new mail server
+   + waiting for changes to propagate; verify DKIM record
 ###wed20181212
- + updated shiny app in R package to mirror changes in website model viz
+ + package v. 0.0.0.9021: updated shiny app in R package to mirror changes in website model viz
+ + installed mail server components on new AWS EC2 instance
 ###mon20181210
  + disallowed [-_ ] in sitenames
  + fixed bugs in grdo filedrop system:
