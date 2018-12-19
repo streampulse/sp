@@ -1,5 +1,36 @@
 #Mike's Logbook
 
+###thu20181213
+ + configured DNS records for new mail server
+   + waiting for changes to propagate; verify DKIM record
+###wed20181212
+ + package v. 0.0.0.9021: updated shiny app in R package to mirror changes in website model viz
+ + installed mail server components on new AWS EC2 instance
+###mon20181210
+ + disallowed [-_ ] in sitenames
+ + fixed bugs in grdo filedrop system:
+   + timestamp now comes before file extension
+   + non-utf symbols now handled in to_csv
+   + email schedule corrected to weekly
+###fri20181207
+ + tested CUAHSI upload with 750k points, ready for beta testimg of upload API when it's ready
+###wed20181205
+ + got method and source data structured for CUAHSI
+###tue20181204
+ + got data structured for CUAHSI HydroServer upload: site, time zone/local time
+###mon20181203
+ + fixed bug preventing qaqc page from loading after last viz update (whoops)
+###sun20181202
+ + Q v K600 residuals plot hooked up
+###sat20181201
+ + set up input variable overlay on O2 plot
+###fri20181130
+ + set up K600 overlay on metab plot
+ + can now toggle between DOY and date on page 2 x axis
+ + replaced cumulative metab plot with text outputs
+###thu20181129
+ + time slider on shiny app model performance (MP) page
+ + can now click points to view date on MP page
 ###wed20181128
  + added registration link to login page
 ###tue20181127

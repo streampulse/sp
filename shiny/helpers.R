@@ -1,26 +1,9 @@
 processing_func = function (ts, st, en) {
     gpp = ts$GPP; gppup = ts$GPP.upper; gpplo = ts$GPP.lower
     er = ts$ER; erup = ts$ER.upper; erlo = ts$ER.lower
-    # ts[!is.na(gpp) & gpp < 0 | !is.na(gpp) & gpp > 100, 'GPP'] = NA
-    # ts[!is.na(er) & er > 0, 'ER'] = NA
-    # if('tbl' %in% class(ts$date)){
 
-    # full_dates = as.data.frame(ts$date)
-    # colnames(full_dates) = 'Date'
-
-    # colnames(ts)[which(colnames(ts) == 'date')] = 'Date'
     ts_full = as.data.frame(ts)
-    # } else {
-    #     ts_date = ts$date
-    #     ts$Date = format(ts_date, "%Y-%m-%d")
-    #     full_dates = setNames(data.frame(
-    #         seq(from = as.Date(paste(min(format(ts$date, "%Y")),
-    #             "-01-01", sep = "")),
-    #             to = as.Date(paste(max(format(ts[,
-    #                 date_var], "%Y")), "-12-31", sep = "")), by = 1)), "Date")
-    # }
 
-    # ts_full = merge(full_dates, ts, by = c("Date"), all = TRUE)
     ts_full$Year = as.numeric(format(ts_full$date, "%Y"))
     ts_full$DOY = as.numeric(format(ts_full$date, "%j"))
     ts_full$NPP = ts_full$GPP + ts_full$ER
@@ -318,11 +301,12 @@ KvER_plot = function(mod_out, slice, click=NULL){
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)
-            text(click_x, click_y, slice$date[click_ind], pos=2, font=1)
+            text(click_x, click_y, paste0(slice$date[click_ind], ' '), pos=2, font=2)
         } else {
             text(click_x, click_y, '-', pos=4, font=2, col='white', cex=9)
             text(click_x, click_y, ' -', pos=4, font=2, col='white', cex=9)
-            text(click_x, click_y, slice$date[click_ind], pos=4, font=1)
+            text(click_x, click_y, '--', pos=4, font=2, col='white', cex=9)
+            text(click_x, click_y, paste0(' ', slice$date[click_ind]), pos=4, font=2)
         }
     }
 }
@@ -354,11 +338,11 @@ KvGPP_plot = function(mod_out, slice, click=NULL){
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)
-            text(click_x, click_y, slice$date[click_ind], pos=2, font=2)
+            text(click_x, click_y, paste0(slice$date[click_ind], ' '), pos=2, font=2)
         } else {
             text(click_x, click_y, '-', pos=4, font=2, col='white', cex=9)
             text(click_x, click_y, ' -', pos=4, font=2, col='white', cex=9)
-            text(click_x, click_y, slice$date[click_ind], pos=4, font=2)
+            text(click_x, click_y, paste0(' ', slice$date[click_ind]), pos=4, font=2)
         }
     }
 }
@@ -401,11 +385,11 @@ KvQ_plot = function(mod_out, slicex, slicey, click=NULL){
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)
-            text(click_x, click_y, slicey$date[click_ind_y], pos=2, font=2)
+            text(click_x, click_y, paste0(slicey$date[click_ind_y], ' '), pos=2, font=2)
         } else {
             text(click_x, click_y, '-', pos=4, font=2, col='white', cex=9)
             text(click_x, click_y, ' -', pos=4, font=2, col='white', cex=9)
-            text(click_x, click_y, slicey$date[click_ind_y], pos=4, font=2)
+            text(click_x, click_y, paste0(' ', slicey$date[click_ind_y]), pos=4, font=2)
         }
     }
 }
@@ -415,18 +399,18 @@ QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
     log_Q = log(slicex$discharge.daily)
 
     #get K residuals (based on K-Q linear relationship)
-    KQmod = lm(slicey$K600_daily_mean ~ log_Q)
+    KQmod = lm(slicey$K600_daily_mean ~ log_Q, na.action=na.exclude)
     KQrelat = fitted(KQmod)
-    if(length(KQrelat) != length(slicey$K600_daily_mean)){
-        if(is.na(slicey$K600_daily_mean[1])){
-            KQrelat = c(NA, KQrelat)
-        } else {
-            KQrelat = c(KQrelat, NA)
-        }
-    }
-    if(length(KQrelat) != length(slicey$K600_daily_mean)){
-        KQrelat = c(KQrelat, NA)
-    }
+    # if(length(KQrelat) != length(slicey$K600_daily_mean)){
+    #     if(is.na(slicey$K600_daily_mean[1])){
+    #         KQrelat = c(NA, KQrelat)
+    #     } else {
+    #         KQrelat = c(KQrelat, NA)
+    #     }
+    # }
+    # if(length(KQrelat) != length(slicey$K600_daily_mean)){
+    #     KQrelat = c(KQrelat, NA)
+    # }
 
     resid = slicey$K600_daily_mean - KQrelat
 
@@ -455,11 +439,11 @@ QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
         if(! is.na(x_prop) && x_prop > 0.5){
             text(click_x, click_y, '-', pos=2, font=2, col='white', cex=9)
             text(click_x, click_y, '- ', pos=2, font=2, col='white', cex=9)
-            text(click_x, click_y, slicey$date[click_ind_y], pos=2, font=2)
+            text(click_x, click_y, paste0(slicey$date[click_ind_y], ' '), pos=2, font=2)
         } else {
             text(click_x, click_y, '-', pos=4, font=2, col='white', cex=9)
             text(click_x, click_y, ' -', pos=4, font=2, col='white', cex=9)
-            text(click_x, click_y, slicey$date[click_ind_y], pos=4, font=2)
+            text(click_x, click_y, paste0(' ', slicey$date[click_ind_y]), pos=4, font=2)
         }
     }
 }
