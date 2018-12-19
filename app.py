@@ -36,6 +36,7 @@ import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
 import markdown
 import time
+import traceback
 
 #another attempt at serverside sessions
 # import pickle
@@ -578,13 +579,15 @@ with open('find_outliers.R', 'r') as f:
     find_outliers_string = f.read()
 find_outliers = robjects.r(find_outliers_string)
 
-def log_exception(e, excID):
+# def log_exception(e, excID, traceback):
+def log_exception(excID, traceback):
 
     cur_user = str(current_user.get_id()) if current_user else 'NA'
     with open(logfile, 'a') as lf:
         lf.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') +\
-            '; ' + excID + '; userID=' + cur_user + ';\n' +\
-            e.__str__() + '\n')
+            '; ' + excID + '; userID=' + cur_user +\
+            # '; ' + excID + '; userID=' + cur_user + ';\nerror: ' + e.__str__() +\
+            ';\ntraceback:\n ' + traceback.__str__() + '\n\n')
 
 def log_message(msgID):
     cur_user = str(current_user.get_id()) if current_user else 'NA'
@@ -1307,8 +1310,11 @@ def series_upload():
                 filenames.append(filename) #fname list passed on for display
                 fnlong.append(fup) #list of files that get processed
             else: #name may be messed up or something else could have gone wrong
-                msg = Markup('Error 002. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
                 log_message('E002')
+                msg = Markup('Error 002. Possibly illegal filename. If problem' +\
+                    ' persists, <a href="mailto:vlahm13@gmail.com" ' +\
+                    'class="alert-link">email Mike Vlah</a> with the error ' +\
+                    'number and a copy of the file you tried to upload.')
                 flash(msg, 'alert-danger')
 
                 return redirect(request.url)
@@ -1360,8 +1366,11 @@ def series_upload():
 
         except Exception as e:
             [os.remove(f) for f in fnlong]
-            log_exception(e, 'E001')
-            msg = Markup('Error 001. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
+            tb = traceback.format_exc()
+            log_exception('E001', tb)
+            msg = Markup('Error 001. Please <a href="mailto:vlahm13@gmail.com"' +\
+                ' class="alert-link">email Mike Vlah</a> with the error number ' +\
+                'and a copy of the file you tried to upload.')
             flash(msg, 'alert-danger')
 
             return redirect(request.url)
@@ -1381,8 +1390,12 @@ def series_upload():
 
         except Exception as e:
             [os.remove(f) for f in fnlong]
-            log_exception(e, 'E004')
-            msg = Markup('Error 004. Check for unusual characters in your column names (degree symbol, etc.). If problem persists, <a href="mailto:vlahm13@gmail.com" class="alert-link">Email Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
+            tb = traceback.format_exc()
+            log_exception('E004', tb)
+            msg = Markup('Error 004. Check for unusual characters in your ' +\
+                'column names (degree symbol, etc.). If problem persists, ' +\
+                '<a href="mailto:vlahm13@gmail.com" class="alert-link">Email ' +\
+                'Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
             flash(msg, 'alert-danger')
             return redirect(request.url)
 
@@ -1472,7 +1485,8 @@ def grab_upload():
                 fnlong = os.path.join(upfold, filename)
 
         except Exception as e:
-            log_exception(e, 'E003')
+            tb = traceback.format_exc()
+            log_exception('E003', tb)
             msg = Markup('Error 003. Please <a href=' +\
                 '"mailto:vlahm13@gmail.com" class="alert-link">' +\
                 'email Mike Vlah</a> with the error number and a copy of ' +\
@@ -1527,7 +1541,8 @@ def grab_upload():
             adict = dict(zip(coldict['rawcol'], coldict['addtl'])) #additional mappings
 
         except Exception as e:
-            log_exception(e, 'E006')
+            tb = traceback.format_exc()
+            log_exception('E006', tb)
             msg = Markup('Error 006. Please <a href=' +\
                 '"mailto:vlahm13@gmail.com" class="alert-link">' +\
                 'email Mike Vlah</a> with the error number and a copy of ' +\
@@ -1560,7 +1575,8 @@ def grab_upload():
                 newsites=new, sitenames=allsites, replacing=replace)
 
         except Exception as e:
-            log_exception(e, '007')
+            tb = traceback.format_exc()
+            log_exception('007', tb)
             msg = Markup('Error 007. Please <a href=' +\
                 '"mailto:vlahm13@gmail.com" class="alert-link">' +\
                 'email Mike Vlah</a> with the error number and a copy of ' +\
@@ -1667,7 +1683,7 @@ def grdo_filedrop():
         return render_template('grdo_filedrop.html', nmeta=len(metafiles),
             ndata=len(datafiles))
 
-@app.route("/upload_cancel",methods=["POST"])
+@app.route("/upload_cancel", methods=["POST"])
 def cancelcolumns(): #only used when cancelling series_upload
     ofiles = request.form['ofiles'].split(",")
     tmpfile = request.form['tmpfile']+".csv"
@@ -1920,7 +1936,8 @@ def confirmcolumns():
     except Exception as e:
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
         [os.remove(f) for f in fnlong]
-        log_exception(e, '008')
+        tb = traceback.format_exc()
+        log_exception('008', tb)
         msg = Markup('Error 008. Please <a href=' +\
             '"mailto:vlahm13@gmail.com" class="alert-link">' +\
             'email Mike Vlah</a> with the error number and a copy of ' +\
@@ -1936,8 +1953,11 @@ def confirmcolumns():
 
     except Exception as e:
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-        log_exception(e, '009')
-        msg = Markup('Error 009. This is a particularly nasty error. Please <a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike Vlah</a> with the error number and a copy of the file(s) you tried to upload.')
+        tb = traceback.format_exc()
+        log_exception('009', tb)
+        msg = Markup('Error 009. This is a particularly nasty error. Please ' +\
+            '<a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike ' +\
+            'Vlah</a> with the error number and a copy of the file(s) you tried to upload.')
         flash(msg, 'alert-danger')
 
         return redirect(url_for('series_upload'))
@@ -2083,7 +2103,8 @@ def grab_confirmcolumns():
         grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict)
 
     except Exception as e:
-        log_exception(e, '005')
+        tb = traceback.format_exc()
+        log_exception('005', tb)
         msg = Markup('Error 005. Please <a href=' +\
             '"mailto:vlahm13@gmail.com" class="alert-link">' +\
             'email</a> Mike Vlah with the error number and a copy of ' +\
