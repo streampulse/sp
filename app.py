@@ -1948,7 +1948,7 @@ def confirmcolumns():
             metafilepath = os.path.join(app.config['META_FOLDER'],
                 region + "_" + site + "_metadata.txt")
             with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring)
+                metafile.write(metastring.encode('utf-8'))
 
         #format df for database entry
         xx = xx.set_index(["DateTime_UTC", "upload_id"])

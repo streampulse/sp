@@ -1,5 +1,11 @@
 #Mike's Logbook
 
+###wed20181219
+ + added full traceback to log output
+ + configured SPF and DKIM records for email server
+ + added handler for uncommon symbols in metadata input for new sites
+###tue20181218
+ + created error logging system for all handled exceptions triggered by site users; logger records time, error number, user id, and error message to /home/aaron/logs_etc/app.log
 ###thu20181213
  + configured DNS records for new mail server
    + waiting for changes to propagate; verify DKIM record
