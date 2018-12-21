@@ -192,6 +192,16 @@ for(p in 1:length(products)){
         txt = content(req, as="text")
         site_resp = fromJSON(txt, simplifyDataFrame=TRUE, flatten=TRUE)
 
+        #skip this dataset if its sensor information is not available
+        sensor_data_ind = grep("sensor_positions",
+            d$data$files$name)[1]
+        if(is.na(sensor_data_ind)){
+            write(paste('Problem with sensor data for site', site,
+                '(', prods_abb[p], date, ')'),
+                '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+            next
+        }
+
         #update site table if this site is new
         if(! site %in% known_sites){
 
@@ -247,9 +257,9 @@ for(p in 1:length(products)){
             position = str_split(d$data$files$name[data_inds[1]], '\\.')[[1]][7]
             updown_order = if(position == '101') 1:2 else 2:1
         } else if(length(data_inds) == 1){
-            updown_order = 1:2
+            updown_order = 1:2 #this should never run
         } else {  #something's wonky
-            write(paste('Problem with sensor positions for site', site,
+            write(paste('Problem with data file number for site', site,
                 '(', prods_abb[p], date, ')'),
                 '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
             next
@@ -461,7 +471,6 @@ for(p in 1:length(products)){
                             current_var, site_with_suffix, date),
                             '../../logs_etc/NEON/NEON_ingest.log',
                             append=TRUE)
-                        next
                         errflag <<- TRUE
                     })
                     rm(flag_ids)
