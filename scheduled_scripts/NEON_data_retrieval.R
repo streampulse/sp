@@ -246,8 +246,13 @@ for(p in 1:length(products)){
         if(length(data_inds) == 2){
             position = str_split(d$data$files$name[data_inds[1]], '\\.')[[1]][7]
             updown_order = if(position == '101') 1:2 else 2:1
-        } else {
-            updown_order = 1:2 #this should never be needed
+        } else if(length(data_inds) == 1){
+            updown_order = 1:2
+        } else {  #something's wonky
+            write(paste('Problem with sensor positions for site', site,
+                '(', prods_abb[p], date, ')'),
+                '../../logs_etc/NEON/NEON_ingest.log', append=TRUE)
+            next
         }
 
         for(j in 1:length(data_inds)){
