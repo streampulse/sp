@@ -11,7 +11,6 @@ library(dplyr)
 library(RMariaDB)
 library(DBI)
 library(stringr)
-library(accelerometry)
 # library(reaRate)
 # library(geoNEON)
 # library(neonUtilities)
@@ -34,12 +33,16 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
 
 #DO must always be first in these vectors. Sitemonths from the other datasets
 #will be ignored if they're not represented in DO.
-products = c('DO_mgL', 'Nitrate_mgL', 'O2GasTransferVelocity_ms','Discharge_m3s')
+products = c('DO_mgL', 'Nitrate_mgL', 'O2GasTransferVelocity_ms','Discharge_m3s',
+    'WaterTemp_C', 'Depth_m')
 prods_abb = str_split(products, '_', simplify=TRUE)[,1]
-prod_codes = c('DP1.20288.001', 'DP1.20033.001', 'DP1.20190.001', 'DP4.00130.001')
+prod_codes = c('DP1.20288.001', 'DP1.20033.001', 'DP1.20190.001', 'DP4.00130.001',
+    'DP1.20053.001', 'DP1.20016.001')
+# NEON.DOM.SITE.DP1.20004.001, Barometric pressure above water on-buoy
 prod_varlists = list(c('Level_m','SpecCond_uScm','DO_mgL','DOsat_pct','pH',
     'ChlorophyllA_ugL','Turbidity_FNU'),
-    'Nitrate_mgL', 'O2GasTransferVelocity_ms', 'Discharge_m3s')
+    'Nitrate_mgL', 'O2GasTransferVelocity_ms', 'Discharge_m3s', 'WaterTemp_C',
+    'Depth_m')
 
 
 varname_mappings = list(sensorDepth='Level_m',
@@ -51,7 +54,9 @@ varname_mappings = list(sensorDepth='Level_m',
     turbidity='Turbidity_FNU',
     fDOM='fDOM_ppb',
     surfWaterNitrateMean='Nitrate_mgL',
-    maxpostDischarge='Discharge_m3s')
+    maxpostDischarge='Discharge_m3s',
+    surfWaterTempMean='WaterTemp_C',
+    surfacewaterElevMean='Depth_m')
 
 #update log file
 write(paste('\n\tRunning script at:', Sys.time()),
@@ -67,7 +72,7 @@ dbClearResult(res)
 known_sites = resout$site
 
 # p=i=j=1;k=3
-# p=1;i=1;j=1;k=1
+# p=6;i=1;j=1;k=1
 # sets_to_grab = sets_to_grab[61,]
 
 for(p in 1:length(products)){
@@ -88,7 +93,7 @@ for(p in 1:length(products)){
     dbClearResult(res)
     retrieved_sets = paste(resout$site, resout$date)
 
-    #for nitrate, k, discharge, only ingest datasets for which we have DO data
+    #for non-waterqual, only ingest datasets for which we have waterqual (DO, etc) data
     if(prods_abb[p] == 'DO'){
         relevant_sitemonths = retrieved_sets
     }
@@ -158,6 +163,17 @@ for(p in 1:length(products)){
         } else if(prods_abb[p] == 'Nitrate'){
             data_inds = intersect(grep("expanded", d$data$files$name),
                 grep("15_minute", d$data$files$name))
+        } else if(prods_abb[p] == 'WaterTemp'){
+            data_inds = intersect(grep("expanded", d$data$files$name),
+                grep("5min", d$data$files$name))
+            # if(length(data_inds) == 2){ #in case some sites have 2 depths
+            #     name_components = strsplit(d$data$files$name[data_inds], '\\.')
+            #     surface = sapply(name_components, function(x) x[7] == '101')
+            #     data_inds = data_inds[surface]
+            # }
+        } else if(prods_abb[p] == 'Depth'){
+            data_inds = intersect(grep("expanded", d$data$files$name),
+                grep("5_min", d$data$files$name))
         } else {
             data_inds = intersect(grep("expanded", d$data$files$name),
                 grep("csd_continuousDischarge_pub", d$data$files$name))
@@ -266,6 +282,12 @@ for(p in 1:length(products)){
             } else if(prods_abb[p] == 'Nitrate'){
                 varlist = 'surfWaterNitrateMean'
                 flagprefixlist = ''
+            } else if(prods_abb[p] == 'WaterTemp'){
+                varlist = 'surfWaterTempMean'
+                flagprefixlist = ''
+            } else if(prods_abb[p] == 'Depth'){
+                varlist = 'surfacewaterElevMean'
+                flagprefixlist = 'sWatElev'
             } else { #discharge
                 varlist = 'maxpostDischarge'
                 flagprefixlist = 'discharge'
@@ -289,7 +311,8 @@ for(p in 1:length(products)){
                     #blacklist problematic datasets so they don't get checked
                     #each time and clog the logfile. Doesn't apply to water qual
                     #data because it includes many variables.
-                    if(prods_abb[p] %in% c('Nitrate', 'Discharge')){
+                    if(prods_abb[p] %in% c('Nitrate', 'Discharge', 'WaterTemp',
+                            'Depth')){
                         write(url, paste0('../../logs_etc/NEON/NEON_blacklist_',
                             prods_abb[p], '.txt'), append=TRUE)
                     }
@@ -456,6 +479,14 @@ for(p in 1:length(products)){
                 }
                 if(prods_abb[p] == 'Discharge'){
                     na_filt$value = na_filt$value / 1000
+                }
+                if(prods_abb[p] == 'Depth'){
+                    sensor_data_ind = grep("sensor_positions",
+                        d$data$files$name)[1]
+                    sensor_pos = read.delim(d$data$files$url[sensor_data_ind],
+                        sep=",")
+                    ref_elev = sensor_pos$referenceElevation[updown_order[j]]
+                    na_filt$value = na_filt$value - ref_elev
                 }
                 if(prods_abb[p] == 'O2GasTransferVelocity'){
                     print('this isnt hooked up yet')
