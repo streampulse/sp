@@ -1,5 +1,7 @@
 #Mike's Logbook
 
+###20181221,25,26
+ + NEON coverage analysis: how many sites are modelable, and over what time span?
 ###wed20181219
  + added full traceback to log output
  + configured SPF and DKIM records for email server

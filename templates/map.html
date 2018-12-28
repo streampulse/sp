@@ -53,14 +53,64 @@
     var site_data = {{ site_data|tojson|safe }};
     var core_sites = {{ core_sites|tojson|safe }};
     var powell_sites = {{ powell_sites|tojson|safe }};
+    var linkmap = {'NC_Eno':'http://pulseofstreams.weebly.com/north-carolina.html',
+      'NC_UEno':'http://pulseofstreams.weebly.com/north-carolina.html',
+      'NC_Mud':'http://pulseofstreams.weebly.com/north-carolina.html',
+      'NC_Stony':'http://pulseofstreams.weebly.com/north-carolina.html',
+      'NC_NHC':'http://pulseofstreams.weebly.com/north-carolina.html',
+      'NC_UNHC':'http://pulseofstreams.weebly.com/north-carolina.html',
+      'FL_SF700':'http://pulseofstreams.weebly.com/florida.html',
+      'FL_SF2500':'http://pulseofstreams.weebly.com/florida.html',
+      'FL_SF2800':'http://pulseofstreams.weebly.com/florida.html',
+      'FL_ICHE2700':'http://pulseofstreams.weebly.com/florida.html',
+      'FL_WS1500':'http://pulseofstreams.weebly.com/florida.html',
+      'FL_NR1000':'http://pulseofstreams.weebly.com/florida.html',
+      'VT_Pass':'http://pulseofstreams.weebly.com/vermont.html',
+      'VT_SLPR':'http://pulseofstreams.weebly.com/vermont.html',
+      'VT_POPE':'http://pulseofstreams.weebly.com/vermont.html',
+      'VT_MOOS':'http://pulseofstreams.weebly.com/vermont.html',
+      'CT_Unio':'http://pulseofstreams.weebly.com/connecticut.html',
+      'CT_FARM':'http://pulseofstreams.weebly.com/connecticut.html',
+      'CT_BUNN':'http://pulseofstreams.weebly.com/connecticut.html',
+      'CT_STIL':'http://pulseofstreams.weebly.com/connecticut.html',
+      'CT_HUBB':'http://pulseofstreams.weebly.com/connecticut.html',
+      'MD_BARN':'http://pulseofstreams.weebly.com/maryland.html',
+      'MD_DRKR':'http://pulseofstreams.weebly.com/maryland.html',
+      'MD_POBR':'http://pulseofstreams.weebly.com/maryland.html',
+      'MD_GFCP':'http://pulseofstreams.weebly.com/maryland.html',
+      'MD_GFGB':'http://pulseofstreams.weebly.com/maryland.html',
+      'MD_GFVN':'http://pulseofstreams.weebly.com/maryland.html',
+      'RI_CorkBrk':'http://pulseofstreams.weebly.com/rhode-island.html',
+      'PR_QS':'http://pulseofstreams.weebly.com/puerto-rico.html',
+      'PR_Icacos':'http://pulseofstreams.weebly.com/puerto-rico.html',
+      'PR_RioIcacosTrib':'http://pulseofstreams.weebly.com/puerto-rico.html',
+      'PR_Prieta':'http://pulseofstreams.weebly.com/puerto-rico.html',
+      'AZ_SC':'http://pulseofstreams.weebly.com/arizona.html',
+      'AZ_OC':'http://pulseofstreams.weebly.com/arizona.html',
+      'AZ_WB':'http://pulseofstreams.weebly.com/arizona.html',
+      'AZ_LV':'http://pulseofstreams.weebly.com/arizona.html',
+      'AZ_AF':'http://pulseofstreams.weebly.com/arizona.html',
+      'AZ_MV':'http://pulseofstreams.weebly.com/arizona.html',
+      'WI_BEC':'http://pulseofstreams.weebly.com/wisconsin.html',
+      'WI_BRW':'http://pulseofstreams.weebly.com/wisconsin.html',
+      'NH_BDC':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_BEF':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_DCF':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_GOF':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_HBF':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_MCQ':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_SBM':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_TPB':'http://pulseofstreams.weebly.com/new-hampshire.html',
+      'NH_WHB':'http://pulseofstreams.weebly.com/new-hampshire.html'
+    }
 
     //create map base
-    var spmap = L.map('mapid', {zoomSnap: 0.5}).setView([50, -10], 2.5);
+    var spmap = L.map('mapid', {zoomSnap: 0.5}).setView([30, 20], 2);
 
     L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
       attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
       maxZoom: 17,
-      minZoom: 2.5,
+      minZoom: 2,
       id: 'mapbox.outdoors',
       accessToken: 'pk.eyJ1IjoidmxhaG0iLCJhIjoiY2pqYWQwbXpjMGFuODNxcWh6bWE5ZWZvMiJ9.xvVhktbooqGTJkK0sGpiow'
     }).addTo(spmap);
@@ -130,6 +180,18 @@
       // });
 
       //popup text when a user clicks on a marker
+      var url = linkmap[pp.region + "_" + pp.site]
+      if(pp.contact == 'NEON'){
+        var link = "<a href='http://data.neonscience.org/home' target='_blank' " +
+        "rel='noopener noreferrer'>link</a>"
+      } else {
+        var link = "<a href='" + url + "' target='_blank' " +
+        "rel='noopener noreferrer'>link</a>"
+      }
+      if(url == null && pp.contact != 'NEON'){
+        var link = "NA"
+      }
+
       marker.bindPopup(
         "<b>Site Name: </b>" + pp.name + "<br>" +
         "<b>Site Code: </b>" + pp.region + "_" + pp.site + "<br>" +
@@ -138,7 +200,8 @@
         "<b>Added: </b>" + String(pp.addDate) + "<br>" +
         "<b>Contact: </b>" + pp.contact + "<br>" +
         "<b>Contact Email: </b>" + pp.contactEmail + "<br>" +
-        "<b>USGS Gage ID: </b>" + pp.usgs + "<br>"
+        "<b>USGS Gage ID: </b>" + pp.usgs + "<br>" +
+        "<b>Site Page: </b>" + link + "<br>"
       );
     }
 
