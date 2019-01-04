@@ -72,7 +72,7 @@ resout = dbFetch(res)
 dbClearResult(res)
 resout = resout[is.na(resout$QualifierCode) |
     resout$QualifierCode != 'Bad Data',]
-resout = resout[esout$SiteCode %in% embargoed_sites,]
+resout = resout[resout$SiteCode %in% embargoed_sites,]
 
 #convert offsets to hours, bind with latlongs, bind with site data
 d_summer = d_summer$data$TimeZone %>%
