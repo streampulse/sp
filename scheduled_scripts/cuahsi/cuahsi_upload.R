@@ -117,18 +117,19 @@ dbClearResult(res)
 
 # ignore_inds = d$upload_id <= -900 | d$SiteCode %in% embargoed_sites |
 #     d$QualifierCode == 'Bad Data'
-embargo_log = d$SiteCode %in% embargoed_sites
-recs_to_ignore = d$id[embargo_log]
-d = d[!embargo_log,]
+
+# embargo_log = d$SiteCode %in% embargoed_sites
+# recs_to_ignore = d$id[embargo_log]
+# d = d[!embargo_log,]
+
+d = d[! d$SiteCode %in% embargoed_sites,]
 
 # d = d[is.na(d$QualifierCode) |
 #         d$QualifierCode != 'Bad Data',]
 # d = d[! d$SiteCode %in% embargoed_sites,]
 
 
-upload_to_cuahsi = d[! d$id %in% dhist$id[dhist$cuahsi_status == 1],]
-tryCatch({ dhist[! dhist$id %in% d$id, 'cuahsi_status'] = 3 },
-    error=function(e) NULL)
+upload_to_cuahsi = d[! d$id %in% dhist$id,]
 
 
 # dhist2 = dhist[1:10,]
@@ -193,14 +194,14 @@ askGeoReq_summer = paste0(askGeoReq_base, '&dateTime=2018-06-21')
 askGeoReq_winter = paste0(askGeoReq_base, '&dateTime=2018-12-21')
 
 d_summer = tryCatch({
-        r = httr::GET(askGeoReq_summer)
-        json = httr::content(r, as="text", encoding="UTF-8")
-        jsonlite::fromJSON(json)
-    }, error=function(e){
-        write(paste('Error: AskGeo issue (summer)'), logfile,
-            append=TRUE)
-        stop()
-    })
+    r = httr::GET(askGeoReq_summer)
+    json = httr::content(r, as="text", encoding="UTF-8")
+    jsonlite::fromJSON(json)
+}, error=function(e){
+    write(paste('Error: AskGeo issue (summer)'), logfile,
+        append=TRUE)
+    stop()
+})
 # r = httr::GET(askGeoReq_summer)
 # json = httr::content(r, as="text", encoding="UTF-8")
 # d_summer = try(jsonlite::fromJSON(json), silent=TRUE)
@@ -225,18 +226,18 @@ d_winter = tryCatch({
 # d_winter = dw_bak
 # head(d_winter)
 
-#read series data from database; remove bad data records
-res = dbSendQuery(con, paste("SELECT data.value AS DataValue,",
-    "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
-    "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
-    "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
-    "data.flag=flag.id WHERE data.region='", r, "';"))
-    # "data.flag=flag.id;"))
-resout = dbFetch(res)
-dbClearResult(res)
-resout = resout[is.na(resout$QualifierCode) |
-    resout$QualifierCode != 'Bad Data',]
-resout = resout[! resout$SiteCode %in% embargoed_sites,]
+##read series data from database; remove bad data records
+# res = dbSendQuery(con, paste("SELECT data.value AS DataValue,",
+#     "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
+#     "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
+#     "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
+#     "data.flag=flag.id WHERE data.region='", r, "';"))
+#     # "data.flag=flag.id;"))
+# resout = dbFetch(res)
+# dbClearResult(res)
+# resout = resout[is.na(resout$QualifierCode) |
+#     resout$QualifierCode != 'Bad Data',]
+# resout = resout[! resout$SiteCode %in% embargoed_sites,]
 
 #convert offsets to hours, bind with latlongs, bind with site data
 d_summer = d_summer$data$TimeZone %>%
@@ -361,39 +362,42 @@ source_map = data.frame(sites=unname(unlist(smap)),
     SourceCode=rep(names(smap), times=unlist(lapply(smap, length))),
     stringsAsFactors=FALSE)
 d = left_join(d, source_map, by=c('SiteCode'='sites'))
-d$SourceCode[d$upload_id == -900] = 'NEON'
-d$SourceCode[d$upload_id == -901] = 'USGS'
+# d$SourceCode[d$upload_id == -900] = 'NEON'
+# d$SourceCode[d$upload_id == -901] = 'USGS'
 
 #join QC level data to set
 
-# d$QualityControlLevelCode = '0'
-#gotta sort out the below; also add in differentiators for sub/super canopy PAR/lux
-#this mapping is only reasonable for NC: gotta petition groups for other regions
-lmap = list('1'=c('WaterPres_kPa','WaterTemp_C','DO_mgL','CDOM_mV',
-        'SpecCond_mScm','Turbidity_mV','pH','AirPres_kPa','AirTemp_C','CO2_ppm',
-        'Light_lux','Nitrate_mgL','Light2_lux','satDO_mgL','DOsat_pct',
-        'WaterTemp2_C','WaterTemp3_C','Light3_lux','Light4_lux','Light5_lux',
-        'satDO_mgL','DOsat_pct','Level_m','pH_mV','CDOM_ppb','Battery_V',
-        'ChlorophyllA_ugL','SpecCond_uScm','Turbidity_FNU','Turbidity_NTU'),
-    '2'=c('Depth_m','Discharge_m3s','Velocity_ms','Light_PAR','Light2_PAR',
-        'Light3_PAR','Light4_PAR','Light5_PAR',
-        'underwater_PAR','O2GasTransferVelocity_ms'))
-level_map = data.frame(vars=unname(unlist(lmap)),
-    QualityControlLevelCode=rep(names(lmap), times=unlist(lapply(lmap, length))),
-    stringsAsFactors=FALSE)
-d = left_join(d, level_map, by=c('VariableCode'='vars'))
+##gotta sort out the below; also add in differentiators for sub/super canopy PAR/lux
+##this mapping is only reasonable for NC: gotta petition groups for other regions
+# lmap = list('1'=c('WaterPres_kPa','WaterTemp_C','DO_mgL','CDOM_mV',
+#         'SpecCond_mScm','Turbidity_mV','pH','AirPres_kPa','AirTemp_C','CO2_ppm',
+#         'Light_lux','Nitrate_mgL','Light2_lux','satDO_mgL','DOsat_pct',
+#         'WaterTemp2_C','WaterTemp3_C','Light3_lux','Light4_lux','Light5_lux',
+#         'satDO_mgL','DOsat_pct','Level_m','pH_mV','CDOM_ppb','Battery_V',
+#         'ChlorophyllA_ugL','SpecCond_uScm','Turbidity_FNU','Turbidity_NTU'),
+#     '2'=c('Depth_m','Discharge_m3s','Velocity_ms','Light_PAR','Light2_PAR',
+#         'Light3_PAR','Light4_PAR','Light5_PAR',
+#         'underwater_PAR','O2GasTransferVelocity_ms'))
+# level_map = data.frame(vars=unname(unlist(lmap)),
+#     QualityControlLevelCode=rep(names(lmap), times=unlist(lapply(lmap, length))),
+#     stringsAsFactors=FALSE)
+# d = left_join(d, level_map, by=c('VariableCode'='vars'))
+# d$QualityControlLevelCode[d$MethodCode == '0'] = '0'
+d$QualityControlLevelCode = '0'
+
 
 #replace NULLs in QualifierCode
 d$QualifierCode[d$QualifierCode == 'NULL'] = '0'
 
 
 #clean up and arrange columns, write to CSV, zip
-d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
+# d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
 d$DataValue[is.na(d$DataValue)] = -9999
 d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
     VariableCode, QualifierCode, MethodCode, SourceCode,
     QualityControlLevelCode)
-wd0 ='/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/cuahsi/'
+# wd0 ='/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/cuahsi/'
+wd0 = paste0(getwd(), '/scheduled_scripts/cuahsi/')
 dir.create(paste0(wd0, as.character(today)))
 setwd(paste0(wd0, as.character(today)))
 # datafn = paste0('scheduled_scripts/cuahsi/', today, '/DataValues.csv')
@@ -402,13 +406,30 @@ system('zip DataValues.csv.zip DataValues.csv')
 setwd(wd0)
 # setwd('/home/mike/git/streampulse/server_copy/sp')
 
-#remove directory
+#UPLOAD TO CUAHSI HERE
+
+
+#if everything worked, update dhist with cuahsi_status=3s
+if(everything worked){
+    tryCatch({
+        dhist = rbind(dhist, data.frame(id=upload_to_cuahsi$id,
+            cuahsi_status=rep(2, nrow(upload_to_cuahsi))))
+        dhist$cuahsi_status[dhist$cuahsi_status == 1] = 2
+        dhist[! dhist$id %in% d$id & dhist$cuahsi_status < 3,
+            'cuahsi_status'] = 3
+        #set to 4 (removed from cuahsi) in a separate script, after confirmation from liza
+    }, error=function(e) NULL)
+} else {
+    write('CUAHSI upload failed.', logfile, append=TRUE)
+    stop()
+}
+
+write.csv(dhist, 'scheduled_scripts/cuahsi/data_history.csv',
+    row.names=FALSE)
+
+#remove temp directory
 # unlink(today, recursive=TRUE)
 
 # }
-
-#if everything worked, update dhist with cuahsi_status=3s
-write.csv(dhist, 'scheduled_scripts/cuahsi/data_history.csv',
-    row.names=FALSE)
 
 dbDisconnect(con)
