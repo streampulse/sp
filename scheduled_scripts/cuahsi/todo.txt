@@ -6,7 +6,7 @@ categories:
 1. new; not in cuahsi (hmm. i shouldnt ever have 1s i guess. it's the R script that will be populating this table, and that same R script will be doing to cuahsi uploading, so new records in the data table will be discovered and uploaded at almost the same time. maybe i should retain this category for the case where upload fails
 2. uploaded to cuahsi
 3. removed from our system since uploading to cuahsi
-4. removed from our system before upload to cuahsi?
+X4. removed from our system before upload to cuahsi?
 5. removed from cuahsi (i'll have to ask liza to do this for me periodically)
 6x. manually changed within our database, so should be updated within cuahsi
     instead of this, i should just make sure i always fully delete and replace records when i need to change them
@@ -26,6 +26,8 @@ if a site appears that is not in the cuahsi metadata, log an exception and maybe
 gotta sort out data levels and methods from foreign sites before i can put them on cuahsi
 
 create table data_history select id from data;
-alter table data_history add column cuahsi_status int(1) default(1);
+alter table data_history add column cuahsi_status int(1);
+alter table data_history alter cuahsi_status set default 1;
+update data_history set cuahsi_status=1;
 
-create cuahsi status table
+create another table for cuahsi status
