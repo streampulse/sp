@@ -6,8 +6,11 @@ library(dplyr)
 library(httr)
 library(jsonlite)
 
+# setup ####
+
 # setwd('/home/aaron/sp')
 setwd('/home/mike/git/streampulse/server_copy/sp')
+
 logfile = 'scheduled_scripts/cuahsi/cuahsi_upload.log'
 write(paste('\n\tRunning script at:', Sys.time()), logfile, append=TRUE)
 today = Sys.Date()
@@ -23,12 +26,37 @@ extract_from_config = function(key){
 pw = extract_from_config('MYSQL_PW')
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 
+# update metadata ####
+
+#load excel worksheets into dataframes and export as csv
+# date = as.character(Sys.Date())
+
+wb = loadWorkbook('scheduled_scripts/cuahsi/cuahsi_metadata.xlsx')
+shtnames = names(wb)[-(1:2)]
+# shtnames = shtnames[-which(shtnames == 'DataValues')]
+shtnames = shtnames[! shtnames %in% c('Introduction','Description of Tables',
+    'Samples','LabMethods',
+    'QualityControlLevels','DataValues','Categories','DerivedFrom',
+    'GroupDescriptions', 'Groups','OffsetTypes')]
+
+dir.create(paste0('scheduled_scripts/cuahsi/', as.character(today)))
+for(s in shtnames){
+    dat = read.xlsx('scheduled_scripts/cuahsi/cuahsi_metadata.xlsx', s)
+    dat = dat[-(1:4),-1]
+    dat[is.na(dat)] = ''
+    write.csv(dat, paste0('scheduled_scripts/cuahsi/', as.character(today),
+        '/', s, '.csv'), row.names=FALSE)
+}
+
+#update data records ####
+
 #read in all site data from site table
 res = dbSendQuery(con, paste("SELECT CONCAT(region, '_', site) AS site,",
     "ROUND(latitude, 5) AS lat, ROUND(longitude, 6) AS lon,",
     "embargo, addDate FROM site;"))
 sites = dbFetch(res)
-# sites = sites[-c(5, 55, 62:64),]
+# sites = sites[-c(5:74),]
+# sites = sites[-c(5, 55, 62:70),]
 dbClearResult(res)
 
 #filter embargoed sites
@@ -38,9 +66,153 @@ embargoed_sites = sites[! public_sites, 'site']
 sites = sites[public_sites,]
 sites = sites[,!colnames(sites) %in% c('embargo', 'addDate')]
 
+
+# site_df = dbFetch(res)
+# # site_df = site_df[-c(5:74),]
+# site_df = site_df[-c(5, 55, 62:70),]
+# dbClearResult(res)
+#
+# #filter embargoed sites
+# embargo_end = site_df$addDate + as.difftime(site_df$embargo * 365, units='days')
+# public_sites = embargo_end < as.POSIXct(today)
+# embargoed_sites = site_df[! public_sites, 'site']
+# site_df = site_df[public_sites,]
+# site_df = site_df[,!colnames(site_df) %in% c('embargo', 'addDate')]
+#
+# # region_vec = unname(sapply(site_df$site, FUN=function(x) strsplit(x, '_')[[1]][1]))
+# # regions = sort(unique(region_vec))
+# # for(i in 1:length(regions)){
+# #     r = regions[i]
+# #     sites = site_df[region_vec == r,]
+#     # sites = sites[-5,]
+
+#DB/FILE PREP; RELEGATE TO SEPARATE FILE
+#GENERATE DHIST FROM DATA TABLE, USE REGION NOT REGIONSITE, APPEND COL OF 1S
+#never mind; dhist should generate itself; just make an empty file
+
+
+#i guess just read all from data_history
+#then read id, regionsite from data
+#then see whether each has ids that are missing in the other
+
+# res = dbSendQuery(con, paste0("SELECT id, cuahsi_status FROM data_history",
+#     "WHERE region='", r,"';"))
+# res = dbSendQuery(con, paste0("SELECT id, region, cuahsi_status FROM ",
+#     "data_history;"))
+# dhist = dbFetch(res)
+# # dim(dhist)
+# dbClearResult(res)
+# write.csv(dhist, 'scheduled_scripts/cuahsi/data_history.csv',
+#     row.names=FALSE)
+dhist = tryCatch(read.csv('scheduled_scripts/cuahsi/data_history.csv',
+    stringsAsFactors=FALSE), error=function(e){
+        if(e$message == 'no lines available in input'){
+            data.frame(id=numeric(), cuahsi_status=character())
+        } else {
+            write(paste('Error: data_history.csv not found?'), logfile,
+                append=TRUE)
+            stop()
+        }
+    })
+
+# res = dbSendQuery(con, paste0("SELECT id, ",
+#     "CONCAT(data.region, '_', data.site) AS site FROM data",
+#     "WHERE region='", r,"';"))
+# res = dbSendQuery(con, paste0("SELECT id, ",
+#     "CONCAT(data.region, '_', data.site) AS site FROM data;"))
+
+# res = dbSendQuery(con, paste0("SELECT id, ",
+#     "CONCAT(data.region, '_', data.site) AS site FROM data;"))
+# d = dbFetch(res)
+# dim(d)
+# head(d)
+# dbClearResult(res)
+
+
+res = dbSendQuery(con, paste("SELECT data.id, data.value AS DataValue,",
+    "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
+    "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
+    "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
+    "data.flag=flag.id WHERE data.upload_id >= 0 AND (flag.flag != 'Bad Data'",
+    "OR flag.flag IS NULL);"))
+# res = dbSendQuery(con, paste("SELECT * FROM data LEFT JOIN flag ON",
+#     "data.flag=flag.id WHERE data.upload_id >= 0 AND flag.flag != 'Bad Data';"))
+    # "data.flag=flag.id WHERE data.region='", r, "';"))
+# "data.flag=flag.id;"))
+d = dbFetch(res)
+dbClearResult(res)
+
+# ignore_inds = d$upload_id <= -900 | d$SiteCode %in% embargoed_sites |
+#     d$QualifierCode == 'Bad Data'
+
+# embargo_log = d$SiteCode %in% embargoed_sites
+# recs_to_ignore = d$id[embargo_log]
+# d = d[!embargo_log,]
+
+d = d[! d$SiteCode %in% embargoed_sites,]
+
+# d = d[is.na(d$QualifierCode) |
+#         d$QualifierCode != 'Bad Data',]
+# d = d[! d$SiteCode %in% embargoed_sites,]
+
+
+d = d[! d$id %in% dhist$id,]
+
+
+# dhist2 = dhist[1:10,]
+# d2 = d[1:10,]
+# d2
+# dhist2
+# d2[11,] = c(47, 'AZ_GG')
+# dhist2[11,] = c(45, 'AZ', 2)
+#
+# upload_to_cuahsi = d2[! d2$id %in% dhist2$id[dhist2$cuahsi_status == 1],]
+# dhist2[! dhist2$id %in% d2$id, 'cuahsi_status'] = 3
+
+
+# res = dbSendQuery(con, paste0("SELECT data_history.id AS hist_id, data.id, ",
+#     "data_history.cuahsi_status, ",
+#     "CONCAT(data.region, '_', data.site) AS site FROM data_history ",
+#     "LEFT JOIN data ON data_history.id=data.id UNION ALL ",
+#     "SELECT data_history.id AS hist_id, data.id, data_history.cuahsi_status, ",
+#     "CONCAT(data.region, '_', data.site) AS site FROM data_history ",
+#     "RIGHT JOIN data ON data_history.id=data.id ",
+#     "WHERE data.region='",
+#     r, "' AND data.upload_id >= 0 AND data_history.id IS NULL;"))
+# res = dbSendQuery(con, paste0("SELECT data_history.id FROM data_history ",
+#     "LEFT JOIN data ON data_history.id=data.id UNION ALL ",
+#     "SELECT data_history.id FROM data_history ",
+#     "RIGHT JOIN data ON data_history.id=data.id ",
+#     "WHERE data.region='",
+#     r, "' AND data.upload_id >= 0 AND data_history.id is NULL;"))
+# res = dbSendQuery(con, paste0("SELECT data_history.id FROM data_history ",
+#     "LEFT JOIN data ON data_history.id=data.id where region='NC' UNION ALL ",
+#     "SELECT data_history.id FROM data_history ",
+#     "RIGHT JOIN data ON data_history.id=data.id where region='NC' ",
+#     "AND data_history.id IS NULL;"))
+# res = dbSendQuery(con, paste0("SELECT data_history.id FROM data_history ",
+#     "LEFT JOIN data ON data_history.id=data.id where site='KANSASR' UNION ALL ",
+#     "SELECT data_history.id FROM data_history ",
+#     "RIGHT JOIN data ON data_history.id=data.id where site='KANSASR' ",
+#     "AND data_history.id IS NULL;"))
+
+# upload_to_cuahsi = d[! d$id %in% dhist$id,]
+# remove_from_cuahsi = dhist[! dhist$id %in% d$id,]
+
+
+# res = dbSendStatement(con, paste0("UPDATE data_history SET cuahsi_status=",
+#     "2 WHERE id in ("))
+# d = dbFetch(res)
+# dim(resout)
+# dbClearResult(res)
+
+# u = upload_to_cuahsi
+# upload_to_cuahsi = upload_to_cuahsi[substr(upload_to_cuahsi$site, 1, 2) == 'NC',]
+
 #query Ask Geo database for UTC offsets associated with each site's lat/long
 accnt_id = '2023'
 api_key = extract_from_config('ASKGEO_KEY')
+sites = sites[sites$site %in% unique(d$SiteCode),]
 latlongs = paste(paste(sites$lat, sites$lon, sep='%2C'), collapse='%3B')
 askGeoReq_base = paste0('https://api.askgeo.com/v1/', accnt_id, '/',
     api_key, '/query.json?databases=Point%2CTimeZone&points=', latlongs)
@@ -48,47 +220,72 @@ askGeoReq_base = paste0('https://api.askgeo.com/v1/', accnt_id, '/',
 askGeoReq_summer = paste0(askGeoReq_base, '&dateTime=2018-06-21')
 askGeoReq_winter = paste0(askGeoReq_base, '&dateTime=2018-12-21')
 
-r = httr::GET(askGeoReq_summer)
-json = httr::content(r, as="text", encoding="UTF-8")
-d_summer = try(jsonlite::fromJSON(json), silent=TRUE)
+d_summer = tryCatch({
+    r = httr::GET(askGeoReq_summer)
+    json = httr::content(r, as="text", encoding="UTF-8")
+    jsonlite::fromJSON(json)
+}, error=function(e){
+    write(paste('Error: AskGeo issue (summer)'), logfile,
+        append=TRUE)
+    stop()
+})
+# r = httr::GET(askGeoReq_summer)
+# json = httr::content(r, as="text", encoding="UTF-8")
+# d_summer = try(jsonlite::fromJSON(json), silent=TRUE)
 # ds_bak = d_summer
 # d_summer = ds_bak
 # head(d_summer)
 
-r = httr::GET(askGeoReq_winter)
-json = httr::content(r, as="text", encoding="UTF-8")
-d_winter = try(jsonlite::fromJSON(json), silent=TRUE)
+d_winter = tryCatch({
+    r = httr::GET(askGeoReq_winter)
+    json = httr::content(r, as="text", encoding="UTF-8")
+    jsonlite::fromJSON(json)
+}, error=function(e){
+    write(paste('Error: AskGeo issue (winter)'), logfile,
+        append=TRUE)
+    stop()
+})
+
+# saveRDS(d_winter$data, 'scheduled_scripts/cuahsi/d_winter.rds')
+# saveRDS(d_summer$data, 'scheduled_scripts/cuahsi/d_summer.rds')
+
+# r = httr::GET(askGeoReq_winter)
+# json = httr::content(r, as="text", encoding="UTF-8")
+# d_winter = try(jsonlite::fromJSON(json), silent=TRUE)
 # dw_bak = d_winter
 # d_winter = dw_bak
 # head(d_winter)
 
-#read series data from database, remove bad data records
-res = dbSendQuery(con, paste("SELECT data.value AS DataValue,",
-    "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
-    "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
-    "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
-    "data.flag=flag.id;"))# WHERE data.region='NC';"))
-resout = dbFetch(res)
-dbClearResult(res)
-resout = resout[is.na(resout$QualifierCode) |
-    resout$QualifierCode != 'Bad Data',]
-resout = resout[esout$SiteCode %in% embargoed_sites,]
+##read series data from database; remove bad data records
+# res = dbSendQuery(con, paste("SELECT data.value AS DataValue,",
+#     "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
+#     "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
+#     "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
+#     "data.flag=flag.id WHERE data.region='", r, "';"))
+#     # "data.flag=flag.id;"))
+# resout = dbFetch(res)
+# dbClearResult(res)
+# resout = resout[is.na(resout$QualifierCode) |
+#     resout$QualifierCode != 'Bad Data',]
+# resout = resout[! resout$SiteCode %in% embargoed_sites,]
 
 #convert offsets to hours, bind with latlongs, bind with site data
+# dw_bak = d_winter
+# ds_bak = d_summer
 d_summer = d_summer$data$TimeZone %>%
     mutate(UTCOffset=CurrentOffsetMs / 1000 / 60 / 60) %>%
     select(UTCOffset) %>% bind_cols(d_summer$data$Point)
 d_winter = d_winter$data$TimeZone %>%
     mutate(UTCOffset=CurrentOffsetMs / 1000 / 60 / 60) %>%
     select(UTCOffset) %>% bind_cols(d_winter$data$Point)
-d = left_join(sites, d_summer, by=c('lat'='Latitude', 'lon'='Longitude'))
-d = left_join(d, d_winter, by=c('lat'='Latitude', 'lon'='Longitude'),
+d_summer = left_join(sites, d_summer, by=c('lat'='Latitude', 'lon'='Longitude'))
+d_time = left_join(d_summer, d_winter, by=c('lat'='Latitude', 'lon'='Longitude'),
     suffix=c('.summer', '.winter'))
 
 #make df of dates, weekdays, months from minyear to maxyear in set
-mindate = as.Date(paste0(substr(min(resout$DateTimeUTC, na.rm=TRUE), 1, 4),
+mindate = as.Date(paste0(substr(min(d$DateTimeUTC, na.rm=TRUE), 1, 4),
     '-01-01'))
-maxdate = as.Date(paste0(substr(max(resout$DateTimeUTC, na.rm=TRUE), 1, 4),
+maxdate = as.Date(paste0(substr(max(d$DateTimeUTC, na.rm=TRUE), 1, 4),
     '-12-31'))
 tm = data.frame(unix=mindate:maxdate)
 tm$date = as.Date(tm$unix, origin='1970-01-01')
@@ -141,7 +338,7 @@ dst_ends = append(dst_ends,
 # dst_ends = e
 
 #determine utc offsets and local time for each date in dataset, join to set
-d = left_join(resout, d, by=c('SiteCode'='site'))
+d = left_join(d, d_time, by=c('SiteCode'='site'))
 dst_starts_exp = paste0("as.POSIXct('", dst_starts, "')")
 dst_ends_exp = paste0("as.POSIXct('", dst_ends, "')")
 bool_exp = paste(
@@ -193,40 +390,90 @@ smap = list('ASU'=c('AZ_SC','AZ_OC','AZ_WB','AZ_LV','AZ_AF','AZ_MV'),
 # aa = dbFetch(res)
 # paste(unname(unlist(aa)), collapse="','")
 # dbClearResult(res)
-unname(unlist(smap))
 source_map = data.frame(sites=unname(unlist(smap)),
     SourceCode=rep(names(smap), times=unlist(lapply(smap, length))),
     stringsAsFactors=FALSE)
+sites_to_ul = unique(d$SiteCode)
+unaccounted_for = which(! sites_to_ul %in% unname(unlist(smap)))
+if(length(unaccounted_for)){
+    write(paste('need to add metadata for sites:',
+        paste(sites_to_ul[unaccounted_for], collapse=', ')),
+        logfile, append=TRUE)
+    stop()
+}
 d = left_join(d, source_map, by=c('SiteCode'='sites'))
-d$SourceCode[d$upload_id == -900] = 'NEON'
-d$SourceCode[d$upload_id == -901] = 'USGS'
+# d$SourceCode[d$upload_id == -900] = 'NEON'
+# d$SourceCode[d$upload_id == -901] = 'USGS'
 
 #join QC level data to set
-d$QualityControlLevelCode = '0'
-#gotta sort out the below; also add in differentiators for sub/super canopy PAR/lux
-# mmap = list('0'=c('WaterPres_kPa','WaterTemp_C','DO_mgL','CDOM_mV',
-#     'SpecCond_mScm','Turbidity_mV','pH','AirPres_kPa','AirTemp_C','CO2_ppm',
-#     'Light_lux','Nitrate_mgL','Light2_lux','satDO_mgL','DOsat_pct',
-#     'WaterTemp2_C','WaterTemp3_C','Light3_lux','Light4_lux','Light5_lux',
-#     'satDO_mgL','DOsat_pct','Level_m','pH_mV','CDOM_ppb','Battery_V',
-#     'ChlorophyllA_ugL','SpecCond_uScm','Turbidity_FNU','Turbidity_NTU'),
-#     '2'=c('Depth_m','Discharge_m3s','Velocity_ms'),
-#     '3'=c('Light_PAR','Light2_PAR','Light3_PAR','Light4_PAR','Light5_PAR',
+
+##gotta sort out the below; also add in differentiators for sub/super canopy PAR/lux
+##this mapping is only reasonable for NC: gotta petition groups for other regions
+# lmap = list('1'=c('WaterPres_kPa','WaterTemp_C','DO_mgL','CDOM_mV',
+#         'SpecCond_mScm','Turbidity_mV','pH','AirPres_kPa','AirTemp_C','CO2_ppm',
+#         'Light_lux','Nitrate_mgL','Light2_lux','satDO_mgL','DOsat_pct',
+#         'WaterTemp2_C','WaterTemp3_C','Light3_lux','Light4_lux','Light5_lux',
+#         'satDO_mgL','DOsat_pct','Level_m','pH_mV','CDOM_ppb','Battery_V',
+#         'ChlorophyllA_ugL','SpecCond_uScm','Turbidity_FNU','Turbidity_NTU'),
+#     '2'=c('Depth_m','Discharge_m3s','Velocity_ms','Light_PAR','Light2_PAR',
+#         'Light3_PAR','Light4_PAR','Light5_PAR',
 #         'underwater_PAR','O2GasTransferVelocity_ms'))
+# level_map = data.frame(vars=unname(unlist(lmap)),
+#     QualityControlLevelCode=rep(names(lmap), times=unlist(lapply(lmap, length))),
+#     stringsAsFactors=FALSE)
+# d = left_join(d, level_map, by=c('VariableCode'='vars'))
+# d$QualityControlLevelCode[d$MethodCode == '0'] = '0'
+d$QualityControlLevelCode = '0'
+
+
+#replace NULLs in QualifierCode
+# d$QualifierCode[d$QualifierCode == 'NULL'] = '0'
+d$QualifierCode[is.na(d$QualifierCode)] = '0'
+
 
 #clean up and arrange columns, write to CSV, zip
-d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
+# d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
 d$DataValue[is.na(d$DataValue)] = -9999
 d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
     VariableCode, QualifierCode, MethodCode, SourceCode,
     QualityControlLevelCode)
-setwd(paste0('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/',
-    'cuahsi/', as.character(today)))
+# wd0 ='/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/cuahsi/'
+wd0 = paste0(getwd(), '/scheduled_scripts/cuahsi/')
+# dir.create(paste0(wd0, as.character(today)))
+setwd(paste0(wd0, as.character(today)))
 # datafn = paste0('scheduled_scripts/cuahsi/', today, '/DataValues.csv')
-write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
+# write.csv(d, 'DataValues_full.csv', row.names=FALSE)
+# write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
+write.csv(d[1,], 'DataValues.csv', row.names=FALSE)
+d = read.csv(paste0(wd0, 'DataValues_full.csv'), stringsAsFactors=FALSE)
 system('zip DataValues.csv.zip DataValues.csv')
-
+setwd(wd0)
 # setwd('/home/mike/git/streampulse/server_copy/sp')
 
-#remove directory
-# unlink(today, recursive='TRUE')
+#UPLOAD TO CUAHSI HERE
+
+
+#if everything worked, update dhist with cuahsi_status=3s
+if(everything worked){
+    tryCatch({
+        dhist = rbind(dhist, data.frame(id=d$id,
+            cuahsi_status=rep(2, nrow(d))))
+        dhist$cuahsi_status[dhist$cuahsi_status == 1] = 2
+        dhist[! dhist$id %in% d$id & dhist$cuahsi_status < 3,
+            'cuahsi_status'] = 3
+        #set to 4 (removed from cuahsi) in a separate script, after confirmation from liza
+        write.csv(dhist, 'data_history.csv', row.names=FALSE)
+    }, error=function(e) NULL)
+} else {
+    write('CUAHSI upload failed.', logfile, append=TRUE)
+    stop()
+}
+
+# write.csv(aa, '~/Desktop/site_chili.csv', row.names = F)
+
+#remove temp directory
+# unlink(today, recursive=TRUE)
+
+# }
+
+dbDisconnect(con)

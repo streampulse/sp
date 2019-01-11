@@ -1,5 +1,14 @@
 #Mike's Logbook
 
+###thu20190103
+ + initiated Luquillo CZO data sync with streampulse
+ + fixed NCDC air pressure retrieval in R package
+   + fixed width file reading
+   + geosphere namespace issue
+###fri20181228
+ + made site pages for all unembargoed regions
+   + linked site pages from map
+   + requested that site groups furnish their site pages with photos and descriptions of each site
 ###20181221,25,26
  + NEON coverage analysis: how many sites are modelable, and over what time span?
 ###wed20181219

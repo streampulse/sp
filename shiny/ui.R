@@ -52,7 +52,8 @@ shinyUI(
                 p(paste('Use this tool to visualize models fit by StreamPULSE',
                     'users. The best available model fits and metabolism',
                     'estimates for each site and calendar year are stored here.')),
-                p('To view private results, enter a valid user token.'),
+                p('To view private results, enter a valid user token. You do',
+                    'not need a token to view public results.'),
                 br(),
                 div(style='display: inline-block; vertical-align:top',
                     textInput('token_input', label=NULL, value='',
@@ -68,9 +69,8 @@ shinyUI(
                         verbatimTextOutput('token_resp')
                     )
                 ),
-                span('If you do not have your token, email Mike at ',
-                    a('streampuse.info@gmail.com',
-                        href='mailto:streampulse.info@gmail.com'), '.')
+                span('Find your token on your ', a('user account page',
+                        href='https://data.streampulse.org/account'), '.')
             ),
             tabPanel('Model Performance',
                 sidebarLayout(

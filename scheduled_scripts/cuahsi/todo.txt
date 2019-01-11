@@ -1,0 +1,33 @@
+make new db table that will contain a record for every data value that ever exists past that point
+it will have bare minimum number of cols necessary for uniquely identifying all data values
+    just enough so that you can sort values into the categories below
+jk; this can be done based on primary keys alone?
+categories:
+1. new; not in cuahsi (hmm. i shouldnt ever have 1s i guess. it's the R script that will be populating this table, and that same R script will be doing to cuahsi uploading, so new records in the data table will be discovered and uploaded at almost the same time. maybe i should retain this category for the case where upload fails
+2. uploaded to cuahsi
+3. removed from our system since uploading to cuahsi
+X4. removed from our system before upload to cuahsi?
+5. removed from cuahsi (i'll have to ask liza to do this for me periodically)
+6x. manually changed within our database, so should be updated within cuahsi
+    instead of this, i should just make sure i always fully delete and replace records when i need to change them
+    and give the old records status 3 or 4 and the new records status 1
+
+in my cuahsi upload script, i should check for:
+1s and upload them
+2s, 4s, 5s and ignore them
+3s and add them to a file that i send to liza once a month or so
+
+
+change name of NC_Advanced.xlsx to make it general
+whenever this changes, rerun cuahsi_upload_metadata.R script; make sure it's self-sufficient
+
+if a site appears that is not in the cuahsi metadata, log an exception and maybe email me
+
+gotta sort out data levels and methods from foreign sites before i can put them on cuahsi
+
+create table data_history select id from data;
+alter table data_history add column cuahsi_status int(1);
+alter table data_history alter cuahsi_status set default 1;
+update data_history set cuahsi_status=1;
+
+create another table for cuahsi status

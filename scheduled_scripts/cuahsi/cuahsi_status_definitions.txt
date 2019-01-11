@@ -1,0 +1,6 @@
+1 = not yet uploaded to CUAHSI
+    this never actually comes up, because new records are uploaded immediately after discovery. 
+2 = uploaded to CUAHSI
+3 = removed from our database after upload to CUAHSI; not yet removed from CUAHSI
+4 = removed from CUAHSI (requires emailing Liza)
+    run script to update 3s to 4s after hearing back from Liza
