@@ -48,6 +48,8 @@ for(s in shtnames){
         '/', s, '.csv'), row.names=FALSE)
 }
 
+#update data records ####
+
 #read in all site data from site table
 res = dbSendQuery(con, paste("SELECT CONCAT(region, '_', site) AS site,",
     "ROUND(latitude, 5) AS lat, ROUND(longitude, 6) AS lon,",
@@ -391,6 +393,14 @@ smap = list('ASU'=c('AZ_SC','AZ_OC','AZ_WB','AZ_LV','AZ_AF','AZ_MV'),
 source_map = data.frame(sites=unname(unlist(smap)),
     SourceCode=rep(names(smap), times=unlist(lapply(smap, length))),
     stringsAsFactors=FALSE)
+sites_to_ul = unique(d$SiteCode)
+unaccounted_for = which(! sites_to_ul %in% unname(unlist(smap)))
+if(length(unaccounted_for)){
+    write(paste('need to add metadata for sites:',
+        paste(sites_to_ul[unaccounted_for], collapse=', ')),
+        logfile, append=TRUE)
+    stop()
+}
 d = left_join(d, source_map, by=c('SiteCode'='sites'))
 # d$SourceCode[d$upload_id == -900] = 'NEON'
 # d$SourceCode[d$upload_id == -901] = 'USGS'
@@ -429,12 +439,13 @@ d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
     QualityControlLevelCode)
 # wd0 ='/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/cuahsi/'
 wd0 = paste0(getwd(), '/scheduled_scripts/cuahsi/')
-dir.create(paste0(wd0, as.character(today)))
+# dir.create(paste0(wd0, as.character(today)))
 setwd(paste0(wd0, as.character(today)))
 # datafn = paste0('scheduled_scripts/cuahsi/', today, '/DataValues.csv')
 # write.csv(d, 'DataValues_full.csv', row.names=FALSE)
 # write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
 write.csv(d[1,], 'DataValues.csv', row.names=FALSE)
+d = read.csv(paste0(wd0, 'DataValues_full.csv'), stringsAsFactors=FALSE)
 system('zip DataValues.csv.zip DataValues.csv')
 setwd(wd0)
 # setwd('/home/mike/git/streampulse/server_copy/sp')
