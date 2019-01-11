@@ -1,6 +1,3 @@
-####### TO DO
-#select from database one region at a time, in a loop, to avoid exceeding memory
-
 library(openxlsx)
 library(RMariaDB)
 library(DBI)
@@ -9,8 +6,11 @@ library(dplyr)
 library(httr)
 library(jsonlite)
 
+# setup ####
+
 # setwd('/home/aaron/sp')
 setwd('/home/mike/git/streampulse/server_copy/sp')
+
 logfile = 'scheduled_scripts/cuahsi/cuahsi_upload.log'
 write(paste('\n\tRunning script at:', Sys.time()), logfile, append=TRUE)
 today = Sys.Date()
@@ -26,13 +26,35 @@ extract_from_config = function(key){
 pw = extract_from_config('MYSQL_PW')
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 
+# update metadata ####
+
+#load excel worksheets into dataframes and export as csv
+# date = as.character(Sys.Date())
+
+wb = loadWorkbook('scheduled_scripts/cuahsi/cuahsi_metadata.xlsx')
+shtnames = names(wb)[-(1:2)]
+# shtnames = shtnames[-which(shtnames == 'DataValues')]
+shtnames = shtnames[! shtnames %in% c('Introduction','Description of Tables',
+    'Samples','LabMethods',
+    'QualityControlLevels','DataValues','Categories','DerivedFrom',
+    'GroupDescriptions', 'Groups','OffsetTypes')]
+
+dir.create(paste0('scheduled_scripts/cuahsi/', as.character(today)))
+for(s in shtnames){
+    dat = read.xlsx('scheduled_scripts/cuahsi/cuahsi_metadata.xlsx', s)
+    dat = dat[-(1:4),-1]
+    dat[is.na(dat)] = ''
+    write.csv(dat, paste0('scheduled_scripts/cuahsi/', as.character(today),
+        '/', s, '.csv'), row.names=FALSE)
+}
+
 #read in all site data from site table
 res = dbSendQuery(con, paste("SELECT CONCAT(region, '_', site) AS site,",
     "ROUND(latitude, 5) AS lat, ROUND(longitude, 6) AS lon,",
     "embargo, addDate FROM site;"))
 sites = dbFetch(res)
 # sites = sites[-c(5:74),]
-sites = sites[-c(5, 55, 62:70),]
+# sites = sites[-c(5, 55, 62:70),]
 dbClearResult(res)
 
 #filter embargoed sites
@@ -109,7 +131,10 @@ res = dbSendQuery(con, paste("SELECT data.id, data.value AS DataValue,",
     "data.DateTime_UTC AS DateTimeUTC, data.upload_id,",
     "CONCAT(data.region, '_', data.site) AS SiteCode, data.variable AS VariableCode,",
     "flag.flag AS QualifierCode FROM data LEFT JOIN flag ON",
-    "data.flag=flag.id WHERE data.upload_id >= 0 AND flag.flag != 'Bad Data';"))
+    "data.flag=flag.id WHERE data.upload_id >= 0 AND (flag.flag != 'Bad Data'",
+    "OR flag.flag IS NULL);"))
+# res = dbSendQuery(con, paste("SELECT * FROM data LEFT JOIN flag ON",
+#     "data.flag=flag.id WHERE data.upload_id >= 0 AND flag.flag != 'Bad Data';"))
     # "data.flag=flag.id WHERE data.region='", r, "';"))
 # "data.flag=flag.id;"))
 d = dbFetch(res)
@@ -129,7 +154,7 @@ d = d[! d$SiteCode %in% embargoed_sites,]
 # d = d[! d$SiteCode %in% embargoed_sites,]
 
 
-upload_to_cuahsi = d[! d$id %in% dhist$id,]
+d = d[! d$id %in% dhist$id,]
 
 
 # dhist2 = dhist[1:10,]
@@ -185,7 +210,7 @@ upload_to_cuahsi = d[! d$id %in% dhist$id,]
 #query Ask Geo database for UTC offsets associated with each site's lat/long
 accnt_id = '2023'
 api_key = extract_from_config('ASKGEO_KEY')
-sites = sites[sites$site %in% unique(upload_to_cuahsi$SiteCode),]
+sites = sites[sites$site %in% unique(d$SiteCode),]
 latlongs = paste(paste(sites$lat, sites$lon, sep='%2C'), collapse='%3B')
 askGeoReq_base = paste0('https://api.askgeo.com/v1/', accnt_id, '/',
     api_key, '/query.json?databases=Point%2CTimeZone&points=', latlongs)
@@ -219,6 +244,9 @@ d_winter = tryCatch({
     stop()
 })
 
+# saveRDS(d_winter$data, 'scheduled_scripts/cuahsi/d_winter.rds')
+# saveRDS(d_summer$data, 'scheduled_scripts/cuahsi/d_summer.rds')
+
 # r = httr::GET(askGeoReq_winter)
 # json = httr::content(r, as="text", encoding="UTF-8")
 # d_winter = try(jsonlite::fromJSON(json), silent=TRUE)
@@ -240,20 +268,22 @@ d_winter = tryCatch({
 # resout = resout[! resout$SiteCode %in% embargoed_sites,]
 
 #convert offsets to hours, bind with latlongs, bind with site data
+# dw_bak = d_winter
+# ds_bak = d_summer
 d_summer = d_summer$data$TimeZone %>%
     mutate(UTCOffset=CurrentOffsetMs / 1000 / 60 / 60) %>%
     select(UTCOffset) %>% bind_cols(d_summer$data$Point)
 d_winter = d_winter$data$TimeZone %>%
     mutate(UTCOffset=CurrentOffsetMs / 1000 / 60 / 60) %>%
     select(UTCOffset) %>% bind_cols(d_winter$data$Point)
-d = left_join(sites, d_summer, by=c('lat'='Latitude', 'lon'='Longitude'))
-d = left_join(d, d_winter, by=c('lat'='Latitude', 'lon'='Longitude'),
+d_summer = left_join(sites, d_summer, by=c('lat'='Latitude', 'lon'='Longitude'))
+d_time = left_join(d_summer, d_winter, by=c('lat'='Latitude', 'lon'='Longitude'),
     suffix=c('.summer', '.winter'))
 
 #make df of dates, weekdays, months from minyear to maxyear in set
-mindate = as.Date(paste0(substr(min(resout$DateTimeUTC, na.rm=TRUE), 1, 4),
+mindate = as.Date(paste0(substr(min(d$DateTimeUTC, na.rm=TRUE), 1, 4),
     '-01-01'))
-maxdate = as.Date(paste0(substr(max(resout$DateTimeUTC, na.rm=TRUE), 1, 4),
+maxdate = as.Date(paste0(substr(max(d$DateTimeUTC, na.rm=TRUE), 1, 4),
     '-12-31'))
 tm = data.frame(unix=mindate:maxdate)
 tm$date = as.Date(tm$unix, origin='1970-01-01')
@@ -306,7 +336,7 @@ dst_ends = append(dst_ends,
 # dst_ends = e
 
 #determine utc offsets and local time for each date in dataset, join to set
-d = left_join(resout, d, by=c('SiteCode'='site'))
+d = left_join(d, d_time, by=c('SiteCode'='site'))
 dst_starts_exp = paste0("as.POSIXct('", dst_starts, "')")
 dst_ends_exp = paste0("as.POSIXct('", dst_ends, "')")
 bool_exp = paste(
@@ -387,7 +417,8 @@ d$QualityControlLevelCode = '0'
 
 
 #replace NULLs in QualifierCode
-d$QualifierCode[d$QualifierCode == 'NULL'] = '0'
+# d$QualifierCode[d$QualifierCode == 'NULL'] = '0'
+d$QualifierCode[is.na(d$QualifierCode)] = '0'
 
 
 #clean up and arrange columns, write to CSV, zip
@@ -401,7 +432,9 @@ wd0 = paste0(getwd(), '/scheduled_scripts/cuahsi/')
 dir.create(paste0(wd0, as.character(today)))
 setwd(paste0(wd0, as.character(today)))
 # datafn = paste0('scheduled_scripts/cuahsi/', today, '/DataValues.csv')
-write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
+# write.csv(d, 'DataValues_full.csv', row.names=FALSE)
+# write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
+write.csv(d[1,], 'DataValues.csv', row.names=FALSE)
 system('zip DataValues.csv.zip DataValues.csv')
 setwd(wd0)
 # setwd('/home/mike/git/streampulse/server_copy/sp')
@@ -412,20 +445,20 @@ setwd(wd0)
 #if everything worked, update dhist with cuahsi_status=3s
 if(everything worked){
     tryCatch({
-        dhist = rbind(dhist, data.frame(id=upload_to_cuahsi$id,
-            cuahsi_status=rep(2, nrow(upload_to_cuahsi))))
+        dhist = rbind(dhist, data.frame(id=d$id,
+            cuahsi_status=rep(2, nrow(d))))
         dhist$cuahsi_status[dhist$cuahsi_status == 1] = 2
         dhist[! dhist$id %in% d$id & dhist$cuahsi_status < 3,
             'cuahsi_status'] = 3
         #set to 4 (removed from cuahsi) in a separate script, after confirmation from liza
+        write.csv(dhist, 'data_history.csv', row.names=FALSE)
     }, error=function(e) NULL)
 } else {
     write('CUAHSI upload failed.', logfile, append=TRUE)
     stop()
 }
 
-write.csv(dhist, 'scheduled_scripts/cuahsi/data_history.csv',
-    row.names=FALSE)
+# write.csv(aa, '~/Desktop/site_chili.csv', row.names = F)
 
 #remove temp directory
 # unlink(today, recursive=TRUE)
