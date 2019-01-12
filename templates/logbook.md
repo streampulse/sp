@@ -1,5 +1,12 @@
 #Mike's Logbook
 
+###fri20190111
+ + added variable lists and date ranges to sitelist page
+###20190104-11
+ + wrote script to manage CUAHSI HydroServer metadata and data upload/sync
+   + keeps log of new records to be added, records synced, records removed from StreamPULSE since sync, records removed from CUAHSI
+   + stops if it encounters anything unhandled
+   + reads from metadata template script at the start and checks for any new methods, sources, variables, etc
 ###thu20190103
  + initiated Luquillo CZO data sync with streampulse
  + fixed NCDC air pressure retrieval in R package

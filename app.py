@@ -1174,11 +1174,45 @@ def index():
 @app.route('/sitelist')
 def sitelist():
 
+    # #pull in all site data
+    # sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
+    #     'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
+    #     'contactEmail as Email, usgs as `USGS gage`, ' +\
+    #     'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
+    #     'firstRecord, lastRecord from site;', db.engine)
+    #
+    # #calculate remaining embargo days
+    # timedeltas = datetime.utcnow() - sitedata.addDate
+    # days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
+    # sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
+    # sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
+    #
+    # #format varlist and date range
+    # # sitedata.Variables
+    # fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
+    # lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
+    # timerange = fr + ' to ' + lr
+    # sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
+    #
+    # #additional arranging and modification of data frame
+    # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'], axis=1)
+    # sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
+    #     ascending=True)
+    #
+    # return render_template('sitelist.html',
+    #     dats=Markup(sitedata.to_html(index=False,
+    #     classes=['table', 'table-condensed'])))
+    return render_template('sitelist.html')
+
+@app.route('/sitelist_table')
+def sitelist_table():
+
     #pull in all site data
     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
         'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
         'contactEmail as Email, usgs as `USGS gage`, ' +\
-        'embargo as `Embargo (days)`, addDate from site;', db.engine)
+        'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
+        'firstRecord, lastRecord from site;', db.engine)
 
     #calculate remaining embargo days
     timedeltas = datetime.utcnow() - sitedata.addDate
@@ -1186,14 +1220,34 @@ def sitelist():
     sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
     sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
 
+    #format varlist and date range
+    # sitedata.Variables.apply(lambda x: x.replace(',', ', '))
+    pd.set_option('display.max_colwidth', 500)
+    varcells = sitedata.Variables.apply(lambda x:
+        x if x is None else x.replace(',', ', '))
+    for i in xrange(len(varcells)):
+        if varcells[i] is None:
+            varcells[i] = '-'
+            continue
+        varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
+            'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
+            '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
+            'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
+    sitedata.Variables = varcells
+    fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
+    lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
+    timerange = fr + ' to ' + lr
+    sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
+
     #additional arranging and modification of data frame
-    sitedata = sitedata.drop(['addDate'], axis=1)
+    sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'], axis=1)
     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
         ascending=True)
 
-    return render_template('sitelist.html',
-        dats=Markup(sitedata.to_html(index=False,
-        classes=['table', 'table-condensed'])))
+    html_table = sitedata.to_html(index=False,
+        classes=['table', 'table-condensed'], escape=False)
+
+    return render_template('sitelist_table.html', dats=html_table)
 
 @app.route('/upload_choice')
 def upload_choice():
