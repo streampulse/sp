@@ -1,5 +1,10 @@
 #Mike's Logbook
 
+###sat20190112
+ + split variable lists into core/bonus variables
+ + sorted former by prominence and latter alphabetically
+ + bolded core vars
+ + hid vars behind toggle buttons
 ###fri20190111
  + added variable lists and date ranges to sitelist page
 ###20190104-11

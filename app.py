@@ -1223,8 +1223,34 @@ def sitelist_table():
     #format varlist and date range
     # sitedata.Variables.apply(lambda x: x.replace(',', ', '))
     pd.set_option('display.max_colwidth', 500)
-    varcells = sitedata.Variables.apply(lambda x:
-        x if x is None else x.replace(',', ', '))
+    # varcells = sitedata.Variables.apply(lambda x:
+    #     x if x is None else x.replace(',', ', '))
+    core_variables = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
+        'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux']
+    # varcells = sitedata.Variables.apply(lambda x:
+    varcells = []
+    for x in sitedata.Variables:
+        if x is None:
+            varcells.append(x)
+        else:
+            var_arr = np.asarray(x.split(','))
+            isCore = np.in1d(var_arr, core_variables)
+            core = var_arr[isCore]
+            not_core = var_arr[~isCore]
+            if any(core):
+                core = core[np.argsort(pd.match(core, core_variables))]
+                core = ['<strong>' + y + '</strong>' for y in core]
+            not_core.sort()
+            var_arr = ', '.join(np.concatenate((core, not_core)))
+            varcells.append(var_arr)
+
+            # var_list = []
+            # for y in var_arr:
+            #     var_list.append(y if y not in core else '<strong>' + y +\
+            #         '</strong>')
+
+        # x if x is None else ', '.join([y if y not in core_variables else '<strong>' + y +\
+        #     '</strong>' for y in x.split(',')]))
     for i in xrange(len(varcells)):
         if varcells[i] is None:
             varcells[i] = '-'
