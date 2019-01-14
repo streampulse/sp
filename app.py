@@ -2057,6 +2057,8 @@ def confirmcolumns():
     except Exception as e:
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        except:
+            pass
         [os.remove(f) for f in fnlong]
         tb = traceback.format_exc()
         log_exception('008', tb)
@@ -2076,6 +2078,8 @@ def confirmcolumns():
     except Exception as e:
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        except:
+            pass
         tb = traceback.format_exc()
         log_exception('009', tb)
         msg = Markup('Error 009. This is a particularly nasty error. Please ' +\
@@ -2087,6 +2091,8 @@ def confirmcolumns():
 
     try:
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+    except:
+        pass
     db.session.commit() #persist all db changes made during upload
     flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
         'alert-success')
