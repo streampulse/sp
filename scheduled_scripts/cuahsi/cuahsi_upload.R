@@ -5,6 +5,7 @@ library(stringr)
 library(dplyr)
 library(httr)
 library(jsonlite)
+library(rvest)
 
 # setup ####
 
@@ -293,7 +294,7 @@ tm$wkday = strftime(tm$date, format='%a')
 tm$month = strftime(tm$date, format='%m')
 
 if(any(tm$date <= as.Date('1985-12-31'))){
-    write(paste('pre-1986 date encountered; update DST handers'),
+    write(paste('Error: pre-1986 date encountered; update DST handers'),
         logfile, append=TRUE)
     stop()
 }
@@ -396,7 +397,7 @@ source_map = data.frame(sites=unname(unlist(smap)),
 sites_to_ul = unique(d$SiteCode)
 unaccounted_for = which(! sites_to_ul %in% unname(unlist(smap)))
 if(length(unaccounted_for)){
-    write(paste('need to add metadata for sites:',
+    write(paste('Error: need to add metadata for sites:',
         paste(sites_to_ul[unaccounted_for], collapse=', ')),
         logfile, append=TRUE)
     stop()
@@ -452,6 +453,28 @@ setwd(wd0)
 
 #UPLOAD TO CUAHSI HERE
 
+#upload metadata
+
+
+#check for metadata rejections
+logfile_roots = c('methods', 'sources', 'sites', 'qualifiers', 'variables')
+rejections = rep(-999, length(logfile_roots))
+for(i in 1:length(logfile_roots)){
+    html = xml2::read_html(paste0('BulkUpload/logs/upload/', logfile_roots[i],
+        '_upload.html'))
+    rejections[i] = html %>% html_node('.badge.spanRejected') %>%
+        html_text(trim=TRUE) %>%
+        as.numeric()
+}
+
+if(any(is.na(rejections)) || any(rejections != 0)){
+    write(paste0('Error: metadata rejections:\n\t',
+        paste(logfile_roots, rejections, collapse='; ')), logfile, append=TRUE)
+    stop()
+}
+
+
+#upload data
 
 #if everything worked, update dhist with cuahsi_status=3s
 if(everything worked){
@@ -465,7 +488,7 @@ if(everything worked){
         write.csv(dhist, 'data_history.csv', row.names=FALSE)
     }, error=function(e) NULL)
 } else {
-    write('CUAHSI upload failed.', logfile, append=TRUE)
+    write('Error: CUAHSI upload failed.', logfile, append=TRUE)
     stop()
 }
 

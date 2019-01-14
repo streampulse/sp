@@ -3,3 +3,4 @@
 *.pyc
 /cuahsi/201*/
 *.rds
+/cuahsi/BulkUpload/
