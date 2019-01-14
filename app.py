@@ -1847,7 +1847,7 @@ def updatecdict(region, site, cdict):
 
 def chunker_ingester(df, chunksize=100000):
 
-    #determine chunks based on number of records (chunksize)
+    #determine chunks based on number of records
     n_full_chunks = df.shape[0] / chunksize
     partial_chunk_len = df.shape[0] % chunksize
 
@@ -2055,7 +2055,8 @@ def confirmcolumns():
                 db.session.add(uq)
 
     except Exception as e:
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
         [os.remove(f) for f in fnlong]
         tb = traceback.format_exc()
         log_exception('008', tb)
@@ -2073,7 +2074,8 @@ def confirmcolumns():
         updatecdict(region, site, cdict)
 
     except Exception as e:
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
         tb = traceback.format_exc()
         log_exception('009', tb)
         msg = Markup('Error 009. This is a particularly nasty error. Please ' +\
@@ -2083,7 +2085,8 @@ def confirmcolumns():
 
         return redirect(url_for('series_upload'))
 
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+    try:
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
     db.session.commit() #persist all db changes made during upload
     flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
         'alert-success')
