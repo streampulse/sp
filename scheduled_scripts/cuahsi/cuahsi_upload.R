@@ -10,11 +10,20 @@ library(rvest)
 # setup ####
 
 # setwd('/home/aaron/sp')
-setwd('/home/mike/git/streampulse/server_copy/sp')
+wd1 = '/home/mike/git/streampulse/server_copy/sp'
+setwd(wd1)
 
-logfile = 'scheduled_scripts/cuahsi/cuahsi_upload.log'
+logfile = paste0(wd1, '/scheduled_scripts/cuahsi/cuahsi_upload.log')
 write(paste('\n\tRunning script at:', Sys.time()), logfile, append=TRUE)
 today = Sys.Date()
+
+#if there was an error during the last run, stop
+lre = readLines('scheduled_scripts/cuahsi/last_run_error.log')
+if(lre == '1'){
+    write(paste('STOP: error logged during previous run.'), logfile,
+        append=TRUE)
+    stop()
+}
 
 #connect to database
 # conf = readLines('/home/aaron/sp/scheduled_scripts/')
@@ -40,13 +49,13 @@ shtnames = shtnames[! shtnames %in% c('Introduction','Description of Tables',
     'QualityControlLevels','DataValues','Categories','DerivedFrom',
     'GroupDescriptions', 'Groups','OffsetTypes')]
 
-dir.create(paste0('scheduled_scripts/cuahsi/', as.character(today)))
+# dir.create(paste0('scheduled_scripts/cuahsi/', as.character(today)))
 for(s in shtnames){
     dat = read.xlsx('scheduled_scripts/cuahsi/cuahsi_metadata.xlsx', s)
     dat = dat[-(1:4),-1]
     dat[is.na(dat)] = ''
-    write.csv(dat, paste0('scheduled_scripts/cuahsi/', as.character(today),
-        '/', s, '.csv'), row.names=FALSE)
+    write.csv(dat, paste0('scheduled_scripts/cuahsi/BulkUpload/Sources/',
+        s, '.csv'), row.names=FALSE)
 }
 
 #update data records ####
@@ -65,6 +74,7 @@ embargo_end = sites$addDate + as.difftime(sites$embargo * 365, units='days')
 public_sites = embargo_end < as.POSIXct(today)
 embargoed_sites = sites[! public_sites, 'site']
 sites = sites[public_sites,]
+# sites = sites[-c(5, 47:51),]
 sites = sites[,!colnames(sites) %in% c('embargo', 'addDate')]
 
 
@@ -110,8 +120,9 @@ dhist = tryCatch(read.csv('scheduled_scripts/cuahsi/data_history.csv',
         if(e$message == 'no lines available in input'){
             data.frame(id=numeric(), cuahsi_status=character())
         } else {
-            write(paste('Error: data_history.csv not found?'), logfile,
+            write(paste('Error: data_history.csv not found?:\n\t', e), logfile,
                 append=TRUE)
+            writeLines('1', 'scheduled_scripts/cuahsi/last_run_error.log')
             stop()
         }
     })
@@ -156,7 +167,9 @@ d = d[! d$SiteCode %in% embargoed_sites,]
 #         d$QualifierCode != 'Bad Data',]
 # d = d[! d$SiteCode %in% embargoed_sites,]
 
-
+# accounted_for =  d$id %in% dhist$id
+# ones = dhist$id[dhist$cuahsi_status == '1']
+# d = d[! accounted_for | (accounted_for & d$id %in% ones),]
 d = d[! d$id %in% dhist$id,]
 
 
@@ -226,8 +239,9 @@ d_summer = tryCatch({
     json = httr::content(r, as="text", encoding="UTF-8")
     jsonlite::fromJSON(json)
 }, error=function(e){
-    write(paste('Error: AskGeo issue (summer)'), logfile,
+    write(paste('Error: AskGeo issue (summer):\n\t', e), logfile,
         append=TRUE)
+    writeLines('1', 'scheduled_scripts/cuahsi/last_run_error.log')
     stop()
 })
 # r = httr::GET(askGeoReq_summer)
@@ -242,13 +256,17 @@ d_winter = tryCatch({
     json = httr::content(r, as="text", encoding="UTF-8")
     jsonlite::fromJSON(json)
 }, error=function(e){
-    write(paste('Error: AskGeo issue (winter)'), logfile,
+    write(paste('Error: AskGeo issue (winter):\n\t', e), logfile,
         append=TRUE)
+    writeLines('1', 'scheduled_scripts/cuahsi/last_run_error.log')
     stop()
 })
 
 # saveRDS(d_winter$data, 'scheduled_scripts/cuahsi/d_winter.rds')
 # saveRDS(d_summer$data, 'scheduled_scripts/cuahsi/d_summer.rds')
+# d_winter = d_summer = list()
+# d_winter$data = readRDS('scheduled_scripts/cuahsi/d_winter.rds')
+# d_summer$data = readRDS('scheduled_scripts/cuahsi/d_summer.rds')
 
 # r = httr::GET(askGeoReq_winter)
 # json = httr::content(r, as="text", encoding="UTF-8")
@@ -296,6 +314,7 @@ tm$month = strftime(tm$date, format='%m')
 if(any(tm$date <= as.Date('1985-12-31'))){
     write(paste('Error: pre-1986 date encountered; update DST handers'),
         logfile, append=TRUE)
+    writeLines('1', 'scheduled_scripts/cuahsi/last_run_error.log')
     stop()
 }
 
@@ -400,6 +419,7 @@ if(length(unaccounted_for)){
     write(paste('Error: need to add metadata for sites:',
         paste(sites_to_ul[unaccounted_for], collapse=', ')),
         logfile, append=TRUE)
+    writeLines('1', 'scheduled_scripts/cuahsi/last_run_error.log')
     stop()
 }
 d = left_join(d, source_map, by=c('SiteCode'='sites'))
@@ -432,35 +452,39 @@ d$QualityControlLevelCode = '0'
 d$QualifierCode[is.na(d$QualifierCode)] = '0'
 
 
-#clean up and arrange columns, write to CSV, zip
+#clean up and arrange columns
 # d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
 d$DataValue[is.na(d$DataValue)] = -9999
 d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
     VariableCode, QualifierCode, MethodCode, SourceCode,
     QualityControlLevelCode)
 # wd0 ='/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/cuahsi/'
-wd0 = paste0(getwd(), '/scheduled_scripts/cuahsi/')
+# wd0 = paste0(getwd(), '/scheduled_scripts/cuahsi/BulkUpload')
+setwd(paste0(getwd(), '/scheduled_scripts/cuahsi/BulkUpload'))
 # dir.create(paste0(wd0, as.character(today)))
-setwd(paste0(wd0, as.character(today)))
+# setwd(paste0(wd0, as.character(today)))
 # datafn = paste0('scheduled_scripts/cuahsi/', today, '/DataValues.csv')
 # write.csv(d, 'DataValues_full.csv', row.names=FALSE)
 # write.csv(d[1:749999,], 'DataValues.csv', row.names=FALSE)
-write.csv(d[1,], 'DataValues.csv', row.names=FALSE)
-d = read.csv(paste0(wd0, 'DataValues_full.csv'), stringsAsFactors=FALSE)
-system('zip DataValues.csv.zip DataValues.csv')
-setwd(wd0)
+
+# write.csv(d[1,], 'DataValues.csv', row.names=FALSE)
+# d = read.csv(paste0(wd0, 'DataValues_full.csv'), stringsAsFactors=FALSE)
+# system('zip DataValues.csv.zip DataValues.csv')
+
+# setwd(wd0)
 # setwd('/home/mike/git/streampulse/server_copy/sp')
 
-#UPLOAD TO CUAHSI HERE
-
 #upload metadata
-
+logfile_roots = c('Methods', 'Sources', 'Sites', 'Qualifiers', 'Variables')
+for(i in 1:length(logfile_roots)){
+    system(paste0('curl --config fileUpload_', logfile_roots[i],
+        '.config'), wait=TRUE)
+}
 
 #check for metadata rejections
-logfile_roots = c('methods', 'sources', 'sites', 'qualifiers', 'variables')
 rejections = rep(-999, length(logfile_roots))
 for(i in 1:length(logfile_roots)){
-    html = xml2::read_html(paste0('BulkUpload/logs/upload/', logfile_roots[i],
+    html = xml2::read_html(paste0('logs/upload/', logfile_roots[i],
         '_upload.html'))
     rejections[i] = html %>% html_node('.badge.spanRejected') %>%
         html_text(trim=TRUE) %>%
@@ -468,30 +492,94 @@ for(i in 1:length(logfile_roots)){
 }
 
 if(any(is.na(rejections)) || any(rejections != 0)){
+    #next line should be removed once cuahsi fixes their qualifier upload code
+    rejections[which(logfile_roots == 'Qualifiers')] = 0
+
     write(paste0('Error: metadata rejections:\n\t',
         paste(logfile_roots, rejections, collapse='; ')), logfile, append=TRUE)
+    writeLines('1', '../last_run_error.log')
     stop()
 }
 
-
 #upload data
+data_rejection_checker = function(note){
+    html = xml2::read_html(paste0('logs/upload/DataValues_upload.html'))
+    rejections = html %>% html_node('.badge.spanRejected') %>%
+        html_text(trim=TRUE) %>%
+        as.numeric()
+    if(is.na(rejections) || rejections != 0){
+        write(paste0('Warning: data rejections: ', rejections, '\n\tNote: ',
+            note), logfile, append=TRUE)
+        writeLines('1', '../last_run_error.log')
+    }
+}
+
+chunker_uploader = function(df, chunksize){
+
+    #determine chunks based on number of records
+    nrows = nrow(df)
+    n_full_chunks = floor(nrows / chunksize)
+    partial_chunk_len = nrows %% chunksize
+
+    write(paste('Uploading data in', n_full_chunks,
+        'chunks and a partial chunk of length', partial_chunk_len),
+        logfile, append=TRUE)
+
+    #upload all if small enough (<= 1 chunk), otherwise do it chunkwise
+    if(n_full_chunks == 0){
+        write.csv(d, 'Sources/DataValues.csv', row.names=FALSE)
+        system(paste0('curl --config fileUpload_DataValues.config'),
+            wait=TRUE)
+        data_rejection_checker('chunk 1; no full chunks.')
+    } else {
+        for(i in 1:n_full_chunks){
+            write.csv(d[1:chunksize,], 'Sources/DataValues.csv',
+                row.names=FALSE)
+            d = d[(chunksize + 1):nrow(d),]
+            system(paste0('curl --config fileUpload_DataValues.config'),
+                wait=TRUE)
+            data_rejection_checker(paste('chunk', i, 'of', n_full_chunks))
+            file.rename('logs/upload/Variables_upload.html',
+                paste0('logs/upload/Variables_upload', i, '.html'))
+        }
+        if(partial_chunk_len){
+            write.csv(d, 'Sources/DataValues.csv', row.names=FALSE)
+            system(paste0('curl --config fileUpload_DataValues.config'),
+                wait=TRUE)
+            data_rejection_checker(paste('final, partial chunk out of',
+                n_full_chunks, 'total chunks'))
+        }
+    }
+}
+
+tryCatch(chunker_uploader(d, 749999), error=function(e){
+    write(paste0('Error: chunker failed:\n\t', e), logfile, append=TRUE)
+    writeLines('1', '../last_run_error.log')
+    stop()
+})
 
 #if everything worked, update dhist with cuahsi_status=3s
-if(everything worked){
+if(readLines('../last_run_error.log') == '0'){
     tryCatch({
         dhist = rbind(dhist, data.frame(id=d$id,
             cuahsi_status=rep(2, nrow(d))))
-        dhist$cuahsi_status[dhist$cuahsi_status == 1] = 2
+        # dhist$cuahsi_status[dhist$cuahsi_status == 1] = 2
         dhist[! dhist$id %in% d$id & dhist$cuahsi_status < 3,
             'cuahsi_status'] = 3
         #set to 4 (removed from cuahsi) in a separate script, after confirmation from liza
-        write.csv(dhist, 'data_history.csv', row.names=FALSE)
-    }, error=function(e) NULL)
+        write.csv(dhist, '../data_history.csv', row.names=FALSE)
+    }, error=function(e){
+        write(paste0('Error: failed to write data_history:\n\t', e),
+            logfile, append=TRUE)
+    })
 } else {
-    write('Error: CUAHSI upload failed.', logfile, append=TRUE)
-    stop()
+    tryCatch({
+        write.csv(dhist, '../data_history_checkRejections.csv', row.names=FALSE)
+    }, error=function(e){
+        write(paste0('Error: failed to write data_history_checkRejections:\n\t',
+            e), logfile, append=TRUE)
+    })
 }
-
 # write.csv(aa, '~/Desktop/site_chili.csv', row.names = F)
 
 #remove temp directory
