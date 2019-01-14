@@ -1174,11 +1174,45 @@ def index():
 @app.route('/sitelist')
 def sitelist():
 
+    # #pull in all site data
+    # sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
+    #     'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
+    #     'contactEmail as Email, usgs as `USGS gage`, ' +\
+    #     'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
+    #     'firstRecord, lastRecord from site;', db.engine)
+    #
+    # #calculate remaining embargo days
+    # timedeltas = datetime.utcnow() - sitedata.addDate
+    # days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
+    # sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
+    # sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
+    #
+    # #format varlist and date range
+    # # sitedata.Variables
+    # fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
+    # lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
+    # timerange = fr + ' to ' + lr
+    # sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
+    #
+    # #additional arranging and modification of data frame
+    # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'], axis=1)
+    # sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
+    #     ascending=True)
+    #
+    # return render_template('sitelist.html',
+    #     dats=Markup(sitedata.to_html(index=False,
+    #     classes=['table', 'table-condensed'])))
+    return render_template('sitelist.html')
+
+@app.route('/sitelist_table')
+def sitelist_table():
+
     #pull in all site data
     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
         'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
         'contactEmail as Email, usgs as `USGS gage`, ' +\
-        'embargo as `Embargo (days)`, addDate from site;', db.engine)
+        'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
+        'firstRecord, lastRecord from site;', db.engine)
 
     #calculate remaining embargo days
     timedeltas = datetime.utcnow() - sitedata.addDate
@@ -1186,14 +1220,60 @@ def sitelist():
     sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
     sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
 
+    #format varlist and date range
+    # sitedata.Variables.apply(lambda x: x.replace(',', ', '))
+    pd.set_option('display.max_colwidth', 500)
+    # varcells = sitedata.Variables.apply(lambda x:
+    #     x if x is None else x.replace(',', ', '))
+    core_variables = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
+        'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux']
+    # varcells = sitedata.Variables.apply(lambda x:
+    varcells = []
+    for x in sitedata.Variables:
+        if x is None:
+            varcells.append(x)
+        else:
+            var_arr = np.asarray(x.split(','))
+            isCore = np.in1d(var_arr, core_variables)
+            core = var_arr[isCore]
+            not_core = var_arr[~isCore]
+            if any(core):
+                core = core[np.argsort(pd.match(core, core_variables))]
+                core = ['<strong>' + y + '</strong>' for y in core]
+            not_core.sort()
+            var_arr = ', '.join(np.concatenate((core, not_core)))
+            varcells.append(var_arr)
+
+            # var_list = []
+            # for y in var_arr:
+            #     var_list.append(y if y not in core else '<strong>' + y +\
+            #         '</strong>')
+
+        # x if x is None else ', '.join([y if y not in core_variables else '<strong>' + y +\
+        #     '</strong>' for y in x.split(',')]))
+    for i in xrange(len(varcells)):
+        if varcells[i] is None:
+            varcells[i] = '-'
+            continue
+        varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
+            'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
+            '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
+            'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
+    sitedata.Variables = varcells
+    fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
+    lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
+    timerange = fr + ' to ' + lr
+    sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
+
     #additional arranging and modification of data frame
-    sitedata = sitedata.drop(['addDate'], axis=1)
+    sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'], axis=1)
     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
         ascending=True)
 
-    return render_template('sitelist.html',
-        dats=Markup(sitedata.to_html(index=False,
-        classes=['table', 'table-condensed'])))
+    html_table = sitedata.to_html(index=False,
+        classes=['table', 'table-condensed'], escape=False)
+
+    return render_template('sitelist_table.html', dats=html_table)
 
 @app.route('/upload_choice')
 def upload_choice():
@@ -1767,7 +1847,7 @@ def updatecdict(region, site, cdict):
 
 def chunker_ingester(df, chunksize=100000):
 
-    #determine chunks based on number of records (chunksize)
+    #determine chunks based on number of records
     n_full_chunks = df.shape[0] / chunksize
     partial_chunk_len = df.shape[0] % chunksize
 
@@ -1975,7 +2055,8 @@ def confirmcolumns():
                 db.session.add(uq)
 
     except Exception as e:
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
         [os.remove(f) for f in fnlong]
         tb = traceback.format_exc()
         log_exception('008', tb)
@@ -1993,7 +2074,8 @@ def confirmcolumns():
         updatecdict(region, site, cdict)
 
     except Exception as e:
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
         tb = traceback.format_exc()
         log_exception('009', tb)
         msg = Markup('Error 009. This is a particularly nasty error. Please ' +\
@@ -2003,7 +2085,8 @@ def confirmcolumns():
 
         return redirect(url_for('series_upload'))
 
-    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+    try:
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
     db.session.commit() #persist all db changes made during upload
     flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
         'alert-success')
