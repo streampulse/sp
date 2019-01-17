@@ -455,6 +455,7 @@ d$QualifierCode[is.na(d$QualifierCode)] = '0'
 #clean up and arrange columns
 # d$QualifierCode[is.na(d$QualifierCode)] = 'NULL'
 d$DataValue[is.na(d$DataValue)] = -9999
+id_vec = d$id
 d = select(d, DataValue, LocalDateTime, UTCOffset, DateTimeUTC, SiteCode,
     VariableCode, QualifierCode, MethodCode, SourceCode,
     QualityControlLevelCode)
@@ -539,8 +540,8 @@ chunker_uploader = function(df, chunksize){
             system(paste0('curl --config fileUpload_DataValues.config'),
                 wait=TRUE)
             data_rejection_checker(paste('chunk', i, 'of', n_full_chunks))
-            file.rename('logs/upload/Variables_upload.html',
-                paste0('logs/upload/Variables_upload', i, '.html'))
+            file.rename('logs/upload/DataValues_upload.html',
+                paste0('logs/upload/DataValues_upload', i, '.html'))
         }
         if(partial_chunk_len){
             write.csv(d, 'Sources/DataValues.csv', row.names=FALSE)
@@ -552,7 +553,7 @@ chunker_uploader = function(df, chunksize){
     }
 }
 
-tryCatch(chunker_uploader(d, 749999), error=function(e){
+tryCatch(chunker_uploader(d, 100000), error=function(e){
     write(paste0('Error: chunker failed:\n\t', e), logfile, append=TRUE)
     writeLines('1', '../last_run_error.log')
     stop()
@@ -561,10 +562,10 @@ tryCatch(chunker_uploader(d, 749999), error=function(e){
 #if everything worked, update dhist with cuahsi_status=3s
 if(readLines('../last_run_error.log') == '0'){
     tryCatch({
-        dhist = rbind(dhist, data.frame(id=d$id,
+        dhist = rbind(dhist, data.frame(id=id_vec,
             cuahsi_status=rep(2, nrow(d))))
         # dhist$cuahsi_status[dhist$cuahsi_status == 1] = 2
-        dhist[! dhist$id %in% d$id & dhist$cuahsi_status < 3,
+        dhist[! dhist$id %in% id_vec & dhist$cuahsi_status < 3,
             'cuahsi_status'] = 3
         #set to 4 (removed from cuahsi) in a separate script, after confirmation from liza
         write.csv(dhist, '../data_history.csv', row.names=FALSE)

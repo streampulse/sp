@@ -117,7 +117,7 @@ app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
 app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # was 16 MB
+app.config['MAX_CONTENT_LENGTH'] = 700 * 1024 * 1024 # originally set to 16 MB; now 700
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
 #app.config['PROPAGATE_EXCEPTIONS'] = True
 
