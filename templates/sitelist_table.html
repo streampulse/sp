@@ -33,7 +33,13 @@
   </head>
   <body>
 
-    {{dats|safe}}
+    {{current_user.is_authenticated|pprint}}
+    {{current_user.username|pprint}}
+    {% if current_user.is_authenticated %}
+      {{dats|safe}}
+    {% else %}
+      {{dats_obs|safe}}
+    {% endif %}
 
   </body>
 </html>

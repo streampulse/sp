@@ -1204,7 +1204,7 @@ def sitelist():
     #     classes=['table', 'table-condensed'])))
     return render_template('sitelist.html')
 
-@app.route('/sitelist_table')
+@app.route('/sitelist_table', methods=["GET"])
 def sitelist_table():
 
     #pull in all site data
@@ -1270,10 +1270,19 @@ def sitelist_table():
     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
         ascending=True)
 
+    #obscure email addresses
+    sitedata.Email = sitedata.Email.str.replace('@', '[at]')
+    sitedata_obs = sitedata.copy()
+    sitedata_obs.loc[sitedata_obs.Email != '', 'Email'] = 'Log in to view'
+    sitedata_obs.loc[sitedata_obs.Email != '', 'Contact'] = 'Log in to view'
+
     html_table = sitedata.to_html(index=False,
         classes=['table', 'table-condensed'], escape=False)
+    html_table_obs = sitedata_obs.to_html(index=False,
+        classes=['table', 'table-condensed'], escape=False)
 
-    return render_template('sitelist_table.html', dats=html_table)
+    return render_template('sitelist_table.html', dats=html_table,
+        dats_obs=html_table_obs)
 
 @app.route('/upload_choice')
 def upload_choice():
@@ -2600,7 +2609,6 @@ def interquartile():
 
     quantiles = pre_agg.pivot_table(index='time', values='val',
         aggfunc=[quant25, quant75]).reset_index()
-    print quantiles.to_json(orient='values')
 
     return jsonify(dat=quantiles.to_json(orient='values'))
 
@@ -3299,7 +3307,6 @@ def request_results():
         regionsite = authenticate_sites(regionsite, token=request.headers['Token'])
     else:
         regionsite = authenticate_sites(regionsite)
-    print regionsite
 
     if not regionsite:
         return jsonify(error='This site is private and requires a valid user token.')
@@ -3354,7 +3361,6 @@ def request_predictions():
         regionsite = authenticate_sites(regionsite, token=request.headers['Token'])
     else:
         regionsite = authenticate_sites(regionsite)
-    print regionsite
 
     if not regionsite:
         return jsonify(error='This site is private and requires a valid user token.')
