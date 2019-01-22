@@ -1273,8 +1273,9 @@ def sitelist_table():
     #obscure email addresses
     sitedata.Email = sitedata.Email.str.replace('@', '[at]')
     sitedata_obs = sitedata.copy()
-    sitedata_obs.loc[sitedata_obs.Email != '', 'Email'] = 'Log in to view'
-    sitedata_obs.loc[sitedata_obs.Email != '', 'Contact'] = 'Log in to view'
+    emailless = sitedata_obs.Email == '-'
+    sitedata_obs.loc[~emailless, 'Email'] = 'Log in to view'
+    sitedata_obs.loc[~emailless, 'Contact'] = 'Log in to view'
 
     html_table = sitedata.to_html(index=False,
         classes=['table', 'table-condensed'], escape=False)
