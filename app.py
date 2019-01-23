@@ -1174,39 +1174,6 @@ def index():
 @app.route('/sitelist')
 def sitelist():
 
-    # #pull in all site data
-    # sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
-    #     'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
-    #     'contactEmail as Email, usgs as `USGS gage`, ' +\
-    #     'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
-    #     'firstRecord, lastRecord from site;', db.engine)
-    #
-    # #calculate remaining embargo days
-    # timedeltas = datetime.utcnow() - sitedata.addDate
-    # days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
-    # sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
-    # sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
-    #
-    # #format varlist and date range
-    # # sitedata.Variables
-    # fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
-    # lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
-    # timerange = fr + ' to ' + lr
-    # sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
-    #
-    # #additional arranging and modification of data frame
-    # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'], axis=1)
-    # sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
-    #     ascending=True)
-    #
-    # return render_template('sitelist.html',
-    #     dats=Markup(sitedata.to_html(index=False,
-    #     classes=['table', 'table-condensed'])))
-    return render_template('sitelist.html')
-
-@app.route('/sitelist_table')
-def sitelist_table():
-
     #pull in all site data
     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
         'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
@@ -1270,10 +1237,108 @@ def sitelist_table():
     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
         ascending=True)
 
+    #obscure email addresses
+    sitedata.Email = sitedata.Email.str.replace('@', '[at]')
+    if not current_user.is_authenticated:
+        emailless = sitedata.Email == '-'
+        sitedata.loc[~emailless, 'Email'] = 'Log in to view'
+        sitedata.loc[~emailless, 'Contact'] = 'Log in to view'
+    # sitedata_obs = sitedata.copy()
+    # emailless = sitedata_obs.Email == '-'
+    # sitedata_obs.loc[~emailless, 'Email'] = 'Log in to view'
+    # sitedata_obs.loc[~emailless, 'Contact'] = 'Log in to view'
+
     html_table = sitedata.to_html(index=False,
         classes=['table', 'table-condensed'], escape=False)
+    # html_table_obs = sitedata_obs.to_html(index=False,
+    #     classes=['table', 'table-condensed'], escape=False)
 
-    return render_template('sitelist_table.html', dats=html_table)
+    html_table = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll',
+        html_table)
+    # return render_template('sitelist_table.html', dats=html_table,
+    #     dats_obs=html_table_obs)
+    return render_template('sitelist.html', dats=html_table)
+
+# @app.route('/sitelist_table', methods=["GET"])
+# def sitelist_table():
+#
+#     #pull in all site data
+#     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
+#         'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
+#         'contactEmail as Email, usgs as `USGS gage`, ' +\
+#         'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
+#         'firstRecord, lastRecord from site;', db.engine)
+#
+#     #calculate remaining embargo days
+#     timedeltas = datetime.utcnow() - sitedata.addDate
+#     days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
+#     sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
+#     sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
+#
+#     #format varlist and date range
+#     # sitedata.Variables.apply(lambda x: x.replace(',', ', '))
+#     pd.set_option('display.max_colwidth', 500)
+#     # varcells = sitedata.Variables.apply(lambda x:
+#     #     x if x is None else x.replace(',', ', '))
+#     core_variables = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
+#         'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux']
+#     # varcells = sitedata.Variables.apply(lambda x:
+#     varcells = []
+#     for x in sitedata.Variables:
+#         if x is None:
+#             varcells.append(x)
+#         else:
+#             var_arr = np.asarray(x.split(','))
+#             isCore = np.in1d(var_arr, core_variables)
+#             core = var_arr[isCore]
+#             not_core = var_arr[~isCore]
+#             if any(core):
+#                 core = core[np.argsort(pd.match(core, core_variables))]
+#                 core = ['<strong>' + y + '</strong>' for y in core]
+#             not_core.sort()
+#             var_arr = ', '.join(np.concatenate((core, not_core)))
+#             varcells.append(var_arr)
+#
+#             # var_list = []
+#             # for y in var_arr:
+#             #     var_list.append(y if y not in core else '<strong>' + y +\
+#             #         '</strong>')
+#
+#         # x if x is None else ', '.join([y if y not in core_variables else '<strong>' + y +\
+#         #     '</strong>' for y in x.split(',')]))
+#     for i in xrange(len(varcells)):
+#         if varcells[i] is None:
+#             varcells[i] = '-'
+#             continue
+#         varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
+#             'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
+#             '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
+#             'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
+#     sitedata.Variables = varcells
+#     fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
+#     lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
+#     timerange = fr + ' to ' + lr
+#     sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
+#
+#     #additional arranging and modification of data frame
+#     sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'], axis=1)
+#     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
+#         ascending=True)
+#
+#     #obscure email addresses
+#     sitedata.Email = sitedata.Email.str.replace('@', '[at]')
+#     sitedata_obs = sitedata.copy()
+#     emailless = sitedata_obs.Email == '-'
+#     sitedata_obs.loc[~emailless, 'Email'] = 'Log in to view'
+#     sitedata_obs.loc[~emailless, 'Contact'] = 'Log in to view'
+#
+#     html_table = sitedata.to_html(index=False,
+#         classes=['table', 'table-condensed'], escape=False)
+#     html_table_obs = sitedata_obs.to_html(index=False,
+#         classes=['table', 'table-condensed'], escape=False)
+#
+#     return render_template('sitelist_table.html', dats=html_table,
+#         dats_obs=html_table_obs)
 
 @app.route('/upload_choice')
 def upload_choice():
@@ -2600,7 +2665,6 @@ def interquartile():
 
     quantiles = pre_agg.pivot_table(index='time', values='val',
         aggfunc=[quant25, quant75]).reset_index()
-    print quantiles.to_json(orient='values')
 
     return jsonify(dat=quantiles.to_json(orient='values'))
 
@@ -3299,7 +3363,6 @@ def request_results():
         regionsite = authenticate_sites(regionsite, token=request.headers['Token'])
     else:
         regionsite = authenticate_sites(regionsite)
-    print regionsite
 
     if not regionsite:
         return jsonify(error='This site is private and requires a valid user token.')
@@ -3354,7 +3417,6 @@ def request_predictions():
         regionsite = authenticate_sites(regionsite, token=request.headers['Token'])
     else:
         regionsite = authenticate_sites(regionsite)
-    print regionsite
 
     if not regionsite:
         return jsonify(error='This site is private and requires a valid user token.')
