@@ -57,13 +57,13 @@ shinyUI(
                 br(),
                 div(style='display: inline-block; vertical-align:top',
                     textInput('token_input', label=NULL, value='',
-                        placeholder='Enter token here', width='300px')
+                        placeholder='Enter token here', width='350px')
                 ),
                 div(style='display: inline-block; vertical-align:top',
                     actionButton('submit_token', 'Submit')
                 ),
                 br(),
-                div(style='width:300px',
+                div(style='width:350px',
                     conditionalPanel(condition=paste0("input.token_input != ''",
                         " && input.submit_token > 0"),
                         verbatimTextOutput('token_resp')
@@ -80,6 +80,9 @@ shinyUI(
                             textInput('MPhidden_counter2', label=NULL, value=0)
                             # textInput('MPhidden_counter3', label=NULL, value=0)
                         ),
+                        radioButtons('datasourceMP', 'Choose data source',
+                            list('StreamPULSE', 'Powell Center Synthesis'),
+                            selected='StreamPULSE'),
                         selectInput('MPinput_site', label='Select site',
                             choices=c('No site selected' = '',
                                 unique(sitenames)),
@@ -139,9 +142,16 @@ shinyUI(
                                 'display: inline-block;',
                                 'vertical-align:middle;'),
 
+                            radioButtons('datasource', 'Choose data source',
+                                list('StreamPULSE', 'Powell Center Synthesis'),
+                                selected='StreamPULSE')
+                        ),
+                        div(align='center', style=paste0(
+                                'display: inline-block;',
+                                'vertical-align:middle;'),
+
                             # div(align='left', style=paste0(
                             #     'margin:0; padding:0; top:0px; left:0px; bottom:0px; right:0px;'),
-
                             selectInput('input_site', label='Select site',
                                 choices=c('No site selected' = '',
                                     unique(sitenames)),

@@ -37,6 +37,9 @@ shinyServer(function(input, output, session){
     viewable_mods = reactive({
 
         input$submit_token
+        # input$datasource
+        # input$datasourceMP
+
         token = isolate(input$token_input)
 
         con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
@@ -56,12 +59,17 @@ shinyServer(function(input, output, session){
             sitenames = sitenmyr[,1]
             siteyears = sitenmyr[,2]
             output$token_resp = renderText({
-                paste('Authorized for', length(usersites), 'sites.')
+                paste('Authorized for', length(usersites), 'StreamPULSE sites.')
             })
-            updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
-                selected='', options=list(placeholder='No site selected'))
-            updateSelectizeInput(session, 'input_site', choices=sitenames,
-                selected='', options=list(placeholder='No site selected'))
+
+            if(input$datasourceMP == 'StreamPULSE' ||
+                    input$datasource == 'StreamPULSE'){
+                updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+                    selected='', options=list(placeholder='No site selected'))
+                updateSelectizeInput(session, 'input_site', choices=sitenames,
+                    selected='', options=list(placeholder='No site selected'))
+            }
+
         } else {
             if(length(usersites) && usersites == ''){
                 output$token_resp = renderText({
@@ -76,6 +84,17 @@ shinyServer(function(input, output, session){
             }
         }
 
+
+        # if(input$datasourceMP == 'Powell Center Synthesis' ||
+        #         input$datasource == 'Powell Center Synthesis'){
+        #     sitenames = sitenmyr_all_pow[,1]
+        #     siteyears = sitenmyr_all_pow[,2]
+        #     updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+        #         selected='', options=list(placeholder='No site selected'))
+        #     updateSelectizeInput(session, 'input_site', choices=sitenames,
+        #         selected='', options=list(placeholder='No site selected'))
+        # }
+
         # if(token == ''){
         #     sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% sitenames_public,]
         #     sitenames = sitenmyr[,1]
@@ -84,9 +103,60 @@ shinyServer(function(input, output, session){
 
         dbDisconnect(con)
 
-        out = list(sitenames=sitenames, siteyears=siteyears)
+        if(input$datasource == 'StreamPULSE'){ #datasourceMP will be same
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        } else {
+            sitenames = sitenmyr_all_pow[,1]
+            siteyears = sitenmyr_all_pow[,2]
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        }
+
         return(out)
     })
+
+    #change MP site list from SP to powell center when user toggles data source
+    # sp_or_powell = reactive({
+    #
+    #     src = input$datasourceMP
+    #     if(src == 'StreamPULSE'){
+    #
+    #     } else {
+    #
+    #     }
+    #     updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+    #         selected='', options=list(placeholder='No site selected'))
+    #
+    #     if(isTruthy(usersites)){
+    #         usersites = strsplit(usersites, ',')[[1]]
+    #         authed_sites = c(sitenames_public, usersites)
+    #         modelnames_authed = intersect(sitenmyr_all[,1], authed_sites)
+    #         sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_authed,]
+    #         sitenames = sitenmyr[,1]
+    #         siteyears = sitenmyr[,2]
+    #         output$token_resp = renderText({
+    #             paste('Authorized for', length(usersites), 'sites.')
+    #         })
+    #         updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+    #             selected='', options=list(placeholder='No site selected'))
+    #         updateSelectizeInput(session, 'input_site', choices=sitenames,
+    #             selected='', options=list(placeholder='No site selected'))
+    #     } else {
+    #         if(length(usersites) && usersites == ''){
+    #             output$token_resp = renderText({
+    #                 'No private site permissions\nassociated with this token.'
+    #             })
+    #         } else {
+    #             if(input$token_input != ''){
+    #                 output$token_resp = renderText({
+    #                     'Invalid token.'
+    #                 })
+    #             }
+    #         }
+    #     }
+    #
+    #     out = list(sitenames=sitenames, siteyears=siteyears)
+    #     return(out)
+    # })
 
     #trigger updates if user submits a token
     observeEvent(input$submit_token, {
@@ -99,6 +169,51 @@ shinyServer(function(input, output, session){
         MPcounter2 = input$MPhidden_counter2
         updateTextInput(session, 'MPhidden_counter2', label=NULL,
             value=as.numeric(MPcounter2) + 1)
+    })
+
+    #refresh model performance page if user toggles data source
+    observeEvent(input$datasourceMP, {
+
+        updateRadioButtons(session, 'datasource', selected=input$datasourceMP)
+        # MPcounter2 = input$MPhidden_counter2
+        v = viewable_mods()
+        sitenames = v$sitenames
+        #
+        # updateTextInput(session, 'MPhidden_counter2', label=NULL,
+        #     value=as.numeric(MPcounter2) + 1)
+
+        if(input$datasourceMP == 'Powell Center Synthesis'){
+            sitenames = sitenmyr_all_pow[,1]
+            siteyears = sitenmyr_all_pow[,2]
+        }
+
+        updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
+        updateSelectizeInput(session, 'input_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
+
+    })
+
+    #refresh o2 and metab page if user toggles data source
+    observeEvent(input$datasource, {
+
+        updateRadioButtons(session, 'datasourceMP', selected=input$datasource)
+        # counter2 = input$hidden_counter2
+        v = viewable_mods()
+        sitenames = v$sitenames
+        #
+        # updateTextInput(session, 'hidden_counter2', label=NULL,
+        #     value=as.numeric(counter2) + 1)
+
+        if(input$datasource == 'Powell Center Synthesis'){
+            sitenames = sitenmyr_all_pow[,1]
+            siteyears = sitenmyr_all_pow[,2]
+        }
+
+        updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
+        updateSelectizeInput(session, 'input_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
     })
 
     #update year input and trigger update of slider + plots if site changes (o2 and metab page)
@@ -155,6 +270,33 @@ shinyServer(function(input, output, session){
 
     })
 
+    # #update year input and trigger update of slider + plots if source changes (o2 and metab page)
+    # observeEvent(input$datasource, {
+    #
+    #     v = viewable_mods()
+    #
+    #     regionsite = input$input_site
+    #     year = input$input_year
+    #     available_years = v$siteyears[v$sitenames == regionsite]
+    #     legit_year = year %in% available_years
+    #
+    #     if(regionsite != ''){
+    #         if(year == '' || !legit_year){
+    #             year = max(available_years)
+    #         }
+    #
+    #         updateSelectizeInput(session, 'input_year',
+    #             choices=available_years, selected=year)
+    #
+    #         #so that ui callback necessetated even when year doesnt change.
+    #         #model output will update if either select box changes
+    #         counter = input$hidden_counter
+    #         updateTextInput(session, 'hidden_counter', label=NULL,
+    #             value=as.numeric(counter) + 1)
+    #     }
+    #
+    # })
+
     #get model fits and predictions for specified siteyear (for o2 and metab page)
     #whenever input year or input site change
     fitpred = eventReactive({
@@ -172,13 +314,17 @@ shinyServer(function(input, output, session){
         if(year != '' && legit_year){
 
             #read in model fit and prediction objects
-            modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
-                '.*'), fnames)
-            predictions_ind = grep(paste0('predictions_', regionsite,
-                '_', year, '.*'), fnames)
-            mod_out = readRDS(paste0('data/', fnames[modOut_ind[1]]))
-            predictions = readRDS(paste0('data/',
-                fnames[predictions_ind[1]]))
+            if(input$datasource == 'StreamPULSE'){
+                modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
+                    '.*'), fnames)
+                predictions_ind = grep(paste0('predictions_', regionsite,
+                    '_', year, '.*'), fnames)
+                mod_out = readRDS(paste0('data/', fnames[modOut_ind[1]]))
+                predictions = readRDS(paste0('data/',
+                    fnames[predictions_ind[1]]))
+            } else {
+
+            }
 
             #populate overlay selector
             vars_etc = colnames(mod_out$data)
