@@ -1,2 +1,4 @@
 /data/
 /former_best_models/
+*.rds
+

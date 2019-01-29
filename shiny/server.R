@@ -37,6 +37,9 @@ shinyServer(function(input, output, session){
     viewable_mods = reactive({
 
         input$submit_token
+        # input$datasource
+        # input$datasourceMP
+
         token = isolate(input$token_input)
 
         con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
@@ -56,12 +59,17 @@ shinyServer(function(input, output, session){
             sitenames = sitenmyr[,1]
             siteyears = sitenmyr[,2]
             output$token_resp = renderText({
-                paste('Authorized for', length(usersites), 'sites.')
+                paste('Authorized for', length(usersites), 'StreamPULSE sites.')
             })
-            updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
-                selected='', options=list(placeholder='No site selected'))
-            updateSelectizeInput(session, 'input_site', choices=sitenames,
-                selected='', options=list(placeholder='No site selected'))
+
+            if(input$datasourceMP == 'StreamPULSE' ||
+                    input$datasource == 'StreamPULSE'){
+                updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+                    selected='', options=list(placeholder='No site selected'))
+                updateSelectizeInput(session, 'input_site', choices=sitenames,
+                    selected='', options=list(placeholder='No site selected'))
+            }
+
         } else {
             if(length(usersites) && usersites == ''){
                 output$token_resp = renderText({
@@ -76,6 +84,17 @@ shinyServer(function(input, output, session){
             }
         }
 
+
+        # if(input$datasourceMP == 'Powell Center Synthesis' ||
+        #         input$datasource == 'Powell Center Synthesis'){
+        #     sitenames = sitenmyr_all_pow[,1]
+        #     siteyears = sitenmyr_all_pow[,2]
+        #     updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+        #         selected='', options=list(placeholder='No site selected'))
+        #     updateSelectizeInput(session, 'input_site', choices=sitenames,
+        #         selected='', options=list(placeholder='No site selected'))
+        # }
+
         # if(token == ''){
         #     sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% sitenames_public,]
         #     sitenames = sitenmyr[,1]
@@ -84,9 +103,60 @@ shinyServer(function(input, output, session){
 
         dbDisconnect(con)
 
-        out = list(sitenames=sitenames, siteyears=siteyears)
+        if(input$datasource == 'StreamPULSE'){ #datasourceMP will be same
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        } else {
+            sitenames = sitenmyr_all_pow[,1]
+            siteyears = sitenmyr_all_pow[,2]
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        }
+
         return(out)
     })
+
+    #change MP site list from SP to powell center when user toggles data source
+    # sp_or_powell = reactive({
+    #
+    #     src = input$datasourceMP
+    #     if(src == 'StreamPULSE'){
+    #
+    #     } else {
+    #
+    #     }
+    #     updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+    #         selected='', options=list(placeholder='No site selected'))
+    #
+    #     if(isTruthy(usersites)){
+    #         usersites = strsplit(usersites, ',')[[1]]
+    #         authed_sites = c(sitenames_public, usersites)
+    #         modelnames_authed = intersect(sitenmyr_all[,1], authed_sites)
+    #         sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_authed,]
+    #         sitenames = sitenmyr[,1]
+    #         siteyears = sitenmyr[,2]
+    #         output$token_resp = renderText({
+    #             paste('Authorized for', length(usersites), 'sites.')
+    #         })
+    #         updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+    #             selected='', options=list(placeholder='No site selected'))
+    #         updateSelectizeInput(session, 'input_site', choices=sitenames,
+    #             selected='', options=list(placeholder='No site selected'))
+    #     } else {
+    #         if(length(usersites) && usersites == ''){
+    #             output$token_resp = renderText({
+    #                 'No private site permissions\nassociated with this token.'
+    #             })
+    #         } else {
+    #             if(input$token_input != ''){
+    #                 output$token_resp = renderText({
+    #                     'Invalid token.'
+    #                 })
+    #             }
+    #         }
+    #     }
+    #
+    #     out = list(sitenames=sitenames, siteyears=siteyears)
+    #     return(out)
+    # })
 
     #trigger updates if user submits a token
     observeEvent(input$submit_token, {
@@ -99,6 +169,95 @@ shinyServer(function(input, output, session){
         MPcounter2 = input$MPhidden_counter2
         updateTextInput(session, 'MPhidden_counter2', label=NULL,
             value=as.numeric(MPcounter2) + 1)
+    })
+
+    #refresh model performance page if user toggles data source
+    observeEvent(input$datasourceMP, {
+
+        updateRadioButtons(session, 'datasource', selected=input$datasourceMP)
+        # MPcounter2 = input$MPhidden_counter2
+        v = viewable_mods()
+        sitenames = v$sitenames
+        #
+        # updateTextInput(session, 'MPhidden_counter2', label=NULL,
+        #     value=as.numeric(MPcounter2) + 1)
+
+        if(input$datasourceMP == 'Powell Center Synthesis'){
+            sitenames = sitenmyr_all_pow[,1]
+            siteyears = sitenmyr_all_pow[,2]
+        }
+
+        updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
+        updateSelectizeInput(session, 'input_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
+
+        output$KvER = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
+        output$KvQ = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
+        output$KvGPP = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
+        output$QvKres = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
+    })
+
+    #refresh o2 and metab page if user toggles data source
+    observeEvent(input$datasource, {
+
+        updateRadioButtons(session, 'datasourceMP', selected=input$datasource)
+        # counter2 = input$hidden_counter2
+        v = viewable_mods()
+        sitenames = v$sitenames
+        #
+        # updateTextInput(session, 'hidden_counter2', label=NULL,
+        #     value=as.numeric(counter2) + 1)
+
+        if(input$datasource == 'Powell Center Synthesis'){
+            sitenames = sitenmyr_all_pow[,1]
+            siteyears = sitenmyr_all_pow[,2]
+        }
+
+        updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
+        updateSelectizeInput(session, 'input_site', choices=sitenames,
+            selected='', options=list(placeholder='No site selected'))
+
+        output$metab_legend = renderPlot({
+            defpar = par(mar=rep(0,4), oma=rep(0,4))
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height05)
+
+        output$metab_plot = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height35)
+
+        output$O2_legend = renderPlot({
+            defpar = par(mar=rep(0,4), oma=rep(0,4))
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height05)
+
+        output$kernel_legend = renderPlot({
+            defpar = par(mar=rep(0,4), oma=rep(0,4))
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height05)
+
+        output$O2_plot = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height35)
+
+        output$kernel_plot = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height35)
+
     })
 
     #update year input and trigger update of slider + plots if site changes (o2 and metab page)
@@ -155,6 +314,33 @@ shinyServer(function(input, output, session){
 
     })
 
+    # #update year input and trigger update of slider + plots if source changes (o2 and metab page)
+    # observeEvent(input$datasource, {
+    #
+    #     v = viewable_mods()
+    #
+    #     regionsite = input$input_site
+    #     year = input$input_year
+    #     available_years = v$siteyears[v$sitenames == regionsite]
+    #     legit_year = year %in% available_years
+    #
+    #     if(regionsite != ''){
+    #         if(year == '' || !legit_year){
+    #             year = max(available_years)
+    #         }
+    #
+    #         updateSelectizeInput(session, 'input_year',
+    #             choices=available_years, selected=year)
+    #
+    #         #so that ui callback necessetated even when year doesnt change.
+    #         #model output will update if either select box changes
+    #         counter = input$hidden_counter
+    #         updateTextInput(session, 'hidden_counter', label=NULL,
+    #             value=as.numeric(counter) + 1)
+    #     }
+    #
+    # })
+
     #get model fits and predictions for specified siteyear (for o2 and metab page)
     #whenever input year or input site change
     fitpred = eventReactive({
@@ -172,13 +358,19 @@ shinyServer(function(input, output, session){
         if(year != '' && legit_year){
 
             #read in model fit and prediction objects
-            modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
-                '.*'), fnames)
-            predictions_ind = grep(paste0('predictions_', regionsite,
-                '_', year, '.*'), fnames)
-            mod_out = readRDS(paste0('data/', fnames[modOut_ind[1]]))
-            predictions = readRDS(paste0('data/',
-                fnames[predictions_ind[1]]))
+            if(input$datasource == 'StreamPULSE'){
+                modOut_ind = grep(paste0('modOut_', regionsite, '_', year,
+                    '.*'), fnames)
+                predictions_ind = grep(paste0('predictions_', regionsite,
+                    '_', year, '.*'), fnames)
+                mod_out = readRDS(paste0('data/', fnames[modOut_ind[1]]))
+                predictions = readRDS(paste0('data/',
+                    fnames[predictions_ind[1]]))
+            } else {
+                mod_out = readRDS(paste0('powell_data/shiny_lists/',
+                    regionsite, '_', year, '.rds'))
+                predictions = mod_out$predictions
+            }
 
             #populate overlay selector
             vars_etc = colnames(mod_out$data)
@@ -218,13 +410,19 @@ shinyServer(function(input, output, session){
         if(MPyear != '' && MPlegit_year){
 
             #read in model fit and prediction objects
-            MPmodOut_ind = grep(paste0('modOut_', MPregionsite, '_', MPyear,
-                '.*'), fnames)
-            MPpredictions_ind = grep(paste0('predictions_', MPregionsite,
-                '_', MPyear, '.*'), fnames)
-            MPmod_out = readRDS(paste0('data/', fnames[MPmodOut_ind[1]]))
-            MPpredictions = readRDS(paste0('data/',
-                fnames[MPpredictions_ind[1]]))
+            if(input$datasource == 'StreamPULSE'){
+                MPmodOut_ind = grep(paste0('modOut_', MPregionsite, '_', MPyear,
+                    '.*'), fnames)
+                MPpredictions_ind = grep(paste0('predictions_', MPregionsite,
+                    '_', MPyear, '.*'), fnames)
+                MPmod_out = readRDS(paste0('data/', fnames[MPmodOut_ind[1]]))
+                MPpredictions = readRDS(paste0('data/',
+                    fnames[MPpredictions_ind[1]]))
+            } else {
+                MPmod_out = readRDS(paste0('powell_data/shiny_lists/',
+                    MPregionsite, '_', MPyear, '.rds'))
+                MPpredictions = MPmod_out$predictions
+            }
 
             return(list('mod_out'=MPmod_out, 'predictions'=MPpredictions))
 
@@ -325,7 +523,18 @@ shinyServer(function(input, output, session){
         start = input$range[1]
         end = input$range[2]
 
-        if(input$input_site == '' && !is.null(start) && !is.null(end)){
+        somethings_bogus = input$input_site == '' && !is.null(start) &&
+            !is.null(end)
+
+        if(! is.null(fitpred) && ! is.null(fitpred$mod_out$data_daily) &&
+                ! is.null(fitpred$mod_out$data)){
+            empty_set = nrow(fitpred$mod_out$data_daily) == 0 ||
+                nrow(fitpred$mod_out$data) == 0
+        } else {
+            empty_set = FALSE
+        }
+
+        if(somethings_bogus || empty_set){
 
             #all blank plots for the rare case in which someone anonymously
             #chooses a model, then enters a token.
@@ -341,6 +550,7 @@ shinyServer(function(input, output, session){
 
             output$metab_plot = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+                if(empty_set) text(1, 1, 'Empty selection\nPossible model error')
             }, height=height35)
 
             # output$cumul_plot = renderPlot({
@@ -364,6 +574,12 @@ shinyServer(function(input, output, session){
             output$kernel_plot = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
+
+            if(empty_set){
+                output$cumul_metab = renderTable({
+                    return(data.frame('GPP'=NA, 'ER'=NA, 'NEP'=NA))
+                }, striped=TRUE)
+            }
 
         } else {
             if(!is.null(start) && !is.null(end)){
@@ -410,7 +626,9 @@ shinyServer(function(input, output, session){
                 }, height=height35)
 
                 output$O2_legend = renderPlot({
-                    O2_legend(overlay=input$O2_overlay)
+                    is_powell = ifelse(input$datasource == 'StreamPULSE', FALSE,
+                        TRUE)
+                    O2_legend(overlay=input$O2_overlay, powell=is_powell)
                 }, height=height05)
 
                 output$O2_plot = renderPlot({
@@ -479,7 +697,9 @@ shinyServer(function(input, output, session){
         if(!is.null(start) && !is.null(end)){
 
             output$O2_legend = renderPlot({
-                O2_legend(overlay=input$O2_overlay)
+                is_powell = ifelse(input$datasource == 'StreamPULSE', FALSE,
+                    TRUE)
+                O2_legend(overlay=input$O2_overlay, powell=is_powell)
             }, height=height05)
 
             output$O2_plot = renderPlot({
@@ -549,12 +769,21 @@ shinyServer(function(input, output, session){
         MPstart = input$MPrange[1]
         MPend = input$MPrange[2]
 
-        if(input$MPinput_site == '' && !is.null(MPstart) && !is.null(MPend)){
+        somethings_bogus = input$MPinput_site == '' && !is.null(MPstart) &&
+            !is.null(MPend)
+        if(! is.null(slices)){
+            empty_slices = nrow(slices$data_daily_slice) == 0 ||
+                nrow(slices$daily_slice) == 0
+        } else {
+            empty_slices = FALSE
+        }
 
+        if(somethings_bogus || empty_slices){
             #all blank plots for the rare case in which someone anonymously
             #chooses a model, then enters a token.
             output$KvER = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+                if(empty_slices) text(1, 1, 'Empty selection\nPossible model error')
             }, height=height50)
 
             output$KvQ = renderPlot({
@@ -581,8 +810,10 @@ shinyServer(function(input, output, session){
 
                 output$KvQ = renderPlot({
                     if(!is.null(mod_out)){
+                        is_powell = ifelse(input$datasource == 'StreamPULSE',
+                            FALSE, TRUE)
                         KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
-                            slicey=slices$daily_slice)
+                            slicey=slices$daily_slice, powell=is_powell)
                     }
                 }, height=height40)
 
@@ -623,8 +854,11 @@ shinyServer(function(input, output, session){
         }, height=height40)
 
         output$KvQ = renderPlot({
+            is_powell = ifelse(input$datasource == 'StreamPULSE',
+                FALSE, TRUE)
             KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
-                slicey=slices$daily_slice, click=isolate(input$KvQ_click))
+                slicey=slices$daily_slice, powell=is_powell,
+                click=isolate(input$KvQ_click))
         }, height=height40)
 
         output$KvGPP = renderPlot({

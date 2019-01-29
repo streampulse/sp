@@ -1,5 +1,27 @@
 #Mike's Logbook
 
+###mon20190128
+ + fixed bugs in plot click date popups on shiny app
+ + incorporated powell center synthesis data into shiny app
+###sat20190126
+ + modified shiny app user interface for powell site inclusion
+###thu20190124
+ + rebuilt streamMetabolizer data structures from powell data files
+###wed20190123
+ + downloaded and organized all powell data for incorporation into shiny app
+###tue20190122
+ + emails on sitelist page now appear as user[at]domain.tld
+ + emails and contact names only visible if logged in
+ + script set up to import site data for powell sites
+###fri20190118
+ + LetsEncrypt domain validation through TLS-SNI-01 is reaching end-of-life. updated validation scheme
+###thu20190117
+ + recruited students for Data+ summer fellowship
+###wed20190116
+ + analyzed coverage across all non-neon streampulse sites. posted figures to slack
+###mon20190114
+ + script set up to upload all non-usgs/neon data to cuahsi on a schedule
+ + tested cuahsi "api" upload feature. many bugs. reported them to cuahsi
 ###sat20190112
  + split variable lists into core/bonus variables
  + sorted former by prominence and latter alphabetically
