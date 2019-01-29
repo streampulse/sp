@@ -135,7 +135,7 @@ metab_legend = function(show_K600=FALSE){
 
 kernel_func = function(ts_full, main){
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10)]
-    tt <<- ts_full
+
     kernel = kde(na.omit(ts_full[, c('GPP', 'ER')]))
     # k_lim = max(kernel$estimate, na.rm=TRUE)
     k_lim = max(abs(c(min(ts_full$ER, na.rm=TRUE),
@@ -275,17 +275,19 @@ O2_plot = function(mod_out, st, en, brush, click, overlay='None',
 
 }
 
-O2_legend = function(overlay){
+O2_legend = function(overlay, powell){
     par(mar=c(0,4,0,1), oma=rep(0,4))
     plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
     if(overlay == 'None'){
-        legend(x='bottomleft', legend=c('Pred', 'Obs'), bg='white',
+        predtxt = ifelse(powell, 'Pred (unpublished)', 'Pred')
+        legend(x='bottomleft', legend=c(predtxt, 'Obs'), bg='white',
             cex=0.8, col=c('gray75', 'cyan4'), lty=1, bty='o', horiz=TRUE,
             lwd=c(6,2), box.col='transparent')
     } else {
         cleaned_varnames = sapply(varmap, function(x) x[[1]])
         overlay = names(varmap)[which(cleaned_varnames == overlay)]
-        legend(x='bottomleft', legend=c('Pred DO', 'Obs DO',
+        predtxt = ifelse(powell, 'Pred DO (unpublished)', 'Pred DO')
+        legend(x='bottomleft', legend=c(predtxt, 'Obs DO',
             varmap[[overlay]][[1]]),
             bg='white', cex=0.8, col=c('gray75', 'cyan4', 'coral4'),
             lty=1, bty='o', horiz=TRUE,
@@ -460,17 +462,11 @@ KvQ_plot = function(mod_out, slicex, slicey, powell, click=NULL){
 
 QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
 
-    # mm <<- mod_out
-    # sx <<- slicex
-    # sy <<- slicey
-    # mod_out = mm
-    # slicex = sx
-    # slicey = sy
-
     colnames(slicex)[colnames(slicex) == 'discharge'] = 'discharge.daily'
     slicexy = merge(slicey, slicex[,c('date','discharge.daily')],
         by='date', all.x=TRUE)
     log_Q = log(slicexy$discharge.daily)
+
 
     #get K residuals (based on K-Q linear relationship)
     KQmod = lm(slicexy$K600_daily_mean ~ log_Q, na.action=na.exclude)
@@ -497,12 +493,7 @@ QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
 
     #highlight point and display date on click
     if(! is.null(click) && ! is.null(click$x)){
-        # cc <<- click
-        # ll <<- log_Q
-        # rr <<- resid
-        # click = cc
-        # log_Q = ll
-        # resid = rr
+
         xmax = max(log_Q, na.rm=TRUE)
         xmin = min(log_Q, na.rm=TRUE)
         ymax = max(resid, na.rm=TRUE)

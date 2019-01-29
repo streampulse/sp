@@ -230,6 +230,34 @@ shinyServer(function(input, output, session){
             selected='', options=list(placeholder='No site selected'))
         updateSelectizeInput(session, 'input_site', choices=sitenames,
             selected='', options=list(placeholder='No site selected'))
+
+        output$metab_legend = renderPlot({
+            defpar = par(mar=rep(0,4), oma=rep(0,4))
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height05)
+
+        output$metab_plot = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height35)
+
+        output$O2_legend = renderPlot({
+            defpar = par(mar=rep(0,4), oma=rep(0,4))
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height05)
+
+        output$kernel_legend = renderPlot({
+            defpar = par(mar=rep(0,4), oma=rep(0,4))
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height05)
+
+        output$O2_plot = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height35)
+
+        output$kernel_plot = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height35)
+
     })
 
     #update year input and trigger update of slider + plots if site changes (o2 and metab page)
@@ -495,7 +523,18 @@ shinyServer(function(input, output, session){
         start = input$range[1]
         end = input$range[2]
 
-        if(input$input_site == '' && !is.null(start) && !is.null(end)){
+        somethings_bogus = input$input_site == '' && !is.null(start) &&
+            !is.null(end)
+
+        if(! is.null(fitpred) && ! is.null(fitpred$mod_out$data_daily) &&
+                ! is.null(fitpred$mod_out$data)){
+            empty_set = nrow(fitpred$mod_out$data_daily) == 0 ||
+                nrow(fitpred$mod_out$data) == 0
+        } else {
+            empty_set = FALSE
+        }
+
+        if(somethings_bogus || empty_set){
 
             #all blank plots for the rare case in which someone anonymously
             #chooses a model, then enters a token.
@@ -511,6 +550,7 @@ shinyServer(function(input, output, session){
 
             output$metab_plot = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+                if(empty_set) text(1, 1, 'Empty selection\nPossible model error')
             }, height=height35)
 
             # output$cumul_plot = renderPlot({
@@ -534,6 +574,12 @@ shinyServer(function(input, output, session){
             output$kernel_plot = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height35)
+
+            if(empty_set){
+                output$cumul_metab = renderTable({
+                    return(data.frame('GPP'=NA, 'ER'=NA, 'NEP'=NA))
+                }, striped=TRUE)
+            }
 
         } else {
             if(!is.null(start) && !is.null(end)){
@@ -580,7 +626,9 @@ shinyServer(function(input, output, session){
                 }, height=height35)
 
                 output$O2_legend = renderPlot({
-                    O2_legend(overlay=input$O2_overlay)
+                    is_powell = ifelse(input$datasource == 'StreamPULSE', FALSE,
+                        TRUE)
+                    O2_legend(overlay=input$O2_overlay, powell=is_powell)
                 }, height=height05)
 
                 output$O2_plot = renderPlot({
@@ -649,7 +697,9 @@ shinyServer(function(input, output, session){
         if(!is.null(start) && !is.null(end)){
 
             output$O2_legend = renderPlot({
-                O2_legend(overlay=input$O2_overlay)
+                is_powell = ifelse(input$datasource == 'StreamPULSE', FALSE,
+                    TRUE)
+                O2_legend(overlay=input$O2_overlay, powell=is_powell)
             }, height=height05)
 
             output$O2_plot = renderPlot({
@@ -671,10 +721,6 @@ shinyServer(function(input, output, session){
     }, {
 
         MPfitpred = MPfitpred()
-        # MM <<- MPfitpred
-        # MPfitpred = MM
-        # MPstart = 146
-        # MPend = 180
 
         if(! is.null(MPfitpred)){
             mod_out = MPfitpred$mod_out
@@ -731,8 +777,6 @@ shinyServer(function(input, output, session){
         } else {
             empty_slices = FALSE
         }
-        # print(nrow(slices$data_daily_slice))
-        # print(nrow(slices$daily_slice))
 
         if(somethings_bogus || empty_slices){
             #all blank plots for the rare case in which someone anonymously

@@ -22,6 +22,7 @@ for(i in 1:length(powIn)){
 
     PI = readRDS(paste0('powell_data/inData/', powIn[i]))
     PO = readRDS(paste0('powell_data/outData/', powOut[i]))
+    PO$date = as.Date(PO$date)
 
     Pc = str_match(powIn[i], '^inData_([A-Za-z]{2})_([0-9]+)_([0-9]{4})')[,2:4]
     # PE = readRDS(paste0('powell_data/outExtra/outExtra_', Pc[1], '_',
@@ -42,8 +43,6 @@ for(i in 1:length(powIn)){
         '_', Pc[3], '.rds'))
 }
 
-xd = readRDS('powell_data/shiny_lists/AK_15298040_2010.rds')
-xd = readRDS('powell_data/shiny_lists/AK_15298040_2016.rds')
-# names(xd$data_daily)
-xd$predictions
+# xd = readRDS('powell_data/shiny_lists/AK_15298040_2010.rds')
+# xd = readRDS('powell_data/shiny_lists/AK_15298040_2016.rds')
 
