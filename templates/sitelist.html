@@ -22,16 +22,48 @@
 <div class="container">
   <div class="row">
     <div class="col-md-12 text-center">
-      <h3>Core and Leveraged sites:</h3>
+      <div class='text-center' style='border-style:solid; border-width:thin; border-color:gray; display:inline-block'>
+
+        <h4 class='text-left text-primary' style='margin-left:10px; margin-right:10px'>
+          Select a data source to view its site data below
+        </h4>
+        <div class="radio text-left" style='margin-left:10px'>
+          <label><input type="radio" name="optradio" value='sp' checked>StreamPULSE</label>
+        </div>
+        <div class="radio text-left" style='margin-left:10px'>
+          <label><input type="radio" name="optradio" value='pow'>
+            Powell Center metabolism synthesis
+            [<a href='https://www.nature.com/articles/sdata2018292'>link</a>]
+          </label>
+        </div>
+        <div class="radio text-left" style='margin-left:10px; margin-right:10px'>
+          <label><input type="radio" name="optradio" value='neon'>
+            NEON [<a href='http://data.neoninc.org/home'>link</a>]
+          </label>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>
+<br><br>
 
-{{dats|safe}}
+<div id='sp' name='disp_table'>
+  {{sp|safe}}
+</div>
+<div id='pow'  name='disp_table' style='display:none'>
+  {{powell|safe}}
+</div>
+<div id='neon'  name='disp_table' style='display:none'>
+  {{neon|safe}}
+</div>
 
-<!-- <iframe id="site_table" src="https://data.streampulse.org/sitelist_table" -->
-<!-- <iframe id="site_table" src="http://127.0.0.1:5000/sitelist_table"
-  style="width:1800px; height:450px; border:none; margin:0; padding:0; overflow:hidden; position:static">
-</iframe> -->
+<script>
+  $('input[name=optradio]').change(function(){
+    var selected_table = $('input[name=optradio]:checked').val();
+    $('div[name=disp_table]').attr('style', 'display:none');
+    $('#' + selected_table).attr('style', 'display:');
+  });
+</script>
 
 {% endblock %}

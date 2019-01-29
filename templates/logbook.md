@@ -1,5 +1,9 @@
 #Mike's Logbook
 
+###tue20190129
+ + updated shiny app on server; some small improvements in addition to those made on previous days
+ + wrote script for automatically refreshing NEON variable lists and coverage on the sitelist page (daily)
+ + sitelist page now has toggle buttons for viewing sp/powell/neon data separately
 ###mon20190128
  + fixed bugs in plot click date popups on shiny app
  + incorporated powell center synthesis data into shiny app
