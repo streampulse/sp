@@ -1,5 +1,14 @@
 #Mike's Logbook
 
+###mon20190128
+ + fixed bugs in plot click date popups on shiny app
+ + incorporated powell center synthesis data into shiny app
+###sat20190126
+ + modified shiny app user interface for powell site inclusion
+###thu20190124
+ + rebuilt streamMetabolizer data structures from powell data files
+###wed20190123
+ + downloaded and organized all powell data for incorporation into shiny app
 ###tue20190122
  + emails on sitelist page now appear as user[at]domain.tld
  + emails and contact names only visible if logged in

@@ -34,14 +34,12 @@ defaultv = list(sitenames=sitenames, siteyears=siteyears)
 
 #get list of Powell Center Synthesis fitted model names available on server
 # dx = '/home/mike/git/streampulse/model/ancillary/powell_data_import/RDS_components/'
-powIn = dir('powell_data/inData', pattern='inData')
+# powIn = dir('powell_data/inData', pattern='inData')
+modlists = dir('powell_data/shiny_lists/')
 # powI = dir(paste0(dx, 'inData'), pattern='inData')
 # powOut = dir(paste0(dx, 'outData'), pattern='outData')
 # powOutEx = dir(paste0(dx, 'outExtra'), pattern='outExtra')
-fnames = dir('data')
-modnames = dir('data', pattern='modOut')
-sitenmyr_all_pow = str_match(powIn,
-    '^inData_(\\w+_[0-9]+)_([0-9]{4})')[,2:3]
+sitenmyr_all_pow = str_match(modlists, '^(\\w+_[0-9]+)_([0-9]{4})')[,2:3]
 
 #create mapping of input data fields and their pretty equivalents
 varmap = list('DO.sat'=list('DO sat', 'DO sat (%)'),

@@ -192,6 +192,22 @@ shinyServer(function(input, output, session){
         updateSelectizeInput(session, 'input_site', choices=sitenames,
             selected='', options=list(placeholder='No site selected'))
 
+        output$KvER = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
+        output$KvQ = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
+        output$KvGPP = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
+        output$QvKres = renderPlot({
+            plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+        }, height=height50)
+
     })
 
     #refresh o2 and metab page if user toggles data source
@@ -323,7 +339,9 @@ shinyServer(function(input, output, session){
                 predictions = readRDS(paste0('data/',
                     fnames[predictions_ind[1]]))
             } else {
-
+                mod_out = readRDS(paste0('powell_data/shiny_lists/',
+                    regionsite, '_', year, '.rds'))
+                predictions = mod_out$predictions
             }
 
             #populate overlay selector
@@ -364,13 +382,19 @@ shinyServer(function(input, output, session){
         if(MPyear != '' && MPlegit_year){
 
             #read in model fit and prediction objects
-            MPmodOut_ind = grep(paste0('modOut_', MPregionsite, '_', MPyear,
-                '.*'), fnames)
-            MPpredictions_ind = grep(paste0('predictions_', MPregionsite,
-                '_', MPyear, '.*'), fnames)
-            MPmod_out = readRDS(paste0('data/', fnames[MPmodOut_ind[1]]))
-            MPpredictions = readRDS(paste0('data/',
-                fnames[MPpredictions_ind[1]]))
+            if(input$datasource == 'StreamPULSE'){
+                MPmodOut_ind = grep(paste0('modOut_', MPregionsite, '_', MPyear,
+                    '.*'), fnames)
+                MPpredictions_ind = grep(paste0('predictions_', MPregionsite,
+                    '_', MPyear, '.*'), fnames)
+                MPmod_out = readRDS(paste0('data/', fnames[MPmodOut_ind[1]]))
+                MPpredictions = readRDS(paste0('data/',
+                    fnames[MPpredictions_ind[1]]))
+            } else {
+                MPmod_out = readRDS(paste0('powell_data/shiny_lists/',
+                    MPregionsite, '_', MPyear, '.rds'))
+                MPpredictions = MPmod_out$predictions
+            }
 
             return(list('mod_out'=MPmod_out, 'predictions'=MPpredictions))
 
@@ -647,6 +671,10 @@ shinyServer(function(input, output, session){
     }, {
 
         MPfitpred = MPfitpred()
+        # MM <<- MPfitpred
+        # MPfitpred = MM
+        # MPstart = 146
+        # MPend = 180
 
         if(! is.null(MPfitpred)){
             mod_out = MPfitpred$mod_out
@@ -695,12 +723,23 @@ shinyServer(function(input, output, session){
         MPstart = input$MPrange[1]
         MPend = input$MPrange[2]
 
-        if(input$MPinput_site == '' && !is.null(MPstart) && !is.null(MPend)){
+        somethings_bogus = input$MPinput_site == '' && !is.null(MPstart) &&
+            !is.null(MPend)
+        if(! is.null(slices)){
+            empty_slices = nrow(slices$data_daily_slice) == 0 ||
+                nrow(slices$daily_slice) == 0
+        } else {
+            empty_slices = FALSE
+        }
+        # print(nrow(slices$data_daily_slice))
+        # print(nrow(slices$daily_slice))
 
+        if(somethings_bogus || empty_slices){
             #all blank plots for the rare case in which someone anonymously
             #chooses a model, then enters a token.
             output$KvER = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
+                if(empty_slices) text(1, 1, 'Empty selection\nPossible model error')
             }, height=height50)
 
             output$KvQ = renderPlot({
@@ -727,8 +766,10 @@ shinyServer(function(input, output, session){
 
                 output$KvQ = renderPlot({
                     if(!is.null(mod_out)){
+                        is_powell = ifelse(input$datasource == 'StreamPULSE',
+                            FALSE, TRUE)
                         KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
-                            slicey=slices$daily_slice)
+                            slicey=slices$daily_slice, powell=is_powell)
                     }
                 }, height=height40)
 
@@ -769,8 +810,11 @@ shinyServer(function(input, output, session){
         }, height=height40)
 
         output$KvQ = renderPlot({
+            is_powell = ifelse(input$datasource == 'StreamPULSE',
+                FALSE, TRUE)
             KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
-                slicey=slices$daily_slice, click=isolate(input$KvQ_click))
+                slicey=slices$daily_slice, powell=is_powell,
+                click=isolate(input$KvQ_click))
         }, height=height40)
 
         output$KvGPP = renderPlot({
