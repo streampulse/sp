@@ -26,9 +26,10 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
     # ts_full = ts_full[-c(1,nrow(ts_full)),-c(1,8,9,10,11)]
     ts_full = ts_full[, colnames(ts_full) != 'Year']
 
-    avg_trajectory = aggregate(ts_full, by=list(ts_full$DOY),
+    ts_full_preagg = ts_full[, !colnames(ts_full) %in% c('msgs.fit','warnings',
+        'errors')]
+    avg_trajectory = aggregate(ts_full_preagg, by=list(ts_full$DOY),
         FUN=mean, na.rm=TRUE)
-    # print(head(avg_trajectory))
 
     gpp = avg_trajectory$GPP
     gppup = avg_trajectory$GPP.upper; gpplo = avg_trajectory$GPP.lower
@@ -36,7 +37,7 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
     erup = avg_trajectory$ER.upper; erlo = avg_trajectory$ER.lower
     doy = avg_trajectory$DOY
 
-    sd_trajectory = aggregate(ts_full, by=list(ts_full$DOY),
+    sd_trajectory = aggregate(ts_full_preagg, by=list(ts_full$DOY),
         FUN=sd, na.rm=TRUE)
 
     #get bounds
@@ -55,13 +56,22 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
 
     #split time and DO series into NA-less chunks for plotting polygons
     ff = data.frame(doy=doy, gpplo=gpplo, gppup=gppup, erlo=erlo, erup=erup)
-    if('valid_day' %in% colnames(fit_daily)){
-        fit_daily = fit_daily[fit_daily$valid_day,]
-    }
+    # if('valid_day' %in% colnames(fit_daily)){
+    #     fit_daily = fit_daily[fit_daily$valid_day,]
+    # }
 
     if(! is.null(overlay) && overlay == 'mean daily K600'){
-        ff$Kup = fit_daily$K600_daily_97.5pct
-        ff$Klo = fit_daily$K600_daily_2.5pct
+        # if(powell){
+        #     ff$Kup = fit_daily$K600_daily_97.5pct
+        #     ff$Klo = fit_daily$K600_daily_2.5pct
+        # } else {
+        ff = merge(ff,
+            fit_daily[,c('doy', 'K600_daily_mean', 'K600_daily_97.5pct',
+                'K600_daily_2.5pct')],
+            by='doy', all.x=TRUE)
+        colnames(ff)[colnames(ff) == 'K600_daily_97.5pct'] = 'Kup'
+        colnames(ff)[colnames(ff) == 'K600_daily_2.5pct'] = 'Klo'
+        # }
     }
 
     rl = rle(is.na(ff$gpplo))
@@ -88,7 +98,8 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
         par(new=TRUE)
         llim2 = min(ff$Klo, na.rm=TRUE)
         ulim2 = max(ff$Kup, na.rm=TRUE)
-        plot(doy, fit_daily$K600_daily_mean,
+        # plot(doy, fit_daily$K600_daily_mean,
+        plot(doy, ff$K600_daily_mean,
             col='orange',
             type='l', xlab='', las=0, ylab='', xaxs='i', yaxs='i',
             lwd=2, xaxt='n', bty='u', yaxt='n', ylim=c(llim2, ulim2),

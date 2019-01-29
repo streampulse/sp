@@ -2,29 +2,31 @@
 {% block body %}
 
 <br>
-<div class="col-md-8 col-md-offset-2">
-  <div class="row">
-    <div class="col-md-4">
-      <p class="text-muted text-center"><i class="fa fa-bar-chart fa-4x"></i>
-      <br>
-      <span class="h1">{{nobs}}*</span>
-      <br>
-      <small>OBSERVATIONS</small></p>
-    </div>
-    <div class="col-md-4">
-      <p class="text-muted text-center"><i class="fa fa-users fa-4x"></i>
-      <br>
-      <span class="h1">{{nuse}}</span>
-      <br>
-      <small>USERS</small></p>
-    </div>
-    <div class="col-md-4">
-      <p class="text-muted text-center"><i class="fa fa-map-marker fa-4x"></i>
-      <br>
-      <span class="h1">{{nsit}}</span>
-      <br>
-      <small>SITES</small></p>
-      <br><br><br>
+<div class="row">
+  <div class="col-md-8 col-md-offset-2">
+    <div class="row">
+      <div class="col-md-4">
+        <p class="text-muted text-center"><i class="fa fa-bar-chart fa-4x"></i>
+        <br>
+        <span class="h1">{{nobs}}*</span>
+        <br>
+        <small>OBSERVATIONS</small></p>
+      </div>
+      <div class="col-md-4">
+        <p class="text-muted text-center"><i class="fa fa-users fa-4x"></i>
+        <br>
+        <span class="h1">{{nuse}}</span>
+        <br>
+        <small>USERS</small></p>
+      </div>
+      <div class="col-md-4">
+        <p class="text-muted text-center"><i class="fa fa-map-marker fa-4x"></i>
+        <br>
+        <span class="h1">{{nsit}}</span>
+        <br>
+        <small>SITES</small></p>
+        <br><br><br>
+      </div>
     </div>
   </div>
 </div>
@@ -77,33 +79,32 @@
 </div>
 
 <div class="row">
-  <div class="col-md-6 col-md-offset-3">
+  <div class="col-md-6 col-md-offset-3 text-center">
     <!--<p class="text-center"><a class="btn btn-lg btn-primary" href="cleandemo">Test our data cleaning app</a></p>-->
     <br><br>
-    <center>
-      <button data-toggle="collapse" class="btn btn-default" data-target="#sops">
-        Show SOPs
-      </button>
-    </center>
+    <!-- <center> -->
+    <button data-toggle="collapse" class="btn btn-default" data-target="#sops">
+      Show SOPs
+    </button>
+    <!-- </center> -->
     <div id="sops" class="collapse">
       <iframe src="https://drive.google.com/embeddedfolderview?id=0B1zvt7V2NcF6ZmdnXzRXNlY2R1k#list"
-      style="width:100%; height:600px; border:0;"></iframe>
+        style="width:100%; height:600px; border:0;">
+      </iframe>
       <!-- formerly 14VFLjuKYjpXhHhV1e-xEtD59WrgVrwtv -->
     </div>
     <br><br>
-    <center>
-      <p class='lead'><a href="policy">Data policy</a></p>
-    </center>
+    <!-- <center> -->
+    <p class='lead'><a href="policy">Data policy</a></p>
+    <!-- </center> -->
   </div>
 </div>
 
 <div class="row">
   <div class="col-md-10 col-md-offset-1 text-right text-muted">
-    <br><br><br>
+    <br><br>
     <p>*Count updated daily</p>
   </div>
-</div>
-
 </div>
 
 {% endblock %}

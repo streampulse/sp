@@ -1110,6 +1110,10 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+# @app.route('/test')
+# def tst():
+#     return render_template('test.html')
+
 @app.route('/account')
 @login_required
 def account():

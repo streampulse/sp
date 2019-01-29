@@ -543,19 +543,10 @@ shinyServer(function(input, output, session){
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
             }, height=height05)
 
-            # output$cumul_legend = renderPlot({
-            #     defpar = par(mar=rep(0,4), oma=rep(0,4))
-            #     plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
-            # }, height=height05)
-
             output$metab_plot = renderPlot({
                 plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
                 if(empty_set) text(1, 1, 'Empty selection\nPossible model error')
             }, height=height35)
-
-            # output$cumul_plot = renderPlot({
-            #     plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
-            # }, height=height35)
 
             output$O2_legend = renderPlot({
                 defpar = par(mar=rep(0,4), oma=rep(0,4))
@@ -591,10 +582,6 @@ shinyServer(function(input, output, session){
                     }
                 }, height=height05)
 
-                # output$cumul_legend = renderPlot({
-                #     cumul_legend()
-                # }, height=height05)
-
                 output$metab_plot = renderPlot({
                     ts_full = processing_func(fitpred$predictions, st=start,
                         en=end)
@@ -606,13 +593,6 @@ shinyServer(function(input, output, session){
                     season_ts_func(ts_full, daily, st=start, en=end,
                         input$metab_overlay)
                 }, height=height35)
-
-                # output$cumul_plot = renderPlot({
-                #     ts_full = processing_func(fitpred$predictions, st=start,
-                #         en=end)
-                #     par(mar=c(3,3.5,0.2,0.5), oma=rep(0,4))
-                #     cumulative_func(ts_full, st=start, en=end)
-                # }, height=height35)
 
                 output$kernel_legend = renderPlot({
                     kernel_legend()
