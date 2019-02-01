@@ -2353,10 +2353,10 @@ def getsitenames(regionsite):
 @app.route('/download')
 def download():
 
-    #acquire site data and filter rows by authenticated sites
+    #acquire SP site data and filter rows by authenticated sites
     sitedata = pd.read_sql("select region, site, name, variableList " +\
         "as variable, firstRecord as startdate, lastRecord as enddate " +\
-        "from site;", db.engine)
+        "from site where variableList is not NULL;", db.engine)
     sitedata['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedata.region,
         sitedata.site)]
 
@@ -2367,9 +2367,9 @@ def download():
         sites = authenticate_sites(sitedata.regionsite)
 
     sitedata = sitedata[sitedata.regionsite.isin(sites) &
-        sitedata.variable.notnull()]
+        sitedata.variable.notnull()] #redundant, but negligible cost
 
-    #reformat and filter columns; return data as dict
+    #reformat and filter columns; return data as list of tuples
     sitedata.variable = sitedata.variable.apply(lambda x: x.split(','))
     sitedata.startdate = sitedata.startdate.apply(lambda x:
         x.strftime('%Y-%m-%d'))
@@ -2379,7 +2379,31 @@ def download():
     dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
     sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
 
-    return render_template('download.html', sites=sitedict)
+    #separating powell/sp data could be final step to save some time, but
+    #i'm allowing reduncancy here because the execution time cost is lower than
+    #the cost of reorganization
+    sitedataP = pd.read_sql("select region, site, name, variableList " +\
+        "as variable, firstRecord as startdate, lastRecord as enddate " +\
+        "from site where `by` = '-902' and variableList is not NULL;", db.engine)
+    sitedataP['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedataP.region,
+        sitedataP.site)]
+
+    #powell data: reformat and filter columns; return data as nested lists
+    sitedataP.variable = sitedataP.variable.apply(lambda x: x.split(','))
+    sitedataP.startdate = sitedataP.startdate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataP.enddate = sitedataP.enddate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataP.name = sitedataP.region + " - " + sitedataP.name
+    dvvP = sitedataP[['regionsite','name','startdate','enddate','variable']]
+    dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvvP = dvvP.values
+    sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
+    for i in xrange(len(sitedictP)):
+        sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
+
+    return render_template('download.html', sites=sitedict,
+        powell_sites=sitedictP)
 
 @app.route('/_getstats', methods=['POST'])
 def getstats():

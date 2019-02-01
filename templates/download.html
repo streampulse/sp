@@ -2,11 +2,27 @@
 {% block body %}
 
 <div class="row"><div class="col-md-8 col-md-offset-2">
-  <h1 class='text-center'>Download StreamPULSE Data</h1>
+  <h1 class='text-center text-primary'>Download StreamPULSE Data</h1>
+  <br><br>
+
+  <p class="lead">1. Select data source. This populates the dropdown menu in step 2.<p>
+  <div class="radio text-left" style='margin-left:10px'>
+    <label>
+      <input type="radio" name="optradio" value='sp' checked>
+      StreamPULSE + NEON [<a href='http://data.neoninc.org/home'>link</a>]
+    </label>
+  </div>
+  <div class="radio text-left" style='margin-left:10px'>
+    <label><input type="radio" name="optradio" value='pow'>
+      Powell Center metabolism synthesis
+      [<a href='https://www.nature.com/articles/sdata2018292'>link</a>]
+    </label>
+  </div>
+
   <br>
-  <p class="lead">Choose sites and a date range to begin.<p>
+  <p class="lead">2. Choose site(s) and date range.<p>
   <p class='text-muted'>
-    Note: sensor data can also be acquired via the StreamPULSE package for R.
+    Note: these data can also be acquired via the StreamPULSE package for R.
   </p>
 
   <form id="dnld" action="/_getcsv" method="POST" class="form-horizontal">
@@ -24,12 +40,12 @@
     <hr>
     <br>
 
-    <p class="lead">Sensor variables to include:</p>
+    <p class="lead">3. Sensor variables to include:</p>
     <div id="dnld_vars"></div><br>
     <hr>
     <br>
 
-    <p class="lead">Sensor data formatting:</p>
+    <p class="lead">4. Sensor data formatting:</p>
     <div class="form-inline">
       Temporal aggregation:
       <select id="aggregate" name="aggregate" class="form-control">
@@ -47,7 +63,7 @@
     <hr>
     <br>
 
-    <p class="lead">Additional options:</p>
+    <p class="lead">5. Additional options:</p>
     <div class="form-inline">
       <input type="checkbox" id="flag" name="flag">
       <!-- &nbsp; -->
@@ -134,11 +150,40 @@
 -->
 
 <script>
-$('#dsite').selectize({
+var dsite = $('#dsite').selectize({
     delimiter: ',',
     persist: false,
     create: function(input) { return { value: input,text: input } }
 });
+var dsitei = dsite[0].selectize;
+
+var powell_sites = {{ powell_sites|safe }}
+
+$('input[name=optradio]').change(function(){
+  var selected_dsource = $('input[name=optradio]:checked').val();
+  dsitei.clearOptions()
+  $('#datepicker').val('')
+  dsitei.addOption({'value':'', 'text':'Choose site(s)'});
+  for(var i = 0; i < powell_sites.length; i++){
+    dsitei.addOption({'value':powell_sites[i][0],
+      'text':powell_sites[i][1]});
+  }
+  // {% for sv, sn, sd, ed, va in powell_sites %}
+  //   $('#dsite')[0].selectize.addOption({'value':years[i], 'text':years[i]});
+  // {% endfor %}
+});
+// <select placeholder="Choose site(s)" id="dsite" name="site" multiple>
+//   <option value="">Choose site(s)</option>
+//   {% for sv, sn, sd, ed, va in sites %}
+//   <option value="{{sv}}">{{sn}}</option>
+//   {% endfor %}
+// </select>
+// removeOption(<value>)
+// clearOptions()
+// for(var i in years){
+//   dyear[0].selectize.addOption({'value':years[i], 'text':years[i]});
+//   // $('#dyear').append("<option value='" + years[i] + "' selected>" + years[i] + "</option>"); //if it werent a selectize select
+// }
 
 var sitedict = {}
 {% for sv, sn, sd, ed, va in sites %}
