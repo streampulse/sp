@@ -19,17 +19,19 @@
     </label>
   </div>
 
-  <br>
+  <br><br>
   <p class="lead">2. Choose site(s) and date range.<p>
   <p class='text-muted'>
-    Note: these data can also be acquired via the StreamPULSE package for R.
+    Note: these data can also be acquired via the
+    <a href="https://github.com/streampulse/StreamPULSE/blob/master/README.md">
+      StreamPULSE package</a> for R.
   </p>
 
   <form id="dnld" action="/_getcsv" method="POST" class="form-horizontal">
       <select placeholder="Choose site(s)" id="dsite" name="site" multiple>
         <option value="">Choose site(s)</option>
         {% for sv, sn, sd, ed, va in sites %}
-        <option value="{{sv}}">{{sn}}</option>
+          <option value="{{sv}}">{{sn}}</option>
         {% endfor %}
       </select>
     <input type="hidden" name="sites" value="">
@@ -151,39 +153,26 @@
 
 <script>
 var dsite = $('#dsite').selectize({
-    delimiter: ',',
-    persist: false,
-    create: function(input) { return { value: input,text: input } }
+  delimiter: ',',
+  persist: false,
+  create: function(input) { return { value: input,text: input } }
 });
 var dsitei = dsite[0].selectize;
 
-var powell_sites = {{ powell_sites|safe }}
+var powell_sites = {{ powell_sites|safe }};
+var sites = {{ sites|safe }}; //might have to change list back to tuple, or something similar
 
 $('input[name=optradio]').change(function(){
   var selected_dsource = $('input[name=optradio]:checked').val();
-  dsitei.clearOptions()
-  $('#datepicker').val('')
-  dsitei.addOption({'value':'', 'text':'Choose site(s)'});
-  for(var i = 0; i < powell_sites.length; i++){
-    dsitei.addOption({'value':powell_sites[i][0],
-      'text':powell_sites[i][1]});
+  dsitei.clearOptions();
+  $('#datepicker').val('');
+  $("#dnld_vars").empty();
+  // dsitei.addOption({'value':'', 'text':'Choose site(s)'});
+  src = selected_dsource == 'pow' ? powell_sites : sites;
+  for(var i = 0; i < src.length; i++){
+    dsitei.addOption({'value':src[i][0], 'text':src[i][1]});
   }
-  // {% for sv, sn, sd, ed, va in powell_sites %}
-  //   $('#dsite')[0].selectize.addOption({'value':years[i], 'text':years[i]});
-  // {% endfor %}
 });
-// <select placeholder="Choose site(s)" id="dsite" name="site" multiple>
-//   <option value="">Choose site(s)</option>
-//   {% for sv, sn, sd, ed, va in sites %}
-//   <option value="{{sv}}">{{sn}}</option>
-//   {% endfor %}
-// </select>
-// removeOption(<value>)
-// clearOptions()
-// for(var i in years){
-//   dyear[0].selectize.addOption({'value':years[i], 'text':years[i]});
-//   // $('#dyear').append("<option value='" + years[i] + "' selected>" + years[i] + "</option>"); //if it werent a selectize select
-// }
 
 var sitedict = {}
 {% for sv, sn, sd, ed, va in sites %}
@@ -192,38 +181,40 @@ var sitedict = {}
 
 $('#dsite').change(function(){
   //http://www.daterangepicker.com/
-  var siteinfo = sitedict[$('select[name=site]').val()];
-  // var sitedates = siteinfo['dates']
-  var startdates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][0]) });
-  var enddates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][1]) });
-  var startdate = new Date(Math.min.apply(null, startdates));
-  var enddate = new Date(Math.max.apply(null, enddates));
-  sitedates = [startdate.toISOString().slice(0,10), enddate.toISOString().slice(0,10)]
+  if($('#dsite').val().length){
+    var siteinfo = sitedict[$('select[name=site]').val()];
+    // var sitedates = siteinfo['dates']
+    var startdates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][0]) });
+    var enddates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][1]) });
+    var startdate = new Date(Math.min.apply(null, startdates));
+    var enddate = new Date(Math.max.apply(null, enddates));
+    sitedates = [startdate.toISOString().slice(0,10), enddate.toISOString().slice(0,10)]
 
-  $('#datepicker').daterangepicker({
-    locale: {format: 'YYYY-MM-DD', separator: ' to '},
-    startDate: sitedates[0],
-    endDate: sitedates[1],
-    minDate: sitedates[0],
-    maxDate: sitedates[1],
-    autoApply: true,
-    opens: 'left'
-  });
+    $('#datepicker').daterangepicker({
+      locale: {format: 'YYYY-MM-DD', separator: ' to '},
+      startDate: sitedates[0],
+      endDate: sitedates[1],
+      minDate: sitedates[0],
+      maxDate: sitedates[1],
+      autoApply: true,
+      opens: 'left'
+    });
 
-  // $('#start_date').text( '"'+$("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD')+'"' );
-  // $('#end_date').text( '"'+$("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD')+'"' );
+    // $('#start_date').text( '"'+$("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD')+'"' );
+    // $('#end_date').text( '"'+$("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD')+'"' );
 
-  $('#dnld input[name=startDate]').val(sitedates[0]);
-  $('#dnld input[name=endDate]').val(sitedates[1]);
-  $('#dnld input[name=sites]').val($('select[name=site]').val().join());
-  $("#dnld_vars").empty();
-  // var sitevars = siteinfo['vars'].split(",")
-  // get all variables in all sites
-  var sitevars = $('select[name=site]').val().map(function(x){ return sitedict[x]['vars'].split(",") }).reduce(function(a,b){ return a.concat(b) })
-  // get unique variables in list
-  var uvars = sitevars.filter(function(item, i, ar){ return ar.indexOf(item) === i; }).sort()
-  for (var i = 0; i < uvars.length; ++i) {
-      $('#dnld_vars').append('<input type="checkbox" id="variables" value="'+uvars[i]+'" checked> '+uvars[i]+'<br>');
+    $('#dnld input[name=startDate]').val(sitedates[0]);
+    $('#dnld input[name=endDate]').val(sitedates[1]);
+    $('#dnld input[name=sites]').val($('select[name=site]').val().join());
+    $("#dnld_vars").empty();
+    // var sitevars = siteinfo['vars'].split(",")
+    // get all variables in all sites
+    var sitevars = $('select[name=site]').val().map(function(x){ return sitedict[x]['vars'].split(",") }).reduce(function(a,b){ return a.concat(b) })
+    // get unique variables in list
+    var uvars = sitevars.filter(function(item, i, ar){ return ar.indexOf(item) === i; }).sort()
+    for (var i = 0; i < uvars.length; ++i) {
+        $('#dnld_vars').append('<input type="checkbox" id="variables" value="'+uvars[i]+'" checked> '+uvars[i]+'<br>');
+    }
   }
 
 });

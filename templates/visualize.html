@@ -4,8 +4,23 @@
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
     <h1>Visualize Input Data</h1>
-    <br>
+    <br><br>
     <!-- <p class="lead">Use this interface to rapidly preview data and view provisional model estimates.<p> -->
+
+    <p class="lead">Select data source. This populates the site dropdown.<p>
+    <div class="radio text-left" style='margin-left:10px'>
+      <label>
+        <input type="radio" name="optradio" value='sp' checked>
+        StreamPULSE + NEON [<a href='http://data.neoninc.org/home'>link</a>]
+      </label>
+    </div>
+    <div class="radio text-left" style='margin-left:10px'>
+      <label><input type="radio" name="optradio" value='pow'>
+        Powell Center metabolism synthesis
+        [<a href='https://www.nature.com/articles/sdata2018292'>link</a>]
+      </label>
+    </div>
+    <br><br>
 
     <form id="viz">
       <select placeholder="Choose a site" id="dsite" name="site">
@@ -112,7 +127,7 @@
 <script>
 var avail_mods = {{ avail_mods|safe }}
 
-$('#dsite').selectize({
+var dsite = $('#dsite').selectize({
     delimiter: ',',
     persist: false,
     create: function(input) {
@@ -122,22 +137,61 @@ $('#dsite').selectize({
         }
     }
 });
+var dsitei = dsite[0].selectize;
+
+var powell_sites = {{ powell_sites|safe }};
+var sites = {{ sites|safe }};
 
 var sitedict = {}
 {% for sv, sn, sd, ed, va in sites %}
   sitedict['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
 {% endfor %}
 
+var sitedictP = {}
+{% for sv, sn, sd, ed, va in powell_sites %}
+  sitedictP['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
+{% endfor %}
+
+$('input[name=optradio]').change(function(){
+  var selected_dsource = $('input[name=optradio]:checked').val();
+  dsitei.clearOptions();
+  $('#datepicker').val('');
+  $("#viz_vars").empty();
+  src = selected_dsource == 'pow' ? powell_sites : sites;
+  for(var i = 0; i < src.length; i++){
+    dsitei.addOption({'value':src[i][0], 'text':src[i][1]});
+  }
+});
+
 $('#dsite').change(function(){
+
   //http://www.daterangepicker.com/
   $('#graphcontrol').hide();
+  $("#graphs").empty();
+  $("#viz_vars").empty();
+  $('#backgraphlist').find('option').remove().end() //could use .empty()?
+    .append('<option value="None" selected>None</option>');
 
-  var siteinfo = sitedict[$('select[name=site]').val()];
+  selected_site = $('select[name=site]').val()
+  if(selected_site == ''){
+    $('#fullrange').hide();
+    $('#loadtime_msg').hide();
+    $('#selectvarp').hide();
+    return
+  }
+
+  var selected_dsource = $('input[name=optradio]:checked').val();
+  if(selected_dsource == 'pow'){
+    var siteinfo = sitedictP[selected_site];
+  } else {
+    var siteinfo = sitedict[selected_site];
+  }
+  // var siteinfo = sitedict[$('select[name=site]').val()];
   var sitedates = siteinfo['dates']
 
   //display the full available date range
   $("#fullrange").empty().append("Full available time range:<br>" +
-    sitedates[0] + " to " + sitedates[1]);
+    sitedates[0] + " to " + sitedates[1]).show();
 
   //used below: show most recent year unless there isn't a full year; then full range
   min_date = new Date(sitedates[0]);
@@ -263,7 +317,9 @@ $(function(){
     dat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');//$('#startDate').datepicker().val();
     dat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');//$('#endDate').datepicker().val();
     dat['variables'] = $('#variables:checked').map(function() { return this.value; }).get();
+    dat['source'] = $('input[name=optradio]:checked').val();
     // $('#vizspecs input[name=variables]').val( $('#variables:checked').map(function() { return this.value; }).get() );
+
     $.ajax({
       type: 'POST',
       url:'/_getviz',
@@ -376,6 +432,7 @@ $('body').ready(function(){
       var requested_v = 'H'
     }
     dat['site'] = $('#dsite').val()
+    dat['source'] = $('input[name=optradio]:checked').val();
 
     d3.select('#' + current_plot + 'rightaxis').attr("display", "");
 

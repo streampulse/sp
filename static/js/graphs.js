@@ -195,7 +195,8 @@ function Plots(variables, data, flags, outliers, page){
       $('#viz_vars').children('#variables').each(function(){
         fullvarlist.push($(this).val())
       })
-      var sitecode = dsite.selectize.getValue()
+      var sitecode = dsite.val()
+      // var sitecode = dsite.selectize.getValue()
       var model_exists = avail_mods.includes(sitecode) ? true : false
 
       svg.selectAll(".vdot")

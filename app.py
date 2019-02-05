@@ -2376,8 +2376,13 @@ def download():
     sitedata.enddate = sitedata.enddate.apply(lambda x:
         x.strftime('%Y-%m-%d'))
     sitedata.name = sitedata.region + " - " + sitedata.name
-    dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
-    sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
+    dvv = sitedata[['regionsite','name','startdate','enddate','variable']]
+    dvv.iloc[:,0:4] = dvv.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvv = dvv.values
+    sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
+    # sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
+    for i in xrange(len(sitedict)):
+        sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
     #separating powell/sp data could be final step to save some time, but
     #i'm allowing reduncancy here because the execution time cost is lower than
@@ -2578,15 +2583,44 @@ def visualize():
     sitedata.enddate = sitedata.enddate.apply(lambda x:
         x.strftime('%Y-%m-%d'))
     sitedata.name = sitedata.region + " - " + sitedata.name
-    dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
-    sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
+    # dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
+    # sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
+    dvv = sitedata[['regionsite','name','startdate','enddate','variable']]
+    dvv.iloc[:,0:4] = dvv.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvv = dvv.values
+    sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
+    for i in xrange(len(sitedict)):
+        sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
-    #get set of sites for which models have been fit
+    #separating powell/sp data could be final step to save some time, but
+    #i'm allowing reduncancy here because the execution time cost is lower than
+    #the cost of reorganization
+    sitedataP = pd.read_sql("select region, site, name, variableList " +\
+        "as variable, firstRecord as startdate, lastRecord as enddate " +\
+        "from site where `by` = '-902' and variableList is not NULL;", db.engine)
+    sitedataP['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedataP.region,
+        sitedataP.site)]
+
+    #powell data: reformat and filter columns; return data as nested lists
+    sitedataP.variable = sitedataP.variable.apply(lambda x: x.split(','))
+    sitedataP.startdate = sitedataP.startdate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataP.enddate = sitedataP.enddate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataP.name = sitedataP.region + " - " + sitedataP.name
+    dvvP = sitedataP[['regionsite','name','startdate','enddate','variable']]
+    dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvvP = dvvP.values
+    sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
+    for i in xrange(len(sitedictP)):
+        sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
+
+    #get set of sites for which models have been fit (for overlays)
     outputs = os.listdir(cfg.RESULTS_FOLDER)
     avail_mods = list(set([o[7:len(o) - 9] for o in outputs if o[0:3] == 'mod']))
 
     return render_template('visualize.html', sites=sitedict,
-        avail_mods=avail_mods)
+        powell_sites=sitedictP, avail_mods=avail_mods)
 
 @app.route('/_getgrabvars', methods=["POST"])
 def getgrabvars():
@@ -2651,14 +2685,16 @@ def getvgrabviz():
 def interquartile():
 
     var = request.json['variable']
+    dsource = request.json['source']
+    src = 'powell' if dsource == 'pow' else 'data'
     region, site = request.json['site'].split('_')
     # region='VT'; site='Pass'; var='DO_mgL'
 
     if(var not in ['ER', 'GPP']):
         pre_agg = pd.read_sql("select concat(mid(DateTime_UTC, 6, 5)," +\
             "'T') as " +\
-            "time, value as val from data " +\
-            "where region='" + region + "' and site='" + site +\
+            "time, value as val from " + src +\
+            " where region='" + region + "' and site='" + site +\
             "' and variable='" + var + "';", db.engine)
     else:
         outputs = os.listdir(cfg.RESULTS_FOLDER)
@@ -2709,18 +2745,31 @@ def getviz():
     startDate = request.json['startDate']
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
+    dsource = request.json['source']
+    src = 'powell' if dsource == 'pow' else 'data'
     # region='NC'; site='Eno'; startDate='2016-10-21'; endDate='2016-10-22'; variables=['DO_mgL','WaterTemp_C','Light_lux']
 
     #this block shouldnt be necessary once data leveling is in place.
     #you'll then be able to restore the block below, unless we still
     #want to incorporate detailed flag info then, which I suppose we might
-    sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
-        "data.variable, data.value, data.flag as flagid, flag.flag, " +\
-        "flag.comment from data left join flag on data.flag=flag.id where " +\
-        "data.region='" + region + "' and data.site='" + site +\
-        "' and data.DateTime_UTC>'" + startDate + "' " +\
-        "and data.DateTime_UTC<'" + endDate + "' " +\
-        "and data.variable in ('" + "', '".join(variables) + "')"
+    # sqlq_sp = "select data.region, data.site, data.DateTime_UTC, " +\
+    #     "data.variable, data.value, data.flag as flagid, flag.flag, " +\
+    #     "flag.comment from data left join flag on data.flag=flag.id where " +\
+    #     "data.region='" + region + "' and data.site='" + site +\
+    #     "' and data.DateTime_UTC>'" + startDate + "' " +\
+    #     "and data.DateTime_UTC<'" + endDate + "' " +\
+    #     "and data.variable in ('" + "', '".join(variables) + "')"
+
+    sqlq = "select " + src + ".region, " + src + ".site, " + src + ".DateTime_UTC, " +\
+        src + ".variable, " + src + ".value, " + src + ".flag as flagid, flag.flag, " +\
+        "flag.comment from " + src + " left join flag on " + src + ".flag=flag.id where " +\
+        src + ".region='" + region + "' and " + src + ".site='" + site +\
+        "' and " + src + ".DateTime_UTC>'" + startDate + "' " +\
+        "and " + src + ".DateTime_UTC<'" + endDate + "' " +\
+        "and " + src + ".variable in ('" + "', '".join(variables) + "')"
+
+    # sqlq = sqlq_powell if dsource == 'pow' else sqlq_sp
+
     xx = pd.read_sql(sqlq, db.engine)
     # xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs so bad datapoints dont plot
     xx = xx[xx.flag != 'Bad Data'] #instead, just remove bad data rows

@@ -22,7 +22,7 @@ sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
 
 #update variableList and coverage columns in site table
 for u in sites:
-    with open('site_update_stored_procedure.sql', 'r') as f:
+    with open('site_update_stored_procedure_powell.sql', 'r') as f:
         t = f.read()
     t = t.replace('RR', u.split('_')[0])
     t = t.replace('SS', u.split('_')[1])
