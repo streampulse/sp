@@ -18,6 +18,9 @@ cur.execute("select count(id) as n from user")
 nusers = int(cur.fetchone()[0])
 cur.execute("select count(id) as n from data")
 nobs = int(cur.fetchone()[0])
+cur.execute("select count(id) as n from powell")
+nobs_powell = int(cur.fetchone()[0])
+nobs = nobs + nobs_powell
 cur.execute("select count(id) as n from site")
 nsites = int(cur.fetchone()[0])
 

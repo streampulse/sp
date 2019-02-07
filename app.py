@@ -3114,11 +3114,14 @@ def api():
         return jsonify(error='This site is private and requires a valid user token.')
 
     #assemble sql queries for data and metadata
+    is_powell_site = re.match('nwis-[0-9]+', sit)
+    src = 'powell' if is_powell_site else 'data'
+
     ss = []; ss2 = []
     for site in sites:
         r,s = site.split("_")
         ss.append("(region='" + r + "' and site='" + s + "') ")
-        ss2.append("(data.region='" + r + "' and data.site='" + s + "') ")
+        ss2.append("(" + src + ".region='" + r + "' and " + src + ".site='" + s + "') ")
 
     qs = "or ".join(ss)
     qs2 = "or ".join(ss2)
@@ -3126,18 +3129,18 @@ def api():
     meta = pd.read_sql("select region, site, name, latitude as lat, " +\
         "longitude as lon, usgs as usgsid from site where " + qs, db.engine)
 
-    sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
-        "data.variable, data.value, flag.flag as flagtype, flag.comment as " +\
-        "flagcomment from data left join flag on data.flag = flag.id where " +\
+    sqlq = "select " + src + ".region, " + src + ".site, " + src + ".DateTime_UTC, " +\
+        src + ".variable, " + src + ".value, flag.flag as flagtype, flag.comment as " +\
+        "flagcomment from " + src + " left join flag on " + src + ".flag = flag.id where " +\
         qs2
 
     if startDate is not None:
-        sqlq = sqlq+"and data.DateTime_UTC>'"+startDate+"' "
+        sqlq = sqlq + "and " + src + ".DateTime_UTC > '" + startDate + "' "
     if endDate is not None:
-        sqlq = sqlq+"and data.DateTime_UTC<'"+endDate+"' "
+        sqlq = sqlq + "and " + src + ".DateTime_UTC < '" + endDate + "' "
     if variables is not None:
         vvv = variables.split(",")
-        sqlq = sqlq+"and data.variable in ('"+"', '".join(vvv)+"')"
+        sqlq = sqlq + "and " + src + ".variable in ('" + "', '".join(vvv) + "')"
 
     #read in data as df; format it
     xx = pd.read_sql(sqlq, db.engine)
@@ -3236,6 +3239,8 @@ def query_available_data():
     variable = request.args.get('variable')
     region = request.args.get('region')
     site = request.args.get('site')
+    powell = request.args.get('powell')
+    powell = True if powell == 'TRUE' else False
 
     #error checks (more in R code)
     if variable not in variables and variable is not None and variable != 'all':
@@ -3339,8 +3344,12 @@ def query_available_data():
 
     #site code and variable supplied = requesting date range for that variable
     if startDate is None and region is not None and variable is not None:
+
+        is_powell_site = re.match('nwis-[0-9]+', site)
+        src = 'powell' if is_powell_site else 'data'
+
         r = pd.read_sql("select min(DateTime_UTC) as firstRecord, " +\
-            "max(DateTime_UTC) as lastRecord from data where " +\
+            "max(DateTime_UTC) as lastRecord from " + src + " where " +\
             "region='" + region + "' and site='" + site +\
             "' and variable='" + variable + "';", db.engine)
         if list(r.firstRecord):
@@ -3352,13 +3361,17 @@ def query_available_data():
 
     #variable and dates supplied = requesting sites
     if startDate is not None and region is None and variable is not None:
+
+        src = 'powell' if powell else 'data'
+
         r = pd.read_sql("select distinct site.region, site.site, site.latitude, " +\
             "site.longitude, site.usgs as usgsGage, site.addDate, site.firstRecord, " +\
             "site.lastRecord, site.contact, site.contactEmail, " +\
-            "site.embargo as embargoDaysLeft from data left join site on (data.region=site.region and " +\
-            "data.site=site.site) where " +\
-            "data.DateTime_UTC >='" + startDate + "' and data.DateTime_UTC >='" +\
-             endDate + "' and data.variable='" + variable + "';", db.engine)
+            "site.embargo as embargoDaysLeft from " + src + " left join site on (" +\
+            src + ".region=site.region and " +\
+            src + ".site=site.site) where " +\
+            src + ".DateTime_UTC >='" + startDate + "' and " + src + ".DateTime_UTC >='" +\
+             endDate + "' and " + src + ".variable='" + variable + "';", db.engine)
         if list(r.region):
             r = clean_query_response(r)
             return jsonify(sites=r.to_dict(orient='records'))
@@ -3374,10 +3387,21 @@ def query_available_results():
     site = request.args.get('site')
     year = request.args.get('year')
 
+    #extract region, site, year components of each model object (sp and powell)
     resdir = app.config['RESULTS_FOLDER']
     d = os.listdir(resdir)
     d = [x for x in d if x[0:6] == 'modOut']
     regsiteyr = [re.match('\w+_(\w+)_(\w+)_(\w+).rds', x).groups() for x in d]
+
+    resdir_powell = resdir[0: len(resdir) - 4] + 'powell_data/shiny_lists'
+    dP = os.listdir(resdir_powell)
+    regsiteyrP = []
+    # x = dP[0]
+    for x in dP:
+        rx = re.match('(\w+)_(\w+)_([0-9]+).rds', x)
+        regsiteyrP.append((rx.group(1), 'nwis-' + rx.group(2), rx.group(3)))
+    regsiteyr.extend(regsiteyrP)
+    # regsiteyrP = [re.match('(\w+)_(\w+)_([0-9]+).rds', x).groups() for x in dP]
 
     #error checks (more in R code)
     regsites = pd.read_sql("select distinct region, site from site;",
@@ -3437,9 +3461,23 @@ def request_results():
 
     #pull in requests
     # regionsite=['NC_Eno']; year='2017'
+    # regionsite = ['NE_nwis-06461500']; year='2014'
     regionsite = [request.args.get('sitecode')]
     year = request.args.get('year')
-    requested_model = 'modOut_' + regionsite[0] + '_' + year + '.rds'
+
+    #select appropriate model result folder, depending on powell/sp
+    rx = re.match('([a-zA-z]{2})_nwis-([0-9]+)', regionsite[0])
+    resdir = app.config['RESULTS_FOLDER']
+    if rx:
+        resdir = resdir[0: len(resdir) - 4] + 'powell_data/shiny_lists'
+        region = rx.group(1)
+        site = rx.group(2)
+        requested_model = region + '_' + site + '_' + year + '.rds'
+        site_prefix = 'nwis-'
+    else:
+        requested_model = 'modOut_' + regionsite[0] + '_' + year + '.rds'
+        region, site = regionsite[0].split('_')
+        site_prefix = ''
 
     #user auth
     if request.headers.get('Token') is not None:
@@ -3451,8 +3489,6 @@ def request_results():
         return jsonify(error='This site is private and requires a valid user token.')
 
     #split region and site; pull in list of model result filenames
-    region, site = regionsite[0].split('_')
-    resdir = app.config['RESULTS_FOLDER']
     mods_avail = os.listdir(resdir)
 
     #error checks (more in R code)
@@ -3464,6 +3500,7 @@ def request_results():
         return jsonify(error='Unknown region requested.')
     if site is not None:
         sites_at_region = regsites[regsites.region == region].site.tolist()
+        site = site_prefix + site
         if site not in sites_at_region:
             return jsonify(error='No site "' + site + '" found for region "' +\
                 region + '".')
@@ -3493,7 +3530,21 @@ def request_predictions():
     #pull in requests
     regionsite = [request.args.get('sitecode')]
     year = request.args.get('year')
-    requested_model = 'predictions_' + regionsite[0] + '_' + year + '.rds'
+
+    #select appropriate model result folder, depending on powell/sp
+    rx = re.match('([a-zA-z]{2})_nwis-([0-9]+)', regionsite[0])
+    resdir = app.config['RESULTS_FOLDER']
+    if rx:
+        resdir = resdir[0: len(resdir) - 4] + 'powell_data/shiny_lists'
+        region = rx.group(1)
+        site = rx.group(2)
+        requested_model = region + '_' + site + '_' + year + '.rds'
+        site_prefix = 'nwis-'
+    else:
+        requested_model = 'predictions_' + regionsite[0] + '_' + year + '.rds'
+        region, site = regionsite[0].split('_')
+        site_prefix = ''
+    # requested_model = 'predictions_' + regionsite[0] + '_' + year + '.rds'
 
     #user auth
     if request.headers.get('Token') is not None:
@@ -3505,8 +3556,6 @@ def request_predictions():
         return jsonify(error='This site is private and requires a valid user token.')
 
     #split region and site; pull in list of model result filenames
-    region, site = regionsite[0].split('_')
-    resdir = app.config['RESULTS_FOLDER']
     mods_avail = os.listdir(resdir)
 
     #error checks (more in R code)
@@ -3518,6 +3567,7 @@ def request_predictions():
         return jsonify(error='Unknown region requested.')
     if site is not None:
         sites_at_region = regsites[regsites.region == region].site.tolist()
+        site = site_prefix + site
         if site not in sites_at_region:
             return jsonify(error='No site "' + site + '" found for region "' +\
                 region + '".')
