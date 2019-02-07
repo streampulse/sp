@@ -3239,8 +3239,8 @@ def query_available_data():
     variable = request.args.get('variable')
     region = request.args.get('region')
     site = request.args.get('site')
-    powell = request.args.get('powell')
-    powell = True if powell == 'TRUE' else False
+    # powell = request.args.get('powell')
+    # powell = True if powell == 'TRUE' else False
 
     #error checks (more in R code)
     if variable not in variables and variable is not None and variable != 'all':
@@ -3362,16 +3362,16 @@ def query_available_data():
     #variable and dates supplied = requesting sites
     if startDate is not None and region is None and variable is not None:
 
-        src = 'powell' if powell else 'data'
+        # src = 'powell' if powell else 'data'
 
         r = pd.read_sql("select distinct site.region, site.site, site.latitude, " +\
             "site.longitude, site.usgs as usgsGage, site.addDate, site.firstRecord, " +\
             "site.lastRecord, site.contact, site.contactEmail, " +\
-            "site.embargo as embargoDaysLeft from " + src + " left join site on (" +\
-            src + ".region=site.region and " +\
-            src + ".site=site.site) where " +\
-            src + ".DateTime_UTC >='" + startDate + "' and " + src + ".DateTime_UTC >='" +\
-             endDate + "' and " + src + ".variable='" + variable + "';", db.engine)
+            "site.embargo as embargoDaysLeft from data left join site on (" +\
+            "data.region=site.region and " +\
+            "data.site=site.site) where " +\
+            "data.DateTime_UTC >='" + startDate + "' and data.DateTime_UTC >='" +\
+             endDate + "' and data.variable='" + variable + "';", db.engine)
         if list(r.region):
             r = clean_query_response(r)
             return jsonify(sites=r.to_dict(orient='records'))

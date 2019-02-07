@@ -16,7 +16,7 @@ pw = cfg.MYSQL_PW
 db = sa.create_engine('mysql://root:{0}@localhost/sp'.format(pw))
 session = sa.orm.Session(bind=db.engine)
 
-#get list of NEON sites
+#get list of powell sites
 sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
     "site where `by` = -902;", db.engine).a.tolist()
 
