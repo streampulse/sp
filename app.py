@@ -3724,12 +3724,17 @@ def site_map():
 
     site_data = pd.read_sql('select id, region, site, name, latitude, ' +\
         'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
-        'from site;', db.engine)
+        'from site where `by` != -902;', db.engine)
     site_data.addDate = site_data.addDate.astype('str')
     site_dict = site_data.to_dict('records')
 
-    powell_sites = pd.read_csv('static/map/powell_sites.csv')
-    powell_dict = powell_sites.to_dict('records')
+    powell_data = pd.read_sql('select id, region, site, name, latitude, ' +\
+        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'from site where `by` = -902;', db.engine)
+    powell_data.addDate = powell_data.addDate.astype('str')
+    powell_dict = powell_data.to_dict('records')
+    #powell_sites = pd.read_csv('static/map/powell_sites.csv')
+    #powell_dict = powell_sites.to_dict('records')
 
     return render_template('map.html', site_data=site_dict,
         core_sites=core_sites, powell_sites=powell_dict)

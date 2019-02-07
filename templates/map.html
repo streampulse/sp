@@ -131,6 +131,7 @@
 
     //filter sites without lat/long info (so far only happened with one NEON site)
     site_data = site_data.filter( e => ! isNaN(e.latitude) );
+    powell_sites = powell_sites.filter( e => ! isNaN(e.latitude) );
 
     //process non-powell sites
     for (var p in site_data){
@@ -205,6 +206,36 @@
       );
     }
 
+    //process powell sites
+    for (var p in powell_sites){
+
+      //replace nulls with 'N/A'
+      var pp = powell_sites[p]
+      for (attribute in pp){
+        if (pp[attribute] == null){
+          pp[attribute] = 'N/A';
+        }
+      }
+
+      var circle = L.circleMarker([pp.latitude, pp.longitude], {
+        color: '#474863',
+        weight: 1,
+        fillColor: '#61b876',
+        fillOpacity: 1.0,
+        radius: 5
+      }).addTo(spmap);
+
+      circle.bindPopup(
+        "<b>Site Name: </b>" + pp.name + "<br>" +
+        "<b>Site Code: </b>" + pp.region + "_" + pp.site + "<br>" +
+        "<b>Lat/Long: </b>" + pp.latitude.toFixed(4) + "/" + pp.longitude.toFixed(4) +
+          "<br>" +
+        "<b>USGS Gage ID: </b>" + pp.usgs + "<br>" +
+        "<b>Source: </b>" + "<a href='https://www.nature.com/articles/sdata2018292'" +
+          " target='_blank' rel='noopener noreferrer'>link</a>" + "<br>"
+      );
+    }
+
     //mapclick listener that creates a latlong popup when clicking baselayer
     var popup = L.popup();
     function onMapClick(e) {
@@ -220,7 +251,7 @@
     legend.onAdd = function (spmap) {
 
         var div = L.DomUtil.create('div', 'info legend');
-        div.innerHTML += '<i class="legend" style="background: #white; height=50px; width=50px"></i><strong>Site Type</strong><br>';
+        div.innerHTML += '<i class="legend" style="background: #white; height=50px; width=50px"></i><strong>site type</strong><br>';
         div.innerHTML += '<i class="legend" style="background: #0051ff; height=50px; width=50px"></i>Core (public)<br>';
         div.innerHTML += '<i class="legend" style="background: #8bc3f6; height=50px; width=50px"></i>Leveraged (public)<br>';
         div.innerHTML += '<i class="legend" style="background: gray; height=50px; width=50px"></i>Leveraged (embargoed)<br>';
@@ -231,24 +262,24 @@
 
     legend.addTo(spmap);
 
-    //add powell center synthesis sites
-    for (var p in powell_sites){
-      var pp = powell_sites[p]
-      var circle = L.circleMarker([pp.lat, pp.lon], {
-        color: '#474863',
-        weight: 1,
-        fillColor: '#61b876',
-        fillOpacity: 1.0,
-        radius: 5
-      }).addTo(spmap);
-
-      circle.bindPopup(
-        "<b>Site Name: </b>" + pp.site_name + "<br>" +
-        "<b>Lat/Long: </b>" + pp.lat.toFixed(4) + "/" + pp.lon.toFixed(4) +
-          "<br>" +
-        "<b>Source: </b>" + '<em>Publication pending</em>' + "<br>"
-      );
-    }
+    // //add powell center synthesis sites
+    // for (var p in powell_sites){
+    //   var pp = powell_sites[p]
+    //   var circle = L.circleMarker([pp.lat, pp.lon], {
+    //     color: '#474863',
+    //     weight: 1,
+    //     fillColor: '#61b876',
+    //     fillOpacity: 1.0,
+    //     radius: 5
+    //   }).addTo(spmap);
+    //
+    //   circle.bindPopup(
+    //     "<b>Site Name: </b>" + pp.site_name + "<br>" +
+    //     "<b>Lat/Long: </b>" + pp.lat.toFixed(4) + "/" + pp.lon.toFixed(4) +
+    //       "<br>" +
+    //     "<b>Source: </b>" + '<em>Publication pending</em>' + "<br>"
+    //   );
+    // }
 
   </script>
 

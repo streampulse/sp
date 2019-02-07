@@ -1,5 +1,20 @@
 #Mike's Logbook
 
+
+###thu20190207
+ + updated map to reflect powell data addition
+ + repeated all changes on server. powell import complete
+###wed20190206
+ + updated all query functions in R package so that they work with powell data
+ + updated homepage data counter to work with powell data
+###tue20190205
+ + updated all request functions in R package so that they work with powell data
+###mon20190204
+ + updated input viz page so that it works with powell data
+###fri20190201
+ + moved powell data to separate table; updated download page so that it works with powell data
+###thu20190131
+ + updated sitelist page to work with powell data
 ###tue20190129
  + updated shiny app on server; some small improvements in addition to those made on previous days
  + wrote script for automatically refreshing NEON variable lists and coverage on the sitelist page (daily)
