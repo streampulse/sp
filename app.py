@@ -2430,17 +2430,21 @@ def getcsv():
     endDate = request.form['endDate']
     variables = request.form['variables'].split(",")
     email = request.form.get('email')
+    if re.match('[a-zA-Z]{2}_nwis-[0-9]+', sitenm[0]):
+        src_table = 'powell'
+    else:
+        src_table = 'data'
 
     #deal with user info and login creds
     if current_user.get_id() is None: # not logged in
         uid = None
         if email is not None: # record email address
             elist = open("static/email_list.csv","a")
-            elist.write(email+"\n")
+            elist.write(email + "\n")
             elist.close()
     else: # get logged in email
         uid = int(current_user.get_id())
-        myuser = User.query.filter(User.id==uid).first()
+        myuser = User.query.filter(User.id == uid).first()
         email = myuser.email
 
     # add download stats to db table
@@ -2463,12 +2467,12 @@ def getcsv():
     for s in sitenm:
 
         # get sensor data and flags for site s
-        sqlq = "select data.*, flag.flag as flagtype, flag.comment as " +\
-            "flagcomment from data " +\
-            "left join flag on data.flag=flag.id where concat(data.region, " +\
-            "'_', data.site)='" + s + "' and data.DateTime_UTC > '" +\
-            startDate + "' and data.DateTime_UTC < '" + endDate + "' " +\
-            "and data.variable in ('" + "', '".join(variables) + "');"
+        sqlq = "select " + src_table + ".*, flag.flag as flagtype, flag.comment as " +\
+            "flagcomment from " + src_table +\
+            " left join flag on " + src_table + ".flag=flag.id where concat(" + src_table + ".region, " +\
+            "'_', " + src_table + ".site)='" + s + "' and " + src_table + ".DateTime_UTC > '" +\
+            startDate + "' and " + src_table + ".DateTime_UTC < '" + endDate + "' " +\
+            "and " + src_table + ".variable in ('" + "', '".join(variables) + "');"
         xx = pd.read_sql(sqlq, db.engine)
 
         if len(xx) < 1:
