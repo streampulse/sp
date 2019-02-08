@@ -34,6 +34,8 @@ shinyServer(function(input, output, session){
     js$getHeight05()
 
     #determine which models the user has access to, based on their token
+    #this is just for O2 and metab tab.
+    #having two functions like this was a hasty fix. should be improved.
     viewable_mods = reactive({
 
         input$submit_token
@@ -62,11 +64,75 @@ shinyServer(function(input, output, session){
                 paste('Authorized for', length(usersites), 'StreamPULSE sites.')
             })
 
-            if(input$datasourceMP == 'StreamPULSE' ||
-                    input$datasource == 'StreamPULSE'){
-                updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
-                    selected='', options=list(placeholder='No site selected'))
+            if(input$datasource == 'StreamPULSE'){
+            # if(input$datasourceMP == 'StreamPULSE' ||
+            #         input$datasource == 'StreamPULSE'){
+                # updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+                #     selected='', options=list(placeholder='No site selected'))
                 updateSelectizeInput(session, 'input_site', choices=sitenames,
+                    selected='', options=list(placeholder='No site selected'))
+            }
+
+        } else {
+            if(length(usersites) && usersites == ''){
+                output$token_resp = renderText({
+                    'No private site permissions\nassociated with this token.'
+                })
+            } else {
+                if(input$token_input != ''){
+                    output$token_resp = renderText({
+                        'Invalid token.'
+                    })
+                }
+            }
+        }
+
+        dbDisconnect(con)
+
+        if(input$datasource == 'StreamPULSE'){
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        } else {
+            sitenames = sitenmyr_all_pow[,1]
+            siteyears = sitenmyr_all_pow[,2]
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        }
+
+        return(out)
+    })
+
+    #determine which models the user has access to, based on their token
+    #this is just for model performance tab
+    #having two functions like this was a hasty fix. should be improved.
+    viewable_modsMP = reactive({
+
+        input$submit_token
+        # input$datasource
+        # input$datasourceMP
+
+        token = isolate(input$token_input)
+
+        con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
+            username='root', password=pw)
+
+        res = dbSendQuery(con,
+            paste0("SELECT qaqc FROM user WHERE token = '", token, "';"))
+        usersites = dbFetch(res)$qaqc
+
+        dbClearResult(res)
+
+        if(isTruthy(usersites)){
+            usersites = strsplit(usersites, ',')[[1]]
+            authed_sites = c(sitenames_public, usersites)
+            modelnames_authed = intersect(sitenmyr_all[,1], authed_sites)
+            sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_authed,]
+            sitenames = sitenmyr[,1]
+            siteyears = sitenmyr[,2]
+            output$token_resp = renderText({
+                paste('Authorized for', length(usersites), 'StreamPULSE sites.')
+            })
+
+            if(input$datasourceMP == 'StreamPULSE'){
+                updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
                     selected='', options=list(placeholder='No site selected'))
             }
 
@@ -103,7 +169,7 @@ shinyServer(function(input, output, session){
 
         dbDisconnect(con)
 
-        if(input$datasource == 'StreamPULSE'){ #datasourceMP will be same
+        if(input$datasourceMP == 'StreamPULSE'){
             out = list(sitenames=sitenames, siteyears=siteyears)
         } else {
             sitenames = sitenmyr_all_pow[,1]
@@ -161,6 +227,7 @@ shinyServer(function(input, output, session){
     #trigger updates if user submits a token
     observeEvent(input$submit_token, {
         viewable_mods()
+        viewable_modsMP()
 
         counter2 = input$hidden_counter2
         updateTextInput(session, 'hidden_counter2', label=NULL,
@@ -174,9 +241,9 @@ shinyServer(function(input, output, session){
     #refresh model performance page if user toggles data source
     observeEvent(input$datasourceMP, {
 
-        updateRadioButtons(session, 'datasource', selected=input$datasourceMP)
+        # updateRadioButtons(session, 'datasource', selected=input$datasourceMP)
         # MPcounter2 = input$MPhidden_counter2
-        v = viewable_mods()
+        v = viewable_modsMP()
         sitenames = v$sitenames
         #
         # updateTextInput(session, 'MPhidden_counter2', label=NULL,
@@ -189,8 +256,8 @@ shinyServer(function(input, output, session){
 
         updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
             selected='', options=list(placeholder='No site selected'))
-        updateSelectizeInput(session, 'input_site', choices=sitenames,
-            selected='', options=list(placeholder='No site selected'))
+        # updateSelectizeInput(session, 'input_site', choices=sitenames,
+        #     selected='', options=list(placeholder='No site selected'))
 
         output$KvER = renderPlot({
             plot(1, 1, type='n', axes=FALSE, xlab='', ylab='')
@@ -213,7 +280,7 @@ shinyServer(function(input, output, session){
     #refresh o2 and metab page if user toggles data source
     observeEvent(input$datasource, {
 
-        updateRadioButtons(session, 'datasourceMP', selected=input$datasource)
+        # updateRadioButtons(session, 'datasourceMP', selected=input$datasource)
         # counter2 = input$hidden_counter2
         v = viewable_mods()
         sitenames = v$sitenames
@@ -226,8 +293,8 @@ shinyServer(function(input, output, session){
             siteyears = sitenmyr_all_pow[,2]
         }
 
-        updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
-            selected='', options=list(placeholder='No site selected'))
+        # updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
+        #     selected='', options=list(placeholder='No site selected'))
         updateSelectizeInput(session, 'input_site', choices=sitenames,
             selected='', options=list(placeholder='No site selected'))
 
@@ -290,7 +357,7 @@ shinyServer(function(input, output, session){
     #same as above, but for model performance page
     observeEvent(input$MPinput_site, {
 
-        MPv = viewable_mods()
+        MPv = viewable_modsMP()
 
         MPregionsite = input$MPinput_site
         MPyear = input$MPinput_year
@@ -400,7 +467,7 @@ shinyServer(function(input, output, session){
         input$MPhidden_counter
     }, {
 
-        MPv = viewable_mods()
+        MPv = viewable_modsMP()
 
         MPyear = input$MPinput_year
         MPregionsite = input$MPinput_site
@@ -410,7 +477,7 @@ shinyServer(function(input, output, session){
         if(MPyear != '' && MPlegit_year){
 
             #read in model fit and prediction objects
-            if(input$datasource == 'StreamPULSE'){
+            if(input$datasourceMP == 'StreamPULSE'){
                 MPmodOut_ind = grep(paste0('modOut_', MPregionsite, '_', MPyear,
                     '.*'), fnames)
                 MPpredictions_ind = grep(paste0('predictions_', MPregionsite,
@@ -790,7 +857,7 @@ shinyServer(function(input, output, session){
 
                 output$KvQ = renderPlot({
                     if(!is.null(mod_out)){
-                        is_powell = ifelse(input$datasource == 'StreamPULSE',
+                        is_powell = ifelse(input$datasourceMP == 'StreamPULSE',
                             FALSE, TRUE)
                         KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
                             slicey=slices$daily_slice, powell=is_powell)
@@ -834,7 +901,7 @@ shinyServer(function(input, output, session){
         }, height=height40)
 
         output$KvQ = renderPlot({
-            is_powell = ifelse(input$datasource == 'StreamPULSE',
+            is_powell = ifelse(input$datasourceMP == 'StreamPULSE',
                 FALSE, TRUE)
             KvQ_plot(mod_out=mod_out, slicex=slices$data_daily_slice,
                 slicey=slices$daily_slice, powell=is_powell,
