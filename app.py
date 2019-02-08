@@ -2356,7 +2356,7 @@ def download():
     #acquire SP site data and filter rows by authenticated sites
     sitedata = pd.read_sql("select region, site, name, variableList " +\
         "as variable, firstRecord as startdate, lastRecord as enddate " +\
-        "from site where variableList is not NULL;", db.engine)
+        "from site where `by` != '-902' and variableList is not NULL;", db.engine)
     sitedata['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedata.region,
         sitedata.site)]
 
@@ -2563,7 +2563,7 @@ def visualize():
     #acquire site data and filter rows by authenticated sites
     sitedata = pd.read_sql("select region, site, name, variableList " +\
         "as variable, firstRecord as startdate, lastRecord as enddate " +\
-        "from site;", db.engine)
+        "from site where `by` != -902;", db.engine)
     sitedata['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedata.region,
         sitedata.site)]
 

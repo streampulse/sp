@@ -179,13 +179,27 @@ var sitedict = {}
   sitedict['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
 {% endfor %}
 
+var sitedict_powell = {}
+{% for sv, sn, sd, ed, va in powell_sites %}
+  sitedict_powell['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
+{% endfor %}
+
 $('#dsite').change(function(){
   //http://www.daterangepicker.com/
+
   if($('#dsite').val().length){
+    var selected_dsource = $('input[name=optradio]:checked').val();
+    var src_dict = selected_dsource == 'pow' ? sitedict_powell : sitedict;
+
     var siteinfo = sitedict[$('select[name=site]').val()];
     // var sitedates = siteinfo['dates']
-    var startdates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][0]) });
-    var enddates = $('select[name=site]').val().map(function(x){ return new Date(sitedict[x]['dates'][1]) });
+
+    var startdates = $('select[name=site]').val().map(function(x){
+      return new Date(src_dict[x]['dates'][0])
+    });
+    var enddates = $('select[name=site]').val().map(function(x){
+      return new Date(src_dict[x]['dates'][1])
+    });
     var startdate = new Date(Math.min.apply(null, startdates));
     var enddate = new Date(Math.max.apply(null, enddates));
     sitedates = [startdate.toISOString().slice(0,10), enddate.toISOString().slice(0,10)]
@@ -209,9 +223,15 @@ $('#dsite').change(function(){
     $("#dnld_vars").empty();
     // var sitevars = siteinfo['vars'].split(",")
     // get all variables in all sites
-    var sitevars = $('select[name=site]').val().map(function(x){ return sitedict[x]['vars'].split(",") }).reduce(function(a,b){ return a.concat(b) })
+    var sitevars = $('select[name=site]').val().map(function(x){
+      return src_dict[x]['vars'].split(",")
+    }).reduce(function(a,b){
+      return a.concat(b)
+    })
     // get unique variables in list
-    var uvars = sitevars.filter(function(item, i, ar){ return ar.indexOf(item) === i; }).sort()
+    var uvars = sitevars.filter(function(item, i, ar){
+      return ar.indexOf(item) === i;
+    }).sort()
     for (var i = 0; i < uvars.length; ++i) {
         $('#dnld_vars').append('<input type="checkbox" id="variables" value="'+uvars[i]+'" checked> '+uvars[i]+'<br>');
     }
