@@ -1,6 +1,8 @@
 #Mike's Logbook
 
 
+###wed20190213
+ + imported australia data from Mike Grace; currently depth and discharge are daily averages; will have to hook up BASE to model these sites accurately
 ###thu20190207
  + updated map to reflect powell data addition
  + repeated all changes on server. powell import complete
