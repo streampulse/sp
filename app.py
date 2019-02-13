@@ -534,7 +534,7 @@ grab_variables = [
 {'var': 'Mg', 'unit': 'Magnesium (molar)', 'method': ['IC',o]},
 {'var': 'Na', 'unit': 'Sodium (molar)', 'method': ['IC',o]},
 {'var': 'NH4', 'unit': 'Ammonium (molar)', 'method': ['FIA',o]},
-{'var': 'NO3', 'unit': 'Nitrate (molar)', 'method': ['IC','FIA',o]},
+{'var': 'NO3', 'unit': 'Nitrate (+nitrite if FIA; molar)', 'method': ['IC','FIA',o]},
 {'var': 'PO4', 'unit': 'Phosphate (molar)', 'method': ['IC','FIA',o]},
 {'var': 'SiO2', 'unit': 'Silica (molar)', 'method': ['FIA','spectrophotometer',o]},
 {'var': 'SO4', 'unit': 'Sulfate (molar)', 'method': ['IC',o]},

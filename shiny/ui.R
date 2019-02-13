@@ -102,7 +102,7 @@ shinyUI(
                                 style='color:gray; font-size:80%'),
                             htmlOutput('MPtime_slider')
                         ),
-                        p('Click any point to view its date.',
+                        p('Click any point to view its date (a bit finicky at the moment).',
                             style=paste0('color:gray; font-size:80%;')),
                         conditionalPanel(condition="input.MPinput_site != ''",
                             p(paste('*Residuals based on linear relationship',
