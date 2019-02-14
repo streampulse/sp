@@ -35,6 +35,9 @@
             <input type="text" class="form-control" name="sitename{{i}}"
               aria-describedby="Site name" maxlength="50" required>
           </div>
+          <p class='text-muted text-danger'>
+            Only alphanumeric characters (any alphabet), spaces, dashes, and periods allowed.
+          </p>
           <br>
           <div class="input-group input-group-sm">
             <span class="input-group-addon">Latitude</span>
@@ -57,8 +60,11 @@
               <strong>Describe site:</strong> characteristics, instruments,
               dates, personnel, etc.
             </p>
-            <textarea class="form-control" rows="5" name="metadata{{i}}"
-              required></textarea>
+            <textarea class="form-control" rows="5" name="metadata{{i}}" required></textarea>
+            <p class='text-muted'>
+              You may want to copy this text before clicking Submit,
+              so you don't have to retype it in case of an error.
+            </p>
           </div>
           <br>
           <strong>
@@ -72,6 +78,9 @@
               <input type="text" class="form-control" name="contactEmail{{i}}"
                 aria-describedby="Contact email" maxlength="255" required>
           </div>
+          <p class='text-muted text-danger'>
+            Only alphanumeric characters (any alphabet), spaces, and <code>-@._'~</code> allowed.
+          </p>
           <br>
 
           <p>

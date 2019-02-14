@@ -22,9 +22,9 @@ pw = cfg.MYSQL_PW
 db = sa.create_engine('mysql://root:{0}@localhost/sp'.format(pw))
 session = sa.orm.Session(bind=db.engine)
 
-#get list of NEON sites
+#get list of sites
 sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
-    "site where `by` = -900;", db.engine).a.tolist()
+    "site where `by` = -903;", db.engine).a.tolist()
     
 #update variableList and coverage columns in site table
 for u in sites:

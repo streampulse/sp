@@ -37,6 +37,7 @@ from rpy2.robjects import pandas2ri
 import markdown
 import time
 import traceback
+import regex
 
 #another attempt at serverside sessions
 # import pickle
@@ -194,22 +195,6 @@ class Grabdata(db.Model):
             self.DateTime_UTC, self.variable, self.method, self.write_in,
             self.addtl, self.upload_id)
 
-# class Manual(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     region = db.Column(db.String(10))
-#     site = db.Column(db.String(50))
-#     DateTime_UTC = db.Column(db.DateTime)
-#     variable = db.Column(db.String(50))
-#     value = db.Column(db.Float)
-#     def __init__(self, region, site, DateTime_UTC, variable, value):
-#         self.region = region
-#         self.site = site
-#         self.DateTime_UTC = DateTime_UTC
-#         self.variable = variable
-#         self.value = value
-#     def __repr__(self):
-#         return '<Manual %r, %r, %r, %r>' % (self.region, self.site, self.DateTime_UTC, self.variable)
-
 class Flag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     region = db.Column(db.String(10))
@@ -231,28 +216,6 @@ class Flag(db.Model):
         self.by = by
     def __repr__(self):
         return '<Flag %r, %r, %r>' % (self.flag, self.comment, self.startDate)
-
-# class Tag(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     region = db.Column(db.String(10))
-#     site = db.Column(db.String(50))
-#     startDate = db.Column(db.DateTime)
-#     endDate = db.Column(db.DateTime)
-#     variable = db.Column(db.String(50))
-#     tag = db.Column(db.String(50))
-#     comment = db.Column(db.String(255))
-#     by = db.Column(db.Integer) # user ID
-#     def __init__(self, region, site, startDate, endDate, variable, tag, comment, by):
-#         self.region = region
-#         self.site = site
-#         self.startDate = startDate
-#         self.endDate = endDate
-#         self.variable = variable
-#         self.tag = tag
-#         self.comment = comment
-#         self.by = by
-#     def __repr__(self):
-#         return '<Tag %r, %r>' % (self.tag, self.comment)
 
 class Site(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1269,87 +1232,6 @@ def sitelist():
     # return render_template('sitelist.html', dats=html_table)
     return render_template('sitelist.html', powell=powell, neon=neon, sp=sp)
 
-# @app.route('/sitelist_table', methods=["GET"])
-# def sitelist_table():
-#
-#     #pull in all site data
-#     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
-#         'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
-#         'contactEmail as Email, usgs as `USGS gage`, ' +\
-#         'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
-#         'firstRecord, lastRecord from site;', db.engine)
-#
-#     #calculate remaining embargo days
-#     timedeltas = datetime.utcnow() - sitedata.addDate
-#     days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
-#     sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
-#     sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
-#
-#     #format varlist and date range
-#     # sitedata.Variables.apply(lambda x: x.replace(',', ', '))
-#     pd.set_option('display.max_colwidth', 500)
-#     # varcells = sitedata.Variables.apply(lambda x:
-#     #     x if x is None else x.replace(',', ', '))
-#     core_variables = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
-#         'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux']
-#     # varcells = sitedata.Variables.apply(lambda x:
-#     varcells = []
-#     for x in sitedata.Variables:
-#         if x is None:
-#             varcells.append(x)
-#         else:
-#             var_arr = np.asarray(x.split(','))
-#             isCore = np.in1d(var_arr, core_variables)
-#             core = var_arr[isCore]
-#             not_core = var_arr[~isCore]
-#             if any(core):
-#                 core = core[np.argsort(pd.match(core, core_variables))]
-#                 core = ['<strong>' + y + '</strong>' for y in core]
-#             not_core.sort()
-#             var_arr = ', '.join(np.concatenate((core, not_core)))
-#             varcells.append(var_arr)
-#
-#             # var_list = []
-#             # for y in var_arr:
-#             #     var_list.append(y if y not in core else '<strong>' + y +\
-#             #         '</strong>')
-#
-#         # x if x is None else ', '.join([y if y not in core_variables else '<strong>' + y +\
-#         #     '</strong>' for y in x.split(',')]))
-#     for i in xrange(len(varcells)):
-#         if varcells[i] is None:
-#             varcells[i] = '-'
-#             continue
-#         varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
-#             'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
-#             '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
-#             'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
-#     sitedata.Variables = varcells
-#     fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
-#     lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
-#     timerange = fr + ' to ' + lr
-#     sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
-#
-#     #additional arranging and modification of data frame
-#     sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'], axis=1)
-#     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
-#         ascending=True)
-#
-#     #obscure email addresses
-#     sitedata.Email = sitedata.Email.str.replace('@', '[at]')
-#     sitedata_obs = sitedata.copy()
-#     emailless = sitedata_obs.Email == '-'
-#     sitedata_obs.loc[~emailless, 'Email'] = 'Log in to view'
-#     sitedata_obs.loc[~emailless, 'Contact'] = 'Log in to view'
-#
-#     html_table = sitedata.to_html(index=False,
-#         classes=['table', 'table-condensed'], escape=False)
-#     html_table_obs = sitedata_obs.to_html(index=False,
-#         classes=['table', 'table-condensed'], escape=False)
-#
-#     return render_template('sitelist_table.html', dats=html_table,
-#         dats_obs=html_table_obs)
-
 @app.route('/upload_choice')
 def upload_choice():
     return render_template('upload_choice.html')
@@ -1372,7 +1254,7 @@ def series_upload():
 
         #checks
         if 'file' not in request.files:
-            flash('No file part','alert-danger')
+            flash('No file specified.','alert-danger')
             return redirect(request.url)
         ufiles = request.files.getlist("file")
         ufnms = [x.filename for x in ufiles]
@@ -1888,21 +1770,6 @@ def cancelcolumns(): #only used when cancelling series_upload
     flash('Upload cancelled.','alert-primary')
     return redirect(url_for('series_upload'))
 
-# @app.route("/_addmanualdata",methods=["POST"])
-# def manual_upload():
-#     rgn, ste = request.json['site'].split("_")
-#     data = [d for d in request.json['data'] if None not in d] # get all complete rows
-#     dd = pd.DataFrame(data,columns=["DateTime_UTC","variable","value"])
-#     dd['DateTime_UTC'] = pd.to_datetime(dd['DateTime_UTC'],format='%Y-%m-%d %H:%M')
-#     dd['DateTime_UTC'] = pd.DatetimeIndex(dd['DateTime_UTC']).round("15Min")
-#     dd['region'] = rgn
-#     dd['site'] = ste
-#     dd['value'] = pd.to_numeric(dd['value'], errors='coerce')
-#     # region site datetime variable value
-#     dd = dd[['region','site','DateTime_UTC','variable','value']]
-#     dd.to_sql("manual", db.engine, if_exists='append', index=False, chunksize=1000)
-#     return jsonify(result="success")
-
 @app.route("/policy")
 def datapolicy():
     return render_template("datapolicy.html")
@@ -2056,6 +1923,21 @@ def grab_updatedb(xx, fnamelist, replace=False):
         xx = xx.to_dict('records')
         db.session.bulk_insert_mappings(Grabdata, xx)
 
+def sanitize_input_allow_unicode(input):
+    mch = regex.search(ur'[^A-Za-z0-9\p{L} \-\.]', input)
+    out = False if mch else True
+    return out
+
+# def sanitize_input_forbid_unicode(input):
+#     mch = re.search(ur'[^A-Za-z0-9 \-\.]', input)
+#     out = False if mch else True
+#     return out
+
+def sanitize_input_email(input):
+    mch = re.search(r'[^A-Za-z0-9 \-\@\.\_\'\~]', input)
+    out = False if mch else True
+    return out
+
 @app.route("/upload_confirm", methods=["POST"])
 def confirmcolumns():
 
@@ -2065,6 +1947,41 @@ def confirmcolumns():
     cdict = dict([(r['name'], r['value']) for r in cdict])
     fnlong = session.get('fnlong')
     filenamesNoV = session.get('filenamesNoV')
+
+    #sanitize inputs
+    illegal_input = None
+
+    input_is_legal = sanitize_input_email(request.form['contactEmail'])
+    if not input_is_legal:
+        illegal_input = 'contact email'
+
+    input_dict = {'contactName':'contact name', 'lat':'latitude',
+        'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
+    if not illegal_input:
+
+        for i in input_dict.keys():
+            input_is_legal = sanitize_input_allow_unicode(request.form[i])
+            if not input_is_legal:
+                illegal_input = input_dict[i]
+                break
+
+    if illegal_input:
+
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+            [os.remove(f) for f in fnlong]
+        except:
+            pass
+        if illegal_input == 'contact email':
+            msg = Markup('Only alphanumeric characters and @.- _~' +\
+                ' allowed in email address field')
+        else:
+            msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
+                'allowed in ' + illegal_input + ' field.')
+
+        flash(msg, 'alert-danger')
+        return redirect(url_for('series_upload'))
+
 
     try:
 
@@ -2190,6 +2107,36 @@ def grab_confirmcolumns():
         xx = pd.read_csv(fnlong, parse_dates=[0])
         filenameNoV = session.get('filenameNoV')
         region = filenameNoV.split('_')[0]
+
+        #sanitize inputs
+        input_dict = {'contactName':'contact name', 'lat':'latitude',
+            'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
+        illegal_input = None
+
+        for i in xrange(int(request.form['newlen'])):
+
+            input_is_legal = sanitize_input_email(request.form['contactEmail' + str(i)])
+            if not input_is_legal:
+                illegal_input = 'contact email'
+
+            if not illegal_input:
+
+                for j in input_dict.keys():
+                    input_is_legal = sanitize_input_allow_unicode(request.form[j + str(i)])
+                    if not input_is_legal:
+                        illegal_input = input_dict[j]
+                        break
+
+            if illegal_input:
+                if illegal_input == 'contact email':
+                    msg = Markup('Only alphanumeric characters and @.- _~' +\
+                        ' allowed in email address field')
+                else:
+                    msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
+                        'allowed in ' + illegal_input + ' field.')
+
+                flash(msg, 'alert-danger')
+                return redirect(url_for('grab_upload'))
 
         #get list of all filenames on record
         all_fnames = list(pd.read_sql('select distinct filename from grabupload',
@@ -2561,7 +2508,6 @@ def getcsv():
         as_attachment=True, attachment_filename=zipname)
 
 @app.route('/visualize')
-# @login_required
 def visualize():
 
     #acquire site data and filter rows by authenticated sites
@@ -3015,75 +2961,6 @@ def rmflag():
         db.session.commit()
 
     return jsonify(result="success")
-
-# @app.route('/_addna',methods=["POST"])
-# def addna():
-#     rgn, ste = request.json['site'].split("_")
-#     sdt = dtparse.parse(request.json['startDate'])
-#     edt = dtparse.parse(request.json['endDate'])
-#     var = request.json['var']
-#     # add NA flag = 0
-#     flgdat = Data.query.filter(Data.region==rgn,Data.site==ste,Data.DateTime_UTC>=sdt,Data.DateTime_UTC<=edt,Data.variable==var).all()
-#     for f in flgdat:
-#         f.flag = 0
-#     db.session.commit()
-#     # new query
-#     sqlq = "select * from data where region='"+rgn+"' and site='"+ste+"'"
-#     xx = pd.read_sql(sqlq, db.engine)
-#     xx.loc[xx.flag==0,"value"] = None # set NaNs
-#     xx.dropna(subset=['value'], inplace=True) # remove rows with NA value
-#     xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
-#       .set_index(["DateTime_UTC","variable"])\
-#       .drop(['region','site','flag'],axis=1)
-#     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
-#     xx.columns = xx.columns.droplevel()
-#     xx = xx.reset_index()
-#     return jsonify(dat=xx.to_json(orient='records',date_format='iso'))
-
-# @app.route('/cleandemo')
-# def qaqcdemo():
-#     sqlq = "select * from data where region='NC' and site='NHC' and "+\
-#         "DateTime_UTC>'2016-09-23' and DateTime_UTC<'2016-10-07' and "+\
-#         "variable in ('DO_mgL','WaterPres_kPa','CDOM_mV','Turbidity_mV','WaterTemp_C','pH','SpecCond_mScm')"
-#     # sqlq = "select * from data where region='NC' and site='Mud'"
-#     xx = pd.read_sql(sqlq, db.engine) # training data
-#     # xx.loc[xx.flag==0,"value"] = None # set NaNs existing flags
-#     flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],axis=1).to_json(orient='records',date_format='iso') # flag data
-#     variables = list(set(xx['variable'].tolist()))
-#     xx = xx.drop(['id','upload_id'], axis=1).drop_duplicates()\
-#       .set_index(["DateTime_UTC","variable"])\
-#       .drop(['region','site','flag'],axis=1)\
-#       .unstack('variable')
-#     xx.columns = xx.columns.droplevel()
-#     xx = xx.reset_index()
-#         # get anomaly dates
-#     xtrain = xx[(xx.DateTime_UTC<'2016-09-29')].dropna()# training data first portion
-#     clf = svm.OneClassSVM(nu=0.01,kernel='rbf',gamma='auto')
-#     xsvm = xtrain.as_matrix(variables)
-#     clf.fit(xsvm)
-#     # xss.assign(pred=clf.predict(xsvm))
-#     xss = xx.dropna()
-#     xpred = xss.as_matrix(variables)
-#     xss['pred'] = clf.predict(xpred).tolist()
-#     anomaly = xss[xss.pred==-1].DateTime_UTC.to_json(orient='records',date_format='iso')
-#     # Get sunrise sunset data
-#     sxx = pd.read_sql("select * from site where region='NC' and site='NHC'",db.engine)
-#     sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)
-#     edt = max(xx.DateTime_UTC).replace(hour=0, minute=0,second=0,microsecond=0)+timedelta(days=1)
-#     ddt = edt-sdt
-#     lat = sxx.latitude[0]
-#     lng = sxx.longitude[0]
-#     rss = []
-#     for i in range(ddt.days + 1):
-#         rise, sets = list(suns(sdt+timedelta(days=i-1), latitude=lat, longitude=lng).calculate())
-#         if rise>sets:
-#             sets = sets + timedelta(days=1) # account for UTC
-#         rss.append([rise, sets])
-#     #
-#     rss = pd.DataFrame(rss, columns=("rise","set"))
-#     rss.set = rss.set.shift(1)
-#     sunriseset = rss.loc[1:].to_json(orient='records',date_format='iso')
-#     return render_template('qaqcdemo.html', variables=variables, dat=xx.to_json(orient='records',date_format='iso'), sunriseset=sunriseset, flagdat=flagdat, anomaly=anomaly)
 
 @app.route('/api')
 def api():
