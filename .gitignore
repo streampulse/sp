@@ -4,6 +4,7 @@ spv2code
 static/img/*
 static/metadata/*
 static/uploads/*
+static/sitelist.csv
 spenv/*
 config*
 wsgi*
