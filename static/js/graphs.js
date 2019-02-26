@@ -47,7 +47,7 @@ var modeVal = function mode(arr){
     ).pop();
 }
 
-function Plots(variables, data, flags, outliers, page){
+function Plots(variables, data, flags, outliers, page, datamode='sensor'){
 
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -146,9 +146,9 @@ function Plots(variables, data, flags, outliers, page){
         .attr("r", function(d, j){
           if(outliers[vvv] && outliers[vvv].includes(j+1) &&
             vvv != dff[d.DateTime_UTC]) {
-            return 3
+            return datamode == 'sensor' ? 3 : 5
           } else {
-            return 2
+            return datamode == 'sensor' ? 2 : 4
           };
         })
         .classed("flagdot", function(d){
@@ -177,12 +177,12 @@ function Plots(variables, data, flags, outliers, page){
             this_point_flaginfo.comment)
             .style("left", (d3.event.pageX) + "px")
             .style("top", (d3.event.pageY - 28) + "px");
-          })
-          .on("mouseout", function(d) {
-            point_tooltip.transition()
-              .duration(500)
-              .style("opacity", 0);
-          });
+        })
+        .on("mouseout", function(d) {
+          point_tooltip.transition()
+            .duration(500)
+            .style("opacity", 0);
+        });
 
       //non-flagged points shouldnt register mouse activity
       // svg.selectAll('.dot:not(.flagdot)')
@@ -517,7 +517,7 @@ function Interquartile(graph, ranges, req){
 
 }
 
-function BackGraph(vvv, graph, data, type){
+function BackGraph(vvv, graph, data, type, grab=false){
 
   //make new y axis scale and select graph
   var ynew = d3.scaleLinear().range([height, 0]);
@@ -534,9 +534,8 @@ function BackGraph(vvv, graph, data, type){
 
     if(datna != null){
       ynew.domain(d3.extent(datna, function(d) { return d[vvv]; }));
-    }else{
-      ynew.domain(d3.extent(data, function(d) {
-        return d[vvv]; }));
+    } else {
+      ynew.domain(d3.extent(data, function(d) { return d[vvv]; }));
     }
 
     if(type == 'polygon'){
@@ -584,11 +583,28 @@ function BackGraph(vvv, graph, data, type){
 
       cur_foregraph.selectAll(".grabdot")
         .data(data.filter(function(d) { return d[vvv]; }))
-        .enter().append("circle")
-          .attr("class", "grabdot")
+        .enter()
+        .append("circle")
+          .attr('class', function(d){
+            return d.flag == null ? 'grabdot' : 'grabdot_flagged';
+          })
           .attr("cx", grabline.x())
           .attr("cy", grabline.y())
-          .attr("r", 5);
+          .attr("r", 5)
+            .filter('.grabdot_flagged')
+            .on("mouseover", function(d, j) {
+              point_tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+              point_tooltip.html('Flag: ' + d.flag + '<br>Comment: ' + d.comment)
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(d) {
+              point_tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+            });
     }
   }
 
@@ -716,42 +732,13 @@ function brushend(){
   var popupy = document.querySelector('.' + selectedBrush + '_txt')
     .getBoundingClientRect().bottom + window.scrollY;
 
-  //if i run into trouble, reset flags2, flagID2, fcomment2, qaqc2
-  //can eventually comment the part in qaqc.html about #addflag
-
-  html_str = '<form id="qaqc">'
-    + '<div>'
-    + '<select id="flags2" '
-    + 'name="flagID2" class="v_align">'
-    + '<option value="" disabled selected hidden>Choose a flag label</option>'
-    + '<option value="Questionable">Questionable</option>'
-    + '<option value="Interesting">Interesting</option>'
-    + '<option value="Bad Data">Bad Data</option>'
-    + '</select>'
-    + '<input type="text" name="fcomment2" class="form-control v_align" '
-    + 'style="width: 26em;"'
-    + 'placeholder=\'Opt. flag comments (e.g. "Sensor out of water")\'>'
-    + '</div><div>'
-    + '<div class="v_align" style="width: .5em"></div><p class="v_align" style="font: 10pt sans-serif">Apply flag to <br> all selected <br> variables:</p> <input type="checkbox" id="fillbrush" value="yes"><div class="v_align" style="width: .5em"></div>'
-    + '<button class="btn btn-warning btn-xs v_align" type="button" '
-    + 'id="addflag2">Flag all<br />selected points</button>'
-    + '<button class="btn btn-danger btn-xs v_align" type="button" '
-    + 'id="addflag_outl">Flag selected<br />"outliers" (red points)</button>'
-    + '<button class="btn btn-success btn-xs v_align" type="button" '
-    + 'id="rmflag">Remove all<br />selected flags</button>'
-    + '<div class="v_align" style="width: .5em"></div>'
-    + '<button class="btn btn-primary btn-xs v_align" type="button" '
-    + 'id="zoomin">Zoom in to<br />selected region</button>'
-    + '</div>'
-    + '</form>'
-
   if (!dott_undef) {
 
     //get height of popup to offset by later
     var height_of_popupbox = d3.select('body')
       .append('div')
       .attr('class', 'popupbox')
-      .html(html_str).node().getBoundingClientRect().height
+      .html(qaqc_options).node().getBoundingClientRect().height
 
     $('.popupbox').remove();
 
@@ -759,7 +746,7 @@ function brushend(){
     d3.select('body')
       .append('div')
       .attr('class', 'popupbox')
-      .html(html_str)
+      .html(qaqc_options)
       // .html('<button class="btn btn-danger btn-xs v_align" type="button" id="addflag_outl">Flag red<br />points</button>')
       // .style("opacity", 0);
       // .transition()

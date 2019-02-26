@@ -1,8 +1,24 @@
 #Mike's Logbook
 
-
+###20190225-26
+ + built flagging system for grab data
+ + flagged points now shown on grabdata overlay within input viz page
+ + mouseover flagged grab data to view flag information
+###sun20190224
+ + reran NC_NHC model with custom priors, other improvements
+ + users can now modify priors (not yet live)
+###sat20190223
+ + misc R package improvements (user options, defaults, messages, bugfixes)
+###20190219-22
+ + wrote data plan for new macrosystems proposal
+ + fixed NCDC air pressure retriever
+###mon20190218
+ + azure credits finally applied ($22k worth)
+###thu20190214
+ + prompt user before uploading their model output to data portal
 ###wed20190213
  + imported australia data from Mike Grace; currently depth and discharge are daily averages; will have to hook up BASE to model these sites accurately
+ + sanitized upload inputs, allowing diacritics in names and site names
 ###thu20190207
  + updated map to reflect powell data addition
  + repeated all changes on server. powell import complete

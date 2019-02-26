@@ -44,9 +44,11 @@ function(df){
         #these are now potential outliers in addition to the globals above
         sd_scaler = 1.8
         big_jump_prop = Inf
-        while(big_jump_prop > 0.03){
-            sd_scaler = sd_scaler + 0.2
-            big_jump_prop = sum(diffs > sd_scaler * sd) / length(diffs)
+        if(! is.na(sd)){
+            while(big_jump_prop > 0.03){
+                sd_scaler = sd_scaler + 0.2
+                big_jump_prop = sum(diffs > sd_scaler * sd) / length(diffs)
+            }
         }
 
         #get indices of large jumps between successive points

@@ -1,0 +1,36 @@
+<form id="qaqc">
+    <div>
+        <select id="flags2" name="flagID2" class="v_align">
+            <option value="" disabled selected hidden>Choose a flag label</option>
+            <option value="Questionable">Questionable</option>
+            <option value="Interesting">Interesting</option>
+            <option value="Bad Data">Bad Data</option>
+        </select>
+        <input type="text" name="fcomment2" class="form-control v_align" style="width: 26em;"
+        placeholder=\'Opt. flag comments (e.g. "Sensor out of water")\'>
+    </div>
+    <div>
+        <div class="v_align" style="width: .5em">
+        </div>
+        <p class="v_align" style="font: 10pt sans-serif">
+            Apply flag to <br> all selected <br> variables:
+        </p>
+        <input type="checkbox" id="fillbrush" value="yes">
+        <div class="v_align" style="width: .5em">
+        </div>
+        <button class="btn btn-warning btn-xs v_align" type="button" 
+        id="addflag2">Flag all<br />selected points
+        </button>
+        <button class="btn btn-danger btn-xs v_align" type="button" 
+        id="addflag_outl">Flag selected<br />"outliers" (red points)
+        </button>
+        <button class="btn btn-success btn-xs v_align" type="button" 
+        id="rmflag">Remove all<br />selected flags
+        </button>
+        <div class="v_align" style="width: .5em">
+        </div>
+        <button class="btn btn-primary btn-xs v_align" type="button" 
+        id="zoomin">Zoom in to<br />selected region
+        </button>
+    </div>
+</form>

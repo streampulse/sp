@@ -4,9 +4,9 @@
 
 <div class="row">
   <div class="col-md-6 col-md-offset-3">
-    <h1>Clean Sensor Data</h1>
+    <h1>Clean Grab Data</h1>
     <p class="lead">
-      Authorized users can visually clean sensor data here.
+      Authorized users can visually clean manually collected (grab) data here.
       This step is important for assuring data quality.
     </p>
     <br>
@@ -107,15 +107,8 @@
       <div class="panel-body">
         <div class="form-inline">
         Show local night-time: <input type="checkbox" id="shownight" value="no"> &nbsp;
-        <!-- Aggregation: <select class="form-control" id="timescale" name="timescale">
-          <option value="15m" selected>15 minutes (default)</option>
-          <option value="1h">1 hour</option>
-          <option value="1d">1 day</option></select> &nbsp; -->
-        <!-- Fill down marking brush: <input type="checkbox" id="fillbrush" value="yes"> &nbsp; -->
-        Compare variable: <select class="form-control" id="backgraphlist2" name="backgraphlist2"></select>
+        <!-- Compare variable: <select class="form-control" id="backgraphlist2" name="backgraphlist2"></select> -->
         <br>
-        <!-- <button class="btn btn-danger" type="button" id="addna">Set NA values</button> -->
-        <!-- <button class="btn btn-primary" type="button" id="zoomin">Zoom in to selected region</button> -->
         <button class="btn btn-link" type="button" id="zoomreset">Reset zoom</button>
         (or double-click any plot to reset zoom)
         </div>
@@ -164,7 +157,7 @@
   <div class="row">
     <div class="col-md-4 text-left">
       <button class="btn btn-link" type="button" id="panback">
-        << Previous two weeks
+        << Previous time range
       </button>
     </div>
     <div class="col-md-4 text-center">
@@ -214,27 +207,12 @@ $('#dsite').change(function(){
 
   $('#flagging').hide();
 
-  //order site variables by importance for metabolism modeling, then alphabetically
+  //order variables alphabetically
   var sitevars = sitedict[$('select[name=site]').val()].split(',');
-  var reference_vars = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
-    'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux'];
-
-  var metabvars = [];
-  for (var i = sitevars.length; i >= 0; --i) {
-    if(reference_vars.includes(sitevars[i])){
-      metabvars.push(sitevars.splice(i, 1)[0]);
-    }
-  }
-
-  metabvars.sort(function(a, b) {
-    return reference_vars.indexOf(a) - reference_vars.indexOf(b);
-  });
 
   sitevars.sort(function(a, b) {
     return a.toLowerCase().localeCompare(b.toLowerCase());
   });
-
-  sitevars = metabvars.concat(sitevars);
 
   //remove/reset previous display components
   $("#qaqc_vars").empty();
@@ -247,18 +225,11 @@ $('#dsite').change(function(){
   $("#gobutton").show();
   $("#selectvarp").show();
   $("#selectyear").show();
-  // $("#selectvarp").css('display', '');
 
   //populate variable checkboxes and year dropdown
   for (var i = 0; i < sitevars.length; ++i) {
-    if(reference_vars.includes(sitevars[i])){
-      $('#qaqc_vars').append('<input type="checkbox" id="variables" value="' +
-        sitevars[i] + '" checked><span style="font-weight:bold">' +
-        sitevars[i] + '</span><br>');
-    } else {
-      $('#qaqc_vars').append('<input type="checkbox" id="variables" value="' +
-        sitevars[i] + '"> ' + sitevars[i] + '<br>');
-    }
+    $('#qaqc_vars').append('<input type="checkbox" id="variables" value="' +
+      sitevars[i] + '" checked>' + sitevars[i] + '<br>');
   }
 
   var dat = {}
@@ -266,7 +237,7 @@ $('#dsite').change(function(){
 
   $.ajax({
     type: 'POST',
-    url:'/_getqaqcyears',
+    url:'/_getqaqcyears_grab',
     data: JSON.stringify(dat),
     contentType: 'application/json;charset=UTF-8',
     success: function(response){
@@ -285,27 +256,8 @@ $('#dsite').change(function(){
 
 });
 
-// $('#flags2').selectize({
-//     delimiter: ',',
-//     persist: false,
-//     create: function(input) { return {value: input,text: input} }
-// });
-
-// $('#jumptodate').selectize({
-//     delimiter: ',',
-//     persist: false,
-//     create: function(input) { return {value: input,text: input} }
-// });
-
-//$('#tags').selectize({
-//    delimiter: ',',
-//    persist: false,
-//    create: function(input) { return {value: input,text: input} }
-//});
-
 var plotdates;
 var alldata;
-// var alldatna;
 var plotstart;
 var plotend;
 
@@ -329,7 +281,7 @@ $(function(){
 
     $.ajax({
       type: 'POST',
-      url:'/_getqaqc',
+      url:'/_getqaqc_grab',
       data: JSON.stringify(dat),
       contentType: 'application/json;charset=UTF-8',
       success: function(response){
@@ -363,7 +315,7 @@ $(function(){
             });
             flags = JSON.parse(response.flagdat);
             // flagtypes = JSON.parse(response.flagtypes);
-            Plots(variables, data, flags, outliers, "qaqc");
+            Plots(variables, data, flags, outliers, 'qaqc', 'grab');
             if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
             $('#flagging').show();
 
@@ -474,19 +426,19 @@ function async_replot(data){
       //pull in outliers, empty plots, replot
       outliers = response.outliers;
       $("#graphs").empty();
-      Plots(variables, data, flags, outliers, "qaqc");
+      Plots(variables, data, flags, outliers, 'qaqc', 'grab');
       if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
       //show panback if applicable
       if(plotstart != plotdates.slice(-1)[0]){
-        $('#panback').html('<< Previous two weeks')
+        $('#panback').html('<< Previous time range')
       } else {
         $('#panback').html('')
       }
 
       //show panforward if applicable
       if(plotend != plotdates[0]){
-        $('#panforward').html('Next two weeks >>')
+        $('#panforward').html('Next time range >>')
       } else {
         $('#panforward').html('')
       }
@@ -652,30 +604,22 @@ function selection_manager() {
 }
 
 function rm_flag() {
+
   if(undefined != selectedBrush){ // only do this if there is a brush selected
     s = d3.brushSelection(d3.select("#"+selectedBrush).node())
     dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['startDate'] = x.invert(s[0]);
     dat['endDate'] = x.invert(s[1]);
+
     if(brushdown){
       dat['var'] = variables;
       b = d3.selectAll("svg").selectAll(".selected");
-      // if(red_points_only){
-      //   b = b.filter('.maybe_outl');
-      // }
-      // b.classed('dot', function(d) {
-      //   is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-      //   return is_brushed;
-      // });
     } else {
       dat['var'] = [selectedBrush];
       b = d3.select("." + selectedBrush).selectAll(".selected");
-      // if(red_points_only){
-      //   b = b.filter('.maybe_outl');
-      // }
-      // });
     }
+
     b.classed('highlighted', function(d) {
       is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return ! is_brushed;
@@ -684,27 +628,12 @@ function rm_flag() {
       is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return ! is_brushed;
     });
+
     brushdown = false;
-    // dat['comment'] = $("input[name=fcomment2]").val();
-    // dat['flagid'] = $("select[name=flagID2]").val();
-    // if(red_points_only){
-    //   so = d3.select("."+selectedBrush).selectAll(".selected")
-    //   .filter('.maybe_outl').data(); //extract selected outliers
-    //   counter = 0; //prepare for flag_ajax_serial recursion
-    //   dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
-    //   dat['endDate'] = so[counter].DateTime_UTC;
-    // }
-    // if (dat.flagid != null){
-      // if(red_points_only){
-      //   flag_ajax_serial(counter, so);
-      // } else {
     rmflag_ajax();
-      // }
+
     return false;
-    // }
-    // } else {
-    //   $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
-    // }
+
   } else {
     $("#alerts_floating").append(alertbox('warning', 'No points selected.'));
   }
@@ -775,7 +704,7 @@ function add_flag(red_points_only) {
 function flag_ajax_batch(){
   $.ajax({
     type: 'POST',
-    url:'/_addflag',
+    url:'/_addflag_grab',
     data: JSON.stringify(dat),
     contentType: 'application/json;charset=UTF-8',
     // success: function(response){
@@ -795,7 +724,7 @@ function flag_ajax_batch(){
 function flag_ajax_serial(counter, selection){
   $.ajax({
     type: 'POST',
-    url:'/_addflag',
+    url:'/_addflag_grab',
     data: JSON.stringify(dat),
     contentType: 'application/json;charset=UTF-8',
     // success: function(response){
@@ -821,7 +750,7 @@ function flag_ajax_serial(counter, selection){
 function rmflag_ajax(){
   $.ajax({
     type: 'POST',
-    url:'/_rmflag',
+    url:'/_rmflag_grab',
     data: JSON.stringify(dat),
     contentType: 'application/json;charset=UTF-8',
     success: function(){

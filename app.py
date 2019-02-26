@@ -217,6 +217,28 @@ class Flag(db.Model):
     def __repr__(self):
         return '<Flag %r, %r, %r>' % (self.flag, self.comment, self.startDate)
 
+class Grabflag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(10))
+    site = db.Column(db.String(50))
+    startDate = db.Column(db.DateTime)
+    endDate = db.Column(db.DateTime)
+    variable = db.Column(db.String(50))
+    flag = db.Column(db.String(50))
+    comment = db.Column(db.String(255))
+    by = db.Column(db.Integer) # user ID
+    def __init__(self, region, site, startDate, endDate, variable, flag, comment, by):
+        self.region = region
+        self.site = site
+        self.startDate = startDate
+        self.endDate = endDate
+        self.variable = variable
+        self.flag = flag
+        self.comment = comment
+        self.by = by
+    def __repr__(self):
+        return '<Grabflag %r, %r, %r>' % (self.flag, self.comment, self.startDate)
+
 class Site(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     region = db.Column(db.String(10))
@@ -1874,6 +1896,8 @@ def grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict):
 
 def grab_updatedb(xx, fnamelist, replace=False):
 
+    unique_regionsites = xx.drop_duplicates(subset=['region','site'])
+
     if replace:
 
         #get list of existing upload ids and table of flagged obs to be replaced
@@ -1923,6 +1947,22 @@ def grab_updatedb(xx, fnamelist, replace=False):
         xx = xx.to_dict('records')
         db.session.bulk_insert_mappings(Grabdata, xx)
 
+    #create and call stored procedure to update site table with var list and time range
+    unique_regionsites = unique_regionsites.reset_index()
+
+    for i in xrange(unique_regionsites.shape[0]):
+
+        with open('site_update_stored_procedure_grab.sql', 'r') as f:
+            t = f.read()
+            f.close()
+
+        RR, SS = unique_regionsites.loc[i, ['region', 'site']]
+        t = t.replace('RR', RR)
+        t = t.replace('SS', SS)
+
+        db.session.execute(t)
+        db.session.execute('CALL update_site_table_grab();')
+
 def sanitize_input_allow_unicode(input):
     mch = regex.search(ur'[^A-Za-z0-9\p{L} \-\.]', input)
     out = False if mch else True
@@ -1949,39 +1989,40 @@ def confirmcolumns():
     filenamesNoV = session.get('filenamesNoV')
 
     #sanitize inputs
-    illegal_input = None
+    if request.form['existing'] == "no":
 
-    input_is_legal = sanitize_input_email(request.form['contactEmail'])
-    if not input_is_legal:
-        illegal_input = 'contact email'
+        illegal_input = None
 
-    input_dict = {'contactName':'contact name', 'lat':'latitude',
-        'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
-    if not illegal_input:
+        input_is_legal = sanitize_input_email(request.form['contactEmail'])
+        if not input_is_legal:
+            illegal_input = 'contact email'
 
-        for i in input_dict.keys():
-            input_is_legal = sanitize_input_allow_unicode(request.form[i])
-            if not input_is_legal:
-                illegal_input = input_dict[i]
-                break
+        input_dict = {'contactName':'contact name', 'lat':'latitude',
+            'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
+        if not illegal_input:
 
-    if illegal_input:
+            for i in input_dict.keys():
+                input_is_legal = sanitize_input_allow_unicode(request.form[i])
+                if not input_is_legal:
+                    illegal_input = input_dict[i]
+                    break
 
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-            [os.remove(f) for f in fnlong]
-        except:
-            pass
-        if illegal_input == 'contact email':
-            msg = Markup('Only alphanumeric characters and @.- _~' +\
-                ' allowed in email address field')
-        else:
-            msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
-                'allowed in ' + illegal_input + ' field.')
+        if illegal_input:
 
-        flash(msg, 'alert-danger')
-        return redirect(url_for('series_upload'))
+            try:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+                [os.remove(f) for f in fnlong]
+            except:
+                pass
+            if illegal_input == 'contact email':
+                msg = Markup('Only alphanumeric characters and @.- _~' +\
+                    ' allowed in email address field')
+            else:
+                msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
+                    'allowed in ' + illegal_input + ' field.')
 
+            flash(msg, 'alert-danger')
+            return redirect(url_for('series_upload'))
 
     try:
 
@@ -2212,6 +2253,7 @@ def grab_confirmcolumns():
 
             #give uploading user access to these new sites
             add_site_permission(current_user, region, newsitelist)
+            db.session.commit()
 
         #replace user varnames with database varnames; attach upload_id column
         # xx_pre = xx.iloc[:,0:2]
@@ -2597,7 +2639,7 @@ def getgrabvars():
     return jsonify(variables=grabvars, varsandunits=grabvarunits)
 
 @app.route('/_getgrabviz', methods=["POST"])
-def getvgrabviz():
+def getgrabviz():
 
     # region, site = request.json['regionsite'].split(",")[0].split("_")
     region, site = request.json['regionsite'].split("_")
@@ -2605,33 +2647,43 @@ def getvgrabviz():
     endDate = request.json['endDate']
     variables = request.json['grabvars']
     # variables = variables] if len(variables)
-    # region='NC'; site='Eno'; startDate='2017-06-01'; endDate='2017-07-01'; variables=['K']
+    # region='NC'; site='NHC'; startDate='2017-05-01'; endDate='2017-09-01'; variables=['Ca']
 
     if variables[0] != 'None':
 
         #query partly set up for when this function will need to handle multiple vars
-        sqlq = "select DateTime_UTC as date, value from grabdata where region='" +\
-            region + "' and site='" +\
-            site + "' " + "and DateTime_UTC>'" + startDate + "' "+\
-            "and DateTime_UTC<'" + endDate + "' "+\
-            "and variable in ('" + "', '".join(variables) + "');"
-        xx = pd.read_sql(sqlq, db.engine)
-        xx.columns = ['date', variables[0]]
-        # xx.loc[xx.flag==0,"value"] = None # set NaNs
-        # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
-        #     axis=1).to_json(orient='records',date_format='iso') # flag data
-        # xx = xx.drop_duplicates().set_index(["DateTime_UTC","variable"])
+        sqlq = "select grabdata.DateTime_UTC as date, grabdata.value as " + variables[0] +\
+            ", grabdata.flag as flagid, grabflag.flag, grabflag.comment " +\
+            " from grabdata left join grabflag on grabdata.flag=grabflag.id " +\
+            "where grabdata.region='" +\
+            region + "' and grabdata.site='" +\
+            site + "' " + "and grabdata.DateTime_UTC > '" + startDate + "' " +\
+            "and grabdata.DateTime_UTC < '" + endDate + "' " +\
+            "and grabdata.variable in ('" + "', '".join(variables) + "');"
 
-        # xx = xx.loc[xx.variable.isin(variables)]
-        xx = xx.groupby(xx.date).mean().reset_index()
+        xx = pd.read_sql(sqlq, db.engine)
+
+        xx = xx[xx.flag != 'Bad Data'] #remove bad data rows
+        # flagdat = xx[['date', 'flagid', 'flag',
+        #     'comment']].dropna().drop(['flagid'], axis=1)
+        # flagdat.to_json(orient='records', date_format='iso')
+
+        #some datetime-value pairs may be duplicated, and only one is flagged. sending all flag
+        #data results in good points receiving "bad data" labels, so remove those flags
+        xx = xx.drop_duplicates(subset=['date', variables[0]], keep='last')
+
+        #average values across duplicated dates; format for export
+        # xx = xx.drop(['flagid', 'flag', 'comment'], axis=1)
+        # xx = xx.groupby(xx.date).mean().reset_index()
         xx = xx.to_json(orient='records', date_format='iso')
 
     else:
         xx = 'None'
 
-    return jsonify(grabdat=xx, var=variables[0]) #if this ever takes mult vars, change
+    # return jsonify(grabdat=xx, var=variables[0], flagdat=flagdat)
+    return jsonify(grabdat=xx, var=variables[0])
 
-@app.route('/_interquartile',methods=["POST"])
+@app.route('/_interquartile', methods=["POST"])
 def interquartile():
 
     var = request.json['variable']
@@ -2688,7 +2740,7 @@ def interquartile():
 
     return jsonify(dat=quantiles.to_json(orient='values'))
 
-@app.route('/_getviz',methods=["POST"])
+@app.route('/_getviz', methods=["POST"])
 def getviz():
 
     region, site = request.json['site'].split(",")[0].split("_")
@@ -2728,7 +2780,7 @@ def getviz():
 
     #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
     #data results in good points receiving "bad data" labels, so remove those flags
-    flagdat = flagdat[flagdat.flag != 'Bad Data']
+    flagdat = flagdat[flagdat.flag != 'Bad Data'] #redundant, right?
 
     xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
         .set_index(["DateTime_UTC", "variable"])\
@@ -2787,7 +2839,47 @@ def print_log():
     logbook_md = Markup(markdown.markdown(logbook_md))
     return render_template('logbook.html', **locals())
 
-@app.route('/clean')
+@app.route('/clean_choice')
+def clean_choice():
+    return render_template('qaqc_choice.html')
+
+@app.route('/qaqc_grabdata')
+def qaqc_grabdata():
+
+    #acquire site data. filter those without grab data, and those without auth
+    site_df = pd.read_sql("select concat(region, '_', site) as regionsite, " +\
+        "concat(region, ' - ', name) as name, grabVarList as variableList from site;",
+        db.engine)
+    # all_sites = site_df.regionsite.tolist()
+    site_df = site_df[site_df.variableList.notnull()]
+    grab_sites = site_df.regionsite.tolist()
+
+    # grab_sites = pd.read_sql("select distinct concat(region, '_', site) as " +\
+    #     "regionsite from grabdata;", db.engine).regionsite.tolist()
+    # site_df = site_df[site_df.regionsite.isin(grab_sites)]
+
+    # pd.read_sql("select site, group_concat(distinct variable) as variableList from" +\
+    #     " grabdata where site in ('NHC', 'Stony');", db.engine)
+
+    qaqcuser = current_user.qaqc_auth()
+    auth_sites = [z for z in grab_sites if z in qaqcuser]
+    site_df = site_df[site_df.regionsite.isin(auth_sites)]
+
+    #sort, convert to list of tuples, specify flag types
+    site_df_sort = site_df.iloc[np.argsort(site_df.name),:]
+    tuplist = list(site_df_sort.itertuples(index=False, name=None))
+    flags = ['Interesting', 'Questionable', 'Below Detection Limit',
+        'Unknown Collection Time', 'Bad Data'] #i think this is obsolete
+
+    #load static html for popup menu
+    with open('static/html/qaqcPopupMenu_grab.html', 'r') as html_file:
+        qaqc_options_grab = html_file.read()
+    qaqc_options_grab = qaqc_options_grab.replace('\n', '')
+
+    return render_template('qaqc_grabdata.html', flags=flags, sitedata=tuplist,
+        qaqc_options=qaqc_options_grab)
+
+@app.route('/qaqc_sensordata') #/clean
 @login_required
 def qaqc():
 
@@ -2806,7 +2898,13 @@ def qaqc():
     # sitedict = sorted([getsitenames(x) for x in auth_sites],
     #     key=lambda tup: tup[1])
 
-    return render_template('qaqc.html', flags=flags, tags=[''], sitedata=tuplist)
+    #load static html for popup menu
+    with open('static/html/qaqcPopupMenu_sensor.html', 'r') as html_file:
+        qaqc_options_sensor = html_file.read()
+    qaqc_options_sensor = qaqc_options_sensor.replace('\n', '')
+
+    return render_template('qaqc.html', flags=flags, tags=[''], sitedata=tuplist,
+        qaqc_options=qaqc_options_sensor)
 
 @app.route('/_getqaqc', methods=["POST"])
 def getqaqc():
@@ -2874,13 +2972,87 @@ def getqaqc():
     return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
         sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)#, flagtypes=flagtypes)
 
+@app.route('/_getqaqc_grab', methods=["POST"])
+def getqaqc_grab():
+
+    region, site = request.json['site'].split(",")[0].split("_")
+    vars = request.json['vars']
+    year = request.json['year']
+
+    sqlq = "select grabdata.region, grabdata.site, grabdata.DateTime_UTC, " +\
+        "grabdata.variable, grabdata.value, grabdata.flag as flagid, grabflag.flag, " +\
+        "grabflag.comment from grabdata left join grabflag on grabdata.flag=grabflag.id where " +\
+        "grabdata.region='" + region + "' and grabdata.site='" + site +\
+        "' and grabdata.variable in ('" + "','".join(vars) + "') and " +\
+        "year(DateTime_UTC) = " + year + ";"
+    xx = pd.read_sql(sqlq, db.engine) #this is what makes it take so long. read in 4w chunks
+    xx.loc[xx.flag == 0, "value"] = None # set NaNs
+    flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
+        'comment']].dropna().drop(['flagid'],
+        axis=1).to_json(orient='records', date_format='iso') # flag data
+
+    variables = xx.loc[:,'variable'].unique().tolist()
+
+    xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
+        .set_index(["DateTime_UTC", "variable"])\
+        .drop(['region', 'site', 'flagid'], axis=1)
+    xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
+    xx.columns = xx.columns.droplevel()
+    xx = xx.reset_index()
+
+    # Get sunrise sunset data
+    sxx = pd.read_sql("select latitude, longitude from site where region='" +\
+        region + "' and site='" + site + "'", db.engine)
+    # sxx = pd.read_sql("select id, region, site, name, latitude, " +\
+    #     "longitude, usgs, addDate, embargo, site.by, contact, contactEmail " +\
+    #     "from site where region='" + region +\
+    #     "' and site='" + site + "'", db.engine)
+    sdt = min(xx.DateTime_UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    edt = max(xx.DateTime_UTC).replace(hour=0, minute=0, second=0,
+        microsecond=0) + timedelta(days=1)
+
+    ddt = edt - sdt
+    lat = sxx.latitude[0]
+    lng = sxx.longitude[0]
+    rss = []
+    for i in range(ddt.days + 1):
+        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+            longitude=lng).calculate())
+        if rise > sets:
+            sets = sets + timedelta(days=1) # account for UTC
+        rss.append([rise, sets])
+
+    rss = pd.DataFrame(rss, columns=("rise", "set"))
+    rss.set = rss.set.shift(1)
+    sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
+
+    # Get 2 week plot intervals
+    def daterange(start, end):
+        r = (end + timedelta(days=1) - start).days
+        if r % 140 > 0:
+            r = r + 140
+        return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, r, 140)]
+
+    drr = daterange(sdt, edt)
+
+    return jsonify(variables=variables, dat=xx.to_json(orient='records', date_format='iso'),
+        sunriseset=sunriseset, flagdat=flagdat, plotdates=drr)#, flagtypes=flagtypes)
+
 @app.route('/_getqaqcyears', methods=["POST"])
 def getqaqcyears():
     region, site = request.json['site'].split('_')
     yrs = pd.read_sql("select distinct mid(DateTime_UTC, 1, 4) as d from " +\
         "data where region='" + region + "' and site='" + site + "';",
         db.engine).d.tolist()
-    # yrs = dict(zip(yrs, yrs))
+
+    return jsonify(years=yrs)
+
+@app.route('/_getqaqcyears_grab', methods=["POST"])
+def getqaqcyears_grab():
+    region, site = request.json['site'].split('_')
+    yrs = pd.read_sql("select distinct mid(DateTime_UTC, 1, 4) as d from " +\
+        "grabdata where region='" + region + "' and site='" + site + "';",
+        db.engine).d.tolist()
 
     return jsonify(years=yrs)
 
@@ -2936,6 +3108,27 @@ def addflag():
         db.session.commit()
     return jsonify(result="success")
 
+@app.route('/_addflag_grab', methods=["POST"])
+def addflag_grab():
+
+    rgn, ste = request.json['site'].split("_")
+    sdt = datetime.strptime(request.json['startDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
+    edt = datetime.strptime(request.json['endDate'], "%Y-%m-%dT%H:%M:%S.%fZ")
+    var = request.json['var']
+    flg = request.json['flagid']
+    cmt = request.json['comment']
+
+    for vv in var:
+        fff = Grabflag(rgn, ste, sdt, edt, vv, flg, cmt, int(current_user.get_id()))
+        db.session.add(fff)
+        flgdat = Grabdata.query.filter(Grabdata.region==rgn, Grabdata.site==ste,
+            Grabdata.DateTime_UTC>=sdt, Grabdata.DateTime_UTC<=edt,
+            Grabdata.variable==vv).all()
+        for f in flgdat:
+            f.flag = fff.id
+        db.session.commit()
+    return jsonify(result="success")
+
 @app.route('/_rmflag', methods=["POST"])
 def rmflag():
 
@@ -2955,6 +3148,26 @@ def rmflag():
         datq = Data.query.filter(Data.region == rgn, Data.site == ste,
             Data.DateTime_UTC >= sdt, Data.DateTime_UTC <= edt,
             Data.variable == vv).all()
+        for d in datq:
+            d.flag = None
+
+        db.session.commit()
+
+    return jsonify(result="success")
+
+@app.route('/_rmflag_grab', methods=["POST"])
+def rmflag_grab():
+
+    rgn, ste = request.json['site'].split("_")
+    sdt = datetime.strptime(request.json['startDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
+    edt = datetime.strptime(request.json['endDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
+    var = request.json['var']
+
+    for vv in var:
+
+        datq = Grabdata.query.filter(Grabdata.region == rgn, Grabdata.site == ste,
+            Grabdata.DateTime_UTC >= sdt, Grabdata.DateTime_UTC <= edt,
+            Grabdata.variable == vv).all()
         for d in datq:
             d.flag = None
 

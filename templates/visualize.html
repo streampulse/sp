@@ -377,20 +377,22 @@ $(function(){
 
         visdata = response.grabdat;
         graphvar = response.var;
+        // flags = JSON.parse(response.flagdat);
         if(typeof visdata !== 'string' || visdata !== 'None'){
           visdata = JSON.parse(visdata);
           visdata.forEach(function(d){ d.date = parseDate(d['date']) });
         } else {
-          d3.selectAll("[id$=rightaxis]")
-            .attr('display', 'none');
+          d3.selectAll("[id$=rightaxis]").attr('display', 'none');
         }
 
         var variables = $('#variables:checked').map(function(){
           return this.value;
         }).get();
 
+        console.log(visdata);
+
         for (var i = 0; i < variables.length; ++i) {
-          BackGraph(graphvar, variables[i], visdata, type='point');
+          BackGraph(graphvar, variables[i], visdata, type='point', grab=true);
         }
 
       },
