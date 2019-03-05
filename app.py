@@ -3771,23 +3771,23 @@ def model_upload():
     file_id = request.headers.get('fileid')
 
     #if already a model for this region-site-time: move, touch, rename
-    fnames = os.listdir('shiny/data')
+    fnames = os.listdir('shiny/model_viz/data')
     cur_time = time.mktime(datetime.now().timetuple())
     cur_time = str(cur_time)[0:-2]
     if 'modOut_' + file_id + '.rds' in fnames:
         new_suffix = file_id + cur_time + '.rds'
-        os.rename('shiny/data/modOut_' + file_id + '.rds',
-            'shiny/former_best_models/modOut_' + new_suffix)
-        with open('shiny/former_best_models/modOut_' + new_suffix, 'a'):
-            os.utime('shiny/former_best_models/modOut_' + new_suffix, None)
-        os.rename('shiny/data/predictions_' + file_id + '.rds',
-            'shiny/former_best_models/predictions_' + new_suffix)
-        with open('shiny/former_best_models/predictions_' + new_suffix, 'a'):
-            os.utime('shiny/former_best_models/predictions_' + new_suffix, None)
+        os.rename('shiny/model_viz/data/modOut_' + file_id + '.rds',
+            'shiny/model_viz/former_best_models/modOut_' + new_suffix)
+        with open('shiny/model_viz/former_best_models/modOut_' + new_suffix, 'a'):
+            os.utime('shiny/model_viz/former_best_models/modOut_' + new_suffix, None)
+        os.rename('shiny/model_viz/data/predictions_' + file_id + '.rds',
+            'shiny/model_viz/former_best_models/predictions_' + new_suffix)
+        with open('shiny/model_viz/former_best_models/predictions_' + new_suffix, 'a'):
+            os.utime('shiny/model_viz/former_best_models/predictions_' + new_suffix, None)
 
     #save new RDS files to shiny data folder
-    modOut.save('shiny/data/modOut_' + file_id + '.rds')
-    predictions.save('shiny/data/predictions_' + file_id + '.rds')
+    modOut.save('shiny/model_viz/data/modOut_' + file_id + '.rds')
+    predictions.save('shiny/model_viz/data/predictions_' + file_id + '.rds')
 
     return jsonify(callback='success')
 
