@@ -3761,17 +3761,20 @@ def model_upload():
     predictions = request.files['predictions']
     file_id = request.headers.get('fileid')
 
-    #if already a model for this region-site-time, move and rename
+    #if already a model for this region-site-time: move, touch, rename
     fnames = os.listdir('shiny/data')
     cur_time = time.mktime(datetime.now().timetuple())
     cur_time = str(cur_time)[0:-2]
     if 'modOut_' + file_id + '.rds' in fnames:
+        new_suffix = file_id + cur_time + '.rds'
         os.rename('shiny/data/modOut_' + file_id + '.rds',
-            'shiny/former_best_models/modOut_' + file_id + cur_time +\
-                '.rds')
+            'shiny/former_best_models/modOut_' + new_suffix)
+        with open('shiny/former_best_models/modOut_' + new_suffix, 'a'):
+            os.utime('shiny/former_best_models/modOut_' + new_suffix, None)
         os.rename('shiny/data/predictions_' + file_id + '.rds',
-            'shiny/former_best_models/predictions_' + file_id +\
-                cur_time + '.rds')
+            'shiny/former_best_models/predictions_' + new_suffix)
+        with open('shiny/former_best_models/predictions_' + new_suffix, 'a'):
+            os.utime('shiny/former_best_models/predictions_' + new_suffix, None)
 
     #save new RDS files to shiny data folder
     modOut.save('shiny/data/modOut_' + file_id + '.rds')

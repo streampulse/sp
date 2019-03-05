@@ -1,9 +1,16 @@
 #Mike's Logbook
 
+###tue20190305
+ + fixed auto-deletion of old model runs on server. they actually stick around for a month now.
+###mon20190304
+ + comparison of K and D in NC_NHC, historical vs present, supplement to aforementioned analysis
+###20190227-28
+ + visual and statistical analysis of metabolism in NC_NHC: comparison between 1968-70 and contemporary GPP, ER estimates
 ###20190225-26
  + built flagging system for grab data
  + flagged points now shown on grabdata overlay within input viz page
  + mouseover flagged grab data to view flag information
+ + made script for generating summaries of site data, including embargo days remaining and number of datapoints uploaded for each site
 ###sun20190224
  + reran NC_NHC model with custom priors, other improvements
  + users can now modify priors (not yet live)
