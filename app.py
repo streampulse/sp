@@ -2749,7 +2749,7 @@ def getviz():
     variables = request.json['variables']
     dsource = request.json['source']
     src = 'powell' if dsource == 'pow' else 'data'
-    region='NC'; site='NHC'; startDate='2017-04-01'; endDate='2017-04-20'
+    # region='NC'; site='NHC'; startDate='2017-04-01'; endDate='2017-04-20'
     # region='AK'; site='CARI-down'; startDate='2018-04-01'; endDate='2018-04-20'
     # variables=['DO_mgL','WaterTemp_C','Light_lux']; src='data'
 
