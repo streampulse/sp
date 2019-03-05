@@ -2749,7 +2749,9 @@ def getviz():
     variables = request.json['variables']
     dsource = request.json['source']
     src = 'powell' if dsource == 'pow' else 'data'
-    # region='NC'; site='Eno'; startDate='2016-10-21'; endDate='2016-10-22'; variables=['DO_mgL','WaterTemp_C','Light_lux']
+    region='NC'; site='NHC'; startDate='2017-04-01'; endDate='2017-04-20'
+    # region='AK'; site='CARI-down'; startDate='2018-04-01'; endDate='2018-04-20'
+    # variables=['DO_mgL','WaterTemp_C','Light_lux']; src='data'
 
     #this block shouldnt be necessary once data leveling is in place.
     #you'll then be able to restore the block below, unless we still
@@ -2775,6 +2777,16 @@ def getviz():
     xx = pd.read_sql(sqlq, db.engine)
     # xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs so bad datapoints dont plot
     xx = xx[xx.flag != 'Bad Data'] #instead, just remove bad data rows
+
+    #thin data to 1/15 if data source is NEON
+    is_neon = pd.read_sql("select `by` from site where region='" + region +\
+        "' and site='" + site + "';", db.engine).by[0] == -900
+    print is_neon
+    if is_neon:
+        print xx.shape
+        xx = xx.iloc[np.arange(0, xx.shape[0], 15), :]
+        print xx.shape
+
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
         'comment']].dropna().drop(['flagid'], axis=1)
 
