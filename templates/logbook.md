@@ -2,6 +2,7 @@
 
 ###tue20190305
  + fixed auto-deletion of old model runs on server. they actually stick around for a month now.
+ + thinned neon data to 1/15 before sending to viz
 ###mon20190304
  + comparison of K and D in NC_NHC, historical vs present, supplement to aforementioned analysis
 ###20190227-28

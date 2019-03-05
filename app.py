@@ -499,7 +499,7 @@ core['SITECD'] = list(core["REGIONID"].map(str) + "_" + core["SITEID"])
 core = core.set_index('SITECD')
 
 #DateTime_UTC must remain in the first position
-variables = ['DateTime_UTC', 'DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 'WaterTemp2_C', 'WaterTemp3_C',
+variables = ['DateTime_UTC', 'DO_mgL', 'DOSecondary_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 'WaterTemp2_C', 'WaterTemp3_C',
 'WaterPres_kPa', 'AirTemp_C', 'AirPres_kPa', 'Level_m', 'Depth_m',
 'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV',
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
@@ -2781,11 +2781,8 @@ def getviz():
     #thin data to 1/15 if data source is NEON
     is_neon = pd.read_sql("select `by` from site where region='" + region +\
         "' and site='" + site + "';", db.engine).by[0] == -900
-    print is_neon
     if is_neon:
-        print xx.shape
         xx = xx.iloc[np.arange(0, xx.shape[0], 15), :]
-        print xx.shape
 
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
         'comment']].dropna().drop(['flagid'], axis=1)
