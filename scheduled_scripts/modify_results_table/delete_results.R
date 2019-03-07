@@ -2,10 +2,11 @@ library(RMariaDB)
 library(stringr)
 
 newly_departed_file = commandArgs(trailingOnly=TRUE)
+setwd('/home/mike/git/streampulse/server_copy/sp/')
+# setwd('/home/aaron/sp/')
 
 #connect to database
-conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
-# conf = readLines('/home/aaron/sp/config.py')
+conf = readLines('config.py')
 ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
 pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
