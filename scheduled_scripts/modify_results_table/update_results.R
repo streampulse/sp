@@ -2,8 +2,8 @@ library(RMariaDB)
 library(stringr)
 
 newly_arrived_file = commandArgs(trailingOnly=TRUE)
-setwd('/home/mike/git/streampulse/server_copy/sp/')
-# setwd('/home/aaron/sp/')
+# setwd('/home/mike/git/streampulse/server_copy/sp/')
+setwd('/home/aaron/sp/')
 
 #connect to database
 conf = readLines('config.py')
