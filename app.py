@@ -1677,6 +1677,124 @@ def grab_upload():
             finally:
                 return redirect(request.url)
 
+@app.route('/sitedata_filedrop', methods=['GET', 'POST'])
+@login_required
+def sitedata_filedrop():
+
+    if request.method == 'POST':
+
+        sitedata_dir = os.path.realpath('../spsitedata')
+
+        #check inputs, extract region code and dataset names
+        if 'sitedata_upload' not in request.files:
+            flash('No files detected', 'alert-danger')
+            return redirect(request.url)
+
+        files = request.files.getlist("sitedata_upload")
+        fnms = [x.filename for x in files]
+        if len(fnms[0]) == 0: #is this needed, or is first catch sufficient?
+            flash('No files selected.', 'alert-danger')
+            return redirect(request.url)
+
+        # fnms = ['AZ_canopy.csv', 'AZ_cross_section.csv']
+        # f = fnms[1]
+        regionlist = pd.read_sql('select distinct region from site;',
+            db.engine).region.tolist()
+
+        regions = []
+        datasets = []
+        for f in fnms:
+            rgx = re.match('^([A-Za-z]{2})_(synoptic_)?(canopy|cross_section|' +\
+                'geomorphology|pebble_count).csv$', f)
+            if rgx:
+                rgx_grps = rgx.groups()
+                region = rgx_grps[0]
+                regions.append(region)
+                if any([l.islower() for l in region]):
+                    flash('Name error in ' + f +\
+                        '. Region code must be capitalized.', 'alert-danger')
+                    return redirect(request.url)
+                if region not in regionlist:
+                    flash('Name error in ' + f + '. Unrecognized region code.' +\
+                    ' Please upload sensor data first.', 'alert-danger')
+                    return redirect(request.url)
+                synop = '' if not rgx_grps[1] else rgx_grps[1]
+                datasets.append(synop + rgx_grps[2])
+            else:
+                flash('Name error in ' + f +\
+                    '. Please review step 2.', 'alert-danger')
+                return redirect(request.url)
+
+        if any([r != regions[0] for r in regions]):
+            flash('Please upload datasets from only one region at a time.',
+                'alert-danger')
+            return redirect(request.url)
+
+        files_on_server = os.listdir(sitedata_dir)
+        uploaded_bool = [f in files_on_server for f in fnms]
+        if any(uploaded_bool):
+            already_have = [fnms[i] for i in xrange(len(fnms)) if uploaded_bool[i]]
+            flash('Error. Dataset(s) already on file: ' + ', '.join(already_have) +\
+                '. Check the box in Step 3 to overwrite.', 'alert-danger')
+            return redirect(request.url)
+
+        #upload
+        try:
+            # timestamp = datetime.now().strftime('%m-%d-%Y_%H%M%S%f')
+            fnms_secure = []
+            for f in files:
+                if f:
+                    # fn = f
+                    fn = f.filename
+                    fn_secure = secure_filename(fn)
+                    fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
+                    # fn_new = fn_base + '_' + timestamp + '.csv'
+                    fpath = os.path.join(sitedata_dir, fn_secure)
+                    f.save(fpath)
+                    fnms_secure.append(fn_secure)
+
+        except:
+            msg = Markup('There has been an error. Please notify site maintainer <a href=' +\
+                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+                'Mike Vlah</a>.')
+            flash(msg, 'alert-danger')
+            return redirect(request.url)
+
+        #populate database
+        contactname = request.form.get('contactname')
+        contactemail = request.form.get('contactemail')
+        embargo = request.form.get('embargo')
+        addtl = request.form.get('additional')
+        mfile_str = ', '.join(mfnms_secure) if mfiles[0] else 'NA'
+        dfile_str = ', '.join(dfnms_secure) if dfiles[0] else 'NA'
+
+        db_entry = Grdo(name=contactname, email=contactemail,
+            addDate=datetime.utcnow(), embargo=embargo, notes=addtl,
+            dataFiles=dfile_str, metaFiles=mfile_str)
+        db.session.add(db_entry)
+        db.session.commit()
+
+        mlen = len(mfiles) if mfiles[0] else 0
+        dlen = len(dfiles) if dfiles[0] else 0
+
+        if mlen + dlen > 0:
+            flash('Uploaded ' + str(mlen) + ' metadata file(s) and ' +\
+            str(dlen) + ' data file(s).', 'alert-success')
+
+        meta = pd.read_sql("select metaFiles from grdo", db.engine).metaFiles.tolist()
+        listoflists = [x.split(', ') for x in meta]
+        metafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
+
+        data = pd.read_sql("select dataFiles from grdo", db.engine).dataFiles.tolist()
+        listoflists = [x.split(', ') for x in data]
+        datafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
+
+        return render_template('grdo_filedrop.html', nmeta=len(metafiles),
+            ndata=len(datafiles))
+
+    if request.method == 'GET': #when first visiting the sitedata upload page
+        return render_template('sitedata_filedrop.html')
+
 @app.route('/grdo_filedrop', methods=['GET', 'POST'])
 def grdo_filedrop():
 
@@ -3625,6 +3743,12 @@ def grdo_metatemplate_download():
 def grdo_datatemplate_download():
 
     return send_from_directory('static/grdo', 'GRDO_TimeseriesData_Template.xlsx',
+        as_attachment=True)
+
+@app.route('/_sitedata_templates_download', methods=['POST'])
+def sitedata_templates_download():
+
+    return send_from_directory('static', 'streampulse_sitedata_templates.zip',
         as_attachment=True)
 
 @app.route('/request_predictions')

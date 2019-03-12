@@ -5,26 +5,31 @@
 <!-- <p class="text-center"><a class="btn btn-lg btn-primary" href="https://docs.google.com/document/d/1D0DcSsNAPx_kfFECg23AEwNw5LTtx2_Fev-jKCXfk6Q/edit?usp=sharing">Before modeling stream metabolism...</a></p> -->
 
 <div class="container">
-  <div class='row' style='margin-top: 100px'></div>
+  <div class='row' style='margin-top: 100px'>
+  </div>
   <div class="row">
     <div class="col-md-6 col-md-offset-3 text-center">
-      <p class='lead'>The upload process differs by mode of data collection.</p>
+      <p class='lead'>What type of data set would you like to upload?</p>
       <br><br>
     </div>
   </div>
   <div class="row">
-    <div class="col-md-4 col-md-offset-2">
+    <div class="col-md-4 col-md-offset-4">
       <input type='button' class="btn btn-primary btn-lg btn-block"
-      value='Upload sensor data' onclick="location.href = 'series_upload';">
-    </div>
-    <div class="col-md-4">
+      value='Sensor data' onclick="location.href = 'series_upload';">
       <input type='button' class="btn btn-success btn-lg btn-block"
-      value='Upload manually collected data' onclick="location.href = 'grab_upload';">
+      value='Grab data*' onclick="location.href = 'grab_upload';">
+      <input type='button' class="btn btn-warning btn-lg btn-block"
+      value='Site characteristics' onclick="location.href = 'sitedata_filedrop';">
     </div>
   </div>
   <div class="row">
     <div class="col-md-6 col-md-offset-3 text-center">
-      <br><br><br>
+      <br>
+      <p class='text-muted'>
+        *Grab data = manually collected time-series data.
+      </p>
+      <br><br>
       <p class='lead'><a href="policy">Data policy</a></p>
       <br><br>
     </div>

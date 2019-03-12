@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div id="loading">
+  <span id="loading-image">
+    <i class="fa fa-circle-o-notch fa-spin fa-5x fa-fw"></i>
+    <span class="sr-only">Loading...</span>
+  </span>
+</div>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3 text-center">
+    <h1>Upload site characteristic data</h1>
+  </div>
+</div>
+<!-- <div class="row">
+  <div class="col-md-6 col-md-offset-3 text-left">
+    <br>
+    <p>
+      After clicking "Upload", you will be asked to match your variable names
+      to those in our system. You will also have the option to make your data
+      private. See the instructions below for more.
+    </p>
+  </div>
+</div> -->
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <br>
+
+    <p class='lead'>
+      <strong>Step 1:</strong> Please copy and paste your data into one or more
+      of the template files provided here:
+    </p>
+
+    <div class='row text-center'>
+      <div class='col-md-12'>
+        <form id='template_form' action="/_sitedata_templates_download" method="POST"
+          class="form-horizontal">
+          <div class="form-group">
+            <button id="template_btn" type="submit" value=Download class="btn btn-primary">
+              Get all templates
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <hr>
+    <p class='lead'>
+      <strong>Step 2:</strong> Prepend your capitalized region code and an underscore to
+      the name of each completed template file.
+    </p>
+    <div class='row'>
+      <div class='col-md-10 col-md-offset-1'>
+        <p style='color:gray'>
+          For example, if you have canopy data from Australia, change
+          <code>canopy.csv</code> to <code>AU_canopy.csv</code>.
+          StreamPULSE regions and region codes can be found
+          <a href="data.streampulse.org/sitelist">here</a>.
+        </p>
+      </div>
+    </div>
+    <hr>
+
+    <p class='lead'>
+      <strong>Step 3:</strong> Upload one or more completed and renamed template
+      files. Data sets uploaded concurrently must be from the same region.
+    </p>
+    <form action="" method=post enctype=multipart/form-data>
+      <div class='row'>
+        <div class="form-group">
+          <div class='col-md-4 col-md-offset-4'>
+            <input type="file" class="form-control-file" name=sitedata_upload multiple
+            style='color:gray'>
+          </div>
+          <div class='col-md-10 col-md-offset-1 text-left' style='color:gray'>
+            <br>
+            <input type="checkbox" name="replacebox">
+            Check this box to revise or update previously uploaded datasets.
+            Previous versions will be retained.
+          </div>
+        </div>
+      </div>
+      <hr>
+
+      <p class='lead'>
+        <strong>Step 4:</strong> Please provide the following information for this data set.
+        Then, click the "Upload" button.*
+      </p>
+      <div class='row'>
+        <div class='col-md-6'>
+          <p style='color:gray'>Contact name:</p>
+          <input type="text" class="form-control" name="contactname"
+          aria-describedby="Contact name" maxlength="50" required>
+        </div>
+        <div class='col-md-6'>
+          <p style='color:gray'>Contact email:</p>
+          <input type="text" class="form-control" name="contactemail"
+          aria-describedby="Contact email" maxlength="50" required>
+        </div>
+      </div>
+
+      <br><br>
+      <div class='col-md-6 col-md-offset-3'>
+        <button id="upx" type="submit" value=Upload class="btn btn-success btn-block">
+          Upload
+        </button>
+      </div>
+    </form>
+
+    <br><br><br><br>
+    <div class='row'>
+      <div class='col-md-12 text-center'>
+        <p style='color:gray'>
+          *Site data uploaded here will be publicly available to all registered users.
+          If you need to keep your site data private,
+          contact <a href="mailto:michael.vlah@duke.edu">StreamPULSE development</a>.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</div>
+<br><br>
+
+<script type="text/javascript">
+  $('#additional').keyup(function () {
+      var left = 5000 - $(this).val().length;
+      $('#charCounter').text('Characters left: ' + left);
+  });
+</script>
+
+{% endblock %}
