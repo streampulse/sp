@@ -1684,6 +1684,7 @@ def sitedata_filedrop():
     if request.method == 'POST':
 
         sitedata_dir = os.path.realpath('../spsitedata')
+        sitedata_dir_old = os.path.realpath('../spsitedata_oldversions')
 
         #check inputs, extract region code and dataset names
         if 'sitedata_upload' not in request.files:
@@ -1730,35 +1731,40 @@ def sitedata_filedrop():
                 'alert-danger')
             return redirect(request.url)
 
+        #prevent filename mischief
+        fnms_secure = []
+        files_secure = []
+        for f in files:
+            if f:
+                fnms_secure.append(secure_filename(f.filename))
+                files_secure.append(f)
+
+        #determine whether any filenames have been uploaded before;
+        #move and replace if desired, else error
         files_on_server = os.listdir(sitedata_dir)
-        uploaded_bool = [f in files_on_server for f in fnms]
+        uploaded_bool = [f in files_on_server for f in fnms_secure]
+
         if any(uploaded_bool):
-            already_have = [fnms[i] for i in xrange(len(fnms)) if uploaded_bool[i]]
-            flash('Error. Dataset(s) already on file: ' + ', '.join(already_have) +\
-                '. Check the box in Step 3 to overwrite.', 'alert-danger')
-            return redirect(request.url)
+            already_have = [fnms_secure[i] for i in xrange(len(fnms_secure)) if uploaded_bool[i]]
 
-        #upload
-        try:
-            # timestamp = datetime.now().strftime('%m-%d-%Y_%H%M%S%f')
-            fnms_secure = []
-            for f in files:
-                if f:
-                    # fn = f
-                    fn = f.filename
-                    fn_secure = secure_filename(fn)
-                    fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
-                    # fn_new = fn_base + '_' + timestamp + '.csv'
-                    fpath = os.path.join(sitedata_dir, fn_secure)
-                    f.save(fpath)
-                    fnms_secure.append(fn_secure)
+            if request.form.get('replacebox') == 'on':
+                timestamp = datetime.now().strftime('%Y%m%d-%H%M%S%f')
+                for f in already_have:
+                    archive_filename = f[0:len(f) - 4] + '_' + timestamp + '.csv'
+                    os.rename(sitedata_dir + '/' + f,
+                        sitedata_dir_old + '/' + archive_filename)
+            else:
+                flash('Error. Dataset(s) already on file: ' +\
+                    ', '.join(already_have) +\
+                    '. Check the box in Step 3 to overwrite.', 'alert-danger')
+                return redirect(request.url)
 
-        except:
-            msg = Markup('There has been an error. Please notify site maintainer <a href=' +\
-                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-                'Mike Vlah</a>.')
-            flash(msg, 'alert-danger')
-            return redirect(request.url)
+        #write files; should build an error handler here and return any moved
+        #files to sitedata_dir if something goes wrong.
+        for i in xrange(len(files_secure)):
+            # fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
+            savepath = os.path.join(sitedata_dir, fnms_secure[i])
+            files_secure[i].save(savepath)
 
         #populate database
         contactname = request.form.get('contactname')
@@ -1791,6 +1797,13 @@ def sitedata_filedrop():
 
         return render_template('grdo_filedrop.html', nmeta=len(metafiles),
             ndata=len(datafiles))
+
+        # except:
+        #     msg = Markup('There has been an error. Please notify site maintainer <a href=' +\
+        #         '"mailto:vlahm13@gmail.com" class="alert-link">' +\
+        #         'Mike Vlah</a>.')
+        #     flash(msg, 'alert-danger')
+        #     return redirect(request.url)
 
     if request.method == 'GET': #when first visiting the sitedata upload page
         return render_template('sitedata_filedrop.html')
