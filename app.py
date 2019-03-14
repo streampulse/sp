@@ -1884,12 +1884,18 @@ def grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict):
     #update or establish varname, method, addtl mappings
     for c in cdict.keys():
         for s in sitelist:
-            if c in rawcols: # update
+            if c in rawcols: # update/add
+
                 cx = Grabcols.query.filter_by(rawcol=c, site=s).first()
-                cx.dbcol = cdict[c] # assign new dbcol value for this rawcol
-                cx.method = mdict[c] # assign new method
-                cx.write_in = wdict[c] # assign new write-in method
-                cx.addtl = adict[c] # assign new additional attributes
+                if cx: #if we already have column preferences for this site, update
+                    cx.dbcol = cdict[c] # assign new dbcol value for this rawcol
+                    cx.method = mdict[c] # assign new method
+                    cx.write_in = wdict[c] # assign new write-in method
+                    cx.addtl = adict[c] # assign new additional attributes
+                else: #else, add
+                    cx = Grabcols(region, s, c, cdict[c], mdict[c], wdict[c], adict[c])
+                    db.session.add(cx)
+
             else: # add
                 cx = Grabcols(region, s, c, cdict[c], mdict[c], wdict[c], adict[c])
                 db.session.add(cx)
