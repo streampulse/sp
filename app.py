@@ -2859,6 +2859,7 @@ def clean_choice():
     return render_template('qaqc_choice.html')
 
 @app.route('/qaqc_grabdata')
+@login_required
 def qaqc_grabdata():
 
     #acquire site data. filter those without grab data, and those without auth
