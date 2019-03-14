@@ -3,8 +3,8 @@ import os
 #see usgs_sync_setup
 
 #import setup and helper funcs
-app_dir = '/home/aaron/sp'
-#app_dir = '/home/mike/git/streampulse/server_copy/sp'
+# app_dir = '/home/aaron/sp'
+app_dir = '/home/mike/git/streampulse/server_copy/sp'
 wrk_dir = app_dir + '/scheduled_scripts/USGS_data_retrieval'
 os.chdir(wrk_dir)
 from usgs_sync_setup import *
@@ -24,6 +24,7 @@ firstrec = sitedf.loc[sitedf.regionsite.isin(regionsite)].firstRecord.dt.\
 lastrec = sitedf.loc[sitedf.regionsite.isin(regionsite)].lastRecord.dt.\
     strftime('%Y-%m-%d').tolist()
 sitedict = {}
+
 for i in xrange(len(regionsite)):
     df_ind = [j for j in xrange(len(sitedf)) if sitedf.usgs[j] == gageid[i]][0]
     rs_ind = [j for j in xrange(len(regionsite)) if regionsite[j] == sitedf.regionsite[df_ind]][0]
@@ -42,12 +43,18 @@ except IOError:
 #assemble list of dataframes, one for each site-variable combo
 gage_df_list = []
 # g=gageid[5]
+# g = '09512500'
 for g in gageid:
 
     site_name = sitedict[g][0]
     varcode_str = ','.join(sitedict[g][1])
     start_date_str = sitedict[g][2]
     end_date_str = sitedict[g][3]
+
+    if start_date_str == 'NaT':
+        logging.warning('no dates found for ' + g + '. skipping.')
+        continue
+
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
     end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
 
@@ -119,8 +126,8 @@ if gage_df_list:
     out['flag'] = None
     out['upload_id'] = -901
 
-    #write to database in chunks of 100,000 records each
-    chunker_ingester(out)
+    #write to database in chunks of 50,000 records each
+    chunker_ingester(out, chunksize=50000)
     # session.commit()
 
     #update variableList and coverage columns in site table

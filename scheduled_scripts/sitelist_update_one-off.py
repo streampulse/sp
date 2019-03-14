@@ -25,20 +25,21 @@ session = sa.orm.Session(bind=db.engine)
 #get list of sites
 sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
     "site;", db.engine).a.tolist()
+print sites
    # "site where region='NC';", db.engine).a.tolist()
    # "site where `by` = -903;", db.engine).a.tolist()
     
 #update variableList and coverage columns in site table
 for u in sites:
-    #with open('site_update_stored_procedure.sql', 'r') as f:
-    with open('site_update_stored_procedure_grab.sql', 'r') as f:
+    #with open('site_update_stored_procedure_grab.sql', 'r') as f:
+    with open('site_update_stored_procedure.sql', 'r') as f:
         t = f.read()
     t = t.replace('RR', u.split('_')[0])
     t = t.replace('SS', u.split('_')[1])
 
     session.execute(t)
-    #session.execute('CALL update_site_table();')
-    session.execute('CALL update_site_table_grab();')
+    session.execute('CALL update_site_table();')
+    #session.execute('CALL update_site_table_grab();')
     session.commit()
 
 session.close()

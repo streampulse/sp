@@ -1,5 +1,10 @@
 #Mike's Logbook
 
+###20190310-14
+ + site characteristic upload/storage/download system
+ + updated StreamPULSE package. prep_metabolism issues warning about low DO sat coverage. new parameter retrieve_air_pres allows retrieval even when some air pressure data are supplied. helps in cases where air pres is needed to estimate DO sat or depth
+###wed20190306
+ + built 24/7 service to monitor model outputs folder and automatically update new model results database table as they are added/updated/removed (in preparation for synthesis plots)
 ###tue20190305
  + fixed auto-deletion of old model runs on server. they actually stick around for a month now.
  + thinned neon data to 1/15 before sending to viz
