@@ -475,6 +475,22 @@ class Grdo(db.Model):
     def __repr__(self):
         return '<Data %r, %r, %r>' % (self.name, self.email, self.addDate)
 
+class Sitefiles(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(100))
+    uploader = db.Column(db.String(50))
+    email = db.Column(db.String(50))
+    addDate = db.Column(db.DateTime)
+
+    def __init__(self, filename, uploader, email, addDate):
+        self.filename = filename
+        self.uploader = uploader
+        self.email = email
+        self.addDate = addDate
+
+    def __repr__(self):
+        return '<Data %r, %r, %r>' % (self.filename, self.email, self.addDate)
+
 db.create_all()
 
 @login_manager.user_loader
@@ -1687,12 +1703,32 @@ def sitedata_filedrop():
         sitedata_dir_old = os.path.realpath('../spsitedata_oldversions')
 
         #check inputs, extract region code and dataset names
+        email_legal = sanitize_input_email(request.form['contactemail'])
+        name_legal = sanitize_input_allow_unicode(request.form['contactname'])
+
+        if not email_legal:
+            msg = Markup('Only alphanumeric characters and @.- _~' +\
+                ' allowed in email address field')
+            flash(msg, 'alert-danger')
+            return redirect(url_for('sitedata_filedrop'))
+        if not name_legal:
+            msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
+                'allowed in ' + illegal_input + ' field.')
+            flash(msg, 'alert-danger')
+            return redirect(url_for('sitedata_filedrop'))
+
         if 'sitedata_upload' not in request.files:
             flash('No files detected', 'alert-danger')
             return redirect(request.url)
 
         files = request.files.getlist("sitedata_upload")
         fnms = [x.filename for x in files]
+
+        if len(set(fnms)) < len(fnms):
+            flash('At least two files you tried to upload have the same name.',
+                'alert-danger')
+            return redirect(request.url)
+
         if len(fnms[0]) == 0: #is this needed, or is first catch sufficient?
             flash('No files selected.', 'alert-danger')
             return redirect(request.url)
@@ -1731,12 +1767,17 @@ def sitedata_filedrop():
                 'alert-danger')
             return redirect(request.url)
 
-        #prevent filename mischief
+        #prevent filename mischief; document any name changes that occur
         fnms_secure = []
         files_secure = []
+        fnms_changed = {}
         for f in files:
             if f:
-                fnms_secure.append(secure_filename(f.filename))
+                fnm = f.filename
+                secured = secure_filename(fnm)
+                if secured != fnm:
+                    fnms_changed[fnm] = secured
+                fnms_secure.append()
                 files_secure.append(f)
 
         #determine whether any filenames have been uploaded before;
@@ -1767,36 +1808,20 @@ def sitedata_filedrop():
             files_secure[i].save(savepath)
 
         #populate database
-        contactname = request.form.get('contactname')
-        contactemail = request.form.get('contactemail')
-        embargo = request.form.get('embargo')
-        addtl = request.form.get('additional')
-        mfile_str = ', '.join(mfnms_secure) if mfiles[0] else 'NA'
-        dfile_str = ', '.join(dfnms_secure) if dfiles[0] else 'NA'
+        # dfile_str = ', '.join(fnms_secure) if dfiles[0] else 'NA'
 
-        db_entry = Grdo(name=contactname, email=contactemail,
-            addDate=datetime.utcnow(), embargo=embargo, notes=addtl,
-            dataFiles=dfile_str, metaFiles=mfile_str)
-        db.session.add(db_entry)
+        dtnow = datetime.utcnow()
+        for n in fnms_secure:
+            db_entry = Sitefiles(filename=n, uploader=contactname,
+                email=contactemail, addDate=dtnow)
+            db.session.add(db_entry)
+
         db.session.commit()
 
-        mlen = len(mfiles) if mfiles[0] else 0
-        dlen = len(dfiles) if dfiles[0] else 0
+        # flash('Uploaded ' + str(fnms_secure) + ' file(s). These updated ' +\
+        #     '', 'alert-success')
 
-        if mlen + dlen > 0:
-            flash('Uploaded ' + str(mlen) + ' metadata file(s) and ' +\
-            str(dlen) + ' data file(s).', 'alert-success')
-
-        meta = pd.read_sql("select metaFiles from grdo", db.engine).metaFiles.tolist()
-        listoflists = [x.split(', ') for x in meta]
-        metafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
-
-        data = pd.read_sql("select dataFiles from grdo", db.engine).dataFiles.tolist()
-        listoflists = [x.split(', ') for x in data]
-        datafiles = [x for sublist in listoflists for x in sublist if x != 'NA']
-
-        return render_template('grdo_filedrop.html', nmeta=len(metafiles),
-            ndata=len(datafiles))
+        return render_template('sitedata_filedrop.html')
 
         # except:
         #     msg = Markup('There has been an error. Please notify site maintainer <a href=' +\
