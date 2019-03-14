@@ -3,8 +3,8 @@ import os
 #see usgs_sync_setup
 
 #import setup and helper funcs
-# app_dir = '/home/aaron/sp'
-app_dir = '/home/mike/git/streampulse/server_copy/sp'
+app_dir = '/home/aaron/sp'
+# app_dir = '/home/mike/git/streampulse/server_copy/sp'
 wrk_dir = app_dir + '/scheduled_scripts/USGS_data_retrieval'
 os.chdir(wrk_dir)
 from usgs_sync_setup import *

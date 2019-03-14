@@ -3,6 +3,7 @@
 ###20190310-14
  + site characteristic upload/storage/download system
  + updated StreamPULSE package. prep_metabolism issues warning about low DO sat coverage. new parameter retrieve_air_pres allows retrieval even when some air pressure data are supplied. helps in cases where air pres is needed to estimate DO sat or depth
+ + all available level, discharge, temperature, cond, and nitrate from USGS now being synced with sp sites
 ###wed20190306
  + built 24/7 service to monitor model outputs folder and automatically update new model results database table as they are added/updated/removed (in preparation for synthesis plots)
 ###tue20190305
