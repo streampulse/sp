@@ -582,7 +582,7 @@ find_outliers = robjects.r(find_outliers_string)
 # def log_exception(e, excID, traceback):
 def log_exception(excID, traceback):
 
-    cur_user = str(current_user.get_id()) if current_user else 'NA'
+    cur_user = str(current_user.get_id()) if current_user else 'anonymous'
     with open(logfile, 'a') as lf:
         lf.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') +\
             '; ' + excID + '; userID=' + cur_user +\
@@ -1466,9 +1466,9 @@ def series_upload():
             [os.remove(f) for f in fnlong]
             tb = traceback.format_exc()
             log_exception('E001', tb)
-            msg = Markup('Error 001. Please <a href="mailto:vlahm13@gmail.com"' +\
-                ' class="alert-link">email Mike Vlah</a> with the error number ' +\
-                'and a copy of the file you tried to upload.')
+            msg = Markup('Error 001. Please <a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">email StreamPULSE development</a> ' +\
+                'with the error number and a copy of the file you tried to upload.')
             flash(msg, 'alert-danger')
 
             return redirect(request.url)
@@ -1492,8 +1492,9 @@ def series_upload():
             log_exception('E004', tb)
             msg = Markup('Error 004. Check for unusual characters in your ' +\
                 'column names (degree symbol, etc.). If problem persists, ' +\
-                '<a href="mailto:vlahm13@gmail.com" class="alert-link">Email ' +\
-                'Mike Vlah</a> with the error number and a copy of the file you tried to upload.')
+                '<a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">email StreamPULSE development</a> ' +\
+                'with the error number and a copy of the file you tried to upload.')
             flash(msg, 'alert-danger')
             return redirect(request.url)
 
@@ -1585,10 +1586,9 @@ def grab_upload():
         except Exception as e:
             tb = traceback.format_exc()
             log_exception('E003', tb)
-            msg = Markup('Error 003. Please <a href=' +\
-                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-                'email Mike Vlah</a> with the error number and a copy of ' +\
-                'the file you tried to upload.')
+            msg = Markup('Error 003. Please <a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">email StreamPULSE development</a> ' +\
+                'with the error number and a copy of the file you tried to upload.')
             flash(msg, 'alert-danger')
 
             return redirect(request.url)
@@ -1647,10 +1647,9 @@ def grab_upload():
         except Exception as e:
             tb = traceback.format_exc()
             log_exception('E006', tb)
-            msg = Markup('Error 006. Please <a href=' +\
-                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-                'email Mike Vlah</a> with the error number and a copy of ' +\
-                'the file you tried to upload.')
+            msg = Markup('Error 006. Please <a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">email StreamPULSE development</a> ' +\
+                'with the error number and a copy of the file you tried to upload.')
             flash(msg, 'alert-danger')
 
             return redirect(request.url)
@@ -1681,11 +1680,9 @@ def grab_upload():
         except Exception as e:
             tb = traceback.format_exc()
             log_exception('007', tb)
-            msg = Markup('Error 007. Please <a href=' +\
-                '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-                'email Mike Vlah</a> with the error number and a copy of ' +\
-                'the file you tried to upload.')
-            flash(msg, 'alert-danger')
+            msg = Markup('Error 007. Please <a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">email StreamPULSE development</a> ' +\
+                'with the error number and a copy of the file you tried to upload.')
             try:
                 os.remove(fnlong)
             except:
@@ -1699,136 +1696,153 @@ def sitedata_filedrop():
 
     if request.method == 'POST':
 
-        sitedata_dir = os.path.realpath('../spsitedata')
-        sitedata_dir_old = os.path.realpath('../spsitedata_oldversions')
+        try:
+            sitedata_dir = os.path.realpath('../spsitedata')
+            sitedata_dir_old = os.path.realpath('../spsitedata_oldversions')
 
-        #check inputs, extract region code and dataset names
-        email_legal = sanitize_input_email(request.form['contactemail'])
-        name_legal = sanitize_input_allow_unicode(request.form['contactname'])
+            #check inputs, extract region code and dataset names
+            contactemail = request.form['contactemail']
+            contactname = request.form['contactname']
+            email_legal = sanitize_input_email(contactemail)
+            name_legal = sanitize_input_allow_unicode(contactname)
 
-        if not email_legal:
-            msg = Markup('Only alphanumeric characters and @.- _~' +\
-                ' allowed in email address field')
-            flash(msg, 'alert-danger')
-            return redirect(url_for('sitedata_filedrop'))
-        if not name_legal:
-            msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
-                'allowed in ' + illegal_input + ' field.')
-            flash(msg, 'alert-danger')
-            return redirect(url_for('sitedata_filedrop'))
+            if not email_legal:
+                msg = Markup('Only alphanumeric characters and @.- _~' +\
+                    ' allowed in email address field')
+                flash(msg, 'alert-danger')
+                return redirect(url_for('sitedata_filedrop'))
+            if not name_legal:
+                msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
+                    'allowed in ' + illegal_input + ' field.')
+                flash(msg, 'alert-danger')
+                return redirect(url_for('sitedata_filedrop'))
 
-        if 'sitedata_upload' not in request.files:
-            flash('No files detected', 'alert-danger')
-            return redirect(request.url)
+            if 'sitedata_upload' not in request.files:
+                flash('No files detected', 'alert-danger')
+                return redirect(request.url)
 
-        files = request.files.getlist("sitedata_upload")
-        fnms = [x.filename for x in files]
+            files = request.files.getlist("sitedata_upload")
+            fnms = [x.filename for x in files]
 
-        if len(set(fnms)) < len(fnms):
-            flash('At least two files you tried to upload have the same name.',
-                'alert-danger')
-            return redirect(request.url)
+            if len(set(fnms)) < len(fnms):
+                flash('At least two files you tried to upload have the same name.',
+                    'alert-danger')
+                return redirect(request.url)
 
-        if len(fnms[0]) == 0: #is this needed, or is first catch sufficient?
-            flash('No files selected.', 'alert-danger')
-            return redirect(request.url)
+            if len(fnms[0]) == 0: #is this needed, or is first catch sufficient?
+                flash('No files selected.', 'alert-danger')
+                return redirect(request.url)
 
-        # fnms = ['AZ_canopy.csv', 'AZ_cross_section.csv']
-        # f = fnms[1]
-        regionlist = pd.read_sql('select distinct region from site;',
-            db.engine).region.tolist()
+            # fnms = ['AZ_canopy.csv', 'AZ_cross_section.csv']
+            # f = fnms[1]
+            regionlist = pd.read_sql('select distinct region from site;',
+                db.engine).region.tolist()
 
-        regions = []
-        datasets = []
-        for f in fnms:
-            rgx = re.match('^([A-Za-z]{2})_(synoptic_)?(canopy|cross_section|' +\
-                'geomorphology|pebble_count).csv$', f)
-            if rgx:
-                rgx_grps = rgx.groups()
-                region = rgx_grps[0]
-                regions.append(region)
-                if any([l.islower() for l in region]):
+            regions = []
+            datasets = []
+            for f in fnms:
+                rgx = re.match('^([A-Za-z]{2})_(synoptic_)?(canopy|cross_section|' +\
+                    'geomorphology|pebble_count).csv$', f)
+                if rgx:
+                    rgx_grps = rgx.groups()
+                    region = rgx_grps[0]
+                    regions.append(region)
+                    if any([l.islower() for l in region]):
+                        flash('Name error in ' + f +\
+                            '. Region code must be capitalized.', 'alert-danger')
+                        return redirect(request.url)
+                    if region not in regionlist:
+                        flash('Name error in ' + f + '. Unrecognized region code.' +\
+                        ' Please upload sensor data first.', 'alert-danger')
+                        return redirect(request.url)
+                    synop = '' if not rgx_grps[1] else rgx_grps[1]
+                    datasets.append(synop + rgx_grps[2])
+                else:
                     flash('Name error in ' + f +\
-                        '. Region code must be capitalized.', 'alert-danger')
+                        '. Please review step 2.', 'alert-danger')
                     return redirect(request.url)
-                if region not in regionlist:
-                    flash('Name error in ' + f + '. Unrecognized region code.' +\
-                    ' Please upload sensor data first.', 'alert-danger')
-                    return redirect(request.url)
-                synop = '' if not rgx_grps[1] else rgx_grps[1]
-                datasets.append(synop + rgx_grps[2])
-            else:
-                flash('Name error in ' + f +\
-                    '. Please review step 2.', 'alert-danger')
+
+            if any([r != regions[0] for r in regions]):
+                flash('Please upload datasets from only one region at a time.',
+                    'alert-danger')
                 return redirect(request.url)
 
-        if any([r != regions[0] for r in regions]):
-            flash('Please upload datasets from only one region at a time.',
-                'alert-danger')
+            #prevent filename mischief; document any name changes that occur
+            fnms_secure = []
+            files_secure = []
+            fnms_changed = {}
+            for f in files:
+                if f:
+                    fnm = f.filename
+                    secured = secure_filename(fnm)
+                    if secured != fnm:
+                        fnms_changed[fnm] = secured
+                    fnms_secure.append(secured)
+                    files_secure.append(f)
+
+            #determine whether any filenames have been uploaded before;
+            #move and replace if desired, else error
+            files_on_server = os.listdir(sitedata_dir)
+            uploaded_bool = [f in files_on_server for f in fnms_secure]
+
+            if any(uploaded_bool):
+                already_have = [fnms_secure[i] for i in xrange(len(fnms_secure)) \
+                if uploaded_bool[i]]
+
+                if request.form.get('replacebox') == 'on':
+                    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S%f')
+                    for f in already_have:
+                        archive_filename = f[0:len(f) - 4] + '_' + timestamp + '.csv'
+                        os.rename(sitedata_dir + '/' + f,
+                            sitedata_dir_old + '/' + archive_filename)
+                else:
+                    flash('Error. Dataset(s) already on file: ' +\
+                        ', '.join(already_have) +\
+                        '. Check the box in Step 3 to overwrite.', 'alert-danger')
+                    return redirect(request.url)
+
+            #write files; should build an error handler here and return any moved
+            #files to sitedata_dir if something goes wrong.
+            for i in xrange(len(files_secure)):
+                # fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
+                savepath = os.path.join(sitedata_dir, fnms_secure[i])
+                files_secure[i].save(savepath)
+
+            #populate database
+            # dfile_str = ', '.join(fnms_secure) if dfiles[0] else 'NA'
+            dtnow = datetime.utcnow()
+            for n in fnms_secure:
+                db_entry = Sitefiles(filename=n, uploader=contactname,
+                    email=contactemail, addDate=dtnow)
+                db.session.add(db_entry)
+
+            db.session.commit()
+
+            #give feedback to user
+            len_already_have = len(already_have)
+            n_new = len(fnms_secure) - len_already_have
+            w1 = 'file' if n_new == 1 else 'files'
+            w2 = 'file' if len_already_have == 1 else 'files'
+            flash('Uploaded ' + str(n_new) + ' new ' + w1 + ' and updated ' +\
+                str(len_already_have) + ' existing ' + w2 +\
+                ' (' + ', '.join(already_have) + ').', 'alert-success')
+
+            lfnms = len(fnms_changed)
+            if lfnms:
+                name_changes = [a[0] + ' -> ' + a[1] for a in fnms_changed.items()]
+                ww = 'These filenames have' if lfnms != 1 else 'This filename has'
+                flash(ww + ' been changed as a precaution: ' +\
+                    ', '.join(name_changes) + '.', 'alert-warning')
+
+        except:
+            tb = traceback.format_exc()
+            log_exception('E010', tb)
+            msg = Markup('Error 010. Please <a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">notify StreamPULSE development</a> so this can be fixed.')
+            flash(msg, 'alert-danger')
             return redirect(request.url)
-
-        #prevent filename mischief; document any name changes that occur
-        fnms_secure = []
-        files_secure = []
-        fnms_changed = {}
-        for f in files:
-            if f:
-                fnm = f.filename
-                secured = secure_filename(fnm)
-                if secured != fnm:
-                    fnms_changed[fnm] = secured
-                fnms_secure.append()
-                files_secure.append(f)
-
-        #determine whether any filenames have been uploaded before;
-        #move and replace if desired, else error
-        files_on_server = os.listdir(sitedata_dir)
-        uploaded_bool = [f in files_on_server for f in fnms_secure]
-
-        if any(uploaded_bool):
-            already_have = [fnms_secure[i] for i in xrange(len(fnms_secure)) if uploaded_bool[i]]
-
-            if request.form.get('replacebox') == 'on':
-                timestamp = datetime.now().strftime('%Y%m%d-%H%M%S%f')
-                for f in already_have:
-                    archive_filename = f[0:len(f) - 4] + '_' + timestamp + '.csv'
-                    os.rename(sitedata_dir + '/' + f,
-                        sitedata_dir_old + '/' + archive_filename)
-            else:
-                flash('Error. Dataset(s) already on file: ' +\
-                    ', '.join(already_have) +\
-                    '. Check the box in Step 3 to overwrite.', 'alert-danger')
-                return redirect(request.url)
-
-        #write files; should build an error handler here and return any moved
-        #files to sitedata_dir if something goes wrong.
-        for i in xrange(len(files_secure)):
-            # fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
-            savepath = os.path.join(sitedata_dir, fnms_secure[i])
-            files_secure[i].save(savepath)
-
-        #populate database
-        # dfile_str = ', '.join(fnms_secure) if dfiles[0] else 'NA'
-
-        dtnow = datetime.utcnow()
-        for n in fnms_secure:
-            db_entry = Sitefiles(filename=n, uploader=contactname,
-                email=contactemail, addDate=dtnow)
-            db.session.add(db_entry)
-
-        db.session.commit()
-
-        # flash('Uploaded ' + str(fnms_secure) + ' file(s). These updated ' +\
-        #     '', 'alert-success')
 
         return render_template('sitedata_filedrop.html')
-
-        # except:
-        #     msg = Markup('There has been an error. Please notify site maintainer <a href=' +\
-        #         '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-        #         'Mike Vlah</a>.')
-        #     flash(msg, 'alert-danger')
-        #     return redirect(request.url)
 
     if request.method == 'GET': #when first visiting the sitedata upload page
         return render_template('sitedata_filedrop.html')
@@ -2250,11 +2264,10 @@ def confirmcolumns():
             pass
         [os.remove(f) for f in fnlong]
         tb = traceback.format_exc()
-        log_exception('008', tb)
-        msg = Markup('Error 008. Please <a href=' +\
-            '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-            'email Mike Vlah</a> with the error number and a copy of ' +\
-            'the file you tried to upload.')
+        log_exception('E008', tb)
+        msg = Markup('Error 008. Please <a href="mailto:michael.vlah@duke.edu"' +\
+            ' class="alert-link">email StreamPULSE development</a> ' +\
+            'with the error number and a copy of the file you tried to upload.')
         flash(msg, 'alert-danger')
 
         return redirect(url_for('series_upload'))
@@ -2270,10 +2283,11 @@ def confirmcolumns():
         except:
             pass
         tb = traceback.format_exc()
-        log_exception('009', tb)
+        log_exception('E009', tb)
         msg = Markup('Error 009. This is a particularly nasty error. Please ' +\
-            '<a href="mailto:vlahm13@gmail.com" class="alert-link">email Mike ' +\
-            'Vlah</a> with the error number and a copy of the file(s) you tried to upload.')
+            '<a href="mailto:michael.vlah@duke.edu"' +\
+            ' class="alert-link">email StreamPULSE development</a> ' +\
+            'with the error number and a copy of the file(s) you tried to upload.')
         flash(msg, 'alert-danger')
 
         return redirect(url_for('series_upload'))
@@ -2454,11 +2468,10 @@ def grab_confirmcolumns():
 
     except Exception as e:
         tb = traceback.format_exc()
-        log_exception('005', tb)
-        msg = Markup('Error 005. Please <a href=' +\
-            '"mailto:vlahm13@gmail.com" class="alert-link">' +\
-            'email</a> Mike Vlah with the error number and a copy of ' +\
-            'the file you tried to upload.')
+        log_exception('E005', tb)
+        msg = Markup('Error 005. Please <a href="mailto:michael.vlah@duke.edu"' +\
+            ' class="alert-link">email StreamPULSE development</a> ' +\
+            'with the error number and a copy of the file you tried to upload.')
         flash(msg, 'alert-danger')
 
         return redirect(request.url)
@@ -2575,6 +2588,27 @@ def getcsv():
     endDate = request.form['endDate']
     variables = request.form['variables'].split(",")
     email = request.form.get('email')
+    canopy = request.form.get('canopy')
+    csect = request.form.get('csect')
+    geo = request.form.get('geo')
+    pebble = request.form.get('pebble')
+    synoptic = request.form.get('synoptic')
+    aggregate = request.form['aggregate']
+    dataform = request.form['dataform'] # wide or long format
+
+    #determine which site characteristic datasets the user wants
+    # canopy = 'on'; csect = None; pebble = 'on'; geo = None; synoptic = 'on'
+    sitechar_reqs = {}
+    sitechar_reqs['_canopy.csv'] = True if canopy else False
+    sitechar_reqs['_cross_section.csv'] = True if csect else False
+    sitechar_reqs['_pebble_count.csv'] = True if pebble else False
+    sitechar_reqs['_geomorphology.csv'] = True if geo else False
+    sitechar_sel = [x[0] for x in sitechar_reqs.items() if x[1]]
+    if synoptic:
+        sitechar_sel.extend(['_synoptic' + x for x in sitechar_sel])
+    #now retrieve all regions
+
+
     if re.match('[a-zA-Z]{2}_nwis-[0-9]+', sitenm[0]):
         src_table = 'powell'
     else:
@@ -2599,12 +2633,8 @@ def getcsv():
     db.session.add(dnld_stat)
     db.session.commit() #should be at end of function
 
-    # get more form data; make temp directory to pass to user
-    aggregate = request.form['aggregate']
-    dataform = request.form['dataform'] # wide or long format
+    #make temp directory and store data policy there
     tmp = tempfile.mkdtemp()
-
-    # add the data policy to the folder
     shutil.copy2("static/streampulse_data_policy.txt", tmp)
 
     #get data, metadata, etc for each site and put in temp directory

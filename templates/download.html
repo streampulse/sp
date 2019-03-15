@@ -66,7 +66,27 @@
     <hr>
     <br>
 
-    <p class="lead">5. Additional options:</p>
+    <p class="lead">5. Site characteristic datasets to include:</p>
+    <div class="form-inline">
+      <input type="checkbox" id="canopy" name="canopy">
+      Canopy (tree height, distance to bank, etc.)
+      <br>
+      <input type="checkbox" id="csect" name="csect">
+      Cross Sections (width, depth, velocity, etc.)
+      <br>
+      <input type="checkbox" id="geo" name="geo">
+      Geomorphology (bank height, channel type, etc.)
+      <br>
+      <input type="checkbox" id="pebble" name="pebble">
+      Pebble Counts
+      <br>
+      <input type="checkbox" id="synoptic" name="synoptic">
+      Include synoptic survey data for each checked category above.
+    </div>
+    <hr>
+    <br>
+
+    <p class="lead">6. Additional options:</p>
     <div class="form-inline">
       <input type="checkbox" id="flag" name="flag">
       <!-- &nbsp; -->
@@ -78,38 +98,50 @@
       </small>
       <br><br>
       <input type="checkbox" name="usgs">
-      Include time series of local discharge and depth from USGS, if available
-      <strong>(not necessary for Powell Center data)</strong>.
+      Include time series of local discharge and depth from USGS, if available.
+      <br>
+      <strong>(not necessary for core sites or Powell Center sites)</strong>.
       <br>
       <small class="form-text text-muted">
         Note: querying the USGS server can take a while for long time series.
       </small>
       <br><br>
       <input type="checkbox" name="grab">
-      Include manually collected data if available.
+      Include grab data (manually collected time-series data) if available.
       <br>
       <small class="form-text text-muted">
-        These will be contained in their own separate CSV file for each site.
+        These will be contained in separate CSV files for each site.
       </small>
     </div>
     <hr>
-    <br>
-
-    <div class="form-inline">
-      <label>
-        <input class="form-control" type="checkbox" name="policy" required> I agree to the <a href="policy">StreamPULSE data policy</a> (required).
-      </label>
-    </div><br>
 
     {% if not g.user.is_authenticated %}
-    <div class="form-inline">
-        Email (optional): <input class="form-control" type="textbox" name="email" placeholder="Email address, optional">
-        <br>
-      <span class="text-muted">We will add you to our mailing list to get occasional (3-4 times a year) updates about our project. We will not share your email with anyone else.<span>
-    </div><br>
+      <div class="form-inline">
+          Email (optional):
+          <input class="form-control" type="textbox" name="email"
+          placeholder="Email address, optional">
+          <br>
+        <span class="text-muted">
+          We will add you to our mailing list to get occasional (3-4 times a year)
+          updates about our project. We will not share your email with anyone else.
+        </span>
+        <br><br><br>
+      </div>
     {% endif %}
 
-    <button id="getcsv" type="submit" value=Download class="btn btn-primary btn-block">Download</button>
+    <div class="form-inline text-center">
+      <label>
+        <input class="form-control" type="checkbox" name="policy" required>
+        I agree to the <a href="policy">StreamPULSE data policy</a> (required).
+      </label>
+    </div>
+
+    <div class="col-md-6 col-md-offset-3">
+      <br><br>
+      <button id="getcsv" type="submit" value=Download class="btn btn-primary btn-block">
+        Download
+      </button>
+    </div>
   </form>
 </div></div>
 <br><br><br>
