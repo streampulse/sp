@@ -116,6 +116,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
+app.config['SITEDATA_FOLDER'] = cfg.SITEDATA_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
 app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 700 * 1024 * 1024 # originally set to 16 MB; now 700
@@ -946,6 +947,19 @@ def confirm_token(token, expiration=3600*24): # expires in one day
     except:
         return False
     return email
+
+def zipfile_listdir_recursive(dir_name):
+
+    fileList = []
+    for file in os.listdir(dir_name):
+        dirfile = os.path.join(dir_name, file)
+
+        if os.path.isfile(dirfile):
+            fileList.append(dirfile)
+        elif os.path.isdir(dirfile):
+            fileList.extend(zipfile_listdir_recursive(dirfile))
+
+    return fileList
 
 # def send_email(to, subject, template):
 #     mail.send_message(subject, recipients=[to], html=template)
@@ -2584,6 +2598,7 @@ def getcsv():
 
     #retrieve form specifications
     sitenm = request.form['sites'].split(",")
+    regionlist = [x.split('_')[0] for x in sitenm]
     startDate = request.form['startDate']#.split("T")[0]
     endDate = request.form['endDate']
     variables = request.form['variables'].split(",")
@@ -2595,19 +2610,6 @@ def getcsv():
     synoptic = request.form.get('synoptic')
     aggregate = request.form['aggregate']
     dataform = request.form['dataform'] # wide or long format
-
-    #determine which site characteristic datasets the user wants
-    # canopy = 'on'; csect = None; pebble = 'on'; geo = None; synoptic = 'on'
-    sitechar_reqs = {}
-    sitechar_reqs['_canopy.csv'] = True if canopy else False
-    sitechar_reqs['_cross_section.csv'] = True if csect else False
-    sitechar_reqs['_pebble_count.csv'] = True if pebble else False
-    sitechar_reqs['_geomorphology.csv'] = True if geo else False
-    sitechar_sel = [x[0] for x in sitechar_reqs.items() if x[1]]
-    if synoptic:
-        sitechar_sel.extend(['_synoptic' + x for x in sitechar_sel])
-    #now retrieve all regions
-
 
     if re.match('[a-zA-Z]{2}_nwis-[0-9]+', sitenm[0]):
         src_table = 'powell'
@@ -2716,7 +2718,31 @@ def getcsv():
         ", contact, contactEmail from site where concat(region, '_'," +\
         " site) in ('" + "','".join(sitenm) + "');"
     sitedata = pd.read_sql(sitequery, db.engine)
-    sitedata.to_csv(tmp + '/' + 'siteData.csv', index=False, encoding='utf-8')
+    sitedata.to_csv(tmp + '/siteData.csv', index=False, encoding='utf-8')
+
+    #determine which site characteristic datasets the user wants
+    sitechar_reqs = {}
+    sitechar_reqs['_canopy.csv'] = True if canopy else False
+    sitechar_reqs['_cross_section.csv'] = True if csect else False
+    sitechar_reqs['_pebble_count.csv'] = True if pebble else False
+    sitechar_reqs['_geomorphology.csv'] = True if geo else False
+    sitechar_sel = [x[0] for x in sitechar_reqs.items() if x[1]]
+    if synoptic:
+        sitechar_sel.extend(['_synoptic' + x for x in sitechar_sel])
+
+    #add desired site characteristic datasets to subdirectory of temp file
+    sd_files = os.listdir(app.config['SITEDATA_FOLDER'])
+    regionlist = [x.split('_')[0] for x in sd_files]
+    sitechar_filelist = []
+    for s in sd_files:
+        sd_reg, sd_set = re.match('^([A-Za-z]{2})(_.*)$', s).groups()
+        if sd_reg in regionlist and sd_set in sitechar_sel:
+            sitechar_filelist.append(app.config['SITEDATA_FOLDER'] + '/' + s)
+
+    if sitechar_filelist:
+        os.mkdir(tmp + '/site_characteristic_datasets')
+        for s in sitechar_filelist:
+            shutil.copy2(s, tmp + '/site_characteristic_datasets')
 
     #add readme with notes if needed
     if nograbsites:
@@ -2725,12 +2751,21 @@ def getcsv():
                 'specified time for site(s): ' + ', '.join(nograbsites) + '.')
             readme.close()
 
-    #zip all files in temp dir as new zip dir, pass on to user
-    writefiles = os.listdir(tmp) # list files in the temp directory
+    #zip all files in temp dir as new zip dir, pass on to user (old, nonrecursive way)
+    # writefiles = os.listdir(tmp) # list files in the temp directory
+    # zipname = 'SPdata_' + datetime.now().strftime("%Y-%m-%d") + '.zip'
+    # with zipfile.ZipFile(tmp + '/' + zipname, 'w') as zf:
+    #     [zf.write(tmp + '/' + f, f) for f in writefiles]
+    # flash('File sent: ' + zipname, 'alert-success')
+
+    #recursively zip all files in temp dir as new zip dir, pass on to user
+    writefiles = zipfile_listdir_recursive(tmp)
+    rel_wfs = [re.match(tmp + '/(.*)', f).group(1) for f in writefiles]
     zipname = 'SPdata_' + datetime.now().strftime("%Y-%m-%d") + '.zip'
-    with zipfile.ZipFile(tmp + '/' + zipname, 'w') as zf:
-        [zf.write(tmp + '/' + f, f) for f in writefiles]
-    #flash('File sent: '+zipname, 'alert-success')
+    zf = zipfile.ZipFile(tmp + '/' + zipname, 'w')
+    for i in xrange(len(writefiles)):
+        zf.write(writefiles[i], rel_wfs[i])
+    zf.close()
 
     return send_file(tmp + '/' + zipname, 'application/zip',
         as_attachment=True, attachment_filename=zipname)
