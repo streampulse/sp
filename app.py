@@ -2748,7 +2748,7 @@ def getcsv():
 
     #add desired site characteristic datasets to subdirectory of temp file
     sd_files = os.listdir(app.config['SITEDATA_FOLDER'])
-    regionlist = [x.split('_')[0] for x in sd_files]
+    # regionset = set([x.split('_')[0] for x in sd_files])
     sitechar_filelist = []
     for s in sd_files:
         sd_reg, sd_set = re.match('^([A-Za-z]{2})(_.*)$', s).groups()
