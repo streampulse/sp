@@ -2579,8 +2579,21 @@ def download():
     for i in xrange(len(sitedictP)):
         sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
+    #list available site characteristic datasets, replace synoptic fns with 'synoptic'
+    sd_files = os.listdir(app.config['SITEDATA_FOLDER'])
+    reg_dset_list = [re.match('^([A-Za-z]{2})_(.*)?.csv$',
+        s).groups() for s in sd_files]
+    reg_dset_list = map(lambda x: (x[0],
+        'synoptic') if 'synoptic' in x[1] else x, reg_dset_list)
+    reg_dset_list = list(set(reg_dset_list))
+    reg_set = set(map(lambda x: x[0], reg_dset_list))
+
+    reg_dset_dict = {}
+    for e in reg_set:
+        reg_dset_dict[e] = [ee[1] for ee in reg_dset_list if ee[0] == e]
+
     return render_template('download.html', sites=sitedict,
-        powell_sites=sitedictP)
+        powell_sites=sitedictP, site_char_map=reg_dset_dict)
 
 @app.route('/_getstats', methods=['POST'])
 def getstats():
@@ -2604,9 +2617,12 @@ def getcsv():
     variables = request.form['variables'].split(",")
     email = request.form.get('email')
     canopy = request.form.get('canopy')
-    csect = request.form.get('csect')
-    geo = request.form.get('geo')
-    pebble = request.form.get('pebble')
+    csect = request.form.get('cross_section')
+    geo = request.form.get('geomorphology')
+    pebble = request.form.get('pebble_count')
+    # csect = request.form.get('csect')
+    # geo = request.form.get('geo')
+    # pebble = request.form.get('pebble')
     synoptic = request.form.get('synoptic')
     aggregate = request.form['aggregate']
     dataform = request.form['dataform'] # wide or long format

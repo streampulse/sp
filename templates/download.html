@@ -29,7 +29,7 @@
   </p>
 
   <form id="dnld" action="/_getcsv" method="POST" class="form-horizontal">
-      <select placeholder="Choose site(s)" id="dsite" name="site" multiple>
+      <select placeholder="Choose site(s)" id="dsite" name="site" multiple required>
         <option value="">Choose site(s)</option>
         {% for sv, sn, sd, ed, va in sites %}
           <option value="{{sv}}">{{sn}}</option>
@@ -66,21 +66,21 @@
     <hr>
     <br>
 
-    <p class="lead">5. Site characteristic datasets to include:</p>
-    <div class="form-inline">
-      <input type="checkbox" id="canopy" name="canopy">
+    <p class="lead">5. Site characteristic datasets to include, if available:</p>
+    <div id="site_char_options" class="form-inline">
+      <input type="checkbox" id="canopy" name="canopy" disabled>
       Canopy (tree height, distance to bank, etc.)
       <br>
-      <input type="checkbox" id="csect" name="csect">
+      <input type="checkbox" id="csect" name="cross_section" disabled>
       Cross Sections (width, depth, velocity, etc.)
       <br>
-      <input type="checkbox" id="geo" name="geo">
+      <input type="checkbox" id="geo" name="geomorphology" disabled>
       Geomorphology (bank height, channel type, etc.)
       <br>
-      <input type="checkbox" id="pebble" name="pebble">
+      <input type="checkbox" id="pebble" name="pebble_count" disabled>
       Pebble Counts
       <br>
-      <input type="checkbox" id="synoptic" name="synoptic">
+      <input type="checkbox" id="synoptic" name="synoptic" disabled>
       Include synoptic survey data for each checked category above.
     </div>
     <hr>
@@ -195,6 +195,7 @@ var dsitei = dsite[0].selectize;
 
 var powell_sites = {{ powell_sites|safe }};
 var sites = {{ sites|safe }}; //might have to change list back to tuple, or something similar
+var site_char_map = {{ site_char_map|safe }};
 
 $('input[name=optradio]').change(function(){
   var selected_dsource = $('input[name=optradio]:checked').val();
@@ -226,7 +227,6 @@ $('#dsite').change(function(){
     var src_dict = selected_dsource == 'pow' ? sitedict_powell : sitedict;
 
     var siteinfo = sitedict[$('select[name=site]').val()];
-    // var sitedates = siteinfo['dates']
 
     var startdates = $('select[name=site]').val().map(function(x){
       return new Date(src_dict[x]['dates'][0])
@@ -248,26 +248,45 @@ $('#dsite').change(function(){
       opens: 'left'
     });
 
-    // $('#start_date').text( '"'+$("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD')+'"' );
-    // $('#end_date').text( '"'+$("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD')+'"' );
-
     $('#dnld input[name=startDate]').val(sitedates[0]);
     $('#dnld input[name=endDate]').val(sitedates[1]);
     $('#dnld input[name=sites]').val($('select[name=site]').val().join());
     $("#dnld_vars").empty();
-    // var sitevars = siteinfo['vars'].split(",")
-    // get all variables in all sites
+
+    // get all variables from all sites
     var sitevars = $('select[name=site]').val().map(function(x){
       return src_dict[x]['vars'].split(",")
     }).reduce(function(a,b){
       return a.concat(b)
     })
-    // get unique variables in list
+
+    // update variable checkboxes
     var uvars = sitevars.filter(function(item, i, ar){
       return ar.indexOf(item) === i;
     }).sort()
     for (var i = 0; i < uvars.length; ++i) {
-        $('#dnld_vars').append('<input type="checkbox" id="variables" value="'+uvars[i]+'" checked> '+uvars[i]+'<br>');
+      $('#dnld_vars').append('<input type="checkbox" id="variables" value="' +
+        uvars[i] + '" checked> ' + uvars[i] + '<br>');
+    }
+
+    //disable site characteristic checkboxes if not available for selected regions
+    var selected_regions = $('#dsite').val().map(x => x.split('_')[0]);
+    dset_arr = [].concat(...selected_regions.map(x => site_char_map[x]));
+    dset_arr = [...new Set(dset_arr)];
+    var site_char_boxes = $('#site_char_options').find('input');
+    for (var i = 0; i < site_char_boxes.length; i++){
+      if(dset_arr.includes(site_char_boxes[i].name)){
+        $('#' + site_char_boxes[i].id).removeAttr('disabled');
+      } else {
+        $('#' + site_char_boxes[i].id).attr("disabled", true);
+      }
+    }
+
+  } else {
+    $("#dnld_vars").empty();
+    var site_char_boxes = $('#site_char_options').find('input');
+    for (var i = 0; i < site_char_boxes.length; i++){
+      $('#' + site_char_boxes[i].id).attr("disabled", true);
     }
   }
 

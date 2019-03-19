@@ -1,5 +1,18 @@
 #Mike's Logbook
 
+###tue20190319
+ + finished download portion of sitedata system
+ + misc download page bugfixes
+###thu20190313
+ + finished database entry portion of sitedata system
+###wed20190313
+ + updated R package to warn user if they have low DOsat coverage
+ + added parameter for estimating air pressure even when supplied to prep_metabolism
+ + finished sitedata upload backend
+###tue20190312
+ + finished sitedata upload template
+###wed20190306
+ + script to monitor model results folder and automatically update new model results database (in preparation for summary plots)
 ###tue20190305
  + fixed auto-deletion of old model runs on server. they actually stick around for a month now.
  + thinned neon data to 1/15 before sending to viz
