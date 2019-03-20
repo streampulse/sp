@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block body %}
+
+<div class="container">
+  <div class='row' style='margin-top: 100px'></div>
+  <div class="row">
+    <div class="col-md-6 col-md-offset-3 text-center">
+      <p class='lead'>
+        You can flexibly download small batches of data from specific sites,
+        or download all available data in bulk. Which type of download would
+        you prefer?
+      </p>
+      <br><br>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4 col-md-offset-2">
+      <input type='button' class="btn btn-success btn-lg btn-block"
+      value='Small batch' onclick="location.href = 'download';">
+    </div>
+    <div class="col-md-4">
+      <input type='button' class="btn btn-info btn-lg btn-block"
+      value='Bulk' onclick="location.href = 'download_bulk';">
+    </div>
+  </div>
+</div>
+
+{% endblock %}

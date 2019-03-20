@@ -39,72 +39,6 @@ import time
 import traceback
 import regex
 
-#another attempt at serverside sessions
-# import pickle
-# from uuid import uuid4
-# from redis import Redis
-# from werkzeug.datastructures import CallbackDict
-# from flask.sessions import SessionInterface, SessionMixin
-#
-# class RedisSession(CallbackDict, SessionMixin):
-#
-#     def __init__(self, initial=None, sid=None, new=False):
-#         def on_update(self):
-#             self.modified = True
-#         CallbackDict.__init__(self, initial, on_update)
-#         self.sid = sid
-#         self.new = new
-#         self.modified = False
-#
-#
-# class RedisSessionInterface(SessionInterface):
-#     serializer = pickle
-#     session_class = RedisSession
-#
-#     def __init__(self, redis=None, prefix='session:'):
-#         if redis is None:
-#             redis = Redis()
-#         self.redis = redis
-#         self.prefix = prefix
-#
-#     def generate_sid(self):
-#         return str(uuid4())
-#
-#     def get_redis_expiration_time(self, app, session):
-#         if session.permanent:
-#             return app.permanent_session_lifetime
-#         return timedelta(days=1)
-#
-#     def open_session(self, app, request):
-#         sid = request.cookies.get(app.session_cookie_name)
-#         if not sid:
-#             sid = self.generate_sid()
-#             return self.session_class(sid=sid, new=True)
-#         val = self.redis.get(self.prefix + sid)
-#         if val is not None:
-#             data = self.serializer.loads(val)
-#             return self.session_class(data, sid=sid)
-#         return self.session_class(sid=sid, new=True)
-#
-#     def save_session(self, app, session, response):
-#         domain = self.get_cookie_domain(app)
-#         if not session:
-#             self.redis.delete(self.prefix + session.sid)
-#             if session.modified:
-#                 response.delete_cookie(app.session_cookie_name,
-#                                        domain=domain)
-#             return
-#         redis_exp = self.get_redis_expiration_time(app, session)
-#         cookie_exp = self.get_expiration_time(app, session)
-#         val = self.serializer.dumps(dict(session))
-#         self.redis.setex(self.prefix + session.sid, val,
-#                          int(redis_exp.total_seconds()))
-#         response.set_cookie(app.session_cookie_name, session.sid,
-#                             expires=cookie_exp, httponly=True,
-#                             domain=domain)
-
-# from rpy2.robjects.packages import importr
-
 pandas2ri.activate() #for converting pandas df to R df
 
 app = Flask(__name__)
@@ -118,6 +52,7 @@ app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['SITEDATA_FOLDER'] = cfg.SITEDATA_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
+app.config['BULK_DNLD_FOLDER'] = cfg.BULK_DNLD_FOLDER
 app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 700 * 1024 * 1024 # originally set to 16 MB; now 700
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
@@ -1287,6 +1222,29 @@ def sitelist():
 @app.route('/upload_choice')
 def upload_choice():
     return render_template('upload_choice.html')
+
+@app.route('/download_choice')
+def download_choice():
+    return render_template('download_choice.html')
+
+@app.route('/download_bulk')
+def download_bulk():
+
+    bulk_files = os.listdir(app.config['BULK_DNLD_FOLDER'])
+    bulk_sizes = [os.path.getsize('../bulk_download_files/' + b) for b in bulk_files]
+    # for i in xrange(len(bulk_sizes)):
+    #     if bulk_sizes[i] < 1048576:
+    #         bulk_sizes[i] = str(round(bulk_sizes[i] / 1024, 2)) + ' kB'
+    #     elif bulk_sizes[i] < 1073741824 and bulk_sizes[i] >= 1048576:
+    #         bulk_sizes[i] = str(round(bulk_sizes[i] / 1048576, 2)) + ' MB'
+    #     else:
+    #         bulk_sizes[i] = str(round(bulk_sizes[i] / 1073741824, 2)) + ' GB'
+
+    bulk_dict = dict(zip(bulk_files, bulk_sizes))
+
+
+    #all files must be present or an error will arise during rendering
+    return render_template('download_bulk.html', bulk_file_sizes=bulk_dict)
 
 @app.route('/viz_choice')
 def viz_choice():
@@ -3868,6 +3826,12 @@ def grdo_datatemplate_download():
 def sitedata_templates_download():
 
     return send_from_directory('static', 'streampulse_sitedata_templates.zip',
+        as_attachment=True)
+
+@app.route('/_allsp_download', methods=['POST'])
+def allsp_download():
+
+    return send_from_directory('../bulk_download_files', 'allsp.csv.zip',
         as_attachment=True)
 
 @app.route('/request_predictions')

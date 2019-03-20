@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div class="row"><div class="col-md-8 col-md-offset-2">
+  <h1 class='text-center text-primary'>Download StreamPULSE Data</h1>
+  <h3 class='text-center text-primary'>(in bulk)</h3>
+  <br><br>
+
+
+  <!-- <form id='metadnld' action="/_grdo_metatemplate_download" method="POST"
+    class="form-horizontal">
+      <p>Metadata template:</p>
+      <button id="metatemplate" type="submit" value=Download class="btn btn-primary">
+        Download
+      </button>
+    </div>
+  </form> -->
+
+
+
+
+  <h3>Get sensor data</h3>
+  <div class="form-group">
+
+    <form id='allsp_form' action="/_allsp_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All StreamPULSE data (not including NEON or Powell Center data)
+      </span>
+      <span style="display:inline-block">
+        <button id="allsp" class="btn btn-sm btn-info" style="font-family:mono">
+          Download ({{ bulk_file_sizes["allsp.csv.zip"]|filesizeformat }})
+        </button>
+      </span>
+    </form>
+    <br>
+
+    <form id='allneon_form' action="/_allneon_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All NEON data housed within StreamPULSE:
+      </span>
+      <span style="display:inline-block">
+        <button id="allneon" class="btn btn-sm btn-info" style="font-family:mono">
+          Download ({{ bulk_file_sizes["allneon.csv.zip"]|filesizeformat }})
+        </button>
+      </span>
+    </form>
+    <br>
+
+    <form id='allpowell_form' action="/_allpowell_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All Powell Center metabolism synthesis data housed within StreamPULSE:
+      </span>
+      <span style="display:inline-block">
+        <button id="allpowell" class="btn btn-sm btn-info" style="font-family:mono">
+          Download ({{ bulk_file_sizes["allpowell.csv.zip"]|filesizeformat }})
+        </button>
+      </span>
+    </form>
+    <br>
+
+  </div>
+
+  <div style="display:inline-block">
+    <h3>Get grab sample data</h3>
+  </div>
+  <div style="display:inline-block">
+    <p class="text-muted">&nbsp;(manually collected time-series data)</p>
+  </div>
+  <div class="form-group">
+    <form id='allgrab_form' action="/_allgrab_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All grab data:
+      </span>
+      <span style="display:inline-block">
+        <button id="allgrab" class="btn btn-sm btn-info" style="font-family:mono">
+          Download ({{ bulk_file_sizes["allgrab.csv.zip"]|filesizeformat }})
+        </button>
+      </span>
+    </form>
+    <br>
+  </div>
+
+  <br><br>
+
+  {% if not g.user.is_authenticated %}
+    <div class="form-inline">
+      Email (optional):
+      <input class="form-control" type="textbox" name="email"
+      placeholder="Email address, optional">
+      <br>
+      <span class="text-muted">
+        We will add you to our mailing list to get occasional (3-4 times a year)
+        updates about our project. We will not share your email with anyone else.
+      </span>
+      <br><br><br>
+    </div>
+  {% endif %}
+
+  <div class="form-inline text-center">
+    <label>
+      <input class="form-control" type="checkbox" name="policy" required>
+      I agree to the <a href="policy">StreamPULSE data policy</a> (required).
+    </label>
+  </div>
+
+  <!-- <div class="col-md-6 col-md-offset-3">
+    <br><br>
+    <button id="getcsv" type="submit" value=Download class="btn btn-primary btn-block">
+      Download
+    </button>
+  </div> -->
+
+</div></div>
+<br><br><br>
+
+{% endblock %}
