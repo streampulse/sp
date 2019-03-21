@@ -17,18 +17,26 @@
   </form> -->
 
 
-
+  <div class="form-inline text-left">
+    <label>
+      <input class="form-control" type="checkbox" name="policy" required>
+      I agree to the <a href="policy">StreamPULSE data policy</a> (required).
+    </label>
+  </div>
+  <br>
 
   <h3>Get sensor data</h3>
   <div class="form-group">
 
     <form id='allsp_form' action="/_allsp_download" method="POST" class="form-horizontal">
       <span style="display:inline-block; width:500px">
-        All public StreamPULSE data (not including NEON or Powell Center data)
+        All public StreamPULSE data (not including NEON or Powell Center data):
       </span>
       <span style="display:inline-block">
         <button id="allsp" class="btn btn-sm btn-info" style="font-family:mono">
-          Download ({{ bulk_file_sizes["allsp.csv.zip"]|filesizeformat }})
+          {% set bulksize = bulk_file_sizes["all_sp_data.csv.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
         </button>
       </span>
     </form>
@@ -40,7 +48,9 @@
       </span>
       <span style="display:inline-block">
         <button id="allneon" class="btn btn-sm btn-info" style="font-family:mono">
-          Download ({{ bulk_file_sizes["allneon.csv.zip"]|filesizeformat }})
+          {% set bulksize = bulk_file_sizes["all_neon_data.csv.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
         </button>
       </span>
     </form>
@@ -52,12 +62,13 @@
       </span>
       <span style="display:inline-block">
         <button id="allpowell" class="btn btn-sm btn-info" style="font-family:mono">
-          Download ({{ bulk_file_sizes["allpowell.csv.zip"]|filesizeformat }})
+          {% set bulksize = bulk_file_sizes["all_powell_data.csv.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
         </button>
       </span>
     </form>
     <br>
-
   </div>
 
   <div style="display:inline-block">
@@ -69,38 +80,114 @@
   <div class="form-group">
     <form id='allgrab_form' action="/_allgrab_download" method="POST" class="form-horizontal">
       <span style="display:inline-block; width:500px">
-        All grab data:
+        All public grab data:
       </span>
       <span style="display:inline-block">
         <button id="allgrab" class="btn btn-sm btn-info" style="font-family:mono">
-          Download ({{ bulk_file_sizes["allgrab.csv.zip"]|filesizeformat }})
+          {% set bulksize = bulk_file_sizes["all_grab_data.csv.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
         </button>
       </span>
     </form>
     <br>
   </div>
 
-  <br><br>
+  <h3>Get site data</h3>
+  <div class="form-group">
 
-  {% if not g.user.is_authenticated %}
-    <div class="form-inline">
-      Email (optional):
-      <input class="form-control" type="textbox" name="email"
-      placeholder="Email address, optional">
-      <br>
-      <span class="text-muted">
-        We will add you to our mailing list to get occasional (3-4 times a year)
-        updates about our project. We will not share your email with anyone else.
+    <form id='allbasicsite_form' action="/_allbasicsite_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All basic site data:
       </span>
-      <br><br><br>
-    </div>
-  {% endif %}
+      <span style="display:inline-block">
+        <button id="allbasicsite" class="btn btn-sm btn-info" style="font-family:mono">
+          {% set bulksize = bulk_file_sizes["all_basic_site_data.csv.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
+        </button>
+      </span>
+    </form>
+    <br>
 
-  <div class="form-inline text-center">
-    <label>
-      <input class="form-control" type="checkbox" name="policy" required>
-      I agree to the <a href="policy">StreamPULSE data policy</a> (required).
-    </label>
+    <form id='allsitechar_form' action="/_allsitechar_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All site characteristic datasets (geomorphology, canopy, etc.):
+      </span>
+      <span style="display:inline-block">
+        <button id="allsitechar" class="btn btn-sm btn-info" style="font-family:mono">
+          {% set bulksize = bulk_file_sizes["all_site_characteristic_datasets.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
+        </button>
+      </span>
+    </form>
+    <br>
+
+    <form id='allsuppmeta_form' action="/_allsuppmeta_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All free-form, supplementary site metadata:
+      </span>
+      <span style="display:inline-block">
+        <button id="allsuppmeta" class="btn btn-sm btn-info" style="font-family:mono">
+          {% set bulksize = bulk_file_sizes["all_supplementary_site_metadata.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
+        </button>
+      </span>
+    </form>
+    <br>
+  </div>
+
+  <h3>Get model results</h3>
+  <div class="form-group">
+
+    <form id='allmodelsumm_form' action="/_allmodelsumm_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All public model summary data (input parameters, averaged outputs, etc.):
+      </span>
+      <span style="display:inline-block">
+        <button id="allmodelsumm" class="btn btn-sm btn-info" style="font-family:mono">
+          {% set bulksize = bulk_file_sizes["all_model_summary_data.csv.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
+        </button>
+      </span>
+    </form>
+    <br>
+
+    <form id='alldailyres_form' action="/_alldailyres_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All public, daily model results:
+      </span>
+      <span style="display:inline-block">
+        <button id="alldailyres" class="btn btn-sm btn-info" style="font-family:mono">
+          {% set bulksize = bulk_file_sizes["all_daily_model_results.csv.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
+        </button>
+      </span>
+    </form>
+    <br>
+    <!--"%s -%s"|format("hello", "foo")-->
+
+    <!-- <form id='alldailyres_form' action="/_alldailyres_download" method="POST" class="form-horizontal"> -->
+    <span style="display:inline-block; width:500px">
+      All public streamMetabolizer output objects?
+    </span>
+    <p class="text-muted">
+      If anyone is interested in this, contact
+      <a href='michael.vlah@duke.edu'>
+        StreamPULSE development,
+      </a> and we'll make it happen.
+    </p>
+    <!-- <span style="display:inline-block">
+      <button id="alldailyres" class="btn btn-sm btn-info" style="font-family:mono">
+        Download ({{ bulk_file_sizes["all_daily_model_results.csv.zip"]|filesizeformat }})
+      </button>
+    </span> -->
+    <!-- </form> -->
+    <br>
   </div>
 
   <!-- <div class="col-md-6 col-md-offset-3">

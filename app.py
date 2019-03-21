@@ -3838,8 +3838,56 @@ def sitedata_templates_download():
 @app.route('/_allsp_download', methods=['POST'])
 def allsp_download():
 
-    return send_from_directory('../bulk_download_files', 'allsp.csv.zip',
+    return send_from_directory('../bulk_download_files', 'all_sp_data.csv.zip',
         as_attachment=True)
+
+@app.route('/_allneon_download', methods=['POST'])
+def allneon_download():
+
+    return send_from_directory('../bulk_download_files', 'all_neon_data.csv.zip',
+        as_attachment=True)
+
+@app.route('/_allpowell_download', methods=['POST'])
+def allpowell_download():
+
+    return send_from_directory('../bulk_download_files', 'all_powell_data.csv.zip',
+        as_attachment=True)
+
+@app.route('/_allgrab_download', methods=['POST'])
+def allgrab_download():
+
+    return send_from_directory('../bulk_download_files', 'all_grab_data.csv.zip',
+        as_attachment=True)
+
+@app.route('/_allbasicsite_download', methods=['POST'])
+def allbasicsite_download():
+
+    return send_from_directory('../bulk_download_files',
+        'all_basic_site_data.csv.zip', as_attachment=True)
+
+@app.route('/_allsuppmeta_download', methods=['POST'])
+def allsuppmeta_download():
+
+    return send_from_directory('../bulk_download_files',
+        'all_supplementary_site_metadata.zip', as_attachment=True)
+
+@app.route('/_allsitechar_download', methods=['POST'])
+def allsitechar_download():
+
+    return send_from_directory('../bulk_download_files',
+        'all_site_characteristic_datasets.zip', as_attachment=True)
+
+@app.route('/_allmodelsumm_download', methods=['POST'])
+def allmodelsumm_download():
+
+    return send_from_directory('../bulk_download_files',
+        'all_model_summary_data.csv.zip', as_attachment=True)
+
+@app.route('/_alldailyres_download', methods=['POST'])
+def alldailyres_download():
+
+    return send_from_directory('../bulk_download_files',
+        'all_daily_model_results.csv.zip', as_attachment=True)
 
 @app.route('/request_predictions')
 def request_predictions():
