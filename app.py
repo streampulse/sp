@@ -1706,15 +1706,17 @@ def sitedata_filedrop():
                 return redirect(request.url)
 
             # fnms = ['AZ_canopy.csv', 'AZ_cross_section.csv']
+            # fnms = ['CT_cross_section_2016.csv', 'AZ_pebble_count_2013.csv']
             # f = fnms[1]
             regionlist = pd.read_sql('select distinct region from site;',
                 db.engine).region.tolist()
 
             regions = []
-            datasets = []
+            # datasets = []
             for f in fnms:
                 rgx = re.match('^([A-Za-z]{2})_(synoptic_)?(canopy|cross_section|' +\
-                    'geomorphology|pebble_count).csv$', f)
+                    'geomorphology|pebble_count|depth_rating_curve)_[0-9]{4}.csv$',
+                    f)
                 if rgx:
                     rgx_grps = rgx.groups()
                     region = rgx_grps[0]
@@ -1728,7 +1730,7 @@ def sitedata_filedrop():
                         ' Please upload sensor data first.', 'alert-danger')
                         return redirect(request.url)
                     synop = '' if not rgx_grps[1] else rgx_grps[1]
-                    datasets.append(synop + rgx_grps[2])
+                    # datasets.append(synop + rgx_grps[2])
                 else:
                     flash('Name error in ' + f +\
                         '. Please review step 2.', 'alert-danger')
