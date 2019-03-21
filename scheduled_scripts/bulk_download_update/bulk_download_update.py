@@ -6,7 +6,11 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import pandas as pd
 import os
+<<<<<<< Updated upstream
 from zipfile import ZipFile
+=======
+import zipfile
+>>>>>>> Stashed changes
 import config as cfg
 
 app = Flask(__name__)
@@ -68,9 +72,15 @@ sitedata = sitedata.drop(['ds_ref', 'regionsite', 'ds'], axis=1)
 basic_site_data_path = app.config['BULK_DNLD_FOLDER'] + '/all_basic_site_data.csv'
 sitedata.to_csv(basic_site_data_path, index=False, encoding='utf-8')
 
+<<<<<<< Updated upstream
 zf = ZipFile(basic_site_data_path + '.zip', 'w')
 zf.write(basic_site_data_path, 'all_basic_site_data.csv')
 #???
+=======
+zf = zipfile.ZipFile(basic_site_data_path + '.zip', 'w')
+zf.write(basic_site_data_path, 'all_basic_site_data.csv', zipfile.ZIP_DEFLATED)
+zf.close()
+>>>>>>> Stashed changes
 
 # sitecols = db.engine.execute("SELECT group_concat(\"'\", column_name, \"'\")" +\
 #     "FROM information_schema." +\
