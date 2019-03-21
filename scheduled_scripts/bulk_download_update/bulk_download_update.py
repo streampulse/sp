@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import pandas as pd
 import os
+from zipfile import ZipFile
 import config as cfg
 
 app = Flask(__name__)
@@ -56,15 +57,20 @@ sitedata.loc[sitedata['embargoDaysRemaining'] <= 0, 'embargoDaysRemaining'] = 0
 core_df = pd.read_csv('static/sitelist.csv')
 core_sites = list(core_df["REGIONID"].map(str) + "_" + core_df["SITEID"])
 
-sitedata['dataSource'] = 'StreamPULSE-Leveraged'
-sitedata.loc[sitedata.regionsite.isin(core_sites),
-    'dataSource'] = 'StreamPULSE-Core'
-sitedata.loc[sitedata.ds_ref == -900,
-    'dataSource'] = 'https://data.neonscience.org/home'
-sitedata.loc[sitedata.ds_ref == -902,
-    'dataSource'] = 'https://www.nature.com/articles/sdata2018292'
+sitedata['ds'] = 'StreamPULSE-Leveraged'
+sitedata.loc[sitedata.regionsite.isin(core_sites), 'ds'] = 'StreamPULSE-Core'
+sitedata.loc[sitedata.ds_ref == -900, 'ds'] = 'https://data.neonscience.org/home'
+sitedata.loc[sitedata.ds_ref == -902, 'ds'] = 'https://www.nature.com/articles/sdata2018292'
+sitedata.insert(loc=3, column='dataSource', value=sitedata.ds)
 
+#clean up, export, zip
+sitedata = sitedata.drop(['ds_ref', 'regionsite', 'ds'], axis=1)
+basic_site_data_path = app.config['BULK_DNLD_FOLDER'] + '/all_basic_site_data.csv'
+sitedata.to_csv(basic_site_data_path, index=False, encoding='utf-8')
 
+zf = ZipFile(basic_site_data_path + '.zip', 'w')
+zf.write(basic_site_data_path, 'all_basic_site_data.csv')
+#???
 
 # sitecols = db.engine.execute("SELECT group_concat(\"'\", column_name, \"'\")" +\
 #     "FROM information_schema." +\
