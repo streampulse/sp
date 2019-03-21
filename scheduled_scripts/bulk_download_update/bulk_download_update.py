@@ -6,11 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import pandas as pd
 import os
-<<<<<<< Updated upstream
-from zipfile import ZipFile
-=======
 import zipfile
->>>>>>> Stashed changes
 import config as cfg
 
 app = Flask(__name__)
@@ -43,10 +39,10 @@ sitedata = pd.read_sql("select region as regionID, site as siteID, name as siteN
 #     ",'variableList','grabVarList' union all " +\
 #     "select region,site,name,latitude,longitude,usgs,addDate,by" +\
 #     "contact,contactEmail,firstRecord,lastRecord,variableList,grabVarList" +\
-#     " from site where concat(region, '_', site) not in ('" + "','".join(embargoed_sites) +\
-#     "') into outfile '/var/lib/mysql-" +\
-#     "files/all_basic_site_data.csv' fields terminated by ',' enclosed by '\"'" +\
-#     " lines terminated by '\\n';")
+    " from site where concat(region, '_', site) not in ('" + "','".join(embargoed_sites) +\
+    "') into outfile '/var/lib/mysql-" +\
+    "files/all_basic_site_data.csv' fields terminated by ',' enclosed by '\"'" +\
+    " lines terminated by '\\n';")
 
 embargoed_sites = sitedata.loc[sitedata['embargoDaysRemaining'] > 0,
     'regionsite'].tolist()
@@ -72,25 +68,49 @@ sitedata = sitedata.drop(['ds_ref', 'regionsite', 'ds'], axis=1)
 basic_site_data_path = app.config['BULK_DNLD_FOLDER'] + '/all_basic_site_data.csv'
 sitedata.to_csv(basic_site_data_path, index=False, encoding='utf-8')
 
-<<<<<<< Updated upstream
-zf = ZipFile(basic_site_data_path + '.zip', 'w')
-zf.write(basic_site_data_path, 'all_basic_site_data.csv')
-#???
-=======
 zf = zipfile.ZipFile(basic_site_data_path + '.zip', 'w')
 zf.write(basic_site_data_path, 'all_basic_site_data.csv', zipfile.ZIP_DEFLATED)
 zf.close()
->>>>>>> Stashed changes
+
 
 # sitecols = db.engine.execute("SELECT group_concat(\"'\", column_name, \"'\")" +\
 #     "FROM information_schema." +\
 #     "columns WHERE table_schema = 'sp' AND table_name = 'site';")
 # sitecols = list(sitecols)[0][0]
 
-# db.engine.execute("select data.region, data.site, data.DateTime_UTC, data.variable,
-# data.value, data.flag as flagID, data.upload_id, flag.flag, flag.comment from data left
-#  join flag on data.flag=flag.id where upload_id >= 0 and data.region not in ('SE','KS','AT','IN')
-#   and data.site not like 'Neuse%' and data.site not like 'NHC_' and data.site not like 'MC_'
-#   and data.site not in ('751MUD', 'Carapa', 'ArbSeep') into outfile
-#   '/var/lib/mysql-files/all_unembargoed_20190314.csv' fields terminated by ','
-#   enclosed by '"' lines terminated by '\n';")
+#export all public sp data (will move and zip later in shell script)
+db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
+    ",'flagID','flagComment' union all select data.region, data.site, " +\
+    "data.DateTime_UTC, data.variable, data.value, " +\
+    "flag.flag, flag.comment from data left join flag on data.flag=flag.id " +\
+    "where data.upload_id >= 0 and concat(data.region, '_', data.site) not " +\
+    "in ('" + "','".join(embargoed_sites) + "') into outfile " +\
+    "'/var/lib/mysql-files/all_sp_data.csv' fields terminated by ',' " +\
+    "enclosed by '\"' lines terminated by '\\n';")
+
+#export all neon data (will move and zip later in shell script)
+db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
+    ",'flagID','flagComment' union all select data.region, data.site, " +\
+    "data.DateTime_UTC, data.variable, data.value, " +\
+    "flag.flag, flag.comment from data left join flag on data.flag=flag.id " +\
+    "where data.upload_id = -900 into outfile " +\
+    "'/var/lib/mysql-files/all_neon_data.csv' fields terminated by ',' " +\
+    "enclosed by '\"' lines terminated by '\\n';")
+
+#export all powell data (this need not be repeated; powell is static)
+# db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
+#     ",'flagID','flagComment' union all select region, site, " +\
+#     "DateTime_UTC, variable, value from powell into outfile" +\
+#     "'/var/lib/mysql-files/all_powell_data.csv' fields terminated by ',' " +\
+#     "enclosed by '\"' lines terminated by '\\n';")
+
+#export all grab data (will move and zip later in shell script)
+db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
+    ",'method','writeInMethod','methodDetail'" +\
+    ",'flagID','flagComment' union all select grabdata.region, grabdata.site, " +\
+    "grabdata.DateTime_UTC, grabdata.variable, grabdata.value, grabdata.method, " +\
+    "grabdata.write_in, grabdata.addtl, " +\
+    "grabflag.flag, grabflag.comment from grabdata left join grabflag on " +\
+    "grabdata.flag=grabflag.id into outfile " +\
+    "'/var/lib/mysql-files/all_grab_data.csv' fields terminated by ',' " +\
+    "enclosed by '\"' lines terminated by '\\n';")
