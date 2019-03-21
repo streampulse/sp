@@ -3,16 +3,17 @@
 ###tue20190319
  + finished download portion of sitedata system
  + misc download page bugfixes
-###thu20190313
+###thu2019014
  + finished database entry portion of sitedata system
+ + all available level, discharge, temperature, cond, and nitrate from USGS now being synced with sp sites
 ###wed20190313
- + updated R package to warn user if they have low DOsat coverage
+ + updated StreamPULSE package. prep_metabolism issues warning about low DO sat coverage. new parameter retrieve_air_pres allows retrieval even when some air pressure data are supplied. helps in cases where air pres is needed to estimate DO sat or depth
  + added parameter for estimating air pressure even when supplied to prep_metabolism
  + finished sitedata upload backend
 ###tue20190312
  + finished sitedata upload template
 ###wed20190306
- + script to monitor model results folder and automatically update new model results database (in preparation for summary plots)
+ + built 24/7 service to monitor model outputs folder and automatically update new model results database table as they are added/updated/removed (in preparation for synthesis plots)
 ###tue20190305
  + fixed auto-deletion of old model runs on server. they actually stick around for a month now.
  + thinned neon data to 1/15 before sending to viz
@@ -154,7 +155,7 @@
  + variable comparison polygons now show gaps
  + fixed right axis label bugs, added labels for backgraphs
 ###fri20181123
- + added historic interquartile range overlay for discharge 
+ + added historic interquartile range overlay for discharge
  + disabled button for discharge overlay when discharge data not available
  + wrote script to incorporate Australia data when it's available
 ###fri20181116
@@ -246,7 +247,7 @@ Input viz improvements:
 ###away 20180901-09
 ###thu20180830
  + talked with Chris Collins at Duke OIT about cloud computing possibilities
- + built discharge portion of NEON ingestion script 
+ + built discharge portion of NEON ingestion script
  + duplicated nitrate data for upstream stations, since it's only measured at downstream stations
 ###wed20180829
  + NEON DO exploration, workshop prep
@@ -439,7 +440,7 @@ Input viz improvements:
  + building new interface for grab upload. got units incorporated; working on methods dropdowns.
 ###mon20180416
  + created site, variable, and metadata report for all locations
- + investigating HBEF site issues in preparation for new wave of development 
+ + investigating HBEF site issues in preparation for new wave of development
 ###thu20180412
  + completed powell review
 ###wed20180411
@@ -456,7 +457,7 @@ Input viz improvements:
  + running model for AZ. streamMetabolizer works on as few as 4 days of data, but only returned one point estimate of GPP and ER in this case.
 ###wed20180404
  + testing database improvements (additional indices, column type changes, foreign keys, etc.)
- + explored ODM2. It's looking like the benefits of adopting the core schema of ODM2 will not be so great as to warrant the weeks (and potentially months) of effort necessary to implement a new database backend, modify all I/O, build a translation layer, etc. It's difficult to foresee all obstacles we might face by sticking with the current, flat schema, but after some research I feel more confident in my ability to adapt what we've got as needed. 
+ + explored ODM2. It's looking like the benefits of adopting the core schema of ODM2 will not be so great as to warrant the weeks (and potentially months) of effort necessary to implement a new database backend, modify all I/O, build a translation layer, etc. It's difficult to foresee all obstacles we might face by sticking with the current, flat schema, but after some research I feel more confident in my ability to adapt what we've got as needed.
  + fixed error that results from attempts to upload an _XX file with two datetime columns
 ###tue20180403
  + drafted 6 month work plan
@@ -797,4 +798,3 @@ _XX filetypes must now be merged prior to upload
  + added Gordon's photo to the site
  + made Bob's document of considerations and instructions more prominent (now linked from the "participate" page, which is also linked from the home page body)
  + separated download step from format/run step in the model code
-

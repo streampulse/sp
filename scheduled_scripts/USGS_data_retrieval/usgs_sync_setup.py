@@ -11,14 +11,10 @@ from sqlalchemy.ext.declarative import declarative_base
 
 #import credentials from streampulse flask app config file
 app_dir = '/home/aaron/sp'
-#app_dir = '/home/mike/git/streampulse/server_copy/sp'
+# app_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, app_dir)
-# os.chdir(app_dir)
 import config as cfg
-# print cfg
-# sys.exit('oi')
 wrk_dir = app_dir + '/scheduled_scripts/USGS_data_retrieval'
-# os.chdir(wrk_dir)
 sys.path.insert(0, wrk_dir)
 
 #configure database connection
@@ -62,21 +58,65 @@ logging.basicConfig(filename='usgs_sync.log', level=logging.WARNING,
 #define sites and corresponding variables to be synced here. var codes:
 #discharge, gage height, water temp, spec cond, nitrate+nitrite
 #00060,     00065,       00010,      00095,     99133
+#should have put all this in one dict, but alas. happy cross-referencing.
 regionsite = ['FL_ICHE2700',
     'FL_SF2500',
     'FL_SF2800',
     'FL_WS1500',
     'FL_SF700',
-    'FL_NR1000']
-# regionsite = ['FL_ICHE2700']
+    'FL_NR1000',
+    'AZ_SC',
+    'AZ_OC',
+    'AZ_WB',
+    'AZ_LV',
+    'AZ_AF',
+    'AZ_MV',
+    'NC_Eno',
+    'NC_ColeMill',
+    'PR_Icacos',
+    'CT_Unio',
+    'CT_FARM',
+    'VT_Pass',
+    'CT_BUNN',
+    'CT_STIL',
+    'CT_HUBB',
+    'VT_SLPR',
+    'VT_POPE',
+    'VT_MOOS',
+    'WI_BEC',
+    'WI_BRW',
+    'RI_CorkBrk',
+    'NH_GOF']
+
 regionsite_update = copy.copy(regionsite)
-# variables = [['00010', '00095', '99133', '00060', '00065']]
 variables = [['00010', '00095', '99133', '00060', '00065'],
     ['00010', '00095', '00060', '00065'],
     ['00010', '00095', '99133', '00060', '00065'],
     ['00010', '00095', '00060', '00065'],
     ['00060', '00065'],
-    ['00060', '00065']]
+    ['00060', '00065'],
+    ['00060', '00065'], #SC
+    ['00060', '00065'], #OC
+    ['00060', '00065'], #WB
+    ['00060', '00065'], #LV
+    ['00060', '00065'], #AF
+    ['00060', '00065'], #MV
+    ['00060', '00065'], #Eno
+    ['00065'], #ColeMill
+    ['00060', '00065'], #Icacos
+    ['00060', '00065'], #Unio
+    ['00060', '00065', '00010', '00095'], #FARM (actually has a lot more)
+    ['00060', '00065'], #Pass
+    ['00060', '00065'], #BUNN
+    ['00060', '00065', '00010', '00095'], #STIL (and more)
+    ['00060', '00065'], #HUBB
+    ['00060', '00065'], #SLPR
+    ['00060', '00065'], #POPE
+    ['00060', '00065'], #MOOS
+    ['00060', '00065', '00010', '00095'], #BEC (and more)
+    ['00060', '00065', '00010', '00095'], #BRW (and more)
+    ['00060', '00065', '00010', '00095'], #CorkBrk
+    ['00060', '00065']] #GOF
 
 def parse_usgs_response(i, usgs_raw, g):
 
@@ -88,6 +128,7 @@ def parse_usgs_response(i, usgs_raw, g):
         colnm = 'WaterTemp_C'
         if usgst.empty:
             logging.error(' watertemp df is empty: ' + g)
+            #these errors get handled in usgs_sync.py and result in continuation
             raise ValueError('continue')
         else:
             logging.warning(' retrieving watertemp for ' + g)
