@@ -456,7 +456,6 @@ $(function(){
     dat['site'] = $('select[name=site]').val();
     dat['data'] = hot.getData(); //gets JSON
     dat['fieldnotes'] = $('textarea').val();
-    console.log(dat);
     $.ajax({
       type: 'POST',
       url:'/_addmanualdata',

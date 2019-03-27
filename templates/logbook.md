@@ -1,5 +1,13 @@
 #Mike's Logbook
-
+###tue20190326
+ + remodeling reach characterization (formerly "site characteristics") upload interface
+   + now two sets of instructions: one for new reach char datasets, another for updating existing ones
+###mon20190325
+ + improved error message in R package for when user tries to run model without DO concentration data
+###thu20190321
+ + wrote script to update bulk download files daily
+###wed20190320
+ + finished bulk download page template
 ###tue20190319
  + finished download portion of sitedata system
  + misc download page bugfixes

@@ -29,91 +29,175 @@
     <br>
 
     <p class='lead'>
-      <strong>Step 1:</strong> Please copy and paste your data into one or more
-      of the template files provided here:
-    </p>
-
-    <div class='row text-center'>
-      <div class='col-md-12'>
-        <form id='template_form' action="/_sitedata_templates_download" method="POST"
-          class="form-horizontal">
-          <div class="form-group">
-            <button id="template_btn" type="submit" value=Download class="btn btn-primary">
-              Get all templates
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <hr>
-    <p class='lead'>
-      <strong>Step 2:</strong> Prepend your capitalized region code and an underscore to
-      the name of each completed template file.
+      <strong>Step 1:</strong> If your region appears in the following dropdown menu,
+      select it. Otherwise select "New region".
+      Your selection will populate the rest of the instructions.
     </p>
     <div class='row'>
-      <div class='col-md-10 col-md-offset-1'>
-        <p style='color:gray'>
-          For example, if you have canopy data from Australia, change
-          <code>canopy.csv</code> to <code>AU_canopy.csv</code>.
-          StreamPULSE regions and region codes can be found
-          <a href="data.streampulse.org/sitelist">here</a>.
-        </p>
+      <div class='col-md-4 col-md-offset-4'>
+        <select id="regiondd" name="regiondd">
+          <option value="" disabled selected>Select region</option>
+          <option value="new">New region</option>
+          {% for s in exdata_regions %}
+            <option value="{{s}}">{{s}}</option>
+          {% endfor %}
+        </select>
       </div>
     </div>
+
     <hr>
 
-    <p class='lead'>
-      <strong>Step 3:</strong> Upload one or more completed and renamed template
-      files. Data sets uploaded concurrently must be from the same region.
-    </p>
-    <form action="" method=post enctype=multipart/form-data>
+    <div id='instruction_set_1' style='display:none'>
+
+      <p class='lead'>
+        <strong>Step 2: </strong>Please download the existing reach characterization
+        files for your region by clicking the button below.
+      </p>
+
+      <div class='row text-center'>
+        <div class='col-md-12'>
+          <!-- <form id='template_form' action="/_reachchar_exfiles_download" method="POST"
+            class="form-horizontal">
+            <div class="form-group">
+              <button id="exfiles_btn" type="submit" value=Download class="btn btn-primary">
+                Get files
+              </button>
+            </div>
+          </form> -->
+          <button id='exfiles_btn' class='btn btn-primary'>
+            Get files
+          </button>
+        </div>
+      </div>
+
+      <hr>
+      <p class='lead'>
+        <strong>Step 3:</strong> Append new data to the files you downloaded.
+        Please leave all header rows in place for future reference.
+        If your region is missing some files,* or the column
+        description rows have been deleted, you can download the template files
+        <a href='static/streampulse_sitedata_templates.zip' download>here</a>.
+      </p>
       <div class='row'>
-        <div class="form-group">
-          <div class='col-md-4 col-md-offset-4'>
-            <input type="file" class="form-control-file" name=sitedata_upload multiple
-            style='color:gray'>
-          </div>
-          <div class='col-md-10 col-md-offset-1 text-left' style='color:gray'>
-            <br>
-            <input type="checkbox" name="replacebox">
-            Check this box to revise or update previously uploaded datasets.
-            Previous versions will be retained.
-          </div>
+        <div class='col-md-10 col-md-offset-1'>
+          <p style='color:gray'>
+            *Full list of reach characterization template files: canopy.csv, substrate.csv,
+            cross_section.csv, geomorphology.csv, depth_rating_curve.csv, synoptic_canopy.csv,
+            synoptic_substrate.csv, synoptic_cross_section.csv, synoptic_geomorphology.csv
+          </p>
         </div>
       </div>
       <hr>
 
       <p class='lead'>
-        <strong>Step 4:</strong> Please provide the following information for this data set.
-        Then, click the "Upload" button.*
+        <strong>Step 4:</strong> Upload one or more updated files.
+        Files uploaded concurrently must be from the same region.
       </p>
-      <div class='row'>
-        <div class='col-md-6'>
-          <p style='color:gray'>Contact name:</p>
-          <input type="text" class="form-control" name="contactname"
-          aria-describedby="Contact name" maxlength="50" required>
-        </div>
-        <div class='col-md-6'>
-          <p style='color:gray'>Contact email:</p>
-          <input type="text" class="form-control" name="contactemail"
-          aria-describedby="Contact email" maxlength="50" required>
+
+    </div>
+    <div id='instruction_set_2' style='display:none'>
+
+      <p class='lead'>
+        <strong>Step 2: </strong>Please copy and paste your data into one or more
+        of the template files provided here:
+      </p>
+
+      <div class='row text-center'>
+        <div class='col-md-12'>
+          <form id='template_form' action="/_sitedata_templates_download" method="POST"
+            class="form-horizontal">
+            <div class="form-group">
+              <button id="template_btn" type="submit" value=Download class="btn btn-primary">
+                Get all templates
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 
-      <br><br>
-      <div class='col-md-6 col-md-offset-3'>
-        <button id="upx" type="submit" value=Upload class="btn btn-success btn-block">
-          Upload
-        </button>
+      <hr>
+      <p class='lead'>
+        <strong>Step 3:</strong> Prepend your capitalized region code and an underscore to
+        the name of each completed template file.
+      </p>
+      <div class='row'>
+        <div class='col-md-10 col-md-offset-1'>
+          <p style='color:gray'>
+            For example, if you have canopy data from Australia, change
+            <code>canopy.csv</code> to <code>AU_canopy.csv</code>.
+            StreamPULSE regions and region codes can be found
+            <a href="data.streampulse.org/sitelist">here</a>.
+          </p>
+        </div>
       </div>
-    </form>
+      <hr>
+
+      <p class='lead'>
+        <strong>Step 4:</strong> Upload one or more completed and renamed template
+        files. Files uploaded concurrently must be from the same region.
+      </p>
+
+    </div>
+    <div id='final_instructions' style='display:none'>
+
+      <form action="" method=post enctype=multipart/form-data>
+        <div class='row'>
+          <div class="form-group">
+            <div class='col-md-4 col-md-offset-4'>
+              <input type="file" class="form-control-file" name=sitedata_upload multiple
+              style='color:gray'>
+            </div>
+            <!-- <div class='col-md-10 col-md-offset-1 text-left' style='color:gray'>
+              <br>
+              <input type="checkbox" name="replacebox">
+              Check this box to revise or update previously uploaded datasets.
+              Previous versions will be retained.
+            </div> -->
+          </div>
+        </div>
+        <hr>
+
+        <p class='lead' id='p_1'>
+          <strong>Step 5:</strong> Please provide the following information for
+          this version of the data set. Then, click the "Upload" button.**
+        </p>
+        <p class='lead' id='p_2'>
+          <strong>Step 5:</strong> Please provide the following information for this data set.
+          Then, click the "Upload" button.**
+        </p>
+
+        <div id='submit_section'>
+
+          <div class='row'>
+            <div class='col-md-6'>
+              <p style='color:gray'>Contact name:</p>
+              <input type="text" class="form-control" name="contactname"
+              aria-describedby="Contact name" maxlength="50" required>
+            </div>
+            <div class='col-md-6'>
+              <p style='color:gray'>Contact email:</p>
+              <input type="text" class="form-control" name="contactemail"
+              aria-describedby="Contact email" maxlength="50" required>
+            </div>
+          </div>
+
+          <br><br>
+          <div class='col-md-6 col-md-offset-3'>
+            <button id="upx" type="submit" value=Upload class="btn btn-success btn-block">
+              Upload
+            </button>
+          </div>
+        </div>
+
+      </form>
+
+    </div>
 
     <br><br><br><br>
     <div class='row'>
       <div class='col-md-12 text-center'>
         <p style='color:gray'>
-          *Site data uploaded here will be publicly available to all registered users.
+          **Site data uploaded here will be publicly available to all registered users.
           If you need to keep your site data private,
           contact <a href="mailto:michael.vlah@duke.edu">StreamPULSE development</a>.
         </p>
@@ -125,10 +209,51 @@
 <br><br>
 
 <script type="text/javascript">
-  $('#additional').keyup(function () {
-      var left = 5000 - $(this).val().length;
-      $('#charCounter').text('Characters left: ' + left);
+
+  var regiondd = $('#regiondd').selectize({
+    delimiter: ',',
+    persist: false,
+    create: function(input) { return { value: input,text: input } }
   });
+  var regionddi = regiondd[0].selectize;
+
+  $('#regiondd').change(function(){
+    if(regionddi.getValue() != ''){
+      if(regionddi.getValue() != 'new'){
+        $('#instruction_set_1').attr('style', 'display:""');
+        $('#instruction_set_2').attr('style', 'display:none');
+        $('#p_1').attr('style', 'display:""');
+        $('#p_2').attr('style', 'display:none');
+      } else {
+        $('#instruction_set_1').attr('style', 'display:none');
+        $('#instruction_set_2').attr('style', 'display:""');
+        $('#p_1').attr('style', 'display:none');
+        $('#p_2').attr('style', 'display:""');
+      }
+      $('#final_instructions').attr('style', 'display:""');
+    }
+  });
+
+  $(function(){
+    $("#exfiles_btn").click(function(){
+      dat = {}
+      dat['region'] = regionddi.getValue()
+      $.ajax({
+        type: 'POST',
+        url:'/_reachchar_exfiles_download',
+        data: JSON.stringify(dat),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response){
+          console.log('success')
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
+      return false;
+    });
+  })
+
 </script>
 
 {% endblock %}

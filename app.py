@@ -1714,7 +1714,7 @@ def sitedata_filedrop():
             datasets = []
             for f in fnms:
                 rgx = re.match('^([A-Za-z]{2})_(synoptic_)?(canopy|cross_section|' +\
-                    'geomorphology|pebble_count).csv$', f)
+                    'geomorphology|substrate|depth_rating_curve).csv$', f)
                 if rgx:
                     rgx_grps = rgx.groups()
                     region = rgx_grps[0]
@@ -1731,7 +1731,8 @@ def sitedata_filedrop():
                     datasets.append(synop + rgx_grps[2])
                 else:
                     flash('Name error in ' + f +\
-                        '. Please review step 2.', 'alert-danger')
+                        '. Example of a valid filename: RG_substrate.csv.',
+                        'alert-danger')
                     return redirect(request.url)
 
             if any([r != regions[0] for r in regions]):
@@ -1761,17 +1762,17 @@ def sitedata_filedrop():
                 already_have = [fnms_secure[i] for i in xrange(len(fnms_secure)) \
                 if uploaded_bool[i]]
 
-                if request.form.get('replacebox') == 'on':
-                    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S%f')
-                    for f in already_have:
-                        archive_filename = f[0:len(f) - 4] + '_' + timestamp + '.csv'
-                        os.rename(sitedata_dir + '/' + f,
-                            sitedata_dir_old + '/' + archive_filename)
-                else:
-                    flash('Error. Dataset(s) already on file: ' +\
-                        ', '.join(already_have) +\
-                        '. Check the box in Step 3 to overwrite.', 'alert-danger')
-                    return redirect(request.url)
+                # if request.form.get('replacebox') == 'on':
+                timestamp = datetime.now().strftime('%Y%m%d-%H%M%S%f')
+                for f in already_have:
+                    archive_filename = f[0:len(f) - 4] + '_' + timestamp + '.csv'
+                    os.rename(sitedata_dir + '/' + f,
+                        sitedata_dir_old + '/' + archive_filename)
+                # else:
+                #     flash('Error. Dataset(s) already on file: ' +\
+                #         ', '.join(already_have) +\
+                #         '. Check the box in Step 3 to overwrite.', 'alert-danger')
+                #     return redirect(request.url)
 
             #write files; should build an error handler here and return any moved
             #files to sitedata_dir if something goes wrong.
@@ -1817,7 +1818,13 @@ def sitedata_filedrop():
         return render_template('sitedata_filedrop.html')
 
     if request.method == 'GET': #when first visiting the sitedata upload page
-        return render_template('sitedata_filedrop.html')
+
+        #get list of all regions for which site characteristic data have been supplied
+        sc_files = os.listdir(app.config['SITEDATA_FOLDER'])
+        exdata_regions = set([x.split('_')[0] for x in sc_files])
+
+        return render_template('sitedata_filedrop.html',
+            exdata_regions=exdata_regions)
 
 @app.route('/grdo_filedrop', methods=['GET', 'POST'])
 def grdo_filedrop():
@@ -3834,6 +3841,30 @@ def sitedata_templates_download():
 
     return send_from_directory('static', 'streampulse_sitedata_templates.zip',
         as_attachment=True)
+
+@app.route('/_reachchar_exfiles_download', methods=['POST'])
+def reachchar_exfiles_download():
+
+    region = request.json['region']
+    sdf = app.config['SITEDATA_FOLDER']
+
+    #find files from the requested region
+    rc_files = os.listdir(sdf)
+    rc_bool = [True if re.match(region + '_.*', x) else False for x in rc_files]
+    req_files = [rc_files[i] for i in xrange(len(rc_bool)) if rc_bool[i]]
+
+    #add files to temp directory and zip
+    tmp = tempfile.mkdtemp()
+
+    for f in req_files:
+        shutil.copy2(sdf + '/' + f, tmp)
+
+    # writefiles = os.listdir(tmp)
+    zipname = region + '_reach_characterization_files.zip'
+    with zipfile.ZipFile(tmp + '/' + zipname, 'w') as zf:
+        [zf.write(tmp + '/' + f, f) for f in req_files]
+
+    return send_from_directory(tmp, zipname, as_attachment=True)
 
 @app.route('/_allsp_download', methods=['POST'])
 def allsp_download():
