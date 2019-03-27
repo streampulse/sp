@@ -50,16 +50,17 @@ sitedata = pd.read_sql("select region as regionID, site as siteID, name as siteN
     "embargo as embargoDaysRemaining, contact, contactEmail, firstRecord, " +\
     "lastRecord, variableList, grabVarList, concat(region, '_', site) as " +\
     "regionsite from site;", db.engine)
+
 # #export site data table for all public sites
 # db.engine.execute("select 'regionID','siteID','siteName','latitude','longitude'" +\
 #     ",'USGSgageID','addDate','source','contact','contactEmail','firstRecord','lastRecord'" +\
 #     ",'variableList','grabVarList' union all " +\
 #     "select region,site,name,latitude,longitude,usgs,addDate,by" +\
 #     "contact,contactEmail,firstRecord,lastRecord,variableList,grabVarList" +\
-    " from site where concat(region, '_', site) not in ('" + "','".join(embargoed_sites) +\
-    "') into outfile '/var/lib/mysql-" +\
-    "files/all_basic_site_data.csv' fields terminated by ',' enclosed by '\"'" +\
-    " lines terminated by '\\n';")
+#     " from site where concat(region, '_', site) not in ('" + "','".join(embargoed_sites) +\
+#     "') into outfile '/var/lib/mysql-" +\
+#     "files/all_basic_site_data.csv' fields terminated by ',' enclosed by '\"'" +\
+#     " lines terminated by '\\n';")
 
 embargoed_sites = sitedata.loc[sitedata['embargoDaysRemaining'] > 0,
     'regionsite'].tolist()
