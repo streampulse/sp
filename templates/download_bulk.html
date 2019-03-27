@@ -114,13 +114,13 @@
     </form>
     <br>
 
-    <form id='allsitechar_form' action="/_allsitechar_download" method="POST" class="form-horizontal">
+    <form id='allreachchar_form' action="/_allreachchar_download" method="POST" class="form-horizontal">
       <span style="display:inline-block; width:500px">
-        All site characteristic datasets (geomorphology, canopy, etc.):
+        All reach characterization datasets (geomorphology, canopy, etc.):
       </span>
       <span style="display:inline-block">
-        <button id="allsitechar" class="btn btn-sm btn-info" style="font-family:mono">
-          {% set bulksize = bulk_file_sizes["all_site_characteristic_datasets.zip"]|filesizeformat %}
+        <button id="allreachchar" class="btn btn-sm btn-info" style="font-family:mono">
+          {% set bulksize = bulk_file_sizes["all_reach_characterization_datasets.zip"]|filesizeformat %}
           {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
           Download {{ spaces|safe }}({{ bulksize }})
         </button>

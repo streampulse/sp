@@ -10,7 +10,7 @@
 
 <div class="row">
   <div class="col-md-6 col-md-offset-3 text-center">
-    <h1>Upload site characteristic data</h1>
+    <h1>Upload reach characterization data</h1>
   </div>
 </div>
 <!-- <div class="row">
@@ -56,17 +56,18 @@
 
       <div class='row text-center'>
         <div class='col-md-12'>
-          <!-- <form id='template_form' action="/_reachchar_exfiles_download" method="POST"
+          <form id='template_form' action="/_reachchar_exfiles_download" method="POST"
             class="form-horizontal">
+            <input type="hidden" name="selregion" value="">
             <div class="form-group">
               <button id="exfiles_btn" type="submit" value=Download class="btn btn-primary">
                 Get files
               </button>
             </div>
-          </form> -->
-          <button id='exfiles_btn' class='btn btn-primary'>
+          </form>
+          <!-- <button id='exfiles_btn' class='btn btn-primary'>
             Get files
-          </button>
+          </button> -->
         </div>
       </div>
 
@@ -76,7 +77,7 @@
         Please leave all header rows in place for future reference.
         If your region is missing some files,* or the column
         description rows have been deleted, you can download the template files
-        <a href='static/streampulse_sitedata_templates.zip' download>here</a>.
+        <a href='static/streampulse_reach_characterization_templates.zip' download>here</a>.
       </p>
       <div class='row'>
         <div class='col-md-10 col-md-offset-1'>
@@ -99,16 +100,17 @@
 
       <p class='lead'>
         <strong>Step 2: </strong>Please copy and paste your data into one or more
-        of the template files provided here:
+        of the template files provided here. Leave all header rows in place for
+        future reference.
       </p>
 
       <div class='row text-center'>
         <div class='col-md-12'>
-          <form id='template_form' action="/_sitedata_templates_download" method="POST"
+          <form id='template_form' action="/_reach_characterization_templates_download" method="POST"
             class="form-horizontal">
             <div class="form-group">
               <button id="template_btn" type="submit" value=Download class="btn btn-primary">
-                Get all templates
+                Get templates
               </button>
             </div>
           </form>
@@ -144,7 +146,7 @@
         <div class='row'>
           <div class="form-group">
             <div class='col-md-4 col-md-offset-4'>
-              <input type="file" class="form-control-file" name=sitedata_upload multiple
+              <input type="file" class="form-control-file" name=reach_characterization_upload multiple
               style='color:gray'>
             </div>
             <!-- <div class='col-md-10 col-md-offset-1 text-left' style='color:gray'>
@@ -197,8 +199,8 @@
     <div class='row'>
       <div class='col-md-12 text-center'>
         <p style='color:gray'>
-          **Site data uploaded here will be publicly available to all registered users.
-          If you need to keep your site data private,
+          **Data uploaded here will be publicly available to all registered users.
+          If you need to keep your reach characterization data private,
           contact <a href="mailto:michael.vlah@duke.edu">StreamPULSE development</a>.
         </p>
       </div>
@@ -218,8 +220,12 @@
   var regionddi = regiondd[0].selectize;
 
   $('#regiondd').change(function(){
-    if(regionddi.getValue() != ''){
-      if(regionddi.getValue() != 'new'){
+
+    reg = regionddi.getValue()
+    $('input[name=selregion]').val(reg);
+
+    if(reg != ''){
+      if(reg != 'new'){
         $('#instruction_set_1').attr('style', 'display:""');
         $('#instruction_set_2').attr('style', 'display:none');
         $('#p_1').attr('style', 'display:""');
@@ -232,27 +238,29 @@
       }
       $('#final_instructions').attr('style', 'display:""');
     }
+
   });
 
-  $(function(){
-    $("#exfiles_btn").click(function(){
-      dat = {}
-      dat['region'] = regionddi.getValue()
-      $.ajax({
-        type: 'POST',
-        url:'/_reachchar_exfiles_download',
-        data: JSON.stringify(dat),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(response){
-          console.log('success')
-        },
-        error: function(error){
-          console.log(error);
-        }
-      });
-      return false;
-    });
-  })
+  //turns out you cant serve a static file asynchronously
+  // $(function(){
+  //   $("#exfiles_btn").click(function(){
+  //     dat = {}
+  //     dat['region'] = regionddi.getValue()
+  //     $.ajax({
+  //       type: 'POST',
+  //       url:'/_reachchar_exfiles_download',
+  //       data: JSON.stringify(dat),
+  //       contentType: 'application/json;charset=UTF-8',
+  //       success: function(response){
+  //         console.log('success')
+  //       },
+  //       error: function(error){
+  //         console.log(error);
+  //       }
+  //     });
+  //     return false;
+  //   });
+  // })
 
 </script>
 

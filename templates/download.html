@@ -67,8 +67,8 @@
     <hr>
     <br>
 
-    <p class="lead">5. Site characteristic datasets to include, if available:</p>
-    <div id="site_char_options" class="form-inline">
+    <p class="lead">5. Reach characterization datasets to include, if available:</p>
+    <div id="reach_char_options" class="form-inline">
       <input type="checkbox" id="canopy" name="canopy" disabled>
       Canopy (tree height, distance to bank, etc.)
       <br>
@@ -78,8 +78,8 @@
       <input type="checkbox" id="geo" name="geomorphology" disabled>
       Geomorphology (bank height, channel type, etc.)
       <br>
-      <input type="checkbox" id="pebble" name="pebble_count" disabled>
-      Pebble Counts
+      <input type="checkbox" id="substrate" name="substrate" disabled>
+      Substrate (grain size, etc.)
       <br>
       <input type="checkbox" id="synoptic" name="synoptic" disabled>
       Include synoptic survey data for each checked category above.
@@ -196,7 +196,7 @@ var dsitei = dsite[0].selectize;
 
 var powell_sites = {{ powell_sites|safe }};
 var sites = {{ sites|safe }}; //might have to change list back to tuple, or something similar
-var site_char_map = {{ site_char_map|safe }};
+var reach_char_map = {{ reach_char_map|safe }};
 
 $('input[name=optradio]').change(function(){
   var selected_dsource = $('input[name=optradio]:checked').val();
@@ -270,24 +270,24 @@ $('#dsite').change(function(){
         uvars[i] + '" checked> ' + uvars[i] + '<br>');
     }
 
-    //disable site characteristic checkboxes if not available for selected regions
+    //disable reach characterization checkboxes if not available for selected regions
     var selected_regions = $('#dsite').val().map(x => x.split('_')[0]);
-    dset_arr = [].concat(...selected_regions.map(x => site_char_map[x]));
+    dset_arr = [].concat(...selected_regions.map(x => reach_char_map[x]));
     dset_arr = [...new Set(dset_arr)];
-    var site_char_boxes = $('#site_char_options').find('input');
-    for (var i = 0; i < site_char_boxes.length; i++){
-      if(dset_arr.includes(site_char_boxes[i].name)){
-        $('#' + site_char_boxes[i].id).removeAttr('disabled');
+    var reach_char_boxes = $('#reach_char_options').find('input');
+    for (var i = 0; i < reach_char_boxes.length; i++){
+      if(dset_arr.includes(reach_char_boxes[i].name)){
+        $('#' + reach_char_boxes[i].id).removeAttr('disabled');
       } else {
-        $('#' + site_char_boxes[i].id).attr("disabled", true);
+        $('#' + reach_char_boxes[i].id).attr("disabled", true);
       }
     }
 
   } else {
     $("#dnld_vars").empty();
-    var site_char_boxes = $('#site_char_options').find('input');
-    for (var i = 0; i < site_char_boxes.length; i++){
-      $('#' + site_char_boxes[i].id).attr("disabled", true);
+    var reach_char_boxes = $('#reach_char_options').find('input');
+    for (var i = 0; i < reach_char_boxes.length; i++){
+      $('#' + reach_char_boxes[i].id).attr("disabled", true);
     }
   }
 

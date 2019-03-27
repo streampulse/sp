@@ -16,7 +16,7 @@ app.config['SECRET_KEY'] = cfg.SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['META_FOLDER'] = cfg.META_FOLDER
-app.config['SITEDATA_FOLDER'] = cfg.SITEDATA_FOLDER
+app.config['REACH_CHAR_FOLDER'] = cfg.REACH_CHAR_FOLDER
 app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
 app.config['BULK_DNLD_FOLDER'] = cfg.BULK_DNLD_FOLDER
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
@@ -137,18 +137,20 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
 metafolder = app.config['META_FOLDER']
 writefiles = zipfile_listdir_recursive(metafolder)
 rel_wfs = [re.match(metafolder + '/(.*)', f).group(1) for f in writefiles]
-zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] + '/all_supplementary_site_metadata.zip', 'w')
+zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] +\
+    '/all_supplementary_site_metadata.zip', 'w')
 for i in xrange(len(writefiles)):
     zf.write(writefiles[i], 'all_supplementary_site_metadata/' + rel_wfs[i])
 zf.close()
 
-#collect all site characteristic data files and zip
-sitecharfolder = app.config['SITEDATA_FOLDER']
-writefiles = zipfile_listdir_recursive(sitecharfolder)
-rel_wfs = [re.match(sitecharfolder + '/(.*)', f).group(1) for f in writefiles]
-zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] + '/all_site_characteristic_datasets.zip', 'w')
+#collect all reach characterization data files and zip
+reachcharfolder = app.config['REACH_CHAR_FOLDER']
+writefiles = zipfile_listdir_recursive(reachcharfolder)
+rel_wfs = [re.match(reachcharfolder + '/(.*)', f).group(1) for f in writefiles]
+zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] +\
+    '/all_reach_characterization_datasets.zip', 'w')
 for i in xrange(len(writefiles)):
-    zf.write(writefiles[i], 'all_site_characteristic_datasets/' + rel_wfs[i])
+    zf.write(writefiles[i], 'all_reach_characterization_datasets/' + rel_wfs[i])
 zf.close()
 
 #export all model summary data

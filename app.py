@@ -50,7 +50,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
 app.config['META_FOLDER'] = cfg.META_FOLDER
-app.config['SITEDATA_FOLDER'] = cfg.SITEDATA_FOLDER
+app.config['REACH_CHAR_FOLDER'] = cfg.REACH_CHAR_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
 app.config['BULK_DNLD_FOLDER'] = cfg.BULK_DNLD_FOLDER
 app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
@@ -411,7 +411,7 @@ class Grdo(db.Model):
     def __repr__(self):
         return '<Data %r, %r, %r>' % (self.name, self.email, self.addDate)
 
-class Sitefiles(db.Model):
+class Reachfiles(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100))
     uploader = db.Column(db.String(50))
@@ -1662,15 +1662,15 @@ def grab_upload():
             finally:
                 return redirect(request.url)
 
-@app.route('/sitedata_filedrop', methods=['GET', 'POST'])
+@app.route('/reach_characterization_filedrop', methods=['GET', 'POST'])
 @login_required
-def sitedata_filedrop():
+def reach_characterization_filedrop():
 
     if request.method == 'POST':
 
         try:
-            sitedata_dir = os.path.realpath('../spsitedata')
-            sitedata_dir_old = os.path.realpath('../spsitedata_oldversions')
+            reachchar_dir = os.path.realpath('../spreachdata')
+            reachchar_dir_old = os.path.realpath('../spreachdata_oldversions')
 
             #check inputs, extract region code and dataset names
             contactemail = request.form['contactemail']
@@ -1682,18 +1682,18 @@ def sitedata_filedrop():
                 msg = Markup('Only alphanumeric characters and @.- _~' +\
                     ' allowed in email address field')
                 flash(msg, 'alert-danger')
-                return redirect(url_for('sitedata_filedrop'))
+                return redirect(url_for('reach_characterization_filedrop'))
             if not name_legal:
                 msg = Markup('Only alphanumeric characters, spaces, and dashes ' +\
                     'allowed in ' + illegal_input + ' field.')
                 flash(msg, 'alert-danger')
-                return redirect(url_for('sitedata_filedrop'))
+                return redirect(url_for('reach_characterization_filedrop'))
 
-            if 'sitedata_upload' not in request.files:
+            if 'reach_characterization_upload' not in request.files:
                 flash('No files detected', 'alert-danger')
                 return redirect(request.url)
 
-            files = request.files.getlist("sitedata_upload")
+            files = request.files.getlist("reach_characterization_upload")
             fnms = [x.filename for x in files]
 
             if len(set(fnms)) < len(fnms):
@@ -1753,11 +1753,12 @@ def sitedata_filedrop():
                     fnms_secure.append(secured)
                     files_secure.append(f)
 
-            #determine whether any filenames have been uploaded before;
-            #move and replace if desired, else error
-            files_on_server = os.listdir(sitedata_dir)
+            #determine whether any filenames have been uploaded before; move old vsns
+            files_on_server = os.listdir(reachchar_dir)
             uploaded_bool = [f in files_on_server for f in fnms_secure]
 
+            already_have = []
+            moved = []
             if any(uploaded_bool):
                 already_have = [fnms_secure[i] for i in xrange(len(fnms_secure)) \
                 if uploaded_bool[i]]
@@ -1766,39 +1767,54 @@ def sitedata_filedrop():
                 timestamp = datetime.now().strftime('%Y%m%d-%H%M%S%f')
                 for f in already_have:
                     archive_filename = f[0:len(f) - 4] + '_' + timestamp + '.csv'
-                    os.rename(sitedata_dir + '/' + f,
-                        sitedata_dir_old + '/' + archive_filename)
+                    fmrpath = reachchar_dir + '/' + f
+                    curpath = reachchar_dir_old + '/' + archive_filename
+                    os.rename(fmrpath, curpath)
+                    moved.append((fmrpath, curpath))
                 # else:
                 #     flash('Error. Dataset(s) already on file: ' +\
                 #         ', '.join(already_have) +\
                 #         '. Check the box in Step 3 to overwrite.', 'alert-danger')
                 #     return redirect(request.url)
 
-            #write files; should build an error handler here and return any moved
-            #files to sitedata_dir if something goes wrong.
+            #write files
             for i in xrange(len(files_secure)):
                 # fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
-                savepath = os.path.join(sitedata_dir, fnms_secure[i])
+                savepath = os.path.join(reachchar_dir, fnms_secure[i])
                 files_secure[i].save(savepath)
 
             #populate database
             # dfile_str = ', '.join(fnms_secure) if dfiles[0] else 'NA'
             dtnow = datetime.utcnow()
             for n in fnms_secure:
-                db_entry = Sitefiles(filename=n, uploader=contactname,
+                db_entry = Reachfiles(filename=n, uploader=contactname,
                     email=contactemail, addDate=dtnow)
                 db.session.add(db_entry)
 
-            db.session.commit()
+        except:
+
+            if moved:
+                for p in moved:
+                    os.rename(p[1], p[0])
+
+            tb = traceback.format_exc()
+            log_exception('E010', tb)
+            msg = Markup('Error 010. Please <a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">notify StreamPULSE development</a> so this can be fixed.')
+            flash(msg, 'alert-danger')
+
+            return redirect(request.url)
+
+        try:
 
             #give feedback to user
             len_already_have = len(already_have)
             n_new = len(fnms_secure) - len_already_have
             w1 = 'file' if n_new == 1 else 'files'
             w2 = 'file' if len_already_have == 1 else 'files'
+            w3 = ' (' + ', '.join(already_have) + ').' if len_already_have else '.'
             flash('Uploaded ' + str(n_new) + ' new ' + w1 + ' and updated ' +\
-                str(len_already_have) + ' existing ' + w2 +\
-                ' (' + ', '.join(already_have) + ').', 'alert-success')
+                str(len_already_have) + ' existing ' + w2 + w3, 'alert-success')
 
             lfnms = len(fnms_changed)
             if lfnms:
@@ -1808,22 +1824,31 @@ def sitedata_filedrop():
                     ', '.join(name_changes) + '.', 'alert-warning')
 
         except:
+
             tb = traceback.format_exc()
-            log_exception('E010', tb)
-            msg = Markup('Error 010. Please <a href="mailto:michael.vlah@duke.edu"' +\
+            log_exception('E011', tb)
+            msg = Markup('Error 011. Please <a href="mailto:michael.vlah@duke.edu"' +\
                 ' class="alert-link">notify StreamPULSE development</a> so this can be fixed.')
             flash(msg, 'alert-danger')
+
             return redirect(request.url)
 
-        return render_template('sitedata_filedrop.html')
+        db.session.commit()
 
-    if request.method == 'GET': #when first visiting the sitedata upload page
-
-        #get list of all regions for which site characteristic data have been supplied
-        sc_files = os.listdir(app.config['SITEDATA_FOLDER'])
+        #get list of all regions for which reach characterization data have been supplied
+        sc_files = os.listdir(app.config['REACH_CHAR_FOLDER'])
         exdata_regions = set([x.split('_')[0] for x in sc_files])
 
-        return render_template('sitedata_filedrop.html',
+        return render_template('reach_characterization_filedrop.html',
+            exdata_regions=exdata_regions)
+
+    if request.method == 'GET': #when first visiting the reach char upload page
+
+        #get list of all regions for which reach characterization data have been supplied
+        sc_files = os.listdir(app.config['REACH_CHAR_FOLDER'])
+        exdata_regions = set([x.split('_')[0] for x in sc_files])
+
+        return render_template('reach_characterization_filedrop.html',
             exdata_regions=exdata_regions)
 
 @app.route('/grdo_filedrop', methods=['GET', 'POST'])
@@ -2550,8 +2575,8 @@ def download():
     for i in xrange(len(sitedictP)):
         sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
-    #list available site characteristic datasets, replace synoptic fns with 'synoptic'
-    sd_files = os.listdir(app.config['SITEDATA_FOLDER'])
+    #list available reach characterization datasets, replace synoptic fns with 'synoptic'
+    sd_files = os.listdir(app.config['REACH_CHAR_FOLDER'])
     reg_dset_list = [re.match('^([A-Za-z]{2})_(.*)?.csv$',
         s).groups() for s in sd_files]
     reg_dset_list = map(lambda x: (x[0],
@@ -2564,7 +2589,7 @@ def download():
         reg_dset_dict[e] = [ee[1] for ee in reg_dset_list if ee[0] == e]
 
     return render_template('download.html', sites=sitedict,
-        powell_sites=sitedictP, site_char_map=reg_dset_dict)
+        powell_sites=sitedictP, reach_char_map=reg_dset_dict)
 
 @app.route('/_getstats', methods=['POST'])
 def getstats():
@@ -2590,10 +2615,10 @@ def getcsv():
     canopy = request.form.get('canopy')
     csect = request.form.get('cross_section')
     geo = request.form.get('geomorphology')
-    pebble = request.form.get('pebble_count')
+    substrate = request.form.get('substrate')
     # csect = request.form.get('csect')
     # geo = request.form.get('geo')
-    # pebble = request.form.get('pebble')
+    # substrate = request.form.get('substrate')
     synoptic = request.form.get('synoptic')
     aggregate = request.form['aggregate']
     dataform = request.form['dataform'] # wide or long format
@@ -2711,25 +2736,25 @@ def getcsv():
     sitechar_reqs = {}
     sitechar_reqs['_canopy.csv'] = True if canopy else False
     sitechar_reqs['_cross_section.csv'] = True if csect else False
-    sitechar_reqs['_pebble_count.csv'] = True if pebble else False
+    sitechar_reqs['_substrate.csv'] = True if substrate else False
     sitechar_reqs['_geomorphology.csv'] = True if geo else False
     sitechar_sel = [x[0] for x in sitechar_reqs.items() if x[1]]
     if synoptic:
         sitechar_sel.extend(['_synoptic' + x for x in sitechar_sel])
 
     #add desired site characteristic datasets to subdirectory of temp file
-    sd_files = os.listdir(app.config['SITEDATA_FOLDER'])
+    sd_files = os.listdir(app.config['REACH_CHAR_FOLDER'])
     # regionset = set([x.split('_')[0] for x in sd_files])
     sitechar_filelist = []
     for s in sd_files:
         sd_reg, sd_set = re.match('^([A-Za-z]{2})(_.*)$', s).groups()
         if sd_reg in regionlist and sd_set in sitechar_sel:
-            sitechar_filelist.append(app.config['SITEDATA_FOLDER'] + '/' + s)
+            sitechar_filelist.append(app.config['REACH_CHAR_FOLDER'] + '/' + s)
 
     if sitechar_filelist:
-        os.mkdir(tmp + '/site_characteristic_datasets')
+        os.mkdir(tmp + '/reach_characterization_datasets')
         for s in sitechar_filelist:
-            shutil.copy2(s, tmp + '/site_characteristic_datasets')
+            shutil.copy2(s, tmp + '/reach_characterization_datasets')
 
     #add readme with notes if needed
     if nograbsites:
@@ -3836,17 +3861,17 @@ def grdo_datatemplate_download():
     return send_from_directory('static/grdo', 'GRDO_TimeseriesData_Template.xlsx',
         as_attachment=True)
 
-@app.route('/_sitedata_templates_download', methods=['POST'])
-def sitedata_templates_download():
+@app.route('/_reach_characterization_templates_download', methods=['POST'])
+def reach_characterization_templates_download():
 
-    return send_from_directory('static', 'streampulse_sitedata_templates.zip',
+    return send_from_directory('static', 'streampulse_reach_characterization_templates.zip',
         as_attachment=True)
 
 @app.route('/_reachchar_exfiles_download', methods=['POST'])
 def reachchar_exfiles_download():
 
-    region = request.json['region']
-    sdf = app.config['SITEDATA_FOLDER']
+    region = request.form['selregion']
+    sdf = app.config['REACH_CHAR_FOLDER']
 
     #find files from the requested region
     rc_files = os.listdir(sdf)
@@ -3902,11 +3927,11 @@ def allsuppmeta_download():
     return send_from_directory('../bulk_download_files',
         'all_supplementary_site_metadata.zip', as_attachment=True)
 
-@app.route('/_allsitechar_download', methods=['POST'])
-def allsitechar_download():
+@app.route('/_allreachchar_download', methods=['POST'])
+def allreachchar_download():
 
     return send_from_directory('../bulk_download_files',
-        'all_site_characteristic_datasets.zip', as_attachment=True)
+        'all_reach_characterization_datasets.zip', as_attachment=True)
 
 @app.route('/_allmodelsumm_download', methods=['POST'])
 def allmodelsumm_download():
