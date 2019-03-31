@@ -17,6 +17,8 @@ do
     #chown mike:mike $fn'.csv'
     chown aaron:aaron $fn'.csv'
     mv $fn'.csv' "$fp_base$fp_bulk"
-    zip $fp_base$fp_bulk$fn'.zip' $fp_base$fp_bulk$fn'.csv'
-    rm $fp_base$fp_bulk$fn'.csv'
+    cd $fp_base$fp_bulk
+    zip $fn'.csv.zip' $fn'.csv'
+    rm $fn'.csv'
+    cd /var/lib/mysql-files
 done
