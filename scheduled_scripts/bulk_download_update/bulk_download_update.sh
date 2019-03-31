@@ -10,7 +10,8 @@ python "$fp_base$fp_py"
 
 cd /var/lib/mysql-files/
 
-for fn in 'all_sp_data' 'all_neon_data' 'all_grab_data' 'all_daily_model_results' 'all_model_summary_data' 'all_powell_data'
+#for fn in 'all_sp_data' 'all_neon_data' 'all_grab_data' 'all_daily_model_results' 'all_model_summary_data' 'all_powell_data'
+for fn in 'all_sp_data' 'all_neon_data' 'all_grab_data' 'all_daily_model_results' 'all_model_summary_data'
 do
     #fn="all_sp_data"
     #chown mike:mike $fn'.csv'

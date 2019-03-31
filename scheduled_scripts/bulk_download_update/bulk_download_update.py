@@ -92,6 +92,7 @@ sitedata.to_csv(basic_site_data_path, index=False, encoding='utf-8')
 zf = zipfile.ZipFile(basic_site_data_path + '.zip', 'w')
 zf.write(basic_site_data_path, 'all_basic_site_data.csv', zipfile.ZIP_DEFLATED)
 zf.close()
+os.remove(basic_site_data_path)
 
 
 # sitecols = db.engine.execute("SELECT group_concat(\"'\", column_name, \"'\")" +\
@@ -174,7 +175,7 @@ db.engine.execute("select 'region','site','start_date','end_date'," +\
     "pool,proc_err,obs_err,proc_acor,ode_method,deficit_src,interv," +\
     "fillgaps,estimate_areal_depth,O2_GOF,GPP_95CI,ER_95CI,prop_pos_ER," +\
     "prop_neg_GPP,ER_K600_cor,coverage,kmax,current_best from model " +\
-    "where concat(data.region, '_', data.site) not " +\
+    "where concat(model.region, '_', model.site) not " +\
     "in ('" + "','".join(embargoed_sites) + "') into outfile" +\
     "'/var/lib/mysql-files/all_model_summary_data.csv' fields terminated by ',' " +\
     "enclosed by '\"' lines terminated by '\\n';")
@@ -185,7 +186,7 @@ db.engine.execute("select 'region','site','year','solar_date','GPP'," +\
     "'K600_upper','msgs_fit','warnings','errors' union all select " +\
     "region,site,year,solar_date,GPP,GPP_lower,GPP_upper,ER,ER_lower," +\
     "ER_upper,K600,K600_lower,K600_upper,msgs_fit,warnings,errors from results" +\
-    " where concat(data.region, '_', data.site) not " +\
+    " where concat(results.region, '_', results.site) not " +\
     "in ('" + "','".join(embargoed_sites) + "')" +\
     " into outfile '/var/lib/mysql-files/all_daily_model_results.csv' " +\
     "fields terminated by ',' enclosed by '\"' lines terminated by '\\n';")
