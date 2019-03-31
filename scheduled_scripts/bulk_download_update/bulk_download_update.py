@@ -1,6 +1,4 @@
-# import sys
-# sys.path.insert(0, '/home/mike/git/streampulse/server_copy/sp')
-
+import sys
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
@@ -8,6 +6,11 @@ import pandas as pd
 import os
 import re
 import zipfile
+
+app_dir = '/home/aaron/sp'
+#app_dir = '/home/mike/git/streampulse/server_copy/sp'
+sys.path.insert(0, app_dir)
+os.chdir(app_dir)
 import config as cfg
 
 app = Flask(__name__)
