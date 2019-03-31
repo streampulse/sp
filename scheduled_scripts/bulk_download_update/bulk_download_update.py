@@ -132,7 +132,7 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
     "grabdata.DateTime_UTC, grabdata.variable, grabdata.value, grabdata.method, " +\
     "grabdata.write_in, grabdata.addtl, " +\
     "grabflag.flag, grabflag.comment from grabdata left join grabflag on " +\
-    "grabdata.flag=grabflag.id where concat(data.region, '_', data.site) not " +\
+    "grabdata.flag=grabflag.id where concat(grabdata.region, '_', grabdata.site) not " +\
     "in ('" + "','".join(embargoed_sites) + "') into outfile " +\
     "'/var/lib/mysql-files/all_grab_data.csv' fields terminated by ',' " +\
     "enclosed by '\"' lines terminated by '\\n';")
