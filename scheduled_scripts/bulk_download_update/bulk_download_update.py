@@ -119,12 +119,12 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
     "'/var/lib/mysql-files/all_neon_data.csv' fields terminated by ',' " +\
     "enclosed by '\"' lines terminated by '\\n';")
 
-#export all powell data (this need not be repeated; powell is static)
-# db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
-#     ",'flagID','flagComment' union all select region, site, " +\
-#     "DateTime_UTC, variable, value from powell into outfile" +\
-#     "'/var/lib/mysql-files/all_powell_data.csv' fields terminated by ',' " +\
-#     "enclosed by '\"' lines terminated by '\\n';")
+##export all powell data (this need not be repeated; powell is static)
+#db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
+#    " union all select region, site, " +\
+#    "DateTime_UTC, variable, value from powell into outfile" +\
+#    "'/var/lib/mysql-files/all_powell_data.csv' fields terminated by ',' " +\
+#    "enclosed by '\"' lines terminated by '\\n';")
 
 #export all grab data (will move and zip later in shell script)
 db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
