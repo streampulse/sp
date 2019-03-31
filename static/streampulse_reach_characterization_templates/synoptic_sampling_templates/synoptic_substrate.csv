@@ -1,2 +1,2 @@
-e.g. NC_MudCreek,YYYY-MM-DD,Meters upstream of logger array (ideally there should be 100 measurements per transect),Length of the intermediate axis of a grain (rock fragment of any size) from the bottom of the channel,"Units for grain size (mm, cm)",Any notes about these measurements
-siteID,date,transect,grain_size,grain_size_unit,notes
+e.g. NC_MudCreek,YYYY-MM-DD,Meters upstream of logger array (ideally there should be 100 measurements per transect),Length of the intermediate axis of a grain (rock fragment of any size) from the bottom of the channel (millimeters),Any notes about these measurements
+siteID,date,transect,grain_size_mm,notes

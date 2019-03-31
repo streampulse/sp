@@ -3878,11 +3878,15 @@ def reachchar_exfiles_download():
     rc_bool = [True if re.match(region + '_.*', x) else False for x in rc_files]
     req_files = [rc_files[i] for i in xrange(len(rc_bool)) if rc_bool[i]]
 
-    #add files to temp directory and zip
+    #add files to temp directory and zip, with readme
     tmp = tempfile.mkdtemp()
 
     for f in req_files:
         shutil.copy2(sdf + '/' + f, tmp)
+
+    with open(tmp + '/README.txt', 'w') as r:
+        r.write('Please pay close attention to units!\n')
+        r.close()
 
     # writefiles = os.listdir(tmp)
     zipname = region + '_reach_characterization_files.zip'
