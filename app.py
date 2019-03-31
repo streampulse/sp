@@ -3884,9 +3884,11 @@ def reachchar_exfiles_download():
     for f in req_files:
         shutil.copy2(sdf + '/' + f, tmp)
 
-    with open(tmp + '/README.txt', 'w') as r:
-        r.write('Please pay close attention to units!\n')
-        r.close()
+    shutil.copy2('static/streampulse_reach_characterization_templates/README.txt',
+        tmp)
+    # with open(tmp + '/README.txt', 'w') as r:
+    #     r.write('Please pay close attention to units!\n')
+    #     r.close()
 
     # writefiles = os.listdir(tmp)
     zipname = region + '_reach_characterization_files.zip'
