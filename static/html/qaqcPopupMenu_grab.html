@@ -1,12 +1,22 @@
 <form id="qaqc">
     <div>
         <select id="flags2" name="flagID2" class="v_align">
-            <option value="" disabled selected hidden>Choose a flag label</option>
-            <option value="Questionable">Questionable</option>
-            <option value="Interesting">Interesting</option>
-            <option value="Below Detection Limit">Below Detection Limit</option>
-            <option value="Unknown Collection Time">Unknown Collection Time</option>
-            <option value="Bad Data">Bad Data</option>
+            <option value="" disabled selected hidden>Choose a flag label (mouseover for detail)</option>
+            <option value="Questionable" title="Selection looks erroneous, but may not be">
+                Questionable
+            </option>
+            <option value="Interesting" title="Selection looks unusual, but not erroneous">
+                Interesting
+            </option>
+            <option value="Below Detection Limit" title="Selected values have been set to 1/2 protocol detection limit">
+                Below Detection Limit
+            </option>
+            <option value="Unknown Collection Time" title="Collection time has been set to 12:00:00">
+                Unknown Collection Time
+            </option>
+            <option value="Bad Data" title="Selection is erroneous (sensor out of water, buried, malfunctioning, etc.)">
+                Bad Data
+            </option>
         </select>
         <input type="text" name="fcomment2" class="form-control v_align" style="width: 26em;"
         placeholder=\'Opt. flag comments (e.g. "Sensor out of water")\'>
