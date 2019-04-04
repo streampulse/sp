@@ -2,15 +2,29 @@
 #load plot functions
 source("helpers.R")
 
+get_plotheight = "
+shinyjs.init = function() {
+    $(window).resize(shinyjs.getHeight50);
+}
+shinyjs.getHeight70 = function() {
+    Shiny.onInputChange('height70', $(window).height() * .95);
+}
+shinyjs.getHeight50 = function() {
+    Shiny.onInputChange('height50', $(window).height() * .5);
+}
+shinyjs.getHeight05 = function() {
+    Shiny.onInputChange('height05', $(window).height() * .05);
+}
+"
+
 shinyUI(
     fluidPage(
 
         #screen shouldn't go gray when plots are updating.
         tags$style(type="text/css", ".recalculating { opacity: 1.0; }" ),
-        # shinyjs::useShinyjs(),
-        # shinyjs::extendShinyjs(text=get_plotheight,
-        #     functions=c('getHeight50', 'getHeight40', 'getHeight35',
-        #         'getHeight10', 'getHeight10', 'getHeight05', 'init')),
+        shinyjs::useShinyjs(),
+        shinyjs::extendShinyjs(text=get_plotheight,
+            functions=c('getHeight70', 'getHeight05', 'getHeight50', 'init')),
         navbarPage(title=p(strong(a('StreamPULSE',
             href='https://data.streampulse.org/'))), inverse=TRUE,
             windowTitle='StreamPULSE Diagnostics',
@@ -48,7 +62,8 @@ shinyUI(
                     ),
                     mainPanel(
                         fluidRow(
-                            plotOutput('kdens')
+                            plotOutput('kdens_legend', height='auto'),
+                            plotOutput('kdens', height='auto')
                         )
                     )
                 )

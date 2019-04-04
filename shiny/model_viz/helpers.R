@@ -51,7 +51,7 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
         ylab='', xaxs='i', yaxs='i',
         ylim=c(llim, ulim), lwd=2, xaxt='n', bty='l',
         xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
-    mtext(expression(paste("O"[2] * " (gm"^"-2" * " d"^"-1" * ')')), side=2,
+    mtext(expression(paste("g"~O[2]~"m"^"-2"~" d"^"-1")), side=2,
         line=2.5, font=2)
 
     #split time and DO series into NA-less chunks for plotting polygons
@@ -157,9 +157,9 @@ kernel_func = function(ts_full, main){
         col=c(NA, "purple1", "purple3", "purple4"))
     axis(1, tcl=-0.2, padj=-1)
     axis(2, tcl=-0.2, hadj=0.5, las=1)
-    mtext(expression(paste("GPP (gm"^"-2" * " d"^"-1" * ")")),
+    mtext(expression(paste("GPP (g"~O[2]~"m"^"-2"~" d"^"-1"*")")),
         1, line=1.8)
-    mtext(expression(paste("ER (gm"^"-2" * " d"^"-1" * ")")),
+    mtext(expression(paste("ER (g"~O[2]~"m"^"-2"~" d"^"-1"*")")),
         2, line=2)
     # mtext(main, 3, line=-2)
     abline(0, -1, col='black', lty=3)
@@ -313,7 +313,7 @@ KvER_plot = function(mod_out, slice, click=NULL){
     plot(slice$K600_daily_mean, slice$ER_daily_mean,
         col='darkgreen', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-    mtext(expression(paste("Daily mean ER (gm"^"-2" ~ ")")), side=2, line=2.5)
+    mtext(expression(paste("Daily mean ER (g"~O[2]~"m"^"-2"*")")), side=2, line=2.5)
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
     abline(mod, lty=2, col='gray50', lwd=2)
@@ -357,7 +357,7 @@ KvGPP_plot = function(mod_out, slice, click=NULL){
     plot(slice$K600_daily_mean, slice$GPP_daily_mean,
         col='darkblue', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
-    mtext(expression(paste("Daily mean GPP (gm"^"-2" ~ ")")), side=2, line=2.5)
+    mtext(expression(paste("Daily mean GPP (g"~O[2]~"m"^"-2"*")")), side=2, line=2.5)
 
     #highlight point and display date on click
     if(! is.null(click) && ! is.null(click$x)){

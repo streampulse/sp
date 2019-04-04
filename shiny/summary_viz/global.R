@@ -9,13 +9,14 @@ ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
 pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
 # pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')
 
-#read in site table from mysql
+#read in site and results tables from mysql
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 site = dbReadTable(con, "site")
+results = dbReadTable(con, "results")
 
 #get list of fitted model names available on server
-fnames = dir('data')
-modnames = dir('data', pattern='modOut')
+# fnames = dir('../model_viz/data')
+modnames = dir('../model_viz/data', pattern='modOut')
 sitenmyr_all = str_match(modnames, 'modOut_(\\w+_\\w+)_([0-9]{4})')[,2:3]
 
 #isolate those that are public (no embargo or past embargo period)
