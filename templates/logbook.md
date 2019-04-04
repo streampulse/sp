@@ -1,4 +1,9 @@
 #Mike's Logbook
+###wed20190403
+ + added mouseover explanations to flag label options
+###sun20190331
+ + finished reach characterization data management system
+ + finished bulk download system
 ###tue20190326
  + remodeling reach characterization (formerly "site characteristics") upload interface
    + now two sets of instructions: one for new reach char datasets, another for updating existing ones
