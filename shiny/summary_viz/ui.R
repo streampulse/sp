@@ -6,14 +6,14 @@ get_plotheight = "
 shinyjs.init = function() {
     $(window).resize(shinyjs.getHeight50);
 }
-shinyjs.getHeight70 = function() {
-    Shiny.onInputChange('height70', $(window).height() * .95);
+shinyjs.getHeight90 = function() {
+    Shiny.onInputChange('height90', $(window).height() * .9);
 }
 shinyjs.getHeight50 = function() {
     Shiny.onInputChange('height50', $(window).height() * .5);
 }
-shinyjs.getHeight05 = function() {
-    Shiny.onInputChange('height05', $(window).height() * .05);
+shinyjs.getHeight10 = function() {
+    Shiny.onInputChange('height10', $(window).height() * .1);
 }
 "
 
@@ -24,7 +24,7 @@ shinyUI(
         tags$style(type="text/css", ".recalculating { opacity: 1.0; }" ),
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
-            functions=c('getHeight70', 'getHeight05', 'getHeight50', 'init')),
+            functions=c('getHeight90', 'getHeight10', 'getHeight50', 'init')),
         navbarPage(title=p(strong(a('StreamPULSE',
             href='https://data.streampulse.org/'))), inverse=TRUE,
             windowTitle='StreamPULSE Diagnostics',
@@ -55,10 +55,16 @@ shinyUI(
             tabPanel('Metabolism by region',
                 sidebarLayout(
                     sidebarPanel(
-                        selectInput('MPinput_site', label='Select site',
-                            choices=c('No site selected' = '',
-                                unique(sitenames)),
-                            selected='', selectize=TRUE)
+                        # selectizeInput('input_site', label='Overlay site(s)',
+                        #     choices=c('None', unique(sitenames)),
+                        #     selected='None', multiple=TRUE,
+                        #     options=list('allowEmptyOption'=TRUE))
+                        selectInput('input_site', label='Overlay site(s)',
+                            choices=list('StreamPULSE sites'=sitenames,
+                                'Powell Center sites'=sitenm_all_pow),
+                            selectize=TRUE, multiple=TRUE),
+                        actionButton('replot', label='Replot'),
+                        actionButton('clear', label='Clear overlay')
                     ),
                     mainPanel(
                         fluidRow(

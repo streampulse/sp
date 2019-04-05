@@ -10,42 +10,58 @@ options(shiny.usecairo=TRUE)
 
 shinyServer(function(input, output, session){
 
-    height70 = reactive({
-        ifelse(is.null(input$height70), 0, input$height70)
+    height90 = reactive({
+        ifelse(is.null(input$height90), 0, input$height90)
     })
     height50 = reactive({
-        ifelse(is.null(input$height70), 0, input$height50)
+        ifelse(is.null(input$height50), 0, input$height50)
     })
-    height05 = reactive({
-        ifelse(is.null(input$height05), 0, input$height05)
+    height10 = reactive({
+        ifelse(is.null(input$height10), 0, input$height10)
     })
 
-    js$getHeight70()
+    js$getHeight90()
     js$getHeight50()
-    js$getHeight05()
-
-    #replot when a click is registered; don't react when click handler flushes
-    # observeEvent({
-    #     if (! is.null(input$KvER_click$x) ||
-    #         ! is.null(input$KvQ_click$x) ||
-    #         ! is.null(input$QvKres_click$x) ||
-    #         ! is.null(input$KvGPP_click$x)) TRUE
-    #     else NULL
-    # }, {
-    #
-    #     slices = get_slices()
-    #     mod_out = slices$mod_out
-    #     MPstart = input$MPrange[1]
-    #     MPend = input$MPrange[2]
+    js$getHeight10()
 
     output$kdens_legend = renderPlot({
-        kdens_legend()
-    }, height=height05)
+        kdens_legend(is_overlay=FALSE)
+    }, height=height10)
 
     output$kdens = renderPlot({
-        kdens_plot()
-    }, height=height70)
+        kdens_plot(overlay='None')
+    }, height=height90)
 
-    # }, ignoreNULL=TRUE)
+    #replot when button is clicked
+    observeEvent({
+        input$replot
+    }, {
+        site_sel = input$input_site
+
+        if(! is.null(site_sel)){
+            output$kdens_legend = renderPlot({
+                # kdens_legend(is_overlay=ifelse(site_sel != 'None', TRUE, FALSE))
+                kdens_legend(is_overlay=ifelse(is.null(site_sel) ||
+                        (length(site_sel) == 1 && site_sel == 'None'), FALSE, TRUE))
+                # kdens_legend(is_overlay=ifelse(! site_sel %in% c('', 'None'),
+                #     TRUE, FALSE))
+                # kdens_legend(is_overlay=ifelse(site_sel != 'None' &
+                #     ! is.null(site_sel), TRUE, FALSE))
+            }, height=height10)
+
+            output$kdens = renderPlot({
+                kdens_plot(overlay=site_sel)
+            }, height=height90)
+        }
+    })
+
+    observeEvent({
+        input$clear
+    }, {
+        updateSelectizeInput(session, 'input_site', label='Overlay site(s)',
+            choices=list('StreamPULSE sites'=sitenames,
+                'Powell Center sites'=sitenm_all_pow))
+        # updateSelectizeInput(session, 'input_site')
+    })
 
 })
