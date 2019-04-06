@@ -1,4 +1,11 @@
 #Mike's Logbook
+
+###sat20190406
+ + finished compiled kernel density plot
+   + site overlays
+   + time slider
+   + auth
+   + error handling
 ###wed20190403
  + added mouseover explanations to flag label options
 ###sun20190331
