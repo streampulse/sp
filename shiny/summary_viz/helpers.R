@@ -2,12 +2,14 @@
 kdens_legend = function(is_overlay){
     par(mar = rep(0,4), oma = rep(0,4))
     plot(1,1, axes=FALSE, type='n', xlab='', ylab='', bty='o')
-    legend("bottomright", c("75%", "50%", "25%"), bty="o", bg='white',
-        lty=c(1,1,1), lwd=4, col=c("purple1", "purple3", "purple4"),
+    legend("bottomleft", c("75%", "50%", "25%"), bty="n", bg='white',
+        lty=c(1,1,1), lwd=4, col=c("gray70", "gray50", "gray30"),
         seg.len=1, box.col='transparent', horiz=TRUE, title='Overall density')
 
+    legend('bottom', '1:1', bg='white', lty=3, bty='n')
+
     if(is_overlay){
-        legend("bottomleft", c("75%", "50%", "25%"), bty="o", bg='white',
+        legend("bottomright", c("75%", "50%", "25%"), bty="n", bg='white',
             lty=c(1,1,1), lwd=4, col=c("red", "orange", "yellow"),
             seg.len=1, box.col='transparent', horiz=TRUE,
             title='Density of subset')
@@ -37,6 +39,13 @@ kdens_plot = function(overlay, tmin, tmax){
         xlb = quantile(results$GPP, probs=c(0.01, 0.99), na.rm=TRUE)
         ylims = range(c(yla, ylb))
         xlims = range(c(xla, xlb))
+        if(any(is.na(c(xlims, ylims)))){
+            plot(1, 1, axes=FALSE, ann=FALSE, type='n')
+            text(1, 1, 'No overlay data for\nselected time range.', col='red',
+                cex=1.5)
+            return()
+        }
+
     }
 
     #overall plot
@@ -44,7 +53,8 @@ kdens_plot = function(overlay, tmin, tmax){
         c('GPP','ER')]))
     plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
         ylim=ylims, xlim=xlims, display='filled.contour',
-        col=c(NA, "purple1", "purple3", "purple4"))
+        col=c(NA, "gray70", "gray50", "gray30"))
+        # col=c(NA, "purple1", "purple3", "purple4"))
 
     par(new=TRUE)
 

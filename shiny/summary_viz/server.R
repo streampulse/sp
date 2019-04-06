@@ -49,7 +49,8 @@ shinyServer(function(input, output, session){
                 paste('Authorized for', length(usersites), 'StreamPULSE sites.')
             })
 
-            updateSelectizeInput(session, 'input_site', label='Overlay site(s)',
+            updateSelectizeInput(session, 'input_site',
+                label='Select site(s) to overlay',
                 choices=list('StreamPULSE sites'=sitenames,
                     'Powell Center sites'=sitenm_all_pow))
 
@@ -68,7 +69,7 @@ shinyServer(function(input, output, session){
         }
     })
 
-    #generate plot and legend with no overlay
+    #generate initial plot and legend with no overlay
     output$kdens_legend = renderPlot({
         kdens_legend(is_overlay=FALSE)
     }, height=height10)
@@ -102,12 +103,13 @@ shinyServer(function(input, output, session){
     observeEvent({
         input$clear
     }, {
-        updateSelectizeInput(session, 'input_site', label='Overlay site(s)',
+        updateSelectizeInput(session, 'input_site',
+            label='Select site(s) to overlay',
             choices=list('StreamPULSE sites'=sitenames,
                 'Powell Center sites'=sitenm_all_pow))
 
-        updateSliderInput(session, 'slider', label=NULL, min=1, max=366,
-            value=c(1, 366), step=6)
+        updateSliderInput(session, 'slider', label='Select DOY range',
+            min=1, max=366, value=c(1, 366), step=6)
 
         output$kdens_legend = renderPlot({
             kdens_legend(is_overlay=FALSE)
