@@ -55,16 +55,15 @@ shinyUI(
             tabPanel('Metabolism by region',
                 sidebarLayout(
                     sidebarPanel(
-                        # selectizeInput('input_site', label='Overlay site(s)',
-                        #     choices=c('None', unique(sitenames)),
-                        #     selected='None', multiple=TRUE,
-                        #     options=list('allowEmptyOption'=TRUE))
                         selectInput('input_site', label='Overlay site(s)',
                             choices=list('StreamPULSE sites'=sitenames,
                                 'Powell Center sites'=sitenm_all_pow),
                             selectize=TRUE, multiple=TRUE),
-                        actionButton('replot', label='Replot'),
-                        actionButton('clear', label='Clear overlay')
+                        actionButton('replot', label='Overlay'),
+                        actionButton('clear', label='Reset'),
+                        sliderInput('slider', label=NULL, min=1, max=366,
+                            value=c(1, 366), step=6,
+                            animate=animationOptions(interval=2000))
                     ),
                     mainPanel(
                         fluidRow(

@@ -12,6 +12,7 @@ pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 site = dbReadTable(con, "site")
 results = dbReadTable(con, "results")
+doy = as.numeric(strftime(results$solar_date, format='%j'))
 
 #get list of fitted model names available on server
 # fnames = dir('../model_viz/data')
@@ -22,10 +23,11 @@ sitenm_all = str_match(modnames, 'modOut_(\\w+_\\w+)_[0-9]{4}')[,2]
 #isolate those that are public (no embargo or past embargo period)
 public_sites = difftime(Sys.time(), site$addDate,
     units='days') > site$embargo * 365
-site = site[public_sites,c('region','site')]
+site = site[public_sites, c('region','site')]
 sitenames_public = paste(site[,1], site[,2], sep='_')
 
-#filter available models so that only public ones can be viewed
+#filter available models so that only public ones can be viewed.
+#legacy code, so unnecessarily convoluted
 modelnames_public = intersect(sitenm_all, sitenames_public)
 sitenames = sitenm_all[sitenm_all %in% modelnames_public]
 sitenames = unique(sitenames)

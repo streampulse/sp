@@ -14,21 +14,23 @@ kdens_legend = function(is_overlay){
     }
 }
 
-kdens_plot = function(overlay){
+kdens_plot = function(overlay, tmin, tmax){
 
-    par(mar=c(4,4,0,0), oma=rep(0,4), xaxs='i', yaxs='i')
+    par(mar=c(4,4,0,0), oma=rep(0,4))
 
     #plot limits
-    # if(! overlay %in% c('', 'None')){
     if(is.null(overlay) || (length(overlay) == 1 && overlay == 'None')){
-        ylims = quantile(results$ER, probs=c(0.01, 0.99), na.rm=TRUE)
-        xlims = quantile(results$GPP, probs=c(0.01, 0.99), na.rm=TRUE)
+        ylims = quantile(results$ER[doy > tmin & doy < tmax],
+            probs=c(0.01, 0.99), na.rm=TRUE)
+        xlims = quantile(results$GPP[doy > tmin & doy < tmax],
+            probs=c(0.01, 0.99), na.rm=TRUE)
     } else {
         overlay = overlay[overlay != 'None']
         regionsite = sapply(overlay, strsplit, '_')
         regions = unique(sapply(regionsite, function(x) x[1]))
         sites = unique(sapply(regionsite, function(x) x[2]))
-        subset_i = results$region %in% regions & results$site %in% sites
+        subset_i = results$region %in% regions & results$site %in% sites &
+            doy > tmin & doy < tmax
         yla = quantile(results$ER[subset_i], probs=c(0.03, 0.97), na.rm=TRUE)
         xla = quantile(results$GPP[subset_i], probs=c(0.03, 0.97), na.rm=TRUE)
         ylb = quantile(results$ER, probs=c(0.01, 0.99), na.rm=TRUE)
@@ -38,7 +40,8 @@ kdens_plot = function(overlay){
     }
 
     #overall plot
-    kernel = kde(na.omit(results[,c('GPP','ER')]))
+    kernel = kde(na.omit(results[doy > tmin & doy < tmax,
+        c('GPP','ER')]))
     plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
         ylim=ylims, xlim=xlims, display='filled.contour',
         col=c(NA, "purple1", "purple3", "purple4"))
@@ -46,15 +49,12 @@ kdens_plot = function(overlay){
     par(new=TRUE)
 
     #overlay
-    # if(overlay != 'None' & ! is.null(overlay)){
-    # if(! overlay %in% c('', 'None')){
-    # if(overlay != 'None'){
-    # if(length(overlay) == 1 && overlay == 'None'){
     if(is.null(overlay) || (length(overlay) == 1 && overlay == 'None')){
         NULL
     } else {
         kernel = kde(na.omit(results[results$region %in% regions &
-            results$site %in% sites, c('GPP', 'ER')]))
+            results$site %in% sites & doy > tmin & doy < tmax,
+            c('GPP', 'ER')]))
 
         plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
             ylim=ylims, xlim=xlims, display='filled.contour',
