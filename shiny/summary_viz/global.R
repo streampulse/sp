@@ -1,6 +1,7 @@
 library(stringr)
 library(RMariaDB)
 library(DBI)
+library(ks)
 
 #read in mysql pw
 # conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
@@ -34,7 +35,7 @@ sitenames = unique(sitenames)
 
 #powell stuff to expensive
 # #get list of Powell Center Synthesis fitted model names available on server
-# modlists = dir('powell_data/shiny_lists/')
+# modlists = dir('../model_viz/powell_data/shiny_lists/')
 # sitenm_all_pow = str_match(modlists, '^(\\w+_[0-9]+)_[0-9]{4}')[,2]
 # sitenm_all_pow = unique(sitenm_all_pow)
 
