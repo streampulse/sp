@@ -32,8 +32,9 @@ shinyUI(
                 h2('Visualize compiled model results'),
                 h3('User authentication'),
                 p(paste('Use this tool to visualize cumulative results of models fit by StreamPULSE',
-                    'users, as well as results from the Powell Center metabolism synthesis.',
-                    'Additional visualizations are coming soon.')),
+                    'users.',
+                    # 'users, as well as results from the Powell Center metabolism synthesis.',
+                    'Additional visualizations and inclusion of Powell Center data are forthcoming.')),
                 p('To view private results, enter a valid user token. You do',
                     'not need a token to view public results.'),
                 br(),
@@ -58,8 +59,9 @@ shinyUI(
                 sidebarLayout(
                     sidebarPanel(
                         selectInput('input_site', label='Select site(s) to overlay',
-                            choices=list('StreamPULSE sites'=sitenames,
-                                'Powell Center sites'=sitenm_all_pow),
+                            choices=sitenames,
+                            # choices=list('StreamPULSE sites'=sitenames,
+                            #     'Powell Center sites'=sitenm_all_pow),
                             selectize=TRUE, multiple=TRUE),
                         fluidRow(
                             column(6,

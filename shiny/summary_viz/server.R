@@ -51,8 +51,9 @@ shinyServer(function(input, output, session){
 
             updateSelectizeInput(session, 'input_site',
                 label='Select site(s) to overlay',
-                choices=list('StreamPULSE sites'=sitenames,
-                    'Powell Center sites'=sitenm_all_pow))
+                choices=sitenames)
+                # choices=list('StreamPULSE sites'=sitenames,
+                #     'Powell Center sites'=sitenm_all_pow))
 
         } else {
             if(length(usersites) && usersites == ''){
@@ -121,8 +122,9 @@ shinyServer(function(input, output, session){
     }, {
         updateSelectizeInput(session, 'input_site',
             label='Select site(s) to overlay',
-            choices=list('StreamPULSE sites'=sitenames,
-                'Powell Center sites'=sitenm_all_pow))
+            # choices=list('StreamPULSE sites'=sitenames,
+            #     'Powell Center sites'=sitenm_all_pow))
+            choices=sitenames)
 
         updateSliderInput(session, 'slider', label='Select DOY range',
             min=1, max=366, value=c(1, 366), step=6)

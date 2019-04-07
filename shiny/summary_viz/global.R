@@ -15,9 +15,7 @@ results = dbReadTable(con, "results")
 doy = as.numeric(strftime(results$solar_date, format='%j'))
 
 #get list of fitted model names available on server
-# fnames = dir('../model_viz/data')
 modnames = dir('../model_viz/data', pattern='modOut')
-# sitenmyr_all = str_match(modnames, 'modOut_(\\w+_\\w+)_([0-9]{4})')[,2:3]
 sitenm_all = str_match(modnames, 'modOut_(\\w+_\\w+)_[0-9]{4}')[,2]
 
 #isolate those that are public (no embargo or past embargo period)
@@ -34,24 +32,11 @@ sitenames = unique(sitenames)
 # modelnames_public = intersect(sitenmyr_all[,1], sitenames_public)
 # sitenmyr = sitenmyr_all[sitenmyr_all[,1] %in% modelnames_public,]
 
-# sitenames = sitenmyr[,1]
-# siteyears = sitenmyr[,2]
-# defaultv = list(sitenames=sitenames, siteyears=siteyears)
-
-#get list of Powell Center Synthesis fitted model names available on server
-modlists = dir('powell_data/shiny_lists/')
-sitenm_all_pow = str_match(modlists, '^(\\w+_[0-9]+)_[0-9]{4}')[,2]
-sitenm_all_pow = unique(sitenm_all_pow)
-# sitenmyr_all_pow = str_match(modlists, '^(\\w+_[0-9]+)_([0-9]{4})')[,2:3]
-
-# #create mapping of input data fields and their pretty equivalents
-# varmap = list('DO.sat'=list('DO sat', 'DO sat (%)'),
-#     'depth'=list('Depth', 'Depth (m)'),
-#     'temp.water'=list('Water temp',
-#         expression(paste('Water temp (', degree, 'C)'))),
-#     'light'=list('PAR', 'Light (PAR)'),
-#     'discharge'=list('Discharge',
-#         expression(paste('Discharge (m'^3, 's'^-1, ')'))))
+#powell stuff to expensive
+# #get list of Powell Center Synthesis fitted model names available on server
+# modlists = dir('powell_data/shiny_lists/')
+# sitenm_all_pow = str_match(modlists, '^(\\w+_[0-9]+)_[0-9]{4}')[,2]
+# sitenm_all_pow = unique(sitenm_all_pow)
 
 #compute overall kernel density so that it need not always be recomputed
 overall_kernel = kde(na.omit(results[, c('GPP','ER')]))
