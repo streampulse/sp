@@ -61,8 +61,14 @@ shinyUI(
                             choices=list('StreamPULSE sites'=sitenames,
                                 'Powell Center sites'=sitenm_all_pow),
                             selectize=TRUE, multiple=TRUE),
-                        actionButton('replot', label='Render'),
-                        actionButton('clear', label='Reset'),
+                        fluidRow(
+                            column(6,
+                                actionButton('replot', label='Render', width='100%')
+                            ),
+                            column(6,
+                                actionButton('clear', label='Reset', width='100%')
+                            )
+                        ),
                         hr(),
                         sliderInput('slider', label='Select DOY range',
                             min=1, max=366, value=c(1, 366), step=6,
