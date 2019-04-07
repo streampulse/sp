@@ -126,7 +126,7 @@ shinyServer(function(input, output, session){
             choices=sitenames)
 
         updateSliderInput(session, 'slider', label='Select DOY range',
-            min=1, max=366, value=c(1, 366), step=6)
+            min=1, max=366, value=c(1, 366), step=18)
 
         output$kdens_legend = renderPlot({
             kdens_legend(is_overlay=FALSE)
