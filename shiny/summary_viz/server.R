@@ -81,11 +81,10 @@ shinyServer(function(input, output, session){
     #replot when button is clicked
     observeEvent({
         input$replot
-        input$slider
+        # input$slider
     }, {
         site_sel = input$input_site
 
-        # if(! is.null(site_sel)){
         output$kdens_legend = renderPlot({
             kdens_legend(is_overlay=ifelse(is.null(site_sel) ||
                 (length(site_sel) == 1 && site_sel == 'None'),
@@ -94,9 +93,26 @@ shinyServer(function(input, output, session){
 
         output$kdens = renderPlot({
             kdens_plot(overlay=site_sel, tmin=input$slider[1],
-                tmax=input$slider[2])
+                tmax=input$slider[2], recompute_overall_dens=FALSE)
         }, height=height90)
-        # }
+    })
+
+    #replot when time slider is adjusted
+    observeEvent({
+        input$slider
+    }, {
+        site_sel = input$input_site
+
+        output$kdens_legend = renderPlot({
+            kdens_legend(is_overlay=ifelse(is.null(site_sel) ||
+                (length(site_sel) == 1 && site_sel == 'None'),
+                FALSE, TRUE))
+        }, height=height10)
+
+        output$kdens = renderPlot({
+            kdens_plot(overlay=site_sel, tmin=input$slider[1],
+                tmax=input$slider[2], recompute_overall_dens=TRUE)
+        }, height=height90)
     })
 
     #clear selections and remove overlay when other button is clicked

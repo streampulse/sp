@@ -16,57 +16,72 @@ kdens_legend = function(is_overlay){
     }
 }
 
-kdens_plot = function(overlay, tmin, tmax){
+kdens_plot = function(overlay, tmin, tmax, recompute_overall_dens=FALSE){
 
     par(mar=c(4,4,0,0), oma=rep(0,4))
 
-    #plot limits
+    #get plot limits (too computationally expensive, just getting overlay info)
     if(is.null(overlay) || (length(overlay) == 1 && overlay == 'None')){
-        ylims = quantile(results$ER[doy > tmin & doy < tmax],
-            probs=c(0.01, 0.99), na.rm=TRUE)
-        xlims = quantile(results$GPP[doy > tmin & doy < tmax],
-            probs=c(0.01, 0.99), na.rm=TRUE)
+        # ylims = quantile(results$ER[doy > tmin & doy < tmax],
+        #     probs=c(0.01, 0.99), na.rm=TRUE)
+        # xlims = quantile(results$GPP[doy > tmin & doy < tmax],
+        #     probs=c(0.01, 0.99), na.rm=TRUE)
+        NULL
     } else {
         overlay = overlay[overlay != 'None']
         regionsite = sapply(overlay, strsplit, '_')
         regions = unique(sapply(regionsite, function(x) x[1]))
         sites = unique(sapply(regionsite, function(x) x[2]))
-        subset_i = results$region %in% regions & results$site %in% sites &
-            doy > tmin & doy < tmax
-        yla = quantile(results$ER[subset_i], probs=c(0.03, 0.97), na.rm=TRUE)
-        xla = quantile(results$GPP[subset_i], probs=c(0.03, 0.97), na.rm=TRUE)
-        ylb = quantile(results$ER, probs=c(0.01, 0.99), na.rm=TRUE)
-        xlb = quantile(results$GPP, probs=c(0.01, 0.99), na.rm=TRUE)
-        ylims = range(c(yla, ylb))
-        xlims = range(c(xla, xlb))
-        if(any(is.na(c(xlims, ylims)))){
-            plot(1, 1, axes=FALSE, ann=FALSE, type='n')
-            text(1, 1, 'No overlay data for\nselected time range.', col='red',
-                cex=1.5)
-            return()
-        }
-
+        # subset_i = results$region %in% regions & results$site %in% sites &
+        #     doy > tmin & doy < tmax
+        # yla = quantile(results$ER[subset_i], probs=c(0.03, 0.97), na.rm=TRUE)
+        # xla = quantile(results$GPP[subset_i], probs=c(0.03, 0.97), na.rm=TRUE)
+        # ylb = quantile(results$ER, probs=c(0.01, 0.99), na.rm=TRUE)
+        # xlb = quantile(results$GPP, probs=c(0.01, 0.99), na.rm=TRUE)
+        # ylims = range(c(yla, ylb))
+        # xlims = range(c(xla, xlb))
+        # if(any(is.na(c(xlims, ylims)))){
+        #     plot(1, 1, axes=FALSE, ann=FALSE, type='n')
+        #     text(1, 1, 'No overlay data for\nselected time range.', col='red',
+        #         cex=1.5)
+        #     return()
+        # }
     }
 
+    ylims = c(-25, 5)
+    xlims = c(-5, 25)
+
     #overall plot
-    kernel = kde(na.omit(results[doy > tmin & doy < tmax,
-        c('GPP','ER')]))
-    plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
+    if(recompute_overall_dens){
+        overall_kernel = kde(na.omit(results[doy > tmin & doy < tmax,
+            c('GPP','ER')]))
+    }
+
+    plot(overall_kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
         ylim=ylims, xlim=xlims, display='filled.contour',
         col=c(NA, "gray70", "gray50", "gray30"))
-        # col=c(NA, "purple1", "purple3", "purple4"))
-
-    par(new=TRUE)
 
     #overlay
     if(is.null(overlay) || (length(overlay) == 1 && overlay == 'None')){
         NULL
     } else {
-        kernel = kde(na.omit(results[results$region %in% regions &
-            results$site %in% sites & doy > tmin & doy < tmax,
-            c('GPP', 'ER')]))
 
-        plot(kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
+        results_sub = na.omit(results[results$region %in% regions &
+            results$site %in% sites & doy > tmin & doy < tmax,
+            c('GPP', 'ER')])
+
+        if(nrow(results_sub) < 4){
+            plot(1, 1, axes=FALSE, ann=FALSE, type='n')
+            text(1, 1, 'No overlay data for\nselected site(s) and\ntime range.',
+                col='red',
+                cex=1.5)
+            return()
+        }
+
+        site_kernel = kde(results_sub)
+
+        par(new=TRUE)
+        plot(site_kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
             ylim=ylims, xlim=xlims, display='filled.contour',
             col=c(NA, "red", "orange", "yellow"))
     }

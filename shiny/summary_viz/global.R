@@ -53,4 +53,7 @@ sitenm_all_pow = unique(sitenm_all_pow)
 #     'discharge'=list('Discharge',
 #         expression(paste('Discharge (m'^3, 's'^-1, ')'))))
 
+#compute overall kernel density so that it need not always be recomputed
+overall_kernel = kde(na.omit(results[, c('GPP','ER')]))
+
 dbDisconnect(con)
