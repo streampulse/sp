@@ -5,7 +5,7 @@ function(df){
     library(plotrix)
 
     #remove date/time cols
-    df = df[,-which(names(df) %in% c("DateTime_UTC","date"))]
+    df = df[,-which(names(df) %in% c("DateTime_UTC","date")), drop=FALSE]
 
     outlier_list = list()
 

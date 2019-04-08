@@ -3155,6 +3155,8 @@ def getqaqc():
     region, site = request.json['site'].split(",")[0].split("_")
     vars = request.json['vars']
     year = request.json['year']
+    # region='FL'; site='SF700'; vars=['DO_mgL']; year='2019'
+    # region='FL'; site='SF700'; vars=['DO_mgL', 'Level_m']; year='2019'
 
     sqlq = "select data.region, data.site, data.DateTime_UTC, " +\
         "data.variable, data.value, data.flag as flagid, flag.flag, " +\
@@ -3206,7 +3208,7 @@ def getqaqc():
     # Get 2 week plot intervals
     def daterange(start, end):
         r = (end + timedelta(days=1) - start).days
-        if r % 14 > 0:
+        if r % 14 >= 0:
             r = r + 14
         return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, r, 14)]
 

@@ -23,8 +23,9 @@ db = sa.create_engine('mysql://root:{0}@localhost/sp'.format(pw))
 session = sa.orm.Session(bind=db.engine)
 
 #get list of sites
-sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
-    "site;", db.engine).a.tolist()
+#sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
+#    "site;", db.engine).a.tolist()
+sites = ['FL_SF700']
 print sites
    # "site where region='NC';", db.engine).a.tolist()
    # "site where `by` = -903;", db.engine).a.tolist()

@@ -72,9 +72,11 @@ shinyUI(
                             )
                         ),
                         hr(),
-                        sliderInput('slider', label='Select DOY range',
+                        sliderInput('slider', label='Select DOY range*',
                             min=1, max=366, value=c(1, 366), step=18,
                             animate=animationOptions(interval=4000)),
+                        p(paste('*Updates plot automatically. Please be patient while',
+                            'densities are recomputed.'), style='color:gray'),
                         p('Press play to animate. Animation updates every 4 seconds.',
                             style='color:gray')
                     ),
