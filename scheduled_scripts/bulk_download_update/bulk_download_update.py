@@ -105,7 +105,7 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
     ",'flagID','flagComment' union all select data.region, data.site, " +\
     "data.DateTime_UTC, data.variable, data.value, " +\
     "flag.flag, flag.comment from data left join flag on data.flag=flag.id " +\
-    "where data.upload_id >= 0 and concat(data.region, '_', data.site) not " +\
+    "where (data.upload_id >= 0 or data.upload_id=-901) and concat(data.region, '_', data.site) not " +\
     "in ('" + "','".join(embargoed_sites) + "') into outfile " +\
     "'/var/lib/mysql-files/all_sp_data.csv' fields terminated by ',' " +\
     "enclosed by '\"' lines terminated by '\\n';")

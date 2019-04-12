@@ -79,6 +79,8 @@ os.remove(basic_site_data_path)
 
 ########      end of mandatory section     ########
 ######## uncomment specific sections below ########
+#note that for the sections that export from mysql, you'll have to
+#manually chown, mv, and zip the files exported to /var/lib/mysql-files
 
 
 #export all public sp data (will move and zip later in shell script)
