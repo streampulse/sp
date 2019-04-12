@@ -83,7 +83,9 @@ kdens_plot = function(overlay, tmin, tmax, recompute_overall_dens=FALSE){
         par(new=TRUE)
         plot(site_kernel, xlab='', las=1, xaxt='n', ylab='', yaxt='n',
             ylim=ylims, xlim=xlims, display='filled.contour',
-            col=c(NA, "red", "orange", "yellow"))
+            col=c(NA, adjustcolor('red', alpha.f=0.5),
+                adjustcolor('orange', alpha.f=0.5),
+                adjustcolor('yellow', alpha.f=0.5)))
     }
 
     #peripheral stuff
