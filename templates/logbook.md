@@ -1,5 +1,15 @@
 #Mike's Logbook
 
+
+###mon20190415
+ + sitelist table now filterable and sortable
+###fri20190411
+ + made GIF of cumulative kernel density plot
+ + prepared storm data file for Alexander
+###tue20190408
+ + finished rerunning NC models
+   + logQ priors based on empirical relationship
+   + estimated light
 ###sat20190406
  + finished compiled kernel density plot
    + site overlays

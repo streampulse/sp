@@ -237,14 +237,14 @@
     }
 
     //mapclick listener that creates a latlong popup when clicking baselayer
-    var popup = L.popup();
-    function onMapClick(e) {
-        popup
-            .setLatLng(e.latlng)
-            .setContent(e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4))
-            .openOn(spmap);
-    }
-    spmap.on('click', onMapClick);
+    // var popup = L.popup();
+    // function onMapClick(e) {
+    //     popup
+    //         .setLatLng(e.latlng)
+    //         .setContent(e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4))
+    //         .openOn(spmap);
+    // }
+    // spmap.on('click', onMapClick);
 
     //legend
     var legend = L.control({position: 'bottomright'});

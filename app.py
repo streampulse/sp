@@ -1132,8 +1132,10 @@ def sitelist():
     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
         'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
         'contactEmail as Email, usgs as `USGS gage`, `by`,' +\
-        'embargo as `Embargo (days)`, addDate, variableList as Variables, ' +\
-        'firstRecord, lastRecord from site;', db.engine)
+        'embargo as `Embargo (days)`, addDate, ' +\
+        'firstRecord as `First record`, lastRecord as `Last record`,' +\
+        'variableList as Variables from site;',
+        db.engine)
 
     #calculate remaining embargo days
     timedeltas = datetime.utcnow() - sitedata.addDate
@@ -1141,7 +1143,14 @@ def sitelist():
     sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
     sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
 
-    #format varlist and date range
+    #format date range and varlist
+    sitedata['First record'] = sitedata['First record'].dt.strftime('%Y-%m-%d')
+    sitedata['Last record'] = sitedata['Last record'].dt.strftime('%Y-%m-%d')
+    # fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
+    # lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
+    # timerange = fr + ' to ' + lr
+    # sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
+
     pd.set_option('display.max_colwidth', 500)
     core_variables = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
         'Depth_m', 'Level_m', 'Discharge_m3s', 'Light_PAR', 'Light_lux']
@@ -1157,7 +1166,7 @@ def sitelist():
             not_core = var_arr[~isCore]
             if any(core):
                 core = core[np.argsort(pd.match(core, core_variables))]
-                core = ['<strong>' + y + '</strong>' for y in core]
+                # core = ['<strong>' + y + '</strong>' for y in core]
             not_core.sort()
             var_arr = ', '.join(np.concatenate((core, not_core)))
             varcells.append(var_arr)
@@ -1165,17 +1174,13 @@ def sitelist():
     for i in xrange(len(varcells)):
         if varcells[i] is None:
             varcells[i] = '-'
-            continue
-        varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
-            'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
-            '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
-            'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
+            # continue
+        # varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
+        #     'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
+        #     '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
+        #     'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
 
     sitedata.Variables = varcells
-    fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
-    lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
-    timerange = fr + ' to ' + lr
-    sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
 
     #obscure email addresses
     sitedata.Email = sitedata.Email.str.replace('@', '[at]')
@@ -1184,40 +1189,56 @@ def sitelist():
         sitedata.loc[~emailless, 'Email'] = 'Log in to view'
         sitedata.loc[~emailless, 'Contact'] = 'Log in to view'
 
+    #add column for data source
+    sitedata['by'] = sitedata['by'].apply(str)
+    sitedata['by'] = sitedata['by'].replace(r'^(?!\-900|\-902)\-?[0-9]+$',
+        'sp', regex=True)
+    title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE'}
+    sitedata['by'] = sitedata['by'].map(title_mapping)
+    sitedata.rename(columns={'by':'Source'}, inplace=True)
+    sitedata.columns.values
+
     #additional arranging and modification of data frame
-    sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'],
-        axis=1)
+    # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'],
+    #     axis=1)
+    sitedata = sitedata.drop(['addDate'], axis=1)
+    sitedata = sitedata[['Region', 'Site', 'Name', 'Lat', 'Lon', 'Source',
+        'Contact', 'Email', 'Embargo (days)', 'USGS gage', 'First record',
+        'Last record', 'Variables']]
+    # neworder = list(sitedata.columns)
+    # varsind = neworder.index('Variables')
+    # neworder[neworder.index('Coverage')] = 'Variables'
+    # neworder[varsind] = 'Coverage'
+    # sitedata = sitedata[neworder]
     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
         ascending=True)
 
     #create separate tables for streampulse, neon, powell data
-    # powell = sitedata.drop(sitedata.index[sitedata.by != -902])
-    # neon = sitedata.drop(sitedata.index[sitedata.by != -900])
-    # sp = sitedata.drop(sitedata.index[sitedata.by.isin([-900, -902])])
-    powell = sitedata.loc[sitedata.by == -902,
-        ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
-    neon = sitedata.loc[sitedata.by == -900,
-        ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
-    sp = sitedata.loc[~sitedata.by.isin([-900, -902]), sitedata.columns != 'by']
+    # powell = sitedata.loc[sitedata.by == -902,
+    #     ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
+    # neon = sitedata.loc[sitedata.by == -900,
+    #     ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
+    # sp = sitedata.loc[~sitedata.by.isin([-900, -902]), sitedata.columns != 'by']
 
-    # html_table = sitedata.to_html(index=False,
+    # powell = powell.to_html(index=False,
     #     classes=['table', 'table-condensed'], escape=False)
-    powell = powell.to_html(index=False,
-        classes=['table', 'table-condensed'], escape=False)
-    neon = neon.to_html(index=False,
-        classes=['table', 'table-condensed'], escape=False)
-    sp = sp.to_html(index=False,
-        classes=['table', 'table-condensed'], escape=False)
+    # neon = neon.to_html(index=False,
+    #     classes=['table', 'table-condensed'], escape=False)
+    # sp = sp.to_html(index=False,
+    #     classes=['table', 'table-condensed'], escape=False)
+    header = list(sitedata.columns)
+    header = [x.encode('utf-8') for x in header]
+    sitedata = sitedata.to_json(orient='values', date_format='iso')
 
-    # html_table = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll',
-    #     html_table)
-    powell = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll',
-        powell)
-    neon = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', neon)
-    sp = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', sp)
 
-    # return render_template('sitelist.html', dats=html_table)
-    return render_template('sitelist.html', powell=powell, neon=neon, sp=sp)
+    # powell = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll',
+    #     powell)
+    # neon = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', neon)
+    # sp = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', sp)
+
+    # return render_template('sitelist.html', powell=powell, neon=neon, sp=sp,
+    #     sp_header=sp_header)
+    return render_template('sitelist.html', sitedata=sitedata, header=header)
 
 @app.route('/upload_choice')
 def upload_choice():
