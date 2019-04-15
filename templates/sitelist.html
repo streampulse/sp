@@ -1,4 +1,10 @@
 {% extends "layout.html" %}
+
+{% block links %}
+<script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet" media="screen">
+{% endblock %}
+
 {% block body %}
 
 <div class="container">
@@ -19,7 +25,7 @@
   </div>
 </div>
 
-<div class="container">
+<!-- <div class="container">
   <div class="row">
     <div class="col-md-12 text-center">
       <div class='text-center' style='border-style:solid; border-width:thin; border-color:gray; display:inline-block'>
@@ -48,17 +54,31 @@
     </div>
   </div>
 </div>
-<br><br>
+<br><br> -->
 
-<div id='sp' name='disp_table'>
-  {{sp|safe}}
+<div class="container">
+  <div class="row">
+    <div class="col-md-12 text-left">
+        <input id='export' type='button' class="btn btn-success btn-sm"
+        value='Export current file as CSV'>
+    </div>
+  </div>
+</div>
+<br>
+
+<div id="site_table"></div>
+
+<!-- <div id='sp' name='disp_table'>
+  {#{sp|safe}#}
 </div>
 <div id='pow'  name='disp_table' style='display:none'>
   {{powell|safe}}
 </div>
 <div id='neon'  name='disp_table' style='display:none'>
   {{neon|safe}}
-</div>
+</div> -->
+
+<br><br>
 
 <script>
   $('input[name=optradio]').change(function(){
@@ -66,6 +86,39 @@
     $('div[name=disp_table]').attr('style', 'display:none');
     $('#' + selected_table).attr('style', 'display:');
   });
+
+  var container = document.getElementById('site_table');
+  var hot = new Handsontable(container, {
+    data: {{sitedata|safe}},
+    columns: [
+      {},{},{},
+      {type: 'numeric'}, //lat
+      {type: 'numeric'}, //lon
+      {},{},{},
+      {type: 'numeric'}, //gage
+      {type: 'numeric'}, //embargo
+      {type: 'date', dateFormat: 'YYYY-MM-DD'}, //firstrecord
+      {type: 'date', dateFormat: 'YYYY-MM-DD'}, //last
+      {}
+    ],
+    columnSorting: true,
+    rowHeaders: true,
+    colHeaders: {{header|safe}},
+    filters: true,
+    // filters: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'between', 'contains',
+    //   'not_contains', 'not_empty'],
+    readOnly: true,
+    comments: false,
+    dropdownMenu: ['filter_by_condition', 'filter_operators', 'filter_by_condition2',
+      'filter_by_value', 'filter_action_bar'],
+    licenseKey: 'non-commercial-and-evaluation'
+  });
+
+  $('#export').click(function(){
+    const exportPlugin = hot.getPlugin('exportFile');
+    exportPlugin.downloadFile('csv', {filename: 'streampulse_sitedata'});
+  })
+
 </script>
 
 {% endblock %}
