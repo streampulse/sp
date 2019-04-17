@@ -464,17 +464,17 @@ o = 'other'
 # fltr_methods = ['IC', 'FIA', 'TOC-TN', 'spectrophotometer']
 # fltr_opts = ['filtered-45mm', 'filtered-other', 'unfiltered']
 grab_variables = [
-{'var': 'Br', 'unit': 'Bromide (molar)', 'method': ['IC',o]},
-{'var': 'Ca', 'unit': 'Calcium (molar)', 'method': ['IC',o]},
-{'var': 'Cl', 'unit': 'Chloride (molar)', 'method': ['IC',o]},
-{'var': 'K', 'unit': 'Potassium (molar)', 'method': ['IC',o]},
-{'var': 'Mg', 'unit': 'Magnesium (molar)', 'method': ['IC',o]},
-{'var': 'Na', 'unit': 'Sodium (molar)', 'method': ['IC',o]},
-{'var': 'NH4', 'unit': 'Ammonium (molar)', 'method': ['FIA',o]},
-{'var': 'NO3', 'unit': 'Nitrate (+nitrite if FIA; molar)', 'method': ['IC','FIA',o]},
-{'var': 'PO4', 'unit': 'Phosphate (molar)', 'method': ['IC','FIA',o]},
-{'var': 'SiO2', 'unit': 'Silica (molar)', 'method': ['FIA','spectrophotometer',o]},
-{'var': 'SO4', 'unit': 'Sulfate (molar)', 'method': ['IC',o]},
+{'var': 'Br', 'unit': 'Bromide', 'method': ['IC',o]},
+{'var': 'Ca', 'unit': 'Calcium', 'method': ['IC',o]},
+{'var': 'Cl', 'unit': 'Chloride', 'method': ['IC',o]},
+{'var': 'K', 'unit': 'Potassium', 'method': ['IC',o]},
+{'var': 'Mg', 'unit': 'Magnesium', 'method': ['IC',o]},
+{'var': 'Na', 'unit': 'Sodium', 'method': ['IC',o]},
+{'var': 'NH4', 'unit': 'Ammonium', 'method': ['FIA',o]},
+{'var': 'NO3', 'unit': 'Nitrate (+nitrite if FIA)', 'method': ['IC','FIA',o]},
+{'var': 'PO4', 'unit': 'Phosphate', 'method': ['IC','FIA',o]},
+{'var': 'SiO2', 'unit': 'Silica', 'method': ['FIA','spectrophotometer',o]},
+{'var': 'SO4', 'unit': 'Sulfate', 'method': ['IC',o]},
 {'var': 'Total_Fe', 'unit': 'Total Fe (molar)', 'method': ['spectroscopy','FIA',o]},
 {'var': 'Total_Mn', 'unit': 'Total Mn (molar)', 'method': ['spectroscopy','FIA',o]},
 {'var': 'TOC', 'unit': 'TOC (ppm)', 'method': ['TOC-TN',o]},
@@ -2900,6 +2900,8 @@ def getgrabviz():
     startDate = request.json['startDate']
     endDate = request.json['endDate']
     variables = request.json['grabvars']
+    unit = request.json.get('unit')
+
     # variables = variables] if len(variables)
     # region='NC'; site='NHC'; startDate='2017-05-01'; endDate='2017-09-01'; variables=['Ca']
 
@@ -2935,7 +2937,7 @@ def getgrabviz():
         xx = 'None'
 
     # return jsonify(grabdat=xx, var=variables[0], flagdat=flagdat)
-    return jsonify(grabdat=xx, var=variables[0])
+    return jsonify(grabdat=xx, var=variables[0], unit=unit)
 
 @app.route('/_interquartile', methods=["POST"])
 def interquartile():

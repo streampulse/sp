@@ -1,8 +1,11 @@
 #Mike's Logbook
 
-
+###wed20190417
+ + can now convert units on grabsamp viz
 ###mon20190415
  + sitelist table now filterable and sortable
+   + csv download option
+ + r package version 0.0.0.9034; skip_prompts option now available
 ###fri20190411
  + made GIF of cumulative kernel density plot
  + prepared storm data file for Alexander

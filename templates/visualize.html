@@ -108,6 +108,20 @@
       </select>
     </div>
     <div style="display:inline-block; margin:1em">
+      <p id='grabp' style='display:none'>
+        Change grab display units:
+      </p>
+      <select class="form-control" id="grab_units" name="grab_units"
+        style="width:200px; display:none">
+        <option value='M' selected>M</option>
+        <option value='mM'>mM</option>
+        <option value='uM'>uM</option>
+        <option value='gL'>g/L</option>
+        <option value='mgL'>mg/L</option>
+        <option value='ugL'>ug/L</option>
+      </select>
+    </div>
+    <div style="display:inline-block; margin:1em">
       <p>
         Show local night-time:
       </p>
@@ -355,23 +369,56 @@ $(function(){
   })
 });
 
+const molmass_map = {'Br':79.904, 'Ca':40.078, 'Cl':35.453, 'K':39.098,
+  'Mg':24.305, 'Na':22.990, 'NH4':14.007 + 4.032, 'NO3':14.007 + (3 * 15.999),
+  'PO4':30.974 + (4 * 15.999), 'SiO2':28.086 + (2 * 15.999),
+  'SO4':32.066 + (4 * 15.999)}
+
+function convert_units (data, solute, to_unit){
+
+  var multiplier = 1
+
+  if(to_unit == 'mM'){
+    multiplier = 1000
+  } else if(to_unit == 'uM'){
+    multiplier = 1000000
+  } else if(to_unit == 'gL'){
+    multiplier = molmass_map[solute]
+  } else if(to_unit == 'mgL'){
+    multiplier = molmass_map[solute] * 1000
+  } else if(to_unit == 'ugL'){
+    multiplier = molmass_map[solute] * 1000000
+  } //else unit == 'M' and nothing should be done
+
+  if(multiplier != 1){
+    data = $.map(data, function(x){
+      x[solute] = x[solute] * multiplier
+      return x
+    })
+  }
+
+  return data
+}
+
 $(function(){
   $("select[name=backgraphlist_grab]").change(function(){
+
+    var unit = $('#grab_units').val();
+    if(! Object.keys(molmass_map).includes($(this).val())){
+      unit = 'M'
+    }
 
     //reset the other dropdowns, clear existing secondary axes
     $('#backgraphlist').val('None'); //why doesn't this set off a feedback loop?
     // $('#interquartile').val('None');
     d3.selectAll('[id$=rightaxis]').attr("display", "none");
 
-    // if($(this).val() != 'None'){
-
     var grabdat = {}
     grabdat['regionsite'] = $('select[name=site]').val();
     grabdat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
     grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
     grabdat['grabvars'] = [$(this).val()];
-
-    d3.selectAll('[id$=rightaxis]').attr("display", "none");
+    grabdat['unit'] = unit
 
     $.ajax({
       type: 'POST',
@@ -382,6 +429,7 @@ $(function(){
 
         visdata = response.grabdat;
         graphvar = response.var;
+        grabunit = response.unit;
         // flags = JSON.parse(response.flagdat);
         if(typeof visdata !== 'string' || visdata !== 'None'){
           visdata = JSON.parse(visdata);
@@ -394,7 +442,7 @@ $(function(){
           return this.value;
         }).get();
 
-        console.log(visdata);
+        visdata = convert_units(visdata, graphvar, grabunit)
 
         for (var i = 0; i < variables.length; ++i) {
           BackGraph(graphvar, variables[i], visdata, type='point', grab=true);
@@ -405,9 +453,76 @@ $(function(){
         console.log(error);
       }
     });
-    // };
+
+    // option_text = $('#backgraphlist_grab option:selected').text();
+    // if(option_text.includes('molar')){
+    if(Object.keys(molmass_map).includes($('#backgraphlist_grab').val())){
+      $('#grab_units').css('display', '');
+      $('#grabp').css('display', '');
+    } else {
+      $('#grab_units').css('display', 'none');
+      $('#grabp').css('display', 'none');
+    }
 
     return false
+  });
+});
+
+$(function(){
+  $("select[name=grab_units]").change(function(){
+
+    var unit = $(this).val();
+
+    //clear secondary axis
+    d3.selectAll('[id$=rightaxis]').attr("display", "none");
+
+    // var variables = $('#variables:checked').map(function(){
+    //   return this.value;
+    // }).get();
+
+    // var graphvar = $('#backgraphlist_grab').val()
+
+    var grabdat = {}
+    grabdat['regionsite'] = $('select[name=site]').val();
+    grabdat['startDate'] = $("#datepicker").data('daterangepicker').startDate.format('YYYY-MM-DD');
+    grabdat['endDate'] = $("#datepicker").data('daterangepicker').endDate.format('YYYY-MM-DD');
+    grabdat['grabvars'] = [$("select[name=backgraphlist_grab]").val()];
+    grabdat['unit'] = unit
+
+    $.ajax({
+      type: 'POST',
+      url:'/_getgrabviz',
+      data: JSON.stringify(grabdat),
+      contentType: 'application/json;charset=UTF-8',
+      success: function(response){
+
+        visdata = response.grabdat;
+        graphvar = response.var;
+        grabunit = response.unit;
+        // flags = JSON.parse(response.flagdat);
+        if(typeof visdata !== 'string' || visdata !== 'None'){
+          visdata = JSON.parse(visdata);
+          visdata.forEach(function(d){ d.date = parseDate(d['date']) });
+        } else {
+          d3.selectAll("[id$=rightaxis]").attr('display', 'none');
+        }
+
+        var variables = $('#variables:checked').map(function(){
+          return this.value;
+        }).get();
+
+        visdata = convert_units(visdata, graphvar, grabunit)
+
+        for (var i = 0; i < variables.length; ++i) {
+          BackGraph(graphvar, variables[i], visdata, type='point', grab=true);
+        }
+
+      },
+      error: function(error){
+        console.log(error);
+      }
+    });
+
   });
 });
 
