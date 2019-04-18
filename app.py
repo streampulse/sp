@@ -3045,12 +3045,16 @@ def getviz():
 
     #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
     #data results in good points receiving "bad data" labels, so remove those flags
-    flagdat = flagdat[flagdat.flag != 'Bad Data'] #redundant, right?
-
+    # flagdat = flagdat[flagdat.flag != 'Bad Data'] #redundant, right?
     xx = xx.drop(['flag', 'comment'], axis=1).drop_duplicates()\
         .set_index(["DateTime_UTC", "variable"])\
         .drop(['region', 'site', 'flagid'], axis=1)
-    xx = xx[~xx.index.duplicated(keep='last')].unstack('variable') # get rid of duplicated date/variable combos
+
+    #very negative (and thus erroneous points) will show up as arrows at y=-10
+    xx.value[xx.value < -10] = -9.99909    
+
+    # get rid of duplicated date/variable combos and convert to wide format
+    xx = xx[~xx.index.duplicated(keep='last')].unstack('variable')
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
 

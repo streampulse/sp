@@ -46,8 +46,24 @@ var modeVal = function mode(arr){
         - arr.filter(v => v===b).length
     ).pop();
 }
+var downtri = d3.symbol().type(d3.symbolTriangle);
 
 function Plots(variables, data, flags, outliers, page, datamode='sensor'){
+
+  // if(page != 'qaqc') //page should be "viz", but comes through undefined
+  //   var nrecs = data.length
+  //
+  //   for(v in variables){
+  //     for(var i = 0; i < nrecs; i++){
+  //       data[i][v]
+  //     }
+  //   }
+  //
+  //   data = $.map(data, function(x){
+  //     x[solute] = x[solute] * multiplier
+  //     return x
+  //   })
+  // }
 
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -59,15 +75,23 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
     vvv = variables[i];
 
     //set y domain to extent of data
-    if(datna != null){ // check if NA, need to rescale Y axis
-      y.domain(d3.extent(datna, function(d) { return d[vvv]; }));
-    }else{
-      y.domain(d3.extent(data, function(d) { return d[vvv]; }));
+    if(datna != null){ // if NA, need to rescale Y axis
+      var ylims = d3.extent(datna, function(d) { return d[vvv]; })
+      // if(page == "qaqc"){ //page should be "viz", but comes through undefined
+      //   ylims[0] = ylims[0] < -1 ? -1 : ylims[0]
+      // }
+      y.domain(ylims);
+    } else {
+      var ylims = d3.extent(data, function(d) { return d[vvv]; })
+      // if(page == "qaqc"){
+      //   ylims[0] = ylims[0] < -1 ? -1 : ylims[0]
+      // }
+      y.domain(ylims);
     }
 
     //create line accessor and handler for ignoring undefined values
     var line = d3.line()
-      .defined(function(d){return d[vvv];})
+      .defined(function(d){ return d[vvv]; })
       .x(function(d) { return x(d.date); })
       .y(function(d) { return y(d[vvv]); });
 
@@ -126,7 +150,7 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
       }
     });
     // code for qaqc page
-    if(page=="qaqc"){
+    if(page == "qaqc"){
       svg.on('dblclick',function(){
         redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true)
       });
@@ -199,17 +223,53 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
       // var sitecode = dsite.selectize.getValue()
       var model_exists = avail_mods.includes(sitecode) ? true : false
 
+
+      // var line = svg.selectAll('path')
+      //   .data(triangles)
+      //   .enter()
+      //   .append('path')
+      //   .attr('d', arc)
+      //   .attr('fill', 'red')
+      //   .attr('stroke', '#000')
+      //   .attr('stroke-width', 1)
+      //   .attr('transform', function(d) {
+      //     return "translate(" + d.x + ",30)";
+      //   });
+
+
       svg.selectAll(".vdot")
-          .data(data.filter(function(d) { return d[vvv]; }))
+        .data(data.filter(function(d) { return d[vvv]; }))
         .enter().append("circle")
           .attr("class", "vdot")
           .attr("cx", line.x())
           .attr("cy", line.y())
           .attr("r", 2)
+
+        // .enter().append("path")
+        // .attr('d', downtri)
+        // .attr('fill', 'red')
+        // .attr('stroke', 'black')
+        // .attr('stroke-width', 2)
+        // .attr('transform', function(d) {
+        //   return "translate(" + d.x + ",30)";
+        // })
+
+          // .enter().append("rect")
+          // .attr("class", "vdot")
+          // .attr('x', line.x())
+          // .attr('y', line.y())
+          // .attr("width", 2)
+          // .attr("height", 2)
+        .classed("very_neg", function(d){
+          return d[vvv] == -9.99909
+        })
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
         })
         .filter('.flagdot')
+        .classed("very_neg_flag", function(d){
+          return d[vvv] == -9.99909
+        })
         .attr('r', 3)
         .on("mouseover", function(d, j) {
 
@@ -240,6 +300,45 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
               .duration(500)
               .style("opacity", 0);
           });
+
+      var vnegvals = data.filter(x => x[vvv] == -9.99909)
+      svg.selectAll(".vdot")
+        // .remove()
+        // .data(data.filter(function(d){
+        //   return d[vvv];
+        // }))
+        // .data(data.filter(function(d) {
+        //   return d[vvv] == -9.99909 ? -9.99909 : null;
+        // }))
+        .data(vnegvals.filter(function(d){
+          return d[vvv];
+        }))
+        .enter()
+        .append("circle")
+          .attr("class", "vdot")
+          .attr("cx", line.x())
+          .attr("cy", line.y())
+          .attr("r", 8)
+        // .enter().append("rect")
+        // .attr("class", "very_neg")
+        // .attr('x', line.x())
+        // .attr('y', line.y())
+        // .attr("width", 8)
+        // .attr("height", 8)
+
+        // .enter().append("path")
+        // .attr('d', downtri)
+        // .attr('fill', 'red')
+        // .attr('stroke', 'black')
+        // .attr('stroke-width', 2)
+
+        // .append('path')
+        // .attr('d', downtri)
+        // .attr('x', line.x())
+        // .attr('y', line.y())
+        // .attr('fill', 'red')
+        // .attr('stroke', 'black')
+        // .attr('stroke-width', 2)
 
       //side buttons
       d3.select('#svgrow_' + vvv)
@@ -503,12 +602,12 @@ function Interquartile(graph, ranges, req){
         .html(function(d){
           if(req == 'DO'){return 'DO_mgL'} else if(req == 'Q'){return 'Discharge_m3s'}
           else if(req == 'ER'){
-            return 'O<tspan dy ="5">2</tspan><tspan dy ="-5"> gm</tspan>' +
-            '<tspan dy ="-5">-2</tspan><tspan dy ="5">d</tspan><tspan dy ="-5">-1</tspan>'
+            return 'g O<tspan dy ="5">2</tspan><tspan dy ="-5"> m</tspan>' +
+            '<tspan dy ="-5">-2</tspan><tspan dy ="5"> d</tspan><tspan dy ="-5">-1</tspan>'
           }
           else if(req == 'GPP'){
-            return 'O<tspan dy ="5">2</tspan><tspan dy ="-5"> gm</tspan>' +
-            '<tspan dy ="-5">-2</tspan><tspan dy ="5">d</tspan><tspan dy ="-5">-1</tspan>'
+            return 'g O<tspan dy ="5">2</tspan><tspan dy ="-5"> m</tspan>' +
+            '<tspan dy ="-5">-2</tspan><tspan dy ="5"> d</tspan><tspan dy ="-5">-1</tspan>'
           }
         });
   } else {

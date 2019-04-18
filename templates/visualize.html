@@ -79,10 +79,6 @@
 
 <div id="graphcontrol" class="text-center">
   <div class="form-inline">
-  <!-- Aggregation: <select class="form-control" id="timescale" name="timescale">
-    <option value="15m" selected>15 minutes (default)</option>
-    <option value="1h">1 hour</option>
-    <option value="1d">1 day</option></select> &nbsp; -->
     <div style="display:inline-block; margin:1em">
       <p>
         Compare sensor variable:
@@ -91,14 +87,6 @@
         style="width:200px">
       </select> &nbsp
     </div>
-    <!-- <div style="display:inline-block; margin:1em">
-      <p>
-        Compare historic range (25-75%):
-      </p>
-      <select class="form-control" id="interquartile" name="interquartile"
-        style="width:200px">
-      </select>
-    </div> -->
     <div style="display:inline-block; margin:1em">
       <p>
         Compare grab variable:
@@ -121,25 +109,24 @@
         <option value='ugL'>ug/L</option>
       </select>
     </div>
+  <!-- </div>
+  <div> -->
     <div style="display:inline-block; margin:1em">
       <p>
         Show local night-time:
       </p>
       <input type="checkbox" id="shownight" value="no"> &nbsp;
     </div>
+    <!-- <div style="display:inline-block; margin:1em">
+      Hide negative Y-axis:
+      <input type="checkbox" id="hideNegY" value="no"> &nbsp;
+    </div> -->
   </div>
 </div>
 
 
-<!-- <div class="row">
-  <div class="col-md-11"> -->
 <div id="graphs"></div>
 <br><br>
-  <!-- </div>
-  <div class="col-md-1">
-    <div id="sidebuttons"></div>
-  </div>
-</div> -->
 
 <script src="static/js/graphs.js"></script>
 
@@ -357,7 +344,7 @@ $(function(){
           d.set = parseDate(d.set);
         });
         flags = JSON.parse(response.flagdat);
-        Plots(variables, data, flags, "viz");
+        Plots(variables, data, flags, page="viz");
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
         // BackGraph("WaterPres_kPa","WaterTemp_C",data)
       },
