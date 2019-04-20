@@ -271,22 +271,52 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
               .style("opacity", 0);
           });
 
+      //  NEED TO INCLUDE POINT VALUE IN UNFLAGGED EXTREME NEGS
+      //PROBABLY HAVE TO ADD IT TO FLAGCOMMENT FIELD BEFORE SEPARATING XX AND FLAGDAT
       var vnegvals = data.filter(x => x[vvv] == -9.99909)
-      svg.append('g').selectAll(".very_neg")
+      svg.append('g').selectAll(".vtriangle")
         .data(vnegvals)
         .enter()
         .append('path')
         .attr('d', downtri)
-        .classed('very_neg', true)
-        .classed('very_neg_flag', function(d){
+        .classed('vtriangle', true)
+        .classed('flagdot', function(d){
           return vvv == dff[d.DateTime_UTC]
         })
-        // .attr('fill', 'red')
-        // .attr('stroke', 'black')
-        // .attr('stroke-width', 2)
         .attr('transform', function(d) {
           return "translate(" + x(d.date) + "," + y(d[vvv]) + ") rotate(180)";
-        });
+        })
+        .filter('.flagdot')
+        .on("mouseover", function(d) {
+
+          //add mouseover tooltips for each flagged point:
+          //get the name (which for some reason is a class) of the svg under the mouse
+          var hovered_point = this.getBoundingClientRect();
+          var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+          for(var i = 0; i < elems.length; ++i){
+            if(elems[i].tagName.toLowerCase() == 'svg'){
+              var svgname = elems[i].classList[0];
+            }
+          }
+
+          var this_point_flaginfo = $.grep(flags, function(v) {
+            return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
+          })[0];
+
+          point_tooltip.transition()
+            .duration(200)
+            .style("opacity", .9);
+          var valComment = this_point_flaginfo.comment.split(';;;')
+          point_tooltip.html('Value: ' + valComment[0] + '<br>Flag: ' +
+            this_point_flaginfo.flag + '<br>Comment: ' + valComment[1])
+            .style("left", (d3.event.pageX + 10) + "px")
+            .style("top", (d3.event.pageY - 28) + "px");
+          })
+          .on("mouseout", function(d) {
+            point_tooltip.transition()
+              .duration(500)
+              .style("opacity", 0);
+          });
 
       //side buttons
       d3.select('#svgrow_' + vvv)

@@ -3005,7 +3005,7 @@ def getviz():
     variables = request.json['variables']
     dsource = request.json['source']
     src = 'powell' if dsource == 'pow' else 'data'
-    # region='NC'; site='NHC'; startDate='2017-04-01'; endDate='2017-04-20'
+    # region='NC'; site='NHC'; startDate='2017-06-01'; endDate='2018-06-20'
     # region='AK'; site='CARI-down'; startDate='2018-04-01'; endDate='2018-04-20'
     # variables=['DO_mgL','WaterTemp_C','Light_lux']; src='data'
 
@@ -3040,6 +3040,10 @@ def getviz():
     if is_neon:
         xx = xx.iloc[np.arange(0, xx.shape[0], 15), :]
 
+    # xx.comment[xx.value < -10]
+    xx.comment[xx.value < -10] = xx.value.round(2).apply(str) + ';;;' + xx.comment
+    # xx.comment if xx.comment else None
+
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
         'comment']].dropna().drop(['flagid'], axis=1)
 
@@ -3051,7 +3055,7 @@ def getviz():
         .drop(['region', 'site', 'flagid'], axis=1)
 
     #very negative (and thus erroneous points) will show up as arrows at y=-10
-    xx.value[xx.value < -10] = -9.99909    
+    xx.value[xx.value < -10] = -9.99909
 
     # get rid of duplicated date/variable combos and convert to wide format
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable')
