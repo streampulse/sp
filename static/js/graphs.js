@@ -223,20 +223,6 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
       // var sitecode = dsite.selectize.getValue()
       var model_exists = avail_mods.includes(sitecode) ? true : false
 
-
-      // var line = svg.selectAll('path')
-      //   .data(triangles)
-      //   .enter()
-      //   .append('path')
-      //   .attr('d', arc)
-      //   .attr('fill', 'red')
-      //   .attr('stroke', '#000')
-      //   .attr('stroke-width', 1)
-      //   .attr('transform', function(d) {
-      //     return "translate(" + d.x + ",30)";
-      //   });
-
-
       svg.selectAll(".vdot")
         .data(data.filter(function(d) { return d[vvv]; }))
         .enter().append("circle")
@@ -244,32 +230,16 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
           .attr("cx", line.x())
           .attr("cy", line.y())
           .attr("r", 2)
-
-        // .enter().append("path")
-        // .attr('d', downtri)
-        // .attr('fill', 'red')
-        // .attr('stroke', 'black')
-        // .attr('stroke-width', 2)
-        // .attr('transform', function(d) {
-        //   return "translate(" + d.x + ",30)";
+        // .classed("very_neg", function(d){
+        //   return d[vvv] == -9.99909
         // })
-
-          // .enter().append("rect")
-          // .attr("class", "vdot")
-          // .attr('x', line.x())
-          // .attr('y', line.y())
-          // .attr("width", 2)
-          // .attr("height", 2)
-        .classed("very_neg", function(d){
-          return d[vvv] == -9.99909
-        })
         .classed("flagdot", function(d){
           return vvv == dff[d.DateTime_UTC]
         })
         .filter('.flagdot')
-        .classed("very_neg_flag", function(d){
-          return d[vvv] == -9.99909
-        })
+        // .classed("very_neg_flag", function(d){
+        //   return d[vvv] == -9.99909
+        // })
         .attr('r', 3)
         .on("mouseover", function(d, j) {
 
@@ -302,43 +272,21 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
           });
 
       var vnegvals = data.filter(x => x[vvv] == -9.99909)
-      svg.selectAll(".vdot")
-        // .remove()
-        // .data(data.filter(function(d){
-        //   return d[vvv];
-        // }))
-        // .data(data.filter(function(d) {
-        //   return d[vvv] == -9.99909 ? -9.99909 : null;
-        // }))
-        .data(vnegvals.filter(function(d){
-          return d[vvv];
-        }))
+      svg.append('g').selectAll(".very_neg")
+        .data(vnegvals)
         .enter()
-        .append("circle")
-          .attr("class", "vdot")
-          .attr("cx", line.x())
-          .attr("cy", line.y())
-          .attr("r", 8)
-        // .enter().append("rect")
-        // .attr("class", "very_neg")
-        // .attr('x', line.x())
-        // .attr('y', line.y())
-        // .attr("width", 8)
-        // .attr("height", 8)
-
-        // .enter().append("path")
-        // .attr('d', downtri)
+        .append('path')
+        .attr('d', downtri)
+        .classed('very_neg', true)
+        .classed('very_neg_flag', function(d){
+          return vvv == dff[d.DateTime_UTC]
+        })
         // .attr('fill', 'red')
         // .attr('stroke', 'black')
         // .attr('stroke-width', 2)
-
-        // .append('path')
-        // .attr('d', downtri)
-        // .attr('x', line.x())
-        // .attr('y', line.y())
-        // .attr('fill', 'red')
-        // .attr('stroke', 'black')
-        // .attr('stroke-width', 2)
+        .attr('transform', function(d) {
+          return "translate(" + x(d.date) + "," + y(d[vvv]) + ") rotate(180)";
+        });
 
       //side buttons
       d3.select('#svgrow_' + vvv)
