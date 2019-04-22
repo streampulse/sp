@@ -1,5 +1,9 @@
 #Mike's Logbook
 
+###mon20190422
+ + can change grab units on viz overlay
+ + super negative values show up as arrows at -10 on viz now
+   + original values and flag information are available on mouseover
 ###wed20190417
  + can now convert units on grabsamp viz
 ###mon20190415

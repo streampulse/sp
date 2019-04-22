@@ -3040,12 +3040,16 @@ def getviz():
     if is_neon:
         xx = xx.iloc[np.arange(0, xx.shape[0], 15), :]
 
-    # xx.comment[xx.value < -10]
-    xx.comment[xx.value < -10] = xx.value.round(2).apply(str) + ';;;' + xx.comment
-    # xx.comment if xx.comment else None
+    #append value to flag comment for very negative flagged values, so value
+    #can be included in mouseover text
+    xx.comment[xx.value < -10] = xx.value.round(5).apply(str) + ';;;' + xx.comment
 
     flagdat = xx[['DateTime_UTC', 'variable', 'flagid', 'flag',
         'comment']].dropna().drop(['flagid'], axis=1)
+
+    #separate very negative values without flags
+    ufv = xx[(xx.value < -10) & (xx.comment.isnull())]
+    ufv.loc[:, 'display_val'] = -9.99095
 
     #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
     #data results in good points receiving "bad data" labels, so remove those flags
@@ -3054,19 +3058,27 @@ def getviz():
         .set_index(["DateTime_UTC", "variable"])\
         .drop(['region', 'site', 'flagid'], axis=1)
 
-    #very negative (and thus erroneous points) will show up as arrows at y=-10
-    xx.value[xx.value < -10] = -9.99909
+    ufv = ufv.drop(['flag', 'comment'], axis=1).drop_duplicates()\
+        .set_index(["DateTime_UTC", "variable", 'display_val'])\
+        .drop(['region', 'site', 'flagid'], axis=1)
+
+    #very negative (and thus erroneous points) will show up as arrows at y=-10.
+    xx.value[xx.value < -10] = -9.99095
 
     # get rid of duplicated date/variable combos and convert to wide format
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable')
     xx.columns = xx.columns.droplevel()
     xx = xx.reset_index()
 
+    ufv = ufv[~ufv.index.duplicated(keep='last')].unstack('variable')
+    ufv.columns = ufv.columns.droplevel()
+    ufv = ufv.reset_index()
+
     # sqlq = "select * from data where region='" + region + "' and site='" +\
     #     site + "' " + "and DateTime_UTC>'" + startDate + "' " +\
     #     "and DateTime_UTC<'" + endDate + "' " +\
     #     "and variable in ('" + "', '".join(variables) + "')"
-    # xx = pd.read_sql(sqlq, db.engine)
+    # ufv = pd.read_sql(sqlq, db.engine)
     #
     # xx.loc[xx.flag == 0, "value"] = None # set NaNs
     # flagdat = xx[['DateTime_UTC','variable','flag']].dropna().drop(['flag'],
@@ -3102,6 +3114,7 @@ def getviz():
     sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
 
     return jsonify(variables=variables, sunriseset=sunriseset,
+        vnegs_unflag=ufv.to_json(orient='records', date_format='iso'),
         dat=xx.to_json(orient='records', date_format='iso'),
         flagdat=flagdat.to_json(orient='records', date_format='iso'))
 

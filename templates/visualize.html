@@ -344,7 +344,8 @@ $(function(){
           d.set = parseDate(d.set);
         });
         flags = JSON.parse(response.flagdat);
-        Plots(variables, data, flags, page="viz");
+        vnegs_unflag = JSON.parse(response.vnegs_unflag);
+        Plots(variables, data, flags, undefined, undefined, unflagged_vnegatives=vnegs_unflag, page="viz");
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
         // BackGraph("WaterPres_kPa","WaterTemp_C",data)
       },

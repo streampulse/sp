@@ -48,7 +48,7 @@ var modeVal = function mode(arr){
 }
 var downtri = d3.symbol().type(d3.symbolTriangle);
 
-function Plots(variables, data, flags, outliers, page, datamode='sensor'){
+function Plots(variables, data, flags, outliers, page, unflagged_vnegatives, datamode='sensor'){
 
   // if(page != 'qaqc') //page should be "viz", but comes through undefined
   //   var nrecs = data.length
@@ -67,6 +67,9 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
 
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+  if(typeof unflagged_vnegatives != 'undefined'){
+    unflagged_vnegatives.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+  }
 
   //set x domain to extent of dates
   x.domain(d3.extent(data, function(d) { return d.date; }));
@@ -271,15 +274,14 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
               .style("opacity", 0);
           });
 
-      //  NEED TO INCLUDE POINT VALUE IN UNFLAGGED EXTREME NEGS
-      //PROBABLY HAVE TO ADD IT TO FLAGCOMMENT FIELD BEFORE SEPARATING XX AND FLAGDAT
-      var vnegvals = data.filter(x => x[vvv] == -9.99909)
-      svg.append('g').selectAll(".vtriangle")
+      var vnegvals = data.filter(x => x[vvv] == -9.99095)
+      // var vnegvals = data.filter(x => Math.round(x[vvv] * 100000) / 100000 == -9.99905)
+      svg.append('g').selectAll(".flagdot")
         .data(vnegvals)
         .enter()
         .append('path')
         .attr('d', downtri)
-        .classed('vtriangle', true)
+        // .classed('vtriangle', true)
         .classed('flagdot', function(d){
           return vvv == dff[d.DateTime_UTC]
         })
@@ -317,6 +319,46 @@ function Plots(variables, data, flags, outliers, page, datamode='sensor'){
               .duration(500)
               .style("opacity", 0);
           });
+
+      if(typeof unflagged_vnegatives != 'undefined'){
+        svg.append('g').selectAll(".vtriangle")
+          .data(unflagged_vnegatives)
+          .enter()
+          .append('path')
+          .filter(function(d) {
+            return d[vvv] < -10
+          })
+          .attr('d', downtri)
+          .classed('vtriangle', true)
+          .attr('transform', function(d) {
+            return "translate(" + x(d.date) + "," + y(d.display_val) + ") rotate(180)";
+          })
+          .on("mouseover", function(d) {
+
+            //add mouseover tooltips for each flagged point:
+            //get the name (which for some reason is a class) of the svg under the mouse
+            var hovered_point = this.getBoundingClientRect();
+            var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+            for(var i = 0; i < elems.length; ++i){
+              if(elems[i].tagName.toLowerCase() == 'svg'){
+                var svgname = elems[i].classList[0];
+              }
+            }
+
+            point_tooltip.transition()
+              .duration(200)
+              .style("opacity", .9);
+            point_tooltip.html('Value: ' + d[svgname] +
+              '<br>This point may require flagging via the cleaning tool.')
+              .style("left", (d3.event.pageX + 10) + "px")
+              .style("top", (d3.event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(d) {
+              point_tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+            });
+      }
 
       //side buttons
       d3.select('#svgrow_' + vvv)
