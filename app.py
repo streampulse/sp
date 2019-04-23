@@ -3048,8 +3048,14 @@ def getviz():
         'comment']].dropna().drop(['flagid'], axis=1)
 
     #separate very negative values without flags
-    ufv = xx[(xx.value < -10) & (xx.comment.isnull())]
-    ufv.loc[:, 'display_val'] = -9.99095
+    ufv = xx[(xx.value < -10) & (xx.comment.isnull()) & (xx.variable != 'AirTemp_C')]
+    # ufv = xx[(xx.value < -10) & (xx.comment.isnull()) & (~xx.variable.isin(['AirTemp_C',
+    #     'WaterTemp_C']))]
+    ufv['display_val'] = -9.99095 #left for compatibility with old numpy
+    # ufv.loc[:, 'display_val'] = -9.99095
+
+    #very negative (and thus erroneous points) will show up as arrows at y=-10.
+    xx.value[(xx.value < -10) & (xx.variable != 'AirTemp_C')] = -9.99095
 
     #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
     #data results in good points receiving "bad data" labels, so remove those flags
@@ -3061,9 +3067,6 @@ def getviz():
     ufv = ufv.drop(['flag', 'comment'], axis=1).drop_duplicates()\
         .set_index(["DateTime_UTC", "variable", 'display_val'])\
         .drop(['region', 'site', 'flagid'], axis=1)
-
-    #very negative (and thus erroneous points) will show up as arrows at y=-10.
-    xx.value[xx.value < -10] = -9.99095
 
     # get rid of duplicated date/variable combos and convert to wide format
     xx = xx[~xx.index.duplicated(keep='last')].unstack('variable')
