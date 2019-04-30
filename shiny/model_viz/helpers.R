@@ -418,13 +418,13 @@ KvQ_plot = function(mod_out, slicex, slicey, powell, click=NULL){
         col='purple4', xlab='Log daily mean Q (cms)', ylab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
 
-    if(! powell){
-        abline(v=nodes, lty=2, col='darkred')
-        mtext('log Q node centers', side=3, line=0, adj=1, cex=0.8, col='darkred')
-    } else {
-        mtext('log Q node centers (unavail.)', side=3, line=0, adj=1, cex=0.8,
-            col='darkred')
-    }
+    #if(! powell){
+    #    abline(v=nodes, lty=2, col='darkred')
+    #    mtext('log Q node centers', side=3, line=0, adj=1, cex=0.8, col='darkred')
+    #} else {
+    #    mtext('log Q node centers (unavail.)', side=3, line=0, adj=1, cex=0.8,
+    #        col='darkred')
+    #}
 
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=0,
         cex=0.8, col='gray50')
