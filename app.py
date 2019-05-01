@@ -296,10 +296,14 @@ class Downloads(db.Model):
 class Upload(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100))
+    uploadtime_utc = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer)
     # version = db.Column(db.Integer)
 
-    def __init__(self, filename):
+    def __init__(self, filename, uploadtime_utc, user_id):
         self.filename = filename
+        self.uploadtime_utc = uploadtime_utc
+        self.user_id = user_id
 
     def __repr__(self):
         return '<Upload %r>' % (self.filename)
@@ -381,10 +385,13 @@ class Model(db.Model):
 class Grabupload(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(100))
-    # version = db.Column(db.Integer)
+    uploadtime_utc = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer)
 
-    def __init__(self, filename):
+    def __init__(self, filename, uploadtime_utc, user_id):
         self.filename = filename
+        self.uploadtime_utc = uploadtime_utc
+        self.user_id = user_id
 
     def __repr__(self):
         return '<Grabupload %r>' % (self.filename)
@@ -2280,13 +2287,14 @@ def confirmcolumns():
 
         replace = True if request.form['replacing'] == 'yes' else False
 
-        #add new filenames to upload table in db
+        #add new information to upload table in db
         fn_to_db = [i[0] for i in filenamesNoV]
         filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
         filenamesNoV = [i for i in filenamesNoV if i[1] is not None]
         if filenamesNoV:
             for f in filenamesNoV:
-                uq = Upload(f[0])
+                uq = Upload(filename=f[0], uploadtime_utc=datetime.utcnow(),
+                    user_id=current_user.get_id())
                 db.session.add(uq)
 
     except Exception as e:
@@ -2490,7 +2498,8 @@ def grab_confirmcolumns():
         replace = True if request.form['replacing']=='true' else False
 
         if update_upload_table:
-            uq = Grabupload(filenameNoV)
+            uq = Grabupload(filename=filenameNoV,
+                uploadtime_utc=datetime.utcnow(), user_id=current_user.get_id())
             db.session.add(uq)
 
         #add data and varname mappings to db tables
