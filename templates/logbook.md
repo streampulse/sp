@@ -1,5 +1,8 @@
 #Mike's Logbook
 
+###wed20190501
+ + now tracking uploader and date uploaded for all files
+ + user can view list of all files they've uploaded (may be inaccurate for files uploaded before today)
 ###mon20190422
  + can change grab units on viz overlay
  + super negative values show up as arrows at -10 on viz now

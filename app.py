@@ -1077,11 +1077,17 @@ def logout():
 def account():
 
     regdate = current_user.registered_on.strftime('%Y-%m-%d')
+    user_id = current_user.get_id()
+    sens_up = pd.read_sql("select distinct filename from upload where user_id='" +\
+        str(user_id) + "';", db.engine).filename.tolist()
+    grab_up = pd.read_sql("select distinct filename from grabupload where user_id='" +\
+        str(user_id) + "';", db.engine).filename.tolist()
+    # [x.encode('utf8') for x in sens_up]
 
     return render_template('account.html', username=current_user.username,
         token=current_user.token, email=current_user.email,
-        regdate=regdate, id=current_user.get_id(),
-        authsites=current_user.qaqc_auth())
+        regdate=regdate, id=user_id, sensor_uploads=sens_up,
+        grab_uploads=grab_up, authsites=current_user.qaqc_auth())
 
 @app.route('/email_change')
 @login_required
