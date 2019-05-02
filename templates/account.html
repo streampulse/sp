@@ -4,40 +4,60 @@
 <br>
 <h3>Account details</h3>
 <table class='pretty'>
- <tr class='pretty'>
-   <td class='pretty'><strong>Username</strong></td>
-   <td class='pretty'>{{username}}</td>
- </tr>
- <tr class='pretty'>
-   <td class='pretty'><strong>Token</strong></td>
-   <td class='pretty'>{{token}}</td>
- </tr>
- <tr class='pretty'>
-   <td class='pretty'><strong>Email</strong></td>
-   <td class='pretty'>
-     {{email}}&nbsp&nbsp
-     <!-- <a class="btn btn-md btn-info" href="https://data.streampulse.org/email_change"> -->
-     <a class="btn btn-md btn-info" href="/email_change">
-       Change
-     </a>
-   </td>
- </tr>
- <tr class='pretty'>
-   <td class='pretty'><strong>Registered on</strong></td>
-   <td class='pretty'>{{regdate}}</td>
- </tr>
- <tr class='pretty'>
-   <td class='pretty'><strong>User ID</strong></td>
-   <td class='pretty'>{{id}}</td>
- </tr>
- <tr class='pretty'>
-   <td class='pretty'><strong>Site permissions*</strong></td>
-   <td class='pretty'>{{authsites|sort|join(', ')}}</td>
- </tr>
- <tr class='pretty'>
-   <td class='pretty'><strong>Sensor files uploaded**</strong></td>
-   <td class='pretty'>{{sensor_uploads|sort|join(', ')}}</td>
- </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>Username</strong></td>
+    <td class='pretty'>{{username}}</td>
+  </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>Token</strong></td>
+    <td class='pretty'>{{token}}</td>
+  </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>Email</strong></td>
+    <td class='pretty'>
+      {{email}}&nbsp&nbsp
+      <!-- <a class="btn btn-md btn-info" href="https://data.streampulse.org/email_change"> -->
+      <a class="btn btn-md btn-info" href="/email_change">
+        Change
+      </a>
+    </td>
+  </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>Registered on</strong></td>
+    <td class='pretty'>{{regdate}}</td>
+  </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>User ID</strong></td>
+    <td class='pretty'>{{id}}</td>
+  </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>Site permissions*</strong></td>
+    <td class='pretty'>{{authsites|sort|join(', ')}}</td>
+  </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>Sensor files uploaded**</strong></td>
+    <td class='pretty'>
+      <button data-toggle="collapse" class="btn btn-default collapsed"
+      data-target="#sensup" aria-expanded="false">
+        show/hide
+      </button>
+      <div id="sensup" class="collapse" aria-expanded="false"
+        style="height: 0px;">{{sensor_uploads|sort|join('<br> ')|safe}}
+      </div>
+    </td>
+  </tr>
+  <tr class='pretty'>
+    <td class='pretty'><strong>Grab files uploaded</strong></td>
+    <td class='pretty'>
+      <button data-toggle="collapse" class="btn btn-default collapsed"
+      data-target="#grabup" aria-expanded="false">
+        show/hide
+      </button>
+      <div id="grabup" class="collapse" aria-expanded="false"
+        style="height: 0px;">{{grab_uploads|sort|join('<br> ')|safe}}
+      </div>
+    </td>
+  </tr>
 </table>
 <p>
   <strong>*</strong>
@@ -61,11 +81,6 @@
     </a>
   </div>
 </div>
-
-</div>
-
-<!-- <script>
-
-</script> -->
+<br><br>
 
 {% endblock %}

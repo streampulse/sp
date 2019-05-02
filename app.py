@@ -1082,7 +1082,6 @@ def account():
         str(user_id) + "';", db.engine).filename.tolist()
     grab_up = pd.read_sql("select distinct filename from grabupload where user_id='" +\
         str(user_id) + "';", db.engine).filename.tolist()
-    # [x.encode('utf8') for x in sens_up]
 
     return render_template('account.html', username=current_user.username,
         token=current_user.token, email=current_user.email,
