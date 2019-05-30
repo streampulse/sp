@@ -56,8 +56,8 @@ logging.basicConfig(filename='usgs_sync.log', level=logging.WARNING,
     format='%(asctime)s - %(levelname)s - %(message)s')
 
 #define sites and corresponding variables to be synced here. var codes:
-#discharge, gage height, water temp, spec cond, nitrate+nitrite
-#00060,     00065,       00010,      00095,     99133
+#discharge, gage height, water temp, spec cond, nitrate+nitrite, turb
+#00060,     00065,       00010,      00095,     99133,           63680
 #should have put all this in one dict, but alas. happy cross-referencing.
 regionsite = ['FL_ICHE2700',
     'FL_SF2500',
@@ -113,8 +113,8 @@ variables = [['00010', '00095', '99133', '00060', '00065'],
     ['00060', '00065'], #SLPR
     ['00060', '00065'], #POPE
     ['00060', '00065'], #MOOS
-    ['00060', '00065', '00010', '00095'], #BEC (and more)
-    ['00060', '00065', '00010', '00095'], #BRW (and more)
+    ['00060', '00065', '00010', '00095', '63680'], #BEC (and more)
+    ['00060', '00065', '00010', '00095', '63680'], #BRW (and more)
     ['00060', '00065', '00010', '00095'], #CorkBrk
     ['00060', '00065']] #GOF
 
@@ -162,6 +162,13 @@ def parse_usgs_response(i, usgs_raw, g):
         else:
             logging.warning(' retrieving level for ' + g)
             usgst.value = usgst.value / 3.28084
+    elif vcode=='63680':
+        colnm = 'Turbidity_NTU'
+        if usgst.empty:
+            logging.error(' turb df is empty: ' + g)
+            raise ValueError('continue')
+        else:
+            logging.warning(' retrieving turb for ' + g)
     else:
         logging.error('vcode other than watertemp, spcond, nitrate, disch, level')
         raise ValueError('continue')
