@@ -1,2 +1,2 @@
-e.g. NC_MudCreek,YYYY-MM-DD,Meters upstream of logger array (or supply coordinates; ideally there should be 100 measurements per transect),latitude of sample location,longitude of sample location,Length of the intermediate axis of a grain (rock fragment of any size) from the bottom of the channel (millimeters),Any notes about these measurements
-siteID,date,transect,latitude,longitude,grain_size_mm,notes
+e.g. NC_MudCreek,YYYY-MM-DD,Meters upstream of logger array (negative for downstream),Transect latitude in decimal degrees,Transect longitude in decimal degrees,longitude of sample location,Length of the intermediate axis of a grain (rock fragment of any size) from the bottom of the channel (millimeters),Any notes about these measurements
+siteID,date,transect,latitude,longitude,grain_size_mm,notes,
