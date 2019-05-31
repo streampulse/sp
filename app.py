@@ -486,6 +486,8 @@ grab_variables = [
 {'var': 'Total_Mn', 'unit': 'Total Mn (molar)', 'method': ['spectroscopy','FIA',o]},
 {'var': 'TOC', 'unit': 'TOC (ppm)', 'method': ['TOC-TN',o]},
 {'var': 'TN', 'unit': 'TN (ppm)', 'method': ['TOC-TN',o]},
+{'var': 'TP', 'unit': 'TP (ppm)', 'method': ['Ascorbic Acid Method',o]},
+{'var': 'TDN', 'unit': 'TDN (mg/L)', 'method': ['TOC-TN',o]},
 {'var': 'TDP', 'unit': 'TDP (mg/L)', 'method': ['Ascorbic Acid Method',o]},
 {'var': 'DOC', 'unit': 'DOC (ppm)', 'method': ['combustion','oxidation',o]},
 {'var': 'TSS', 'unit': 'TSS (ppm)', 'method': ['dry mass','backscatter',o]},
