@@ -1,2 +1,2 @@
-e.g. NC_MudCreek,YYYY-MM-DD,Meters upstream of logger array,The width of the water surface at the time of measurement (meters),The depth at the time of measurement (meters),The velocity at the time of measurement (meters per second),Any notes about the measurement
+e.g. NC_MudCreek,YYYY-MM-DD,Meters upstream of logger array (negative for downstream; OR supply coordinates),The width of the water surface at the time of measurement (meters),The depth at the time of measurement (meters),The velocity at the time of measurement (meters per second),Any notes about the measurement
 siteID,date,transect,width_m,depth_m,velocity_ms,notes
