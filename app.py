@@ -546,8 +546,8 @@ def allowed_file(filename):
 def read_hobo(f):
     xt = pd.read_csv(f, skiprows=[0])
     cols = [x for x in xt.columns.tolist() if re.match("^#$|Coupler|File|" +\
-        "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired|Sensor",
-        x) is None]
+        "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired|Sensor" +\
+        "|Missing|New", x) is None]
     xt = xt[cols]
     m = [re.sub(" ","",x.split(",")[0]) for x in xt.columns.tolist()]
     u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
@@ -561,6 +561,7 @@ def read_hobo(f):
     uu = [re.sub(r'[^\x00-\x7f]',r'', x) for x in uu] # get rid of unicode
     newcols = ['DateTime']+[nme+unit for unit,nme in zip(uu,m[1:])]
     xt = xt.rename(columns=dict(zip(xt.columns.tolist(),newcols)))
+    xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
     # xt = xt.rename(columns={'HWAbsPreskPa':'WaterPres_kPa','HWTempC':'WaterTemp_C','HAAbsPreskPa':'AirPres_kPa','HATempC':'AirTemp_C',})
     if "_HW" in f:
