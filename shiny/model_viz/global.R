@@ -16,7 +16,7 @@ site = dbReadTable(con, "site")
 #get list of fitted model names available on server
 fnames = dir('data')
 modnames = dir('data', pattern='modOut')
-sitenmyr_all = str_match(modnames, 'modOut_(\\w+_\\w+)_([0-9]{4})')[,2:3]
+sitenmyr_all = str_match(modnames, '^modOut_(\\w+_.+)_([0-9]{4}).rds$')[,2:3]
 
 #isolate those that are public (no embargo or past embargo period)
 public_sites = difftime(Sys.time(), site$addDate,
