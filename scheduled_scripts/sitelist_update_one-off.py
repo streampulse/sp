@@ -11,8 +11,8 @@ import pandas as pd
 from sqlalchemy.ext.declarative import declarative_base
 
 #import credentials from streampulse flask app config file
-#app_dir = '/home/aaron/sp'
-app_dir = '/home/mike/git/streampulse/server_copy/sp'
+app_dir = '/home/aaron/sp'
+#app_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, app_dir)
 os.chdir(app_dir)
 import config as cfg
@@ -25,7 +25,7 @@ session = sa.orm.Session(bind=db.engine)
 #get list of sites
 #sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
 #    "site;", db.engine).a.tolist()
-sites = ['FL_SF700']
+sites = ['AU_McCoys-Bridge-700']
 print sites
    # "site where region='NC';", db.engine).a.tolist()
    # "site where `by` = -903;", db.engine).a.tolist()
