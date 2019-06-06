@@ -457,6 +457,11 @@ core = pd.read_csv('static/sitelist.csv')
 core['SITECD'] = list(core["REGIONID"].map(str) + "_" + core["SITEID"])
 core = core.set_index('SITECD')
 
+#load leveraged sites that can upload logger files directly
+pseudo_core = pd.read_csv('static/sitelist_pseudo_core.csv')
+pseudo_core['SITECD'] = list(pseudo_core["REGIONID"].map(str) + "_" + pseudo_core["SITEID"])
+pseudo_core = pseudo_core.set_index('SITECD')
+
 #DateTime_UTC must remain in the first position
 variables = ['DateTime_UTC', 'DO_mgL', 'DOSecondary_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 'WaterTemp2_C', 'WaterTemp3_C',
 'WaterPres_kPa', 'AirTemp_C', 'AirPres_kPa', 'Level_m', 'Depth_m',
@@ -1450,6 +1455,9 @@ def series_upload():
         try:
             if site[0] in core.index.tolist():
                 gmtoff = core.loc[site].GMTOFF[0]
+                x = sp_in(fnlong, gmtoff)
+            elif site[0] in pseudo_core.index.tolist():
+                gmtoff = pseudo_core.loc[site].GMTOFF[0]
                 x = sp_in(fnlong, gmtoff)
             else:
                 if len(fnlong) > 1:
