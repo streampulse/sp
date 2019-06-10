@@ -60,18 +60,22 @@ type='video/mp4' />
 
 <mark>General instructions:</mark>
 <button data-toggle="collapse" class="btn btn-default" data-target="#coreinst">
-  Core sites
+  All users (updated)
 </button>
 <button data-toggle="collapse" class="btn btn-default" data-target="#levinst">
-  Leveraged sites
+  Legacy instructions
 </button>
-<p class="text-muted">
+<!-- <p class="text-muted">
   Core sites are those funded by the StreamPULSE grant.
   All other sites are known as leveraged sites.
-</p>
+</p> -->
 
 <div id="coreinst" class="collapse" style='background-color: #F8F8FF'>
-  <p class="lead"><b>StreamPULSE core sites</b> can upload raw datalogger files and/or pre-formatted data.</p>
+  <p class="lead">
+    As of 2019-06-06, <b>All users</b> can upload raw datalogger files, as long
+    as they match the output format of the logger types below. You can still upload
+    pre-formatted data too.
+  </p>
 
   <h3>File naming</h3>
   <p>Name your upload file &ndash; <code>REGIONID_SITEID_YYYY-MM-DD_LOGGERID.xxx</code> &ndash; where</p>
@@ -100,7 +104,10 @@ type='video/mp4' />
         <li><code>HA</code>: Hobo air pressure logger</li>
         <li><code>HP</code>: Hobo light pendant logger</li>
         <li><code>EM</code>: Eureka Manta logger</li>
-        <li><code>XX</code>: Calibrated and formatted data (literally "_XX")</li>
+        <li>
+          <code>XX</code>: Calibrated and formatted data (literally "_XX").
+          Use this if the format of your logger files doesn't work with our system.
+        </li>
       </ul>
     </li>
     <li>and <code>.xxx</code> is the file extension.
@@ -194,7 +201,16 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
 
 
 <div id="levinst" class="collapse" style='background-color: #F8F8FF'>
-  <p class="lead"><b>Leveraged sites</b> need to format the data prior to upload as a <code>.csv</code> file with:</p>
+  <p class="lead">
+    Prior to 2019-06-06, only the sites included in the original StreamPULSE grant
+    could upload data directly from raw logger files. Now, this feature is available
+    to all users. If you want to retain the file naming convention you're accustomed
+    to (for "leveraged sites"), these instructions still work. Otherwise, check out the updated instructions.
+    <!-- <b>Leveraged sites</b> need to format the data prior to upload as a <code>.csv</code> file with: -->
+  </p>
+  <p>
+    Format your data prior to upload as a <code>.csv</code> file with:
+  </p>
   <ul>
   <li>the specified file name (see below),</li>
   <li>one header row followed directly by data rows, one row per timestamp,</li>
@@ -295,7 +311,7 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
 </button>
 <hr>
 </div>
-<br>
+<br><br>
 
 <mark>Please read the</mark>
 <button data-toggle="collapse" class="btn btn-default" data-target="#revision">
