@@ -72,9 +72,31 @@ type='video/mp4' />
 
 <div id="coreinst" class="collapse" style='background-color: #F8F8FF'>
   <p class="lead">
-    As of 2019-06-06, <b>All users</b> can upload raw datalogger files, as long
+    As of 2019-06-06, <b>All users</b> can upload raw datalogger files, so long
     as they match the output format of the logger types below. You can still upload
-    pre-formatted data too.
+    pre-formatted data too. Just be sure to use the _XX extension if you do
+    (see file naming section below).
+  </p>
+
+  <h3>For new sites</h3>
+  <p>
+    We need to have the following information in the system before we can receive
+    raw logger output from your sites:
+  </p>
+  <ul>
+    <li>full site name, e.g. Farmington River at Tariffville</li>
+    <li>site abbreviation/code, e.g. FARM</li>
+    <li>latitude in decimal degrees, e.g. 41.9083</li>
+    <li>longitude in decimal degrees, e.g. -72.7594</li>
+    <li>geodetic datum associated with lat/long, e.g. WGS 84</li>
+  </ul>
+
+  <p>
+    Please <a href="streampulse.info@gmail.com">send us this information</a>
+    and wait for a reply before uploading raw logger files for a new site. If
+    your site is already in the system, but you've been uploading manually
+    formatted CSV files until now, just let us know you'd like to enable
+    raw logger file upload for that site and we will upgrade it.
   </p>
 
   <h3>File naming</h3>
@@ -105,8 +127,14 @@ type='video/mp4' />
         <li><code>HP</code>: Hobo light pendant logger</li>
         <li><code>EM</code>: Eureka Manta logger</li>
         <li>
-          <code>XX</code>: Calibrated and formatted data (literally "_XX").
-          Use this if the format of your logger files doesn't work with our system.
+          <code>XX</code>: Manually formatted data (literally "_XX").
+          Use this if the format of your logger files doesn't work with our system,
+          or if your site is enabled for direct logger file upload (see "For
+          new sites" section above), but you still want to upload some manually
+          formatted data. If your logger file won't upload,
+          <a href="streampulse.info@gmail.com">Check with us</a>
+          before resorting to this upload method, because there's a chance we can
+          get your file format to work with our system.
         </li>
       </ul>
     </li>
@@ -205,7 +233,8 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13_XX.csv&quot;)
     Prior to 2019-06-06, only the sites included in the original StreamPULSE grant
     could upload data directly from raw logger files. Now, this feature is available
     to all users. If you want to retain the file naming convention you're accustomed
-    to (for "leveraged sites"), these instructions still work. Otherwise, check out the updated instructions.
+    to (for "leveraged sites"), the instructions below still work. Otherwise,
+    check out the updated instructions.
     <!-- <b>Leveraged sites</b> need to format the data prior to upload as a <code>.csv</code> file with: -->
   </p>
   <p>
@@ -311,51 +340,7 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
 </button>
 <hr>
 </div>
-<br><br>
-
-<mark>Please read the</mark>
-<button data-toggle="collapse" class="btn btn-default" data-target="#revision">
-  data revision instructions
-</button>
-<mark>before checking the box below.</mark>
 <br>
-<div id='revision' class='collapse' style='background-color: #F8F8FF'>
-  <br>
-  <p>
-    To revise previously uploaded data, you must upload a revised file with the
-    same name as the original. All data previously associated with that file
-    will be replaced in our database. The original file will still be stored
-    on our server, however.
-  </p>
-  <p><u>Here's how it works:</u></p>
-  <ol>
-    <li>Make a local copy of the CSV or DAT file that's being revised.</li>
-    <li>
-      Modify the name of the copy that will <strong>not</strong> receive data
-      edits. You may want to call it something like
-      <code>AA_BB_2017-01-01_XX_unrevised.csv</code>.
-    </li>
-    <li>
-      Change erroneous data in the other copy. Make sure its name is
-      identical to the originally uploaded file.
-    </li>
-    <li>Upload this revised copy. Make sure to check the box below.</li>
-  </ol>
-  <p>
-    <strong>NOTICE:</strong> Currently there can be unintended consequences if
-      you upload the same variable, from the same place and time, in multiple
-      files (i.e. files with different names). We realize it can be inconvenient
-      to locate original files in order to revise StreamPULSE data, but at
-      present that is the only way. We will
-      enable more flexible data revision in a future update.
-  </p>
-  <p><strong>If you have any questions</strong>, please use the chatbox
-    in the bottom right, or
-    <a href="mailto:vlahm13@gmail.com">send us an email.</a>
-  </p>
-  <hr>
-</div>
-
 
 <br>
 <form action="" method=post enctype=multipart/form-data>
@@ -366,9 +351,82 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
     <!-- <small id="fileHelp" class="form-text text-muted">Select files to upload.</small> -->
   </div>
   <br>
-  <input type="checkbox" name="replace">
-  Check this box if revising (i.e. replacing) an existing file.
+
+  <mark>To avoid data corruption, <strong>Please read</strong> the</mark>
+  <button data-toggle="collapse" class="btn btn-default" data-target="#revision"
+  type="button">
+    data revision instructions
+  </button>
+  <mark>before checking either box below.</mark>
+  <br><br>
+  <div id='revision' class='collapse' style='background-color: #F8F8FF'>
+    <br>
+
+    <p class='lead'>
+      Data may be revised on a per-file or per-record (i.e. per-datapoint) basis.
+      Each method has advantages and disadvantages.
+    </p>
+    <h3>Replace the contents of a previously uploaded file</h3>
+    <p>
+      This method locates all data points associated with the filename you are
+      re-uploading, removes them from the database, then inserts the contents
+      of the new file into the database. The original file will still be stored
+      in CSV format on our server.
+    </p>
+    <p>This method is the only way to:</p>
+    <ul>
+      <li>Rename variables (e.g. Turbidity_NTU &rarr; Turbidity_FNU)</li>
+      <li>Remove variables</li>
+      <li>Revise data spanning more than one month</li>
+    </ul>
+    <p>
+      The disadvantage of this method is that you must know which file or files
+      are associated with the data points you want to revise.
+    </p>
+
+    <h3>Replace data points record-by-record</h3>
+    <p>
+      This method is more intuitive, but also more computationally demanding.
+      For each record you want to revise, the system must first determine if
+      it already exists. Rather than search through hundreds of millions of records
+      every time, we search through a subset of up to a month of records. Therefore
+      your revision file must have a maximum time range of 31 days, regardless of
+      how many records it contains.
+    </p>
+    <p>This method is:</p>
+    <ul>
+      <li>Faster for most small revisions</li>
+      <li>Easier, in that you don't have to keep track of old filenames</li>
+    </ul>
+    <p>This method <strong>cannot</strong> be used to:</p>
+    <ul>
+      <li>Rename or remove variables (it will leave the old variables in the system)</li>
+      <li>Revise data spanning more than one month</li>
+    </ul>
+
+    <p><strong>If you have any questions</strong>, please
+      <a href="mailto:vlahm13@gmail.com">send us an email.</a>
+    </p>
+    <button data-toggle="collapse" class="btn btn-default" data-target="#revision"
+    type="button">
+      Hide revision instructions
+    </button>
+    <hr>
+  </div>
+
+  <input type="checkbox" id="replaceFile" name="replaceFile">
+  Check this box if replacing an entire file.
   <br>
+  <input type="checkbox" id="replaceRecords" name="replaceRecords">
+  Check this box if replacing data record-by-record.
+
+  <br><br>
+  <p>
+    <strong>Help us avoid data redundancy</strong> by ensuring that the same data
+    points (same variable, from the same place and time) are not uploaded in multiple
+    files. If you're not sure, the data replacement checkboxes can help. See the
+    data revision instructions for details.
+  </p>
   <!-- <small class="form-text text-muted">(note: this is a bit slower, so don't use it if this is an initial upload)</small> -->
   <br><br>
   <button id="upx" type="submit" value=Upload class="btn btn-primary btn-block">Upload</button>
@@ -431,65 +489,71 @@ $('#usite').selectize({
     create: function(input) { return {value: input,text: input} }
 });
 
-var hot;
-var container = document.getElementById('datatemp');
-var nrow = 5;
-// var variables = ['DO_mgl','var2','var3'];
-var variables = {{ variables|safe }}
-variables.push("")
+// var hot;
+// var container = document.getElementById('datatemp');
+// var nrow = 5;
+// // var variables = ['DO_mgl','var2','var3'];
+// var variables = {{ variables|safe }}
+// variables.push("")
+//
+// var wid = $(".container").width();
+//
+// $(document).ready(function () {
+//   var data = [[]];
+//   hot = new Handsontable(container,
+//   {
+//     data: data,
+//     stretchH: 'none',
+//     colWidths: [wid/3, wid/3, wid/3],
+//     minRows: nrow,
+//     minCols: 3,
+//     minSpareRows: 1,
+//     colHeaders: ['DateTime_UTC (YYYY-MM-DD hh:mm)','Variable','Value'],
+//     columns: [
+//     	{data:'date', validator: /^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}(:[0-9]{2}(.[0-9]*)?)?)$/, allowInvalid: false},
+// 	    {data:'variable', type:'dropdown', source: variables},
+// 			{data:'value', validator: /^([+-]?([0-9]*)(\.([0-9]+))?)$/, allowInvalid: false}
+//     ],
+//     contextMenu: true
+//   });
+// });
 
-var wid = $(".container").width();
-
-$(document).ready(function () {
-  var data = [[]];
-  hot = new Handsontable(container,
-  {
-    data: data,
-    stretchH: 'none',
-    colWidths: [wid/3, wid/3, wid/3],
-    minRows: nrow,
-    minCols: 3,
-    minSpareRows: 1,
-    colHeaders: ['DateTime_UTC (YYYY-MM-DD hh:mm)','Variable','Value'],
-    columns: [
-    	{data:'date', validator: /^([0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}(:[0-9]{2}(.[0-9]*)?)?)$/, allowInvalid: false},
-	    {data:'variable', type:'dropdown', source: variables},
-			{data:'value', validator: /^([+-]?([0-9]*)(\.([0-9]+))?)$/, allowInvalid: false}
-    ],
-    contextMenu: true
-  });
-});
-
-function alertbox(alrt,msg){
-  return '<div class="alert alert-dismissible alert-'+alrt+'">\
+function alertbox(alrt, msg){
+  return '<div class="alert alert-dismissible alert-' + alrt + '">\
     <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
-    '+msg+'</div>'
+    ' + msg + '</div>'
 }
 
-$(function(){
-  $("#addmanualdata").click(function(){
-    dat = {}
-    dat['site'] = $('select[name=site]').val();
-    dat['data'] = hot.getData(); //gets JSON
-    dat['fieldnotes'] = $('textarea').val();
-    $.ajax({
-      type: 'POST',
-      url:'/_addmanualdata',
-      data: JSON.stringify(dat),
-      contentType: 'application/json;charset=UTF-8',
-      success: function(response){
-        console.log("success")
-        hot.updateSettings({data:[]})
-        $("#alerts").append(alertbox('success','Added your observations.'))
-      },
-      error: function(error){
-        console.log(error);
-      }
-    });
-    return false;
-  });
-})
+// $(function(){
+//   $("#addmanualdata").click(function(){
+//     dat = {}
+//     dat['site'] = $('select[name=site]').val();
+//     dat['data'] = hot.getData(); //gets JSON
+//     dat['fieldnotes'] = $('textarea').val();
+//     $.ajax({
+//       type: 'POST',
+//       url:'/_addmanualdata',
+//       data: JSON.stringify(dat),
+//       contentType: 'application/json;charset=UTF-8',
+//       success: function(response){
+//         console.log("success")
+//         hot.updateSettings({data:[]})
+//         $("#alerts").append(alertbox('success','Added your observations.'))
+//       },
+//       error: function(error){
+//         console.log(error);
+//       }
+//     });
+//     return false;
+//   });
+// })
 
+$('#replaceFile').click(function(){
+  $('#replaceRecords').prop('checked', false)
+})
+$('#replaceRecords').click(function(){
+  $('#replaceFile').prop('checked', false)
+})
 
 </script>
 

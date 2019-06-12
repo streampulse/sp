@@ -1461,8 +1461,11 @@ def series_upload():
                 x = sp_in(fnlong, gmtoff)
             else:
                 if len(fnlong) > 1:
-                    flash('For non-core sites, please merge files prior ' +\
-                        'to upload.', 'alert-danger')
+                    flash('At least one of your files uses the legacy file ' +\
+                        'naming convention. You may use this convention, but ' +\
+                        'then please merge files prior to upload. You may want ' +\
+                        'to follow the updated upload instructions instead.',
+                        'alert-danger')
                     [os.remove(f) for f in fnlong]
                     return redirect(request.url)
                 x = sp_in_lev(fnlong[0])
@@ -2053,7 +2056,48 @@ def chunker_ingester(df, chunksize=100000):
 
 def updatedb(xx, fnamelist, replace=False):
 
-    if replace:
+    # reg='AZ'; site='LV'; vars=['DO_mgL', 'WaterTemp_C']
+    # mindt='2017-11-05 00:00:00'; maxdt='2017-11-25 00:00:00'
+
+    if replace == 'byrow':
+
+        table_sub = pd.read_sql("select * from data where region='" + reg +\
+            "' and site='" + site + "' and variable in ('" + "','".join(vars) +\
+            "') and DateTime_UTC >= '" + mindt + "' and DateTime_UTC <= '" +\
+            maxdt + "';", db.engine)
+
+        # xx = table_sub.iloc[1:20,]
+        # xx.loc[1:10,'value'] = 100
+        # xx = xx.drop(['id','flag'], axis=1)
+        # table_sub['ind'] = np.arange(0, table_sub.shape[0], 1)
+
+        df_intersect = pd.merge(table_sub, xx, on=['region', 'site', 'variable',
+            'DateTime_UTC'], how='inner')
+        intersect_bool = table_sub.id.isin(df_intersect.id)
+
+        table_sub = table_sub.drop('id', axis=1)
+        # table_sub.loc[4:5, 'flag'] = 3
+
+        flagrows = table_sub[intersect_bool & table_sub.flag.notnull()]
+        flagrows = flagrows.drop(['value', 'upload_id'], axis=1)
+
+        table_sub = table_sub[~intersect_bool]
+        # new_records = newt[~intersect_bool]
+
+        xx = pd.concat([table_sub, xx], axis=0, ignore_index=True)
+
+        xx = pd.merge(xx, flagrows, on=['region', 'site', 'variable',
+            'DateTime_UTC'], how='left')
+
+        flag_update_inds = xx.index[xx.flag_y.notnull()]
+        xx.loc[flag_update_inds, 'flag_x'] = xx.flag_y[flag_update_inds]
+        xx = xx.drop('flag_y', axis=1)
+        xx.rename(columns={'flag_x':'flag'}, inplace=True)
+
+        #insert new or replacement data (chunk it if > 100k records)
+        chunker_ingester(xx)
+
+    elif replace == 'byfile':
 
         #get list of existing upload ids and table of flagged obs to be replaced
         upIDs = pd.read_sql("select id from upload where filename in ('" +\
@@ -2062,16 +2106,14 @@ def updatedb(xx, fnamelist, replace=False):
         flagged_obs = pd.read_sql("select * from data where upload_id in ('" +\
             "', '".join(upIDs) + "') and flag is not null", db.engine)
 
-        #delete records that are being replaced (this could be sped up)
+        #delete records that are being replaced (this could be sped up using
+        #the code from replace == 'byrow' above)
         if list(upIDs):
             d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
             for rec in d:
                 db.session.delete(rec)
 
-        #insert new (replacement) data (chunk it if > 100k records)
-        chunker_ingester(xx)
-
-        #reconstitute flags
+        #reconstitute flags (this too)
         for ind, r in flagged_obs.iterrows():
             try:
                 d = Data.query.filter(Data.region==r['region'], Data.site==r['site'],
@@ -2081,6 +2123,9 @@ def updatedb(xx, fnamelist, replace=False):
                 db.session.add(d)
             except:
                 continue
+
+        #insert new or replacement data (chunk it if > 100k records)
+        chunker_ingester(xx)
 
     else: #if not replacing, just insert new data
         chunker_ingester(xx)
