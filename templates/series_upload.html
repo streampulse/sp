@@ -364,7 +364,7 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
 
     <p class='lead'>
       Data may be revised on a per-file or per-record (i.e. per-datapoint) basis.
-      Each method has advantages and disadvantages. In either case, only one\
+      Each method has advantages and disadvantages. In either case, only one
       revised file may be uploaded at a time. Flag information that you've added
       via the data cleaning tool is preserved across revisions.
     </p>
@@ -379,7 +379,7 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
     <ul>
       <li>Rename variables (e.g. Turbidity_NTU &rarr; Turbidity_FNU)</li>
       <li>Remove variables</li>
-      <li>Revise data spanning more than one month</li>
+      <li>Revise data spanning more than one year</li>
     </ul>
     <p>
       The disadvantage of this method is that you must know which file or files
@@ -391,7 +391,7 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
       This method is more intuitive, but also more computationally demanding.
       For each record you want to revise, the system must first determine if
       it already exists. Rather than search through hundreds of millions of records
-      every time, we search through a subset of up to a month of records. Therefore
+      every time, we search through a subset of up to a year of records. Therefore
       your revision file must have a maximum time range of one year (366 days), regardless of
       how many records it contains.
     </p>
@@ -403,11 +403,11 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
     <p>This method <strong>cannot</strong> be used to:</p>
     <ul>
       <li>Rename or remove variables (it will leave the old variables in the system)</li>
-      <li>Revise data spanning more than one month</li>
+      <li>Revise data spanning more than one year</li>
     </ul>
 
     <p><strong>If you have any questions</strong>, please
-      <a href="mailto:vlahm13@gmail.com">send us an email.</a>
+      <a href="mailto:streampulse.info@gmail.com">send us an email.</a>
     </p>
     <button data-toggle="collapse" class="btn btn-default" data-target="#revision"
     type="button">
