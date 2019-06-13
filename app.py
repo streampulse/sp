@@ -1304,8 +1304,13 @@ def series_upload():
 
     if request.method == 'POST':
 
-        replace = False if request.form.get('replace') is None else True
-
+        # replace = False if request.form.get('replace') is None else True
+        if request.form.get('replaceRecords') is not None:
+            replace = 'records'
+        elif request.form.get('replaceFile') is not None:
+            replace = 'file'
+        else:
+            replace = 'no'
         #checks
         if 'file' not in request.files:
             flash('No file specified.','alert-danger')
@@ -1353,7 +1358,13 @@ def series_upload():
                     'alert-danger')
                 return redirect(request.url)
 
-        if not replace: #if user has not checked replace box
+        if replace != 'no': #if user has checked either replacement box
+            if len(ufiles) > 1:
+                flash('Please upload only one revision file at a time.',
+                    'alert-danger')
+                return redirect(request.url)
+
+        else:
 
             #get lists of new and existing files, filter uploaded files by new
             new = [fn not in ld for fn in ufnms]
@@ -1363,24 +1374,24 @@ def series_upload():
 
             if not ufnms: #if no files left in list
                 if len(existing) == 1:
-                    msgc = ['This file has', 'its']
+                    msgc = ['This file has', 'it.']
                 else:
-                    msgc = ['These files have', 'their']
+                    msgc = ['These files have', 'one of them.']
 
                 flash(msgc[0] + ' already been ' +\
-                    'uploaded. Check the box if you want to replace ' +\
-                    msgc[1] + ' contents in the database.', 'alert-danger')
+                    'uploaded. Check a revision box if you want to revise ' +\
+                    msgc[1], 'alert-danger')
                 return redirect(request.url)
 
             if existing: #if some uploaded files aready exist
 
                 if len(existing) > 1:
-                    insrt1 = ('These files', 'exist'); insrt2 = 'them'
+                    insrt1 = ('These files', 'exist'); insrt2 = 'these files (one at a time)'
                 if len(existing) == 1:
-                    insrt1 = ('This file', 'exists'); insrt2 = 'it'
+                    insrt1 = ('This file', 'exists'); insrt2 = 'this file'
 
                 flash('%s already %s: ' % insrt1 + ', '.join(existing) +\
-                    '. You may continue, or click "Cancel" at the bottom of ' +\
+                    '. You may continue to upload the other file(s), or click "Cancel" at the bottom of ' +\
                     'this page to go back and replace %s by checking the box.'
                     % insrt2, 'alert-warning')
 
@@ -1506,7 +1517,7 @@ def series_upload():
                 'alert-warning')
             return render_template('upload_columns.html', filenames=filenames,
                 columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict,
-                existing=existing, sitenm=site[0], replacing=replace)
+                existing=existing, sitenm=site[0], replace=replace)
 
         except Exception as e:
             [os.remove(f) for f in fnlong]
@@ -1530,7 +1541,6 @@ def series_upload():
             key=lambda tup: tup[1])
         return render_template('series_upload.html', sites=sitedict,
             variables=variables[1:])
-            # variables=map(str, vv)) #corresponds to the inefficient old way
 
 @app.route('/grab_upload', methods=['GET', 'POST'])
 @login_required
@@ -2054,12 +2064,18 @@ def chunker_ingester(df, chunksize=100000):
             lastchunk = df.to_dict('records')
             db.session.bulk_insert_mappings(Data, lastchunk)
 
-def updatedb(xx, fnamelist, replace=False):
+def updatedb(xx, fnamelist, replace='no'):
 
     # reg='AZ'; site='LV'; vars=['DO_mgL', 'WaterTemp_C']
     # mindt='2017-11-05 00:00:00'; maxdt='2017-11-25 00:00:00'
 
-    if replace == 'byrow':
+    if replace == 'records':
+
+        reg = xx.region[0]
+        site = xx.site[0]
+        vars = set(xx.variable)
+        mindt = str(xx.DateTime_UTC.min())
+        maxdt = str(xx.DateTime_UTC.max())
 
         table_sub = pd.read_sql("select * from data where region='" + reg +\
             "' and site='" + site + "' and variable in ('" + "','".join(vars) +\
@@ -2093,11 +2109,20 @@ def updatedb(xx, fnamelist, replace=False):
         xx.loc[flag_update_inds, 'flag_x'] = xx.flag_y[flag_update_inds]
         xx = xx.drop('flag_y', axis=1)
         xx.rename(columns={'flag_x':'flag'}, inplace=True)
+        # xx.loc[xx.flag.isnull(), 'flag'] = None
+        xx.flag = xx.flag.where(xx.flag.notnull(), None)
 
-        #insert new or replacement data (chunk it if > 100k records)
+        #delete records that are being replaced
+        db.session.query(Data).filter(Data.region == reg, Data.site == site,
+            Data.variable.in_(vars), Data.DateTime_UTC >= mindt,
+            Data.DateTime_UTC <= maxdt).delete(synchronize_session=False)
+
+        #insert new and/or replacement data (chunk it if > 100k records)
         chunker_ingester(xx)
+        # db.session.rollback()
+        # db.session.commit()
 
-    elif replace == 'byfile':
+    elif replace == 'file':
 
         #get list of existing upload ids and table of flagged obs to be replaced
         upIDs = pd.read_sql("select id from upload where filename in ('" +\
@@ -2348,7 +2373,7 @@ def confirmcolumns():
         xx = xx[['region','site','DateTime_UTC','variable','value','flag',
             'upload_id']]
 
-        replace = True if request.form['replacing'] == 'yes' else False
+        # replace = True if request.form['replacing'] == 'yes' else False
 
         #add new information to upload table in db
         fn_to_db = [i[0] for i in filenamesNoV]
@@ -2375,6 +2400,18 @@ def confirmcolumns():
 
         return redirect(url_for('series_upload'))
 
+    replace = request.form['replace']
+    timerange = xx.DateTime_UTC.max() - xx.DateTime_UTC.min()
+    if replace == 'records' and timerange.days > 366:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        except:
+            pass
+        [os.remove(f) for f in fnlong]
+        flash('Please upload no more than a year of data (366 days) if using ' +\
+            'by-record data revision.', 'alert-danger')
+        return redirect(url_for('series_upload'))
+
     try:
         #add data and mappings to db
         updatedb(xx, fn_to_db, replace)
@@ -2386,11 +2423,17 @@ def confirmcolumns():
         except:
             pass
         tb = traceback.format_exc()
-        log_exception('E009', tb)
-        msg = Markup('Error 009. This is a particularly nasty error. Please ' +\
-            '<a href="mailto:michael.vlah@duke.edu"' +\
-            ' class="alert-link">email StreamPULSE development</a> ' +\
-            'with the error number and a copy of the file(s) you tried to upload.')
+        if replace != 'no':
+            log_exception('E009b', tb)
+            msg = Markup("Error 009b. Try reducing the size of your revised " +\
+                "file by removing rows or columns that don't require revision.")
+        else:
+            log_exception('E009a', tb)
+            msg = Markup('Error 009a. This is a particularly nasty error. Please ' +\
+                '<a href="mailto:michael.vlah@duke.edu"' +\
+                ' class="alert-link">email StreamPULSE development</a> ' +\
+                'with the error number and a copy of the file(s) you tried to upload.')
+        db.session.rollback()
         flash(msg, 'alert-danger')
 
         return redirect(url_for('series_upload'))

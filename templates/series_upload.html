@@ -357,14 +357,16 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
   type="button">
     data revision instructions
   </button>
-  <mark>before checking either box below.</mark>
+  <mark>before checking either box below.</mark> Revision may take several minutes.
   <br><br>
   <div id='revision' class='collapse' style='background-color: #F8F8FF'>
     <br>
 
     <p class='lead'>
       Data may be revised on a per-file or per-record (i.e. per-datapoint) basis.
-      Each method has advantages and disadvantages.
+      Each method has advantages and disadvantages. In either case, only one\
+      revised file may be uploaded at a time. Flag information that you've added
+      via the data cleaning tool is preserved across revisions.
     </p>
     <h3>Replace the contents of a previously uploaded file</h3>
     <p>
@@ -390,7 +392,7 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
       For each record you want to revise, the system must first determine if
       it already exists. Rather than search through hundreds of millions of records
       every time, we search through a subset of up to a month of records. Therefore
-      your revision file must have a maximum time range of 31 days, regardless of
+      your revision file must have a maximum time range of one year (366 days), regardless of
       how many records it contains.
     </p>
     <p>This method is:</p>

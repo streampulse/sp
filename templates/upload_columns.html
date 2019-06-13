@@ -9,11 +9,11 @@
   <p><i>Uploading {{filenames|length}} file(s):</i><br>
   {% for f in filenames %} {{f}} {% endfor %}</p>
 
-  {% if replacing %}
-    <input type="hidden" name="replacing" value="yes">
-  {% else %}
-    <input type="hidden" name="replacing" value="no">
-  {% endif %}
+  {#% if replace %#}
+  <input type="hidden" name="replace" value={{replace}}>
+  {#% else %#}
+    <!-- <input type="hidden" name="replacing" value="no"> -->
+  {#% endif %#}
 
   {% if existing %}
     <input type="hidden" name="existing" value="yes">
