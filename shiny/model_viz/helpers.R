@@ -395,22 +395,22 @@ KvGPP_plot = function(mod_out, slice, click=NULL){
 
 KvQ_plot = function(mod_out, slicex, slicey, powell, click=NULL){
 
-    if(! powell){
-        nodes = mod_out$fit$KQ_binned$lnK600_lnQ_nodes_mean
-    }
+    # if(! powell){
+    #     nodes = mod_out$fit$KQ_binned$lnK600_lnQ_nodes_mean
+    # }
 
     colnames(slicex)[colnames(slicex) == 'discharge'] = 'discharge.daily'
     slicexy = merge(slicey, slicex[,c('date','discharge.daily')],
         by='date', all=TRUE)
     log_Q = log(slicexy$discharge.daily)
 
-    if(! powell){
-        xminplot = min(c(log_Q, nodes), na.rm=TRUE)
-        xmaxplot = max(c(log_Q, nodes), na.rm=TRUE)
-    } else {
+    # if(! powell){
+    #     xminplot = min(c(log_Q, nodes), na.rm=TRUE)
+    #     xmaxplot = max(c(log_Q, nodes), na.rm=TRUE)
+    # } else {
         xminplot = min(log_Q, na.rm=TRUE)
         xmaxplot = max(log_Q, na.rm=TRUE)
-    }
+    # }
 
     KQmod = lm(slicexy$K600_daily_mean ~ log_Q)
     R2 = sprintf('%1.2f', summary(KQmod)$adj.r.squared)
