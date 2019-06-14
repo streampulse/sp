@@ -1219,7 +1219,6 @@ def sitelist():
     title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE'}
     sitedata['by'] = sitedata['by'].map(title_mapping)
     sitedata.rename(columns={'by':'Source'}, inplace=True)
-    sitedata.columns.values
 
     #additional arranging and modification of data frame
     # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'],
