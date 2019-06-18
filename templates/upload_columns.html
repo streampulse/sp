@@ -4,190 +4,330 @@
 
 <form id="choosecolumns" class="form-horizontal" method="POST" action="/upload_confirm">
 
-  <div class="row"><div class="col-md-8 col-md-offset-2">
-
-  <p><i>Uploading {{filenames|length}} file(s):</i><br>
-  {% for f in filenames %} {{f}} {% endfor %}</p>
-
-  {#% if replace %#}
-  <input type="hidden" name="replace" value={{replace}}>
-  {#% else %#}
-    <!-- <input type="hidden" name="replacing" value="no"> -->
-  {#% endif %#}
-
-  {% if existing %}
-    <input type="hidden" name="existing" value="yes">
-  {% else %}
-    <p class="lead">
-      Please provide metadata for new site: {{sitenm}}
-    </p>
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Full site name</span>
-      <input type="text" class="form-control" name="sitename"
-      aria-describedby="Site name" maxlength="50" required>
-    </div>
-    <p class='text-muted text-danger'>
-      Only alphanumeric characters (any alphabet), spaces, dashes, and periods allowed.
-    </p>
-    <br>
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Latitude</span>
-      <input type="text" class="form-control" name="lat" placeholder="decimal degrees, e.g. 36.01" aria-describedby="Latitude" required>
-      <span class="input-group-addon">Longitude</span>
-      <input type="text" class="form-control" name="lng" placeholder="decimal degrees, e.g. -78.97" aria-describedby="Longitude" required>
-    </div><br>
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Associated USGS gage ID (optional)</span>
-      <input type="text" class="form-control" name="usgs" placeholder="e.g. 02085000" aria-describedby="USGS site #" maxlength="20">
-    </div><br>
-
-    <div>
-      <p>
-        <strong>Describe site</strong>
-        (characteristics, instruments, dates, personnel, etc.)
-      </p>
-      <textarea class="form-control" rows="5" name="metadata" required></textarea>
-      <p class='text-muted'>
-        You may want to copy this text before clicking Submit,
-        so you don't have to retype it in case of an error.
-      </p>
-    </div>
-    <br>
-
-    <strong>
-      Site contact (name and email will be displayed to registered users on sitelist page)
-    </strong>
-    <div class="input-group input-group-sm">
-      <span class="input-group-addon">Full name</span>
-      <input type="text" class="form-control" name="contactName"
-      aria-describedby="Contact name" maxlength="50" required>
-      <span class="input-group-addon">Email address</span>
-      <input type="text" class="form-control" name="contactEmail"
-      aria-describedby="Contact email" maxlength="255" required>
-    </div>
-    <p class='text-muted text-danger'>
-      Only alphanumeric characters (any alphabet), spaces, and <code>-@._'~</code> allowed.
-    </p>
-    <br>
-
-    <p>
-      <strong>Data embargo</strong>
-    </p>
-    <p>
-      We will not make data from this study site publicly available
-      for the number of years you specify below. Only you and any users to whom
-      you explicitly grant permission can view, download, clean,
-      or in any way access data or model outputs from this study site.
-    </p>
-    <div class="col-md-6">
-      <select id="embargo" name="embargo">
-        <option value="0">No embargo</option>
-        <option value="1">1 year</option>
-        {% for i in range(2, 6) %}
-          <option value="{{i}}">{{i}} years</option>
-        {% endfor %}
-      </select>
-    </div>
-    <br><br><br><br>
-
-    <strong>Data sharing policy</strong>
-    <div class="checkbox">
-      <label>
-        <input type="checkbox" name="policy" required>
-        I agree to the <a href="policy">StreamPULSE data policy</a>
-        and confirm that this dataset will be shared under that policy.
-      </label>
-    </div>
-
-    <!-- <div class="radio"><label>
-      <input type="radio" name="policy" id="streampulse" value="streampulse" checked> <u>StreamPULSE open data license</u>:
-        Others will be allowed to publicly share (copy, distribute, and use), create (produce works), and adapt (modify, transform, and build upon) this data with attribution given to the StreamPULSE project.
-    </label></div>
-    <div class="radio"><label>
-      <input type="radio" name="policy" id="embargo" value="embargo"> <u>Embargoed data license</u>:
-        This data will remain private (not publicly shared online or with other StreamPULSE members) for one year from the upload date (today). After one year, the embargo will lift and the StreamPULSE open data license will take effect.
-    </label></div> -->
-    <input type="hidden" name="existing" value="no">
-    <br><hr>
-  {% endif %}
-
-  <p class="lead">Variable name matching</p>
-  <p>
-    Match your variable names below with their official names in the database
-    (selected from the dropdown menus). To exclude a variable, leave its
-    dropdown blank. The dropdowns will automatically populate with your previous
-    selections.
-  </p>
-  <p>
-    If you're revising an existing data file (or files),
-    remember that the previous version(s) will be replaced with whatever you
-    upload now, assuming the file name hasn't changed. So, to "delete" a
-    variable previously uploaded in error, you can simply leave its dropdown
-    blank when replacing the old file.
-  </p>
-  <p>
-    Note that all files remain stored
-    on our server, even if you replace their contents in the database.
-  </p>
-  <p>
-    Click <mark>Cancel</mark> below to go back to the previous page.
-  </p>
-  <p>
-    <strong>Please double check all fields below</strong>, even if they were
-    populated automatically!
-  </p>
-  <br>
-
-
-</div></div>
   <div class="row">
-    <div class="col-md-6 col-md-offset-3">
+    <div class="col-md-8 col-md-offset-2">
+
+      <p><i>Uploading {{filenames|length}} file(s):</i><br>
+      {% for f in filenames %} {{f}} {% endfor %}</p>
+
+      {#% if replace %#}
+      <input type="hidden" name="replace" value={{replace}}>
+      {#% else %#}
+        <!-- <input type="hidden" name="replacing" value="no"> -->
+      {#% endif %#}
+
+      {% if existing %}
+        <input type="hidden" name="existing" value="yes">
+      {% else %}
+        <p class="lead">
+          Please provide metadata for new site: {{sitenm}}
+        </p>
+        <div class="input-group input-group-sm">
+          <span class="input-group-addon">Full site name</span>
+          <input type="text" class="form-control" name="sitename"
+          aria-describedby="Site name" maxlength="50" required>
+        </div>
+        <p class='text-muted text-danger'>
+          Only alphanumeric characters (any alphabet), spaces, dashes, and periods allowed.
+        </p>
+        <br>
+        <div class="input-group input-group-sm">
+          <span class="input-group-addon">Latitude</span>
+          <input type="text" class="form-control" name="lat" placeholder="decimal degrees, e.g. 36.01" aria-describedby="Latitude" required>
+          <span class="input-group-addon">Longitude</span>
+          <input type="text" class="form-control" name="lng" placeholder="decimal degrees, e.g. -78.97" aria-describedby="Longitude" required>
+        </div><br>
+        <div class="input-group input-group-sm">
+          <span class="input-group-addon">Associated USGS gage ID (optional)</span>
+          <input type="text" class="form-control" name="usgs" placeholder="e.g. 02085000" aria-describedby="USGS site #" maxlength="20">
+        </div><br>
+
+        <div>
+          <p>
+            <strong>Describe site</strong>
+            (characteristics, instruments, dates, personnel, etc.)
+          </p>
+          <textarea class="form-control" rows="5" name="metadata" required></textarea>
+          <p class='text-muted'>
+            You may want to copy this text before clicking Submit,
+            so you don't have to retype it in case of an error.
+          </p>
+        </div>
+        <br>
+
+        <strong>
+          Site contact (name and email will be displayed to registered users on sitelist page)
+        </strong>
+        <div class="input-group input-group-sm">
+          <span class="input-group-addon">Full name</span>
+          <input type="text" class="form-control" name="contactName"
+          aria-describedby="Contact name" maxlength="50" required>
+          <span class="input-group-addon">Email address</span>
+          <input type="text" class="form-control" name="contactEmail"
+          aria-describedby="Contact email" maxlength="255" required>
+        </div>
+        <p class='text-muted text-danger'>
+          Only alphanumeric characters (any alphabet), spaces, and <code>-@._'~</code> allowed.
+        </p>
+        <br>
+
+        <p>
+          <strong>Data embargo</strong>
+        </p>
+        <p>
+          We will not make data from this study site publicly available
+          for the number of years you specify below. Only you and any users to whom
+          you explicitly grant permission can view, download, clean,
+          or in any way access data or model outputs from this study site.
+        </p>
+        <div class="col-md-6">
+          <select id="embargo" name="embargo">
+            <option value="0">No embargo</option>
+            <option value="1">1 year</option>
+            {% for i in range(2, 6) %}
+              <option value="{{i}}">{{i}} years</option>
+            {% endfor %}
+          </select>
+        </div>
+        <br><br><br><br>
+
+        <strong>Data sharing policy</strong>
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" name="policy" required>
+            I agree to the <a href="policy">StreamPULSE data policy</a>
+            and confirm that this dataset will be shared under that policy.
+          </label>
+        </div>
+
+        <!-- <div class="radio"><label>
+          <input type="radio" name="policy" id="streampulse" value="streampulse" checked> <u>StreamPULSE open data license</u>:
+            Others will be allowed to publicly share (copy, distribute, and use), create (produce works), and adapt (modify, transform, and build upon) this data with attribution given to the StreamPULSE project.
+        </label></div>
+        <div class="radio"><label>
+          <input type="radio" name="policy" id="embargo" value="embargo"> <u>Embargoed data license</u>:
+            This data will remain private (not publicly shared online or with other StreamPULSE members) for one year from the upload date (today). After one year, the embargo will lift and the StreamPULSE open data license will take effect.
+        </label></div> -->
+        <input type="hidden" name="existing" value="no">
+        <br><hr>
+      {% endif %}
+
+      <p class="lead">Variable name matching</p>
+      <p>
+        Match your variable names below with their official names in the database
+        (selected from the dropdown menus). To exclude a variable, leave its
+        dropdown blank. The dropdowns will automatically populate with your previous
+        selections.
+      </p>
+      <!-- <p>
+        If you're revising an existing data file (or files),
+        remember that the previous version(s) will be replaced with whatever you
+        upload now, assuming the file name hasn't changed. So, to "delete" a
+        variable previously uploaded in error, you can simply leave its dropdown
+        blank when replacing the old file.
+      </p>
+      <p>
+        Note that all files remain stored
+        on our server, even if you replace their contents in the database.
+      </p> -->
+      <p>
+        Click <mark>Cancel</mark> below to go back to the previous page.
+      </p>
+      <p>
+        <strong>Please double check all fields below</strong>, even if they were
+        populated automatically!
+      </p>
+      <br>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-5">
       <p class="text-center">
         Don't see your variable names?
-        <a href="mailto:vlahm13@gmail.com">Send us an email!</a>
+        <a href="mailto:streampulse.info@gmail.com">Send us an email!</a>
       </p>
       <input type="hidden" name="tmpfile" value="{{tmpfile}}">
       <input type="hidden" name="cdict" value="">
 
+      <div class="col-md-6 text-left">
+        <p><strong>Upload variable name</strong></p>
+      </div>
+      <div class="col-md-6 text-right">
+        <p><strong>Database variable name</strong></p>
+      </div>
+
       {% for c in columns %}
-        <div class="input-group input-group-sm">
-
-        {% if c == columns[0] %}
-          <div data-toggle='tooltip' title="Remember, if you're not uploading an
-          automatically formatted logger file (i.e. if your LOGGERID isn't one of
-          CS, EM, HA, HD, HP, HW), it's assumed that the first column
-          in your CSV contains date-time stamps converted to UTC. That column's name
-          may have been changed here."
-          data-placement='left'>
-            <i class="fa fa-question-circle-o" style="color: blue"></i>
-          </div>
-        {% endif %}
-
-        <span class="input-group-addon">{{c}}</span>
-        <select class="form-control" name="{{c}}">
-
-        <!-- {#% if c == "DateTime_UTC" %#}
-          <option value="{{c}}" selected>{{c}}</option> -->
-
-        {% if c in cdict.keys() %}
-          <option value=""></option>
-          {% for v in variables %}
-            {% if v == cdict[c] %}
-              <option value="{{v}}" selected>{{v}}</option>
+        <div class="input-group">
+          <span class="input-group-addon">
+            {% if c == columns[0] %}
+              <div data-toggle=''
+title="Remember, if you're not uploading an automatically formatted logger file
+(i.e. if your LOGGERID isn't one of CS, EM, HA, HD, HP, HW), it's assumed
+that the first column in your CSV contains date-time stamps converted to
+UTC. That column's name may have been changed here."
+                data-placement='right' style="display:inline-block; vertical-align=middle">
+                <i class="fa fa-question-circle-o" style="color: blue"></i>
+              </div>
+              <div style='display:inline-block; vertical-align=middle'>
             {% else %}
-              <option value="{{v}}">{{v}}</option>
+              <div>
             {% endif %}
-          {% endfor %}
+                {{c}}
+              </div>
+          </span>
+          <select class="form-control" id="ddA{{c}}" name="{{c}}">
+            {% if c in cdict.keys() %}
+              <option value=""></option>
+              {% for v in variables %}
+                {% if v == cdict[c] %}
+                  <option value="{{v}}" selected>{{v}}</option>
+                {% else %}
+                  <option value="{{v}}">{{v}}</option>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <option selected value=""></option>
+              {% for v in variables %}
+                <option value="{{v}}">{{v}}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <br>
+      {% endfor %}
+    </div>
+
+    <!-- <input type="hidden" name="mdict" value=""> -->
+    <div class='col-md-3 text-center'>
+      <div data-toggle='' title="R: Raw sensor data
+C: Calibrated after download from sensor
+O: Outliers/anomalies removed
+G: Gaps imputed
+D: Drift corrected
+V: Derived from other variables (describe)"
+        data-placement='right' style="display:inline-block; vertical-align=middle">
+        <i class="fa fa-question-circle-o" style="color: blue"></i>
+      </div>
+      <div style="display:inline-block; vertical-align=middle">
+        <p><strong>Data status</strong></p>
+      </div>
+      <p><strong>(check all that apply)</strong></p>
+
+      {% for m in columns %}
+      <!--
+        {#% if columns[m] != '' %#}
+          <select id="ddB{{m}}" name="{{columns[m]}}"
+          class="form-control text-center">
+        {#% else %#}
+          <select id="ddB{{m}}" name="{{columns[m]}}" style='visibility:hidden'
+          class="form-control text-center">
+        {#% endif %#}
+            <option value="R">R</option>
+            <option value="C">C</option>
+            <option value="O">O</option>
+            <option value="G">G</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+          </select>
+           -->
+
+           <!-- <option value="R">(R) Raw sensor data</option>
+           <option value="C">(C) Calibrated after download from sensor</option>
+           <option value="O">(O) Outliers/anomalies removed</option>
+           <option value="G">(G) Gaps imputed</option>
+           <option value="D">(D) Drift corrected</option>
+           <option value="E">(E) Derived from other variables</option> -->
+
+          {% if columns[m] != '' %}
+          {#% if columns[m] in mdict.keys() %#}
+            <div style='height:34px' id="iB{{m}}" name="{{columns[m]}}">
+          {% else %}
+            <div style='visibility:hidden; height:34px' id="iB{{m}}" name="{{columns[m]}}">
+          {% endif %}
+               <div class="checkbox-inline">
+                 <label><input type="checkbox" id="rR{{m}}" name="optcheckbox">R</label>
+               </div>
+               <div class="checkbox-inline">
+                 <label><input type="checkbox" id="rC{{m}}" name="optcheckbox">C</label>
+               </div>
+               <div class="checkbox-inline">
+                 <label><input type="checkbox" id="rO{{m}}" name="optcheckbox">O</label>
+               </div>
+               <div class="checkbox-inline">
+                 <label><input type="checkbox" id="rG{{m}}" name="optcheckbox">G</label>
+               </div>
+               <div class="checkbox-inline">
+                 <label><input type="checkbox" id="rD{{m}}" name="optcheckbox">D</label>
+               </div>
+               <div class="checkbox-inline">
+                 <label><input type="checkbox" id="rV{{m}}" name="optcheckbox">V</label>
+               </div>
+             </div>
+           <!-- <div class="checkbox-inline" style="height:34px">
+             <label><input type="checkbox" id="rR" name="optcheckbox">R</label>
+           </div>
+           <div class="checkbox-inline" style="height:34px">
+             <label><input type="checkbox" id="rC" name="optcheckbox">C</label>
+           </div>
+           <div class="checkbox-inline" style="height:34px">
+             <label><input type="checkbox" id="rO" name="optcheckbox">O</label>
+           </div>
+           <div class="checkbox-inline" style="height:34px">
+             <label><input type="checkbox" id="rG" name="optcheckbox">G</label>
+           </div>
+           <div class="checkbox-inline" style="height:34px">
+             <label><input type="checkbox" id="rD" name="optcheckbox">D</label>
+           </div>
+           <div class="checkbox-inline" style="height:34px">
+             <label><input type="checkbox" id="rE" name="optcheckbox">E</label>
+           </div> -->
+            <!-- <div class="checkbox-inline" style='visibility:hidden; height:34px'>
+              <label><input type="checkbox" id="rR" name="optcheckbox">R</label>
+            </div>
+            <div class="checkbox-inline" style='visibility:hidden; height:34px'>
+              <label><input type="checkbox" id="rC" name="optcheckbox">C</label>
+            </div>
+            <div class="checkbox-inline" style='visibility:hidden; height:34px'>
+              <label><input type="checkbox" id="rO" name="optcheckbox">O</label>
+            </div>
+            <div class="checkbox-inline" style='visibility:hidden; height:34px'>
+              <label><input type="checkbox" id="rG" name="optcheckbox">G</label>
+            </div>
+            <div class="checkbox-inline" style='visibility:hidden; height:34px'>
+              <label><input type="checkbox" id="rD" name="optcheckbox">D</label>
+            </div>
+            <div class="checkbox-inline" style='visibility:hidden; height:34px'>
+              <label><input type="checkbox" id="rE" name="optcheckbox">E</label>
+            </div> -->
+
+
+          <br>
+      {% endfor %}
+    </div>
+
+    <!-- <input type="hidden" name="wdict" value=""> -->
+    <div class='col-md-4 text-center'>
+      <p><strong>Describe derivation</strong></p>
+      <p><strong>of variable</strong></p>
+      {% for w in range(columns|length) %}
+        {% if columns[w] == 'V' %}
+          <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:visible'
+          class="form-control text-left" value={{wdict[columns[w]]}} required>
+          </input>
         {% else %}
-          <option selected value=""></option>
-          {% for v in variables %}
-            <option value="{{v}}">{{v}}</option>
-          {% endfor %}
+          <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:hidden'
+          class="form-control text-left">
+          </input>
         {% endif %}
-      </select>
-    </div><br>
-    {% endfor %}
-  </div></div>
+        <br>
+      {% endfor %}
+    </div>
+
+
+  </div>
+  <br>
+
   <div class="row">
     <div class="col-md-4 col-md-offset-4">
       <button name="columnin" type="submit" class="btn btn-primary btn-block">
@@ -210,38 +350,148 @@
 
 
 
-<script>
+<script type="text/javascript">
 
-$('#embargo').selectize({
-    delimiter: ',',
-    persist: false,
-    create: function(input) {
-        return {
-            value: input,
-            text: input
-        }
-    }
-});
-
-function alertbox(alrt, msg){
-  return '<div class="alert alert-dismissible alert-' + alrt + '">\
-    <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
-    ' + msg + '</div>'
-}
-
-$(function(){
-  $('button[name=columnin]').click(function() {
-    cvals = [];
-    $("#choosecolumns").find("select:not(#embargo)").each(function(){
-      if($(this).val() != ""){
-        cvals.push( $(this).serializeArray()[0] )
+  $('#embargo').selectize({
+      delimiter: ',',
+      persist: false,
+      create: function(input) {
+          return {
+              value: input,
+              text: input
+          }
       }
-    });
-    //cdict = JSON.stringify($("#choosecolumns").find("select").serializeArray());
-    cdict = JSON.stringify(cvals);
-    $('#choosecolumns input[name=cdict]').val( cdict );
   });
-})
+
+  function alertbox(alrt, msg){
+    return '<div class="alert alert-dismissible alert-' + alrt + '">\
+      <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
+      ' + msg + '</div>'
+  }
+
+  $(function(){
+    $('button[name=columnin]').click(function() {
+      cvals = [];
+      $("#choosecolumns").find("select:not(#embargo)").each(function(){
+        if($(this).val() != ""){
+          cvals.push( $(this).serializeArray()[0] )
+        }
+      });
+      //cdict = JSON.stringify($("#choosecolumns").find("select").serializeArray());
+      cdict = JSON.stringify(cvals);
+      $('#choosecolumns input[name=cdict]').val( cdict );
+    });
+  })
+
+  //handlers for first column of dropdowns
+  $(function(){
+
+    //read jinja variables into js
+    // var vars = {{ vars|safe }}
+    // var methods = {{ methods|safe }}
+
+    //for all first-column dropdowns...
+    $("select[id^='ddA']").each(function(i){
+      $(this).change(function(){ //when they change...
+
+        //get the corresponding inputs from the other cols
+        var iB = $("div[id='iB" + i + "']");
+        var iC = $("input[id='iC" + i + "']");
+        // var ddD = $("select[id='ddD" + i + "']");
+
+        if($(this).val() != ''){
+
+          // var ind = vars.indexOf( $(this).val() );
+          // var newmethods = methods[ind]
+
+          // ddB.empty();
+          // // ddB.clear();
+          // // ddB.clearOptions();
+
+          // //repopulate the options in the methods column
+          // // $.each(newmethods, function(i, m){
+          // ddB.append($("<option></option>").attr("value", 'arse').text('arse'));
+          //     // ddB.addOption([{value:m, text:m}]);
+          //     // ddB.refreshOptions();
+          // // });
+          // ddB.val('arse');
+
+          // var fltr_methods = {{ fltr_methods|safe }}
+          // var fltr_opts = {{ fltr_opts|safe }}
+
+          // //for certain default methods selections, unhide and populate the 4th column
+          // ddD.empty();
+          // if( fltr_methods.includes(ddB.val()) ){
+          //   $.each(fltr_opts, function(i, f){
+          //     ddD.append($("<option></option>").attr("value", f).text(f));
+          //   });
+          //   ddD.val(fltr_opts[0]);
+          //   ddD.attr('style', 'visibility: visible');
+          // } else {
+          //   ddD.attr('style', 'visibility: hidden');
+          // }
+
+          // ddB.select(newmethods[0]);
+          // $("select[id='sB" + i + "']").css('visibility', 'visible');
+          iB.attr('style', 'visibility: visible');
+
+        } else {
+
+          // ddB.empty();
+          // ddB.clear();
+          // ddB.clearOptions();
+          // $("select[id='sB" + i + "']").css('visibility', 'hidden');
+          iB.attr('style', 'visibility: hidden');
+          iC.attr('style', 'visibility: hidden');
+          // ddD.empty();
+          // ddD.attr('style', 'visibility: hidden');
+        };
+
+        //hide and empty the 3rd column inputs
+        // iC.val('');
+        // iC.attr('style', 'visibility: hidden');
+        // iC.prop('required', false);
+
+      });
+    });
+  });
+
+  //handlers for data level column of dropdowns
+  $(function(){
+    $("input[id^='rV']").each(function(i){
+      $(this).change(function(){
+
+        var iC = $("input[id='iC" + i + "']");
+        // var ddD = $("select[id='ddD" + i + "']");
+
+        if($(this).prop('checked') == true){
+          iC.attr('style', 'visibility: visible');
+          iC.prop('required', true);
+        } else {
+          // iC.val('');
+          iC.attr('style', 'visibility: hidden');
+          iC.prop('required', false);
+        };
+
+        // var fltr_methods = {{ fltr_methods|safe }}
+        // var fltr_opts = {{ fltr_opts|safe }}
+        //
+        // ddD.empty();
+        // if( fltr_methods.includes($(this).val()) ){
+        //   $.each(fltr_opts, function(i, f){
+        //     ddD.append($("<option></option>").attr("value", f).text(f));
+        //   });
+        //   ddD.val(fltr_opts[0]);
+        //   ddD.attr('style', 'visibility: visible');
+        // } else {
+        //   ddD.attr('style', 'visibility: hidden');
+        // }
+
+      });
+    });
+  });
+
+
 
 </script>
 

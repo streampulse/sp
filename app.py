@@ -1490,9 +1490,11 @@ def series_upload():
             columns = x.columns.tolist() #col names
             columns.remove('upload_id')
             rr, ss = site[0].split("_") #region and site
-            cdict = pd.read_sql("select * from cols where region='" + rr +\
+            coldict = pd.read_sql("select * from cols where region='" + rr +\
                 "' and site='" + ss + "'", db.engine)
-            cdict = dict(zip(cdict['rawcol'],cdict['dbcol'])) #varname mappings
+            cdict = dict(zip(coldict['rawcol'], coldict['dbcol'])) #varname mappings
+            ldict = dict(zip(coldict['rawcol'], coldict['level'])) #level mappings
+            ndict = dict(zip(coldict['rawcol'], coldict['notes'])) #note mappings
 
         except Exception as e:
             [os.remove(f) for f in fnlong]
@@ -1515,8 +1517,9 @@ def series_upload():
             flash("Please double check your variable name matching.",
                 'alert-warning')
             return render_template('upload_columns.html', filenames=filenames,
-                columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict,
-                existing=existing, sitenm=site[0], replace=replace)
+                columns=columns, tmpfile=tmp_file, variables=variables,
+                existing=existing, sitenm=site[0], replace=replace,
+                cdict=cdict, ldict=ldict, ndict=ndict)
 
         except Exception as e:
             [os.remove(f) for f in fnlong]
@@ -2030,7 +2033,8 @@ def datapolicy():
     return render_template("datapolicy.html")
 
 def updatecdict(region, site, cdict):
-    rawcols = pd.read_sql("select * from cols where region='"+region+"' and site ='"+site+"'", db.engine)
+    rawcols = pd.read_sql("select * from cols where region='" + region +\
+        "' and site ='" + site + "'", db.engine)
     rawcols = rawcols['rawcol'].tolist()
     for c in cdict.keys():
         if c in rawcols: # update

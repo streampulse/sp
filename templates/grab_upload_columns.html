@@ -227,6 +227,7 @@
     <div class='col-md-3 text-center'>
       <!-- <div class="col-md-12 text-center"> -->
       <p><strong>Method/Instrument</strong></p>
+      <br>
 
       {% for m in range(columns|length) %}
         <!-- <div class="input-group"> -->
@@ -269,6 +270,7 @@
     <input type="hidden" name="wdict" value="">
     <div class='col-md-2 text-center'>
       <p><strong>Specify "other"</strong></p>
+      <br>
       {% for w in range(columns|length) %}
         {% if columns[w] in cdict.keys() and mdict[columns[w]] == 'other' %}
           <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:visible'
@@ -289,6 +291,7 @@
     <input type="hidden" name="adict" value="">
     <div class='col-md-2 text-center'>
       <p><strong>Filter?</strong></p>
+      <br>
       {% for a in range(columns|length) %}
         {% if columns[a] in adict.keys() and mdict[columns[a]] in fltr_methods %}
           <select id="ddD{{a}}" name="{{columns[a]}}" style='visibility:visible'
@@ -345,72 +348,128 @@
 <br> -->
 <!-- <input type='button' id='test'> -->
 
-<script>
-$("[id^='embargo']").selectize({
-    delimiter: ',',
-    persist: false,
-    create: function(input) {
-        return {
-            value: input,
-            text: input
-        }
-    }
-});
+<script type="text/javascript">
+  $("[id^='embargo']").selectize({
+      delimiter: ',',
+      persist: false,
+      create: function(input) {
+          return {
+              value: input,
+              text: input
+          }
+      }
+  });
 
-function alertbox(alrt, msg){
-  return '<div class="alert alert-dismissible alert-' + alrt + '">\
-    <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
-    ' + msg + '</div>'
-}
+  function alertbox(alrt, msg){
+    return '<div class="alert alert-dismissible alert-' + alrt + '">\
+      <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
+      ' + msg + '</div>'
+  }
 
-// $("select[id^='ddB']").selectize({
-//   delimiter: ',',
-//   persist: false,
-//   create: function(input){
-//     return {value: input, text: input}
-//   }
-// });
+  // $("select[id^='ddB']").selectize({
+  //   delimiter: ',',
+  //   persist: false,
+  //   create: function(input){
+  //     return {value: input, text: input}
+  //   }
+  // });
 
-//handlers for first column of dropdowns
-$(function(){
+  //handlers for first column of dropdowns
+  $(function(){
 
-  //read jinja variables into js
-  var vars = {{ vars|safe }}
-  var methods = {{ methods|safe }}
+    //read jinja variables into js
+    var vars = {{ vars|safe }}
+    var methods = {{ methods|safe }}
 
-  //for all first-column dropdowns...
-  $("select[id^='ddA']").each(function(i){
-    $(this).change(function(){ //when they change...
+    //for all first-column dropdowns...
+    $("select[id^='ddA']").each(function(i){
+      $(this).change(function(){ //when they change...
 
-      //get the corresponding dropdowns from the other cols
-      var ddB = $("select[id='ddB" + i + "']");
-      var iC = $("input[id='iC" + i + "']");
-      var ddD = $("select[id='ddD" + i + "']");
-      // var ddB = $("select[id='ddB" + i + "']")[0].selectize;
+        //get the corresponding dropdowns from the other cols
+        var ddB = $("select[id='ddB" + i + "']");
+        var iC = $("input[id='iC" + i + "']");
+        var ddD = $("select[id='ddD" + i + "']");
+        // var ddB = $("select[id='ddB" + i + "']")[0].selectize;
 
-      if($(this).val() != ''){
+        if($(this).val() != ''){
 
-        var ind = vars.indexOf( $(this).val() );
-        var newmethods = methods[ind]
+          var ind = vars.indexOf( $(this).val() );
+          var newmethods = methods[ind]
 
-        ddB.empty();
-        // ddB.clear();
-        // ddB.clearOptions();
+          ddB.empty();
+          // ddB.clear();
+          // ddB.clearOptions();
 
-        //repopulate the options in the methods column
-        $.each(newmethods, function(i, m){
-          ddB.append($("<option></option>").attr("value", m).text(m));
-            // ddB.addOption([{value:m, text:m}]);
-            // ddB.refreshOptions();
-        });
-        ddB.val(newmethods[0]);
+          //repopulate the options in the methods column
+          $.each(newmethods, function(i, m){
+            ddB.append($("<option></option>").attr("value", m).text(m));
+              // ddB.addOption([{value:m, text:m}]);
+              // ddB.refreshOptions();
+          });
+          ddB.val(newmethods[0]);
+
+          var fltr_methods = {{ fltr_methods|safe }}
+          var fltr_opts = {{ fltr_opts|safe }}
+
+          //for certain default methods selections, unhide and populate the 4th column
+          ddD.empty();
+          if( fltr_methods.includes(ddB.val()) ){
+            $.each(fltr_opts, function(i, f){
+              ddD.append($("<option></option>").attr("value", f).text(f));
+            });
+            ddD.val(fltr_opts[0]);
+            ddD.attr('style', 'visibility: visible');
+          } else {
+            ddD.attr('style', 'visibility: hidden');
+          }
+
+          // ddB.select(newmethods[0]);
+          // $("select[id='sB" + i + "']").css('visibility', 'visible');
+          ddB.attr('style', 'visibility: visible');
+
+        } else {
+
+          ddB.empty();
+          // ddB.clear();
+          // ddB.clearOptions();
+          // $("select[id='sB" + i + "']").css('visibility', 'hidden');
+          ddB.attr('style', 'visibility: hidden');
+          ddD.empty();
+          ddD.attr('style', 'visibility: hidden');
+        };
+
+        //hide and empty the 3rd column dropdowns
+        iC.val('');
+        iC.attr('style', 'visibility: hidden');
+        iC.prop('required', false);
+
+      });
+    });
+  });
+
+  //handlers for methods column of dropdowns
+  $(function(){
+    $("select[id^='ddB']").each(function(i){
+      $(this).change(function(){
+
+        var iC = $("input[id='iC" + i + "']");
+        var ddD = $("select[id='ddD" + i + "']");
+
+        if($(this).val() == 'other'){
+          iC.val('');
+          iC.attr('style', 'visibility: visible');
+          iC.prop('required', true);
+        } else {
+          iC.val('');
+          iC.attr('style', 'visibility: hidden');
+          iC.prop('required', false);
+        };
 
         var fltr_methods = {{ fltr_methods|safe }}
         var fltr_opts = {{ fltr_opts|safe }}
 
-        //for certain default methods selections, unhide and populate the 4th column
         ddD.empty();
-        if( fltr_methods.includes(ddB.val()) ){
+        if( fltr_methods.includes($(this).val()) ){
           $.each(fltr_opts, function(i, f){
             ddD.append($("<option></option>").attr("value", f).text(f));
           });
@@ -420,139 +479,82 @@ $(function(){
           ddD.attr('style', 'visibility: hidden');
         }
 
-        // ddB.select(newmethods[0]);
-        // $("select[id='sB" + i + "']").css('visibility', 'visible');
-        ddB.attr('style', 'visibility: visible');
-
-      } else {
-
-        ddB.empty();
-        // ddB.clear();
-        // ddB.clearOptions();
-        // $("select[id='sB" + i + "']").css('visibility', 'hidden');
-        ddB.attr('style', 'visibility: hidden');
-        ddD.empty();
-        ddD.attr('style', 'visibility: hidden');
-      };
-
-      //hide and empty the 3rd column dropdowns
-      iC.val('');
-      iC.attr('style', 'visibility: hidden');
-      iC.prop('required', false);
-
+      });
     });
   });
-});
 
-//handlers for methods column of dropdowns
-$(function(){
-  $("select[id^='ddB']").each(function(i){
-    $(this).change(function(){
 
-      var iC = $("input[id='iC" + i + "']");
-      var ddD = $("select[id='ddD" + i + "']");
+  // function populateMethods(){
+  //   var e = document.getElementById('dd1');
+  //   // for(var i = 0; i < columns.length)
+  //   if('TOC' === e.options[0].value){
+  //     console.log("yo")
+  //   }
+  // }
+  // document.getElementById("dd1").addEventListener("click", populateMethods);
 
-      if($(this).val() == 'other'){
-        iC.val('');
-        iC.attr('style', 'visibility: visible');
-        iC.prop('required', true);
-      } else {
-        iC.val('');
-        iC.attr('style', 'visibility: hidden');
-        iC.prop('required', false);
-      };
+  // function populateMethods2(){
+  //   var e = document.getElementById('TOC');
+  //   if('TOC' === e.value){
+  //     console.log("yo2")
+  //   }
+  // }
+  // document.getElementById("TOC").addEventListener("click", populateMethods2);
 
-      var fltr_methods = {{ fltr_methods|safe }}
-      var fltr_opts = {{ fltr_opts|safe }}
+  // $(function(){
+  //   $('#test').click(function() {
+  //     avals = [];
+  //     $("select[id^='ddB']").each(function(){
+  //       if($(this).val() != ""){
+  //         avals.push( $(this).serializeArray()[0] )
+  //       }
+  //     });
+  //     adict = JSON.stringify(avals);
+  //     console.log(adict);
+  //   });
+  // });
 
-      ddD.empty();
-      if( fltr_methods.includes($(this).val()) ){
-        $.each(fltr_opts, function(i, f){
-          ddD.append($("<option></option>").attr("value", f).text(f));
-        });
-        ddD.val(fltr_opts[0]);
-        ddD.attr('style', 'visibility: visible');
-      } else {
-        ddD.attr('style', 'visibility: hidden');
-      }
+  $(function(){
+    $('button[name=columnin]').click(function() {
+
+      //accumulate user-specified variable names
+      cvals = [];
+      $("select[id^='ddA']").each(function(){
+        if($(this).val() != ""){
+          cvals.push( $(this).serializeArray()[0] )
+        }
+      });
+      cdict = JSON.stringify(cvals);
+      $('#choosecolumns input[name=cdict]').val( cdict );
+
+      //accumulate user-specified methods (including write-in methods and addtl info)
+      mvals = []; //will contain methods selections
+      wvals = []; //|| for write_ins
+      avals = []; //|| for addtl
+      $("select[id^='ddB']").each(function(i){
+        if($(this).val() != ""){
+          mvals.push( $(this).serializeArray()[0] );
+          wvals.push( $('#iC' + i).serializeArray()[0] );
+
+          var ddD = $('#ddD' + i)
+          if(ddD.val() != null){
+            avals.push( ddD.serializeArray()[0] );
+          } else if ( $('#ddA' + i).val() != null ){
+            input_colname = $('#ddA' + i).serializeArray()[0]['name']
+            avals.push( {"name":input_colname, "value":""} )
+          } else {}
+        }
+      });
+
+      mdict = JSON.stringify(mvals);
+      $('#choosecolumns input[name=mdict]').val(mdict);
+      wdict = JSON.stringify(wvals);
+      $('#choosecolumns input[name=wdict]').val(wdict);
+      adict = JSON.stringify(avals);
+      $('#choosecolumns input[name=adict]').val(adict);
 
     });
-  });
-});
-
-
-// function populateMethods(){
-//   var e = document.getElementById('dd1');
-//   // for(var i = 0; i < columns.length)
-//   if('TOC' === e.options[0].value){
-//     console.log("yo")
-//   }
-// }
-// document.getElementById("dd1").addEventListener("click", populateMethods);
-
-// function populateMethods2(){
-//   var e = document.getElementById('TOC');
-//   if('TOC' === e.value){
-//     console.log("yo2")
-//   }
-// }
-// document.getElementById("TOC").addEventListener("click", populateMethods2);
-
-// $(function(){
-//   $('#test').click(function() {
-//     avals = [];
-//     $("select[id^='ddB']").each(function(){
-//       if($(this).val() != ""){
-//         avals.push( $(this).serializeArray()[0] )
-//       }
-//     });
-//     adict = JSON.stringify(avals);
-//     console.log(adict);
-//   });
-// });
-
-$(function(){
-  $('button[name=columnin]').click(function() {
-
-    //accumulate user-specified variable names
-    cvals = [];
-    $("select[id^='ddA']").each(function(){
-      if($(this).val() != ""){
-        cvals.push( $(this).serializeArray()[0] )
-      }
-    });
-    cdict = JSON.stringify(cvals);
-    $('#choosecolumns input[name=cdict]').val( cdict );
-
-    //accumulate user-specified methods (including write-in methods and addtl info)
-    mvals = []; //will contain methods selections
-    wvals = []; //|| for write_ins
-    avals = []; //|| for addtl
-    $("select[id^='ddB']").each(function(i){
-      if($(this).val() != ""){
-        mvals.push( $(this).serializeArray()[0] );
-        wvals.push( $('#iC' + i).serializeArray()[0] );
-
-        var ddD = $('#ddD' + i)
-        if(ddD.val() != null){
-          avals.push( ddD.serializeArray()[0] );
-        } else if ( $('#ddA' + i).val() != null ){
-          input_colname = $('#ddA' + i).serializeArray()[0]['name']
-          avals.push( {"name":input_colname, "value":""} )
-        } else {}
-      }
-    });
-
-    mdict = JSON.stringify(mvals);
-    $('#choosecolumns input[name=mdict]').val(mdict);
-    wdict = JSON.stringify(wvals);
-    $('#choosecolumns input[name=wdict]').val(wdict);
-    adict = JSON.stringify(avals);
-    $('#choosecolumns input[name=adict]').val(adict);
-
-  });
-})
-
+  })
 </script>
 
 {% endblock %}
