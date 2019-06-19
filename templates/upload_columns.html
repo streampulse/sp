@@ -226,22 +226,46 @@ V: Derived from other variables (describe)"
             <div style='visibility:hidden; height:34px' id="iB{{m}}" name="{{columns[m]}}">
           {% endif %}
                <div class="checkbox-inline">
-                 <label><input type="checkbox" id="rR{{m}}" name="optcheckbox">R</label>
+                 {% if columns[m] in cdict.keys() and 'R' in ldict[columns[m]] %}
+                   <label><input type="checkbox" id="rR{{m}}" name="optcheckbox" checked>R</label>
+                 {% else %}
+                   <label><input type="checkbox" id="rR{{m}}" name="optcheckbox">R</label>
+                 {% endif %}
                </div>
                <div class="checkbox-inline">
-                 <label><input type="checkbox" id="rC{{m}}" name="optcheckbox">C</label>
+                 {% if columns[m] in cdict.keys() and 'C' in ldict[columns[m]] %}
+                   <label><input type="checkbox" id="rC{{m}}" name="optcheckbox" checked>C</label>
+                 {% else %}
+                   <label><input type="checkbox" id="rC{{m}}" name="optcheckbox">C</label>
+                 {% endif %}
                </div>
                <div class="checkbox-inline">
-                 <label><input type="checkbox" id="rO{{m}}" name="optcheckbox">O</label>
+                 {% if columns[m] in cdict.keys() and 'O' in ldict[columns[m]] %}
+                   <label><input type="checkbox" id="rO{{m}}" name="optcheckbox" checked>O</label>
+                 {% else %}
+                   <label><input type="checkbox" id="rO{{m}}" name="optcheckbox">O</label>
+                 {% endif %}
                </div>
                <div class="checkbox-inline">
-                 <label><input type="checkbox" id="rG{{m}}" name="optcheckbox">G</label>
+                 {% if columns[m] in cdict.keys() and 'G' in ldict[columns[m]] %}
+                   <label><input type="checkbox" id="rG{{m}}" name="optcheckbox" checked>G</label>
+                 {% else %}
+                   <label><input type="checkbox" id="rG{{m}}" name="optcheckbox">G</label>
+                 {% endif %}
                </div>
                <div class="checkbox-inline">
-                 <label><input type="checkbox" id="rD{{m}}" name="optcheckbox">D</label>
+                 {% if columns[m] in cdict.keys() and 'D' in ldict[columns[m]] %}
+                   <label><input type="checkbox" id="rD{{m}}" name="optcheckbox" checked>D</label>
+                 {% else %}
+                   <label><input type="checkbox" id="rD{{m}}" name="optcheckbox">D</label>
+                 {% endif %}
                </div>
                <div class="checkbox-inline">
-                 <label><input type="checkbox" id="rV{{m}}" name="optcheckbox">V</label>
+                 {% if columns[m] in cdict.keys() and 'V' in ldict[columns[m]] %}
+                   <label><input type="checkbox" id="rV{{m}}" name="optcheckbox" checked>V</label>
+                 {% else %}
+                   <label><input type="checkbox" id="rV{{m}}" name="optcheckbox">V</label>
+                 {% endif %}
                </div>
              </div>
           <br>
@@ -254,9 +278,9 @@ V: Derived from other variables (describe)"
       <p><strong>Describe derivation</strong></p>
       <p><strong>of variable</strong></p>
       {% for w in range(columns|length) %}
-        {% if columns[w] == 'V' %}
+        {% if columns[w] in cdict.keys() and ndict[columns[w]] != '' %}
           <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:visible'
-          class="form-control text-left" value={{wdict[columns[w]]}} required>
+          class="form-control text-left" value="{{ndict[columns[w]]}}" required>
           </input>
         {% else %}
           <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:hidden'
@@ -338,6 +362,11 @@ V: Derived from other variables (describe)"
         //and hide/show the other cols accordingly
         if(! ['', 'DateTime_UTC', 'Battery_V'].includes( $(this).val()) ){
           iB.attr('style', 'visibility: visible; height:34px');
+
+          if( $('#rV' + i).prop('checked') == true ){
+            iC.attr('style', 'visibility: visible');
+          }
+          
         } else {
           iB.attr('style', 'visibility: hidden; height:34px');
           iC.attr('style', 'visibility: hidden');

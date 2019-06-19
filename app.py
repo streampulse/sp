@@ -2429,8 +2429,6 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     try:
-        #write level data to metadata file
-
         #add data and mappings to db
         updatedb(xx, fn_to_db, replace)
         updatecdict(region, site, cdict, ldict, ndict)
