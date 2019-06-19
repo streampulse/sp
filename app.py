@@ -209,13 +209,18 @@ class Cols(db.Model):
     site = db.Column(db.String(50))
     rawcol = db.Column(db.String(100))
     dbcol = db.Column(db.String(100))
-    def __init__(self, region, site, rawcol, dbcol):
+    level = db.Column(db.String(50))
+    notes = db.Column(db.String(200))
+    def __init__(self, region, site, rawcol, dbcol, level, notes):
         self.region = region
         self.site = site
         self.rawcol = rawcol
         self.dbcol = dbcol
+        self.level = level
+        self.notes = notes
     def __repr__(self):
-        return '<Cols %r, %r, %r>' % (self.region, self.site, self.dbcol)
+        return '<Cols %r, %r, %r, %r, %r>' % (self.region, self.site, self.dbcol,
+            self.level, self.notes)
 
 class Grabcols(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -2032,17 +2037,21 @@ def cancelcolumns(): #only used when cancelling series_upload
 def datapolicy():
     return render_template("datapolicy.html")
 
-def updatecdict(region, site, cdict):
+def updatecdict(region, site, cdict, ldict, ndict):
+    # region='AZ'; site='WB'; c='Depth_m'
+
     rawcols = pd.read_sql("select * from cols where region='" + region +\
         "' and site ='" + site + "'", db.engine)
     rawcols = rawcols['rawcol'].tolist()
     for c in cdict.keys():
         if c in rawcols: # update
-            cx = Cols.query.filter_by(rawcol=c).first()
-            cx.dbcol = cdict[c] # assign column to value
+            cx = Cols.query.filter_by(region=region, site=site, rawcol=c).first()
+            cx.dbcol = cdict[c]
+            cx.level = ldict[c]
+            cx.notes = ndict[c]
             # db.session.commit()
         else: # add
-            cx = Cols(region, site, c, cdict[c])
+            cx = Cols(region, site, c, cdict[c], ldict[c], ndict[c])
             db.session.add(cx)
             # db.session.commit()
 
@@ -2282,9 +2291,13 @@ def sanitize_input_email(input):
 def confirmcolumns():
 
     #get combined inputs (tmpfile), varname mappings (cdict), and filenames
-    cdict = json.loads(request.form['cdict'])
     tmpfile = request.form['tmpfile']
+    cdict = json.loads(request.form['cdict'])
     cdict = dict([(r['name'], r['value']) for r in cdict])
+    ldict = json.loads(request.form['ldict'])
+    ldict = dict(zip(cdict.keys(), ldict))
+    ndict = json.loads(request.form['ndict'])
+    ndict = dict(zip(cdict.keys(), ndict))
     fnlong = session.get('fnlong')
     filenamesNoV = session.get('filenamesNoV')
 
@@ -2416,9 +2429,11 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     try:
+        #write level data to metadata file
+
         #add data and mappings to db
         updatedb(xx, fn_to_db, replace)
-        updatecdict(region, site, cdict)
+        updatecdict(region, site, cdict, ldict, ndict)
 
     except Exception as e:
         try:

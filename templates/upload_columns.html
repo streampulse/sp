@@ -138,7 +138,7 @@
         <strong>Please double check all fields below</strong>, even if they were
         populated automatically!
       </p>
-      <br>
+      <br><br><br>
     </div>
   </div>
 
@@ -199,7 +199,7 @@ UTC. That column's name may have been changed here."
       {% endfor %}
     </div>
 
-    <!-- <input type="hidden" name="mdict" value=""> -->
+    <input type="hidden" name="ldict" value="">
     <div class='col-md-4 text-center'>
       <br>
       <div data-toggle='' title="R: Raw sensor data
@@ -248,7 +248,7 @@ V: Derived from other variables (describe)"
       {% endfor %}
     </div>
 
-    <!-- <input type="hidden" name="wdict" value=""> -->
+    <input type="hidden" name="ndict" value="">
     <div class='col-md-4 text-center'>
       <br>
       <p><strong>Describe derivation</strong></p>
@@ -373,7 +373,7 @@ V: Derived from other variables (describe)"
       cvals = [];
       lvals = []; //will contain level specifications
       nvals = []; //will contain notes
-      $("select[id^='ddA']").each(function(){
+      $("select[id^='ddA']").each(function(i){
         if($(this).val() != ""){
           cvals.push( $(this).serializeArray()[0] )
 
