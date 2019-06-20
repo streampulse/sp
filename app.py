@@ -2425,11 +2425,12 @@ def confirmcolumns():
     try:
 
         #add data and mappings to db
-        updatedb(xx, fn_to_db, replace)
         updatecdict(region, site, cdict, ldict, ndict)
+        db.session.commit()
+        updatedb(xx, fn_to_db, replace)
 
         # make a new text file with the metadata
-        lvltxt = '\n\n--- Data level information ---\n\n' +\
+        lvltxt = '\n\n--- Data status codes ---\n\n' +\
             'Data level codes:\n' +\
             '\tR: Raw sensor data\n' +\
             '\tC: Calibrated after download from sensor\n' +\
@@ -2437,8 +2438,7 @@ def confirmcolumns():
             '\tG: Gaps imputed\n' +\
             '\tD: Drift corrected\n' +\
             '\tV: Derived from other variables\n' +\
-            '\t-: No information\n\n---\n\n' +\
-            'VARIABLE: CODE(S); DERIVATION NOTES (if applicable)\n\n'
+            '\t-: No information\n\n--- Data status by variable ---\n\n'
 
         metafilepath = os.path.join(app.config['META_FOLDER'],
             region + "_" + site + "_metadata.txt")
@@ -2446,27 +2446,25 @@ def confirmcolumns():
             region + "' and site = '" + site + "';", db.engine)
         leveldata = leveldata.loc[~leveldata.dbcol.isin(['DateTime_UTC',
             'Battery_V']), :]
+        leveldata.columns = ['Variable', 'StatusCodes', 'VariableDerivation']
         leveldata = leveldata.mask(leveldata == '', '-')
-        lvltxt2 = leveldata.dbcol + ': ' + leveldata.level + '; ' + leveldata.notes
-        lvltxt2 = '\n'.join(lvltxt2.tolist()) + '\n'
-        ##########################might have to convert metastring to utf here
-        metastring = metastring + lvltxt + lvltxt2
+        lvltxt2 = leveldata.to_string() + '\n'
+        lvltxt = lvltxt + lvltxt2
 
         if request.form['existing'] == "no":
             metastring = request.form['metadata']
+            metastring = metastring + lvltxt
             with open(metafilepath, 'a') as metafile:
                 metafile.write(metastring.encode('utf-8'))
         else:
             #update level data in metadata files
-            region = 'AB'; site = 'AAAA'
             if os.path.isfile(metafilepath):
-                with open(metafilepath, 'rw') as m:
+                with open(metafilepath, 'r') as m:
                     metatext = m.read()
-
-
-
-            # if os.path.isfile(mdfile):
-            #     shutil.copy2(mdfile, tmp)
+                meta1 = metatext.split('--- Data status by variable ---')[0]
+                lvltxt = meta1 + '--- Data status by variable ---\n\n' + lvltxt2
+                with open(metafilepath, 'w') as m:
+                    m.write(lvltxt)
 
     except Exception as e:
         try:
