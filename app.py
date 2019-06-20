@@ -2417,22 +2417,45 @@ def confirmcolumns():
         updatecdict(region, site, cdict)
 
     except Exception as e:
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-        except:
-            pass
+
         tb = traceback.format_exc()
+        df_head = xx.head(2).to_string()
+        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
+        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
+
+        if request.form['existing'] == "no":
+            error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
+                request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
+                '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
+                request.form['embargo'] + '\ncontactname: ' +\
+                request.form['contactName'] + '\ncontactemail: ' +\
+                request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
+                '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+                replace + '\n\n'
+        else:
+            error_details = '\n\nfn_to_db: ' + ', '.join(fn_to_db) +\
+                '\nreplace: ' + replace + '\n\n'
+
         if replace != 'no':
-            log_exception('E009b', tb)
+            errno = 'E009b'
             msg = Markup("Error 009b. Try reducing the size of your revised " +\
                 "file by removing rows or columns that don't require revision.")
         else:
-            log_exception('E009a', tb)
+            errno = 'E009a'
             msg = Markup('Error 009a. This is a particularly nasty error. Please ' +\
                 '<a href="mailto:michael.vlah@duke.edu"' +\
                 ' class="alert-link">email StreamPULSE development</a> ' +\
                 'with the error number and a copy of the file(s) you tried to upload.')
-        db.session.rollback()
+
+        log_exception(errno, tb + error_details + df_head + log_rawcols + log_dbcols)
+
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+            for f in fn_to_db:
+                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
+            db.session.rollback()
+        except:
+            pass
         flash(msg, 'alert-danger')
 
         return redirect(url_for('series_upload'))
