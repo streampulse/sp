@@ -2356,6 +2356,7 @@ def confirmcolumns():
         region, site = tmpfile.split("_")[:-1]
 
         if request.form['existing'] == "no":
+
             # add new site to database
             usgss = None if request.form['usgs'] == "" else request.form['usgs']
             sx = Site(region=region, site=site, name=request.form['sitename'],
@@ -2368,13 +2369,6 @@ def confirmcolumns():
 
             #give uploading user access to this site
             add_site_permission(current_user, region, site)
-
-            # make a new text file with the metadata
-            metastring = request.form['metadata']
-            metafilepath = os.path.join(app.config['META_FOLDER'],
-                region + "_" + site + "_metadata.txt")
-            with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring.encode('utf-8'))
 
         #format df for database entry
         xx = xx.set_index(["DateTime_UTC", "upload_id"])
@@ -2429,9 +2423,50 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     try:
+
         #add data and mappings to db
         updatedb(xx, fn_to_db, replace)
         updatecdict(region, site, cdict, ldict, ndict)
+
+        # make a new text file with the metadata
+        lvltxt = '\n\n--- Data level information ---\n\n' +\
+            'Data level codes:\n' +\
+            '\tR: Raw sensor data\n' +\
+            '\tC: Calibrated after download from sensor\n' +\
+            '\tO: Outliers/anomalies removed\n' +\
+            '\tG: Gaps imputed\n' +\
+            '\tD: Drift corrected\n' +\
+            '\tV: Derived from other variables\n' +\
+            '\t-: No information\n\n---\n\n' +\
+            'VARIABLE: CODE(S); DERIVATION NOTES (if applicable)\n\n'
+
+        metafilepath = os.path.join(app.config['META_FOLDER'],
+            region + "_" + site + "_metadata.txt")
+        leveldata = pd.read_sql("select dbcol, level, notes from cols where region = '" +\
+            region + "' and site = '" + site + "';", db.engine)
+        leveldata = leveldata.loc[~leveldata.dbcol.isin(['DateTime_UTC',
+            'Battery_V']), :]
+        leveldata = leveldata.mask(leveldata == '', '-')
+        lvltxt2 = leveldata.dbcol + ': ' + leveldata.level + '; ' + leveldata.notes
+        lvltxt2 = '\n'.join(lvltxt2.tolist()) + '\n'
+        ##########################might have to convert metastring to utf here
+        metastring = metastring + lvltxt + lvltxt2
+
+        if request.form['existing'] == "no":
+            metastring = request.form['metadata']
+            with open(metafilepath, 'a') as metafile:
+                metafile.write(metastring.encode('utf-8'))
+        else:
+            #update level data in metadata files
+            region = 'AB'; site = 'AAAA'
+            if os.path.isfile(metafilepath):
+                with open(metafilepath, 'rw') as m:
+                    metatext = m.read()
+
+
+
+            # if os.path.isfile(mdfile):
+            #     shutil.copy2(mdfile, tmp)
 
     except Exception as e:
         try:
