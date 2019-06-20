@@ -2451,8 +2451,7 @@ def confirmcolumns():
 
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-            for f in fn_to_db:
-                os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
+            [os.remove(f) for f in fnlong]
             db.session.rollback()
         except:
             pass
