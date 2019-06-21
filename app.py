@@ -2461,10 +2461,11 @@ def confirmcolumns():
             if os.path.isfile(metafilepath):
                 with open(metafilepath, 'r') as m:
                     metatext = m.read()
-                meta1 = metatext.split('--- Data status by variable ---')[0]
-                lvltxt = meta1 + '--- Data status by variable ---\n\n' + lvltxt2
-                with open(metafilepath, 'w') as m:
-                    m.write(lvltxt)
+                meta1 = metatext.split('--- Data status codes ---')[0]
+                lvltxt = meta1 + lvltxt
+
+            with open(metafilepath, 'w') as m:
+                m.write(lvltxt)
 
     except Exception as e:
         try:
