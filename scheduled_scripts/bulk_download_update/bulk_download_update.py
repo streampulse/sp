@@ -8,7 +8,7 @@ import re
 import zipfile
 
 app_dir = '/home/aaron/sp'
-#app_dir = '/home/mike/git/streampulse/server_copy/sp'
+# app_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, app_dir)
 os.chdir(app_dir)
 import config as cfg
@@ -191,14 +191,16 @@ db.engine.execute("select 'region','site','year','solar_date','GPP'," +\
     " into outfile '/var/lib/mysql-files/all_daily_model_results.csv' " +\
     "fields terminated by ',' enclosed by '\"' lines terminated by '\\n';")
 
-# #collect all streampulse+neon model outputs and zip
-# modeloutfolder = app.config['RESULTS_FOLDER']
-# writefiles = zipfile_listdir_recursive(modeloutfolder)
-# rel_wfs = [re.match(modeloutfolder + '/(.*)', f).group(1) for f in writefiles]
-# zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] + '/all_sp_neon_model_outputs.zip', 'w')
-# for i in xrange(len(writefiles)):
-#     zf.write(writefiles[i], 'all_sp_neon_model_outputs/' + rel_wfs[i])
-# zf.close()
+#collect all streampulse model outputs and zip
+modeloutfolder = app.config['RESULTS_FOLDER']
+writefiles = zipfile_listdir_recursive(modeloutfolder)
+writefiles = [x for x in writefiles if re.search('(?:predictions|modOut)_((?:.*))_[0-9]{4}.rds',
+    x).group(1) not in embargoed_sites]
+rel_wfs = [re.match(modeloutfolder + '/(.*)', f).group(1) for f in writefiles]
+zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] + '/all_sp_model_objects.zip', 'w')
+for i in xrange(len(writefiles)):
+    zf.write(writefiles[i], 'all_sp_model_objects/' + rel_wfs[i])
+zf.close()
 
-#would then do the same for powell model outputs
+#would then do the same for neon and powell model outputs
 #...

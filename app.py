@@ -4137,6 +4137,12 @@ def alldailyres_download():
     return send_from_directory('../bulk_download_files',
         'all_daily_model_results.csv.zip', as_attachment=True)
 
+@app.route('/_allspmodelobj_download', methods=['POST'])
+def allspmodelobj_download():
+
+    return send_from_directory('../bulk_download_files',
+        'all_sp_model_objects.zip', as_attachment=True)
+
 # @app.route('/_sp_logo_download', methods=['POST'])
 # def sp_logo_download():
 #

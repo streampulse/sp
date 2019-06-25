@@ -59,8 +59,14 @@
 <div class="container">
   <div class="row">
     <div class="col-md-12 text-left">
-        <input id='export' type='button' class="btn btn-success btn-sm"
-        value='Export table as CSV'>
+        <!-- <input id='export' type='button' class="btn btn-success btn-sm"
+        value='Export table as CSV'> -->
+        <form id='export' action="/_allbasicsite_download" method="POST" class="form-horizontal">
+          <button id="allbasicsite" class="btn btn-sm btn-success">
+            Export table data as CSV
+          </button>
+        </form>
+        <br>
     </div>
   </div>
 </div>
@@ -114,10 +120,10 @@
     licenseKey: 'non-commercial-and-evaluation'
   });
 
-  $('#export').click(function(){
-    const exportPlugin = hot.getPlugin('exportFile');
-    exportPlugin.downloadFile('csv', {filename: 'streampulse_sitedata'});
-  })
+  // $('#export').click(function(){
+  //   const exportPlugin = hot.getPlugin('exportFile');
+  //   exportPlugin.downloadFile('csv', {filename: 'streampulse_sitedata'});
+  // })
 
 </script>
 
