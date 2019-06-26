@@ -202,12 +202,11 @@ UTC. That column's name may have been changed here."
     <input type="hidden" name="ldict" value="">
     <div class='col-md-4 text-center'>
       <br>
-      <div data-toggle='' title="R: Raw sensor data
-C: Calibrated after download from sensor
+      <div data-toggle='' title="R: Raw (directly from sensor/logger)
 O: Outliers/anomalies removed
 G: Gaps imputed
-D: Drift corrected
-V: Derived from other variables (describe)"
+C: Corrected for drift (due to biofouling, calibration, etc.)
+D: Derived from other variables (describe)"
         data-placement='right' style="display:inline-block; vertical-align=middle">
         <i class="fa fa-question-circle-o" style="color: blue"></i>
       </div>
@@ -233,13 +232,6 @@ V: Derived from other variables (describe)"
                  {% endif %}
                </div>
                <div class="checkbox-inline">
-                 {% if columns[m] in cdict.keys() and 'C' in ldict[columns[m]] %}
-                   <label><input type="checkbox" id="rC{{m}}" name="optcheckbox" checked>C</label>
-                 {% else %}
-                   <label><input type="checkbox" id="rC{{m}}" name="optcheckbox">C</label>
-                 {% endif %}
-               </div>
-               <div class="checkbox-inline">
                  {% if columns[m] in cdict.keys() and 'O' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rO{{m}}" name="optcheckbox" checked>O</label>
                  {% else %}
@@ -254,19 +246,26 @@ V: Derived from other variables (describe)"
                  {% endif %}
                </div>
                <div class="checkbox-inline">
+                 {% if columns[m] in cdict.keys() and 'C' in ldict[columns[m]] %}
+                   <label><input type="checkbox" id="rC{{m}}" name="optcheckbox" checked>C</label>
+                 {% else %}
+                   <label><input type="checkbox" id="rC{{m}}" name="optcheckbox">C</label>
+                 {% endif %}
+               </div>
+               <div class="checkbox-inline">
                  {% if columns[m] in cdict.keys() and 'D' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rD{{m}}" name="optcheckbox" checked>D</label>
                  {% else %}
                    <label><input type="checkbox" id="rD{{m}}" name="optcheckbox">D</label>
                  {% endif %}
                </div>
-               <div class="checkbox-inline">
+               <!-- <div class="checkbox-inline">
                  {% if columns[m] in cdict.keys() and 'V' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rV{{m}}" name="optcheckbox" checked>V</label>
                  {% else %}
                    <label><input type="checkbox" id="rV{{m}}" name="optcheckbox">V</label>
                  {% endif %}
-               </div>
+               </div> -->
              </div>
           <br>
       {% endfor %}
@@ -363,10 +362,10 @@ V: Derived from other variables (describe)"
         if(! ['', 'DateTime_UTC', 'Battery_V'].includes( $(this).val()) ){
           iB.attr('style', 'visibility: visible; height:34px');
 
-          if( $('#rV' + i).prop('checked') == true ){
+          if( $('#rD' + i).prop('checked') == true ){
             iC.attr('style', 'visibility: visible');
           }
-          
+
         } else {
           iB.attr('style', 'visibility: hidden; height:34px');
           iC.attr('style', 'visibility: hidden');
@@ -378,7 +377,7 @@ V: Derived from other variables (describe)"
 
   //handlers for data level column of dropdowns
   $(function(){
-    $("input[id^='rV']").each(function(i){
+    $("input[id^='rD']").each(function(i){
       $(this).change(function(){
 
         var iC = $("input[id='iC" + i + "']");
@@ -407,13 +406,12 @@ V: Derived from other variables (describe)"
           cvals.push( $(this).serializeArray()[0] )
 
           var rR = $('#rR' + i).serializeArray()[0] != null ? 'R' : ''
-          var rC = $('#rC' + i).serializeArray()[0] != null ? 'C' : ''
           var rO = $('#rO' + i).serializeArray()[0] != null ? 'O' : ''
           var rG = $('#rG' + i).serializeArray()[0] != null ? 'G' : ''
+          var rC = $('#rC' + i).serializeArray()[0] != null ? 'C' : ''
           var rD = $('#rD' + i).serializeArray()[0] != null ? 'D' : ''
-          var rV = $('#rV' + i).serializeArray()[0] != null ? 'V' : ''
 
-          lvals.push( rR + rC + rO + rG + rD + rV );
+          lvals.push( rR + rO + rG + rC + rD );
           nvals.push( $('#iC' + i).serializeArray()[0].value );
         }
       });

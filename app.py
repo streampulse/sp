@@ -100,6 +100,29 @@ class Data(db.Model):
         return '<Data %r, %r, %r, %r, %r>' % (self.region, self.site,
         self.DateTime_UTC, self.variable, self.upload_id)
 
+class Data0(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(10))
+    site = db.Column(db.String(50))
+    DateTime_UTC = db.Column(db.DateTime)
+    variable = db.Column(db.String(50))
+    value = db.Column(db.Float)
+    flag = db.Column(db.Integer)
+    upload_id = db.Column(db.Integer)
+
+    def __init__(self, region, site, DateTime_UTC, variable, value, flag, upid):
+        self.region = region
+        self.site = site
+        self.DateTime_UTC = DateTime_UTC
+        self.variable = variable
+        self.value = value
+        self.flag = flag
+        self.upload_id = upid
+
+    def __repr__(self):
+        return '<Data0 %r, %r, %r, %r, %r>' % (self.region, self.site,
+        self.DateTime_UTC, self.variable, self.upload_id)
+
 class Grabdata(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     region = db.Column(db.String(10))
@@ -1294,6 +1317,11 @@ def download_bulk():
     #all files must be present or an error will arise during rendering
     return render_template('download_bulk.html', bulk_file_sizes=bulk_dict)
 
+@app.route('/pipeline1')
+def pipeline1():
+
+    return render_template('pipeline1.html')
+
 @app.route('/viz_choice')
 def viz_choice():
     return render_template('viz_choice.html')
@@ -2432,12 +2460,11 @@ def confirmcolumns():
         # make a new text file with the metadata
         lvltxt = '\n\n--- Data status codes ---\n\n' +\
             'Data level codes:\n' +\
-            '\tR: Raw sensor data\n' +\
-            '\tC: Calibrated after download from sensor\n' +\
+            '\tR: Raw (directly from sensor/logger)\n' +\
             '\tO: Outliers/anomalies removed\n' +\
             '\tG: Gaps imputed\n' +\
-            '\tD: Drift corrected\n' +\
-            '\tV: Derived from other variables\n' +\
+            '\tC: Corrected for drift (due to biofouling, calibration, etc.)\n' +\
+            '\tD: Derived from other variables\n' +\
             '\t-: No information\n\n--- Data status by variable ---\n\n'
 
         metafilepath = os.path.join(app.config['META_FOLDER'],
@@ -2496,7 +2523,8 @@ def confirmcolumns():
     flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
         'alert-success')
 
-    return redirect(url_for('series_upload'))
+    # return redirect(url_for('series_upload'))
+    return redirect(url_for('pipeline1'))
 
 @app.route("/grab_upload_confirm", methods=["POST"])
 def grab_confirmcolumns():
