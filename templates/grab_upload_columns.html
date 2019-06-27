@@ -49,6 +49,15 @@
           </div>
           <br>
           <div class="input-group input-group-sm">
+            <span class="input-group-addon">Geodetic datum</span>
+            <input type="text" class="form-control" name="datum" placeholder="e.g. WGS 84"
+            aria-describedby="datum" maxlength="50" required>
+          </div>
+          <p class='text-muted text-danger'>
+            Please replace any underscores with spaces.
+          </p>
+          <br>
+          <div class="input-group input-group-sm">
             <span class="input-group-addon">Associated USGS gauge ID (optional)</span>
             <input type="text" class="form-control" name="usgs{{i}}"
               placeholder="e.g. 02085000"

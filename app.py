@@ -205,18 +205,20 @@ class Site(db.Model):
     name = db.Column(db.String(100))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
+    datum = db.Column(db.String(50))
     usgs = db.Column(db.String(20))
     addDate = db.Column(db.DateTime)
     embargo = db.Column(db.Integer)
     by = db.Column(db.Integer)
     contact = db.Column(db.String(50))
     contactEmail = db.Column(db.String(255))
-    def __init__(self, region, site, name, latitude, longitude, usgs, addDate, embargo, by, contact, contactEmail):
+    def __init__(self, region, site, name, latitude, longitude, datum, usgs, addDate, embargo, by, contact, contactEmail):
         self.region = region
         self.site = site
         self.name = name
         self.latitude = latitude
         self.longitude = longitude
+        self.datum = datum
         self.usgs = usgs
         self.addDate = addDate
         self.embargo = embargo
@@ -834,7 +836,7 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
     # vvv is a list of variable codes
     #00060 is cfs, discharge; 00065 is feet, height
     xs = pd.read_sql('select id, region, site, name, latitude, ' +\
-        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
         'from site', db.engine)
     xs['regionsite'] = xs["region"].map(str) + "_" + xs["site"]
     # for each region site...
@@ -1181,7 +1183,7 @@ def sitelist():
 
     #pull in all site data
     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
-        'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
+        'Name, latitude as Lat, longitude as Lon, datum as `Geodetic datum`, contact as Contact, ' +\
         'contactEmail as Email, usgs as `USGS gage`, `by`,' +\
         'embargo as `Embargo (days)`, addDate, ' +\
         'firstRecord as `First record`, lastRecord as `Last record`,' +\
@@ -1252,7 +1254,7 @@ def sitelist():
     # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'],
     #     axis=1)
     sitedata = sitedata.drop(['addDate'], axis=1)
-    sitedata = sitedata[['Region', 'Site', 'Name', 'Lat', 'Lon', 'Source',
+    sitedata = sitedata[['Region', 'Site', 'Name', 'Lat', 'Lon', 'Geodetic datum', 'Source',
         'Contact', 'Email', 'Embargo (days)', 'USGS gage', 'First record',
         'Last record', 'Variables']]
     # neworder = list(sitedata.columns)
@@ -2339,7 +2341,7 @@ def confirmcolumns():
             illegal_input = 'contact email'
 
         input_dict = {'contactName':'contact name', 'lat':'latitude',
-            'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
+            'lng':'longitude', 'datum':'datum', 'sitename':'site name', 'usgs':'USGS gage ID'}
         if not illegal_input:
 
             for i in input_dict.keys():
@@ -2389,6 +2391,7 @@ def confirmcolumns():
             usgss = None if request.form['usgs'] == "" else request.form['usgs']
             sx = Site(region=region, site=site, name=request.form['sitename'],
                 latitude=request.form['lat'], longitude=request.form['lng'],
+                datum=request.form['datum'],
                 usgs=usgss, addDate=datetime.utcnow(),
                 embargo=request.form['embargo'],
                 by=current_user.get_id(), contact=request.form['contactName'],
@@ -2545,7 +2548,7 @@ def grab_confirmcolumns():
 
         #sanitize inputs
         input_dict = {'contactName':'contact name', 'lat':'latitude',
-            'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
+            'lng':'longitude', 'datum':'datum', 'sitename':'site name', 'usgs':'USGS gage ID'}
         illegal_input = None
 
         for i in xrange(int(request.form['newlen'])):
@@ -2631,6 +2634,7 @@ def grab_confirmcolumns():
                     name=request.form['sitename' + str(i)],
                     latitude=request.form['lat' + str(i)],
                     longitude=request.form['lng' + str(i)],
+                    datum=request.form['datum' + str(i)],
                     usgs=usgss, addDate=datetime.utcnow(),
                     embargo=request.form['embargo' + str(i)],
                     contact=request.form['contactName' + str(i)],
@@ -2940,7 +2944,7 @@ def getcsv():
             shutil.copy2(mdfile, tmp)
 
     #write site data to CSV in temp dir
-    sitequery = "select region, site, name, latitude, longitude, usgs" +\
+    sitequery = "select region, site, name, latitude, longitude, datum, usgs" +\
         " as usgsGage" +\
         ", contact, contactEmail from site where concat(region, '_'," +\
         " site) in ('" + "','".join(sitenm) + "');"
@@ -3707,7 +3711,7 @@ def api():
     qs2 = "or ".join(ss2)
 
     meta = pd.read_sql("select region, site, name, latitude as lat, " +\
-        "longitude as lon, usgs as usgsid from site where " + qs, db.engine)
+        "longitude as lon, datum, usgs as usgsid from site where " + qs, db.engine)
 
     sqlq = "select " + src + ".region, " + src + ".site, " + src + ".DateTime_UTC, " +\
         src + ".variable, " + src + ".value, flag.flag as flagtype, flag.comment as " +\
@@ -3842,7 +3846,7 @@ def query_available_data():
     #only region supplied = requesting sites
     if region is not None and region != 'all' and site is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site where region='" + region + "';",
             db.engine)
         if list(r.region):
@@ -3855,7 +3859,7 @@ def query_available_data():
     #only region supplied and region is 'all' = requesting sites
     if region is not None and region == 'all':
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site;", db.engine)
         r = clean_query_response(r)
         return jsonify(sites=r.to_dict(orient='records'))
@@ -3867,7 +3871,7 @@ def query_available_data():
     #only variable supplied = requesting sites
     if variable is not None and startDate is None and region is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site where " +\
             "variableList like '%%" + variable + "%%';", db.engine)
         if list(r.region):
@@ -3899,7 +3903,7 @@ def query_available_data():
     #only dates supplied = requesting sites
     if startDate is not None and region is None and variable is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site where " +\
             "firstRecord <='" + startDate + "' and lastRecord >='" +\
             endDate + "';", db.engine)
@@ -4402,13 +4406,13 @@ def site_map():
     core_sites = list(core_sites['REGIONID'] + '_' + core_sites['SITEID'])
 
     site_data = pd.read_sql('select id, region, site, name, latitude, ' +\
-        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
         'from site where `by` != -902;', db.engine)
     site_data.addDate = site_data.addDate.astype('str')
     site_dict = site_data.to_dict('records')
 
     powell_data = pd.read_sql('select id, region, site, name, latitude, ' +\
-        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
         'from site where `by` = -902;', db.engine)
     powell_data.addDate = powell_data.addDate.astype('str')
     powell_dict = powell_data.to_dict('records')
