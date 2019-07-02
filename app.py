@@ -468,8 +468,8 @@ variables = ['DateTime_UTC', 'DO_mgL', 'DOSecondary_mgL', 'satDO_mgL', 'DOsat_pc
 'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV',
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
 'SpecCond_uScm', 'CO2_ppm', 'Light_lux', 'Light_PAR', 'underwater_PAR', 'Light2_lux',
-'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
-'Light5_lux', 'Light5_PAR', 'Battery_V', 'ChlorophyllA_ugL', 'underwater_lux', 'FDOM_mV']
+'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR', 'underwater_lux', 'benthic_lux',
+'Light5_lux', 'Light5_PAR', 'Battery_V', 'ChlorophyllA_ugL', 'FDOM_mV']
 # O2GasTransferVelocity_ms
 
 o = 'other'
