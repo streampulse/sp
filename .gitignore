@@ -5,6 +5,7 @@ static/img/*
 static/metadata/*
 static/uploads/*
 static/sitelist.csv
+static/sitelist_pseudo_core.csv
 spenv/*
 config*
 wsgi*
