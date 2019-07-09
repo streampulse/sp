@@ -465,11 +465,12 @@ pseudo_core = pseudo_core.set_index('SITECD')
 #DateTime_UTC must remain in the first position
 variables = ['DateTime_UTC', 'DO_mgL', 'DOSecondary_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 'WaterTemp2_C', 'WaterTemp3_C',
 'WaterPres_kPa', 'AirTemp_C', 'AirPres_kPa', 'Level_m', 'Depth_m',
-'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV',
+'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV', 'FDOM_mV',
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
-'SpecCond_uScm', 'CO2_ppm', 'Light_lux', 'Light_PAR', 'underwater_PAR', 'Light2_lux',
-'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR', 'underwater_lux', 'benthic_lux',
-'Light5_lux', 'Light5_PAR', 'Battery_V', 'ChlorophyllA_ugL', 'FDOM_mV']
+'SpecCond_uScm', 'CO2_ppm', 'ChlorophyllA_ugL', 'Light_lux', 'Light_PAR', 'Light2_lux',
+'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
+'Light5_lux', 'Light5_PAR', 'underwater_lux', 'underwater_PAR', 'benthic_lux',
+'benthic_PAR', 'Battery_V']
 # O2GasTransferVelocity_ms
 
 o = 'other'
@@ -553,23 +554,26 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 def read_hobo(f):
+
+    # f = '~/Downloads/AA_BB_2019-04-16_HC.csv'
+    # xt=pd.read_csv(f, skiprows=[0])
     xt = pd.read_csv(f, skiprows=[0])
     cols = [x for x in xt.columns.tolist() if re.match("^#$|Coupler|File|" +\
         "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired|Sensor" +\
         "|Missing|New", x) is None]
     xt = xt[cols]
-    m = [re.sub(" ","",x.split(",")[0]) for x in xt.columns.tolist()]
+    m = [re.sub(" ", "", x.split(",")[0]) for x in xt.columns.tolist()]
     u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
-    tzoff = re.sub("GMT(.[0-9]{2}):([0-9]{2})","\\1",u[0])
+    tzoff = re.sub("GMT(.[0-9]{2}):([0-9]{2})", "\\1", u[0])
     logger_regex = ".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}" +\
         "(?:[0-9]+)?)(?:v[0-9]+)?\\.\\w{3}"
     ll = re.sub(logger_regex, "\\1", f)
     # ll = f.split("_")[3].split(".")[0].split("v")[0]
-    inum = re.sub("[A-Z]{2}","",ll)
-    uu = [re.sub("\\ |\\/|°","",x) for x in u[1:]]
-    uu = [re.sub(r'[^\x00-\x7f]',r'', x) for x in uu] # get rid of unicode
-    newcols = ['DateTime']+[nme+unit for unit,nme in zip(uu,m[1:])]
-    xt = xt.rename(columns=dict(zip(xt.columns.tolist(),newcols)))
+    inum = re.sub("[A-Z]{2}", "", ll)
+    uu = [re.sub("\\ |\\/|°", "", x) for x in u[1:]]
+    uu = [re.sub(r'[^\x00-\x7f]', r'', x) for x in uu] # get rid of unicode
+    newcols = ['DateTime'] + [nme + unit for unit, nme in zip(uu, m[1:])]
+    xt = xt.rename(columns=dict(zip(xt.columns.tolist(), newcols)))
     xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
     # xt = xt.rename(columns={'HWAbsPreskPa':'WaterPres_kPa','HWTempC':'WaterTemp_C','HAAbsPreskPa':'AirPres_kPa','HATempC':'AirTemp_C',})
@@ -581,9 +585,11 @@ def read_hobo(f):
         xt = xt.rename(columns={'TempC':'DOLoggerTemp_C'})
     if "_HP" in f:
         xt = xt.rename(columns={'TempC':'LightLoggerTemp_C'})
-    xt.columns = [cc+inum for cc in xt.columns]
+    if "_HC" in f:
+        xt = xt.rename(columns={'TempC':'CondLoggerTemp_C'})
+    xt.columns = [cc + inum for cc in xt.columns]
     cols = xt.columns.tolist()
-    xx = xt[cols[-1:]+cols[1:-1]]
+    xx = xt[cols[-1:] + cols[1:-1]]
     return xx
 
 def read_csci(f, gmtoff):
@@ -1455,7 +1461,7 @@ def series_upload():
             if logger: #if there is a LOGGERID format
                 logger = logger[1:len(logger)] #remove underscore
 
-                if logger not in ['CS','HD','HW','HA','HP','EM','XX']:
+                if logger not in ['CS','HD','HW','HA','HP','HC','EM','XX']:
                     flash('"' + str(logger) + '" is an invalid LOGGERID. ' +\
                         'See formatting instructions.', 'alert-danger')
                     [os.remove(f) for f in fnlong]
