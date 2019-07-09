@@ -38,6 +38,10 @@ import markdown
 import time
 import traceback
 import regex
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -54,6 +58,7 @@ app.config['REACH_CHAR_FOLDER'] = cfg.REACH_CHAR_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
 app.config['BULK_DNLD_FOLDER'] = cfg.BULK_DNLD_FOLDER
 app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
+app.config['ERRFILE_FOLDER'] = cfg.ERRFILE_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 700 * 1024 * 1024 # originally set to 16 MB; now 700
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
 #app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -920,6 +925,32 @@ def zipfile_listdir_recursive(dir_name):
 
     return fileList
 
+def email_msg(txt, subj, recipient):
+
+    gmail_pw = cfg.GRDO_GMAIL_PW
+
+    cur_user = str(current_user.get_id()) if current_user else 'anonymous'
+    deets = datetime.now().strftime('%Y-%m-%d %H:%M:%S') +\
+        '; userID=' + cur_user + '\n'
+        # ';\ntraceback:\n ' + traceback.__str__() + '\n\n')
+    txt = deets + txt
+
+    #compose email
+    msg = MIMEMultipart()
+    msg.attach(MIMEText(txt))
+    msg['Subject'] = subj
+    msg['From'] = 'grdouser@gmail.com'
+    msg['To'] = recipient
+
+    #log in to gmail, send email
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.ehlo()
+    server.starttls()
+    server.login("grdouser@gmail.com", gmail_pw)
+    server.sendmail('grdouser@gmail.com', [recipient],
+        msg.as_string())
+    server.quit()
+
 # def send_email(to, subject, template):
 #     mail.send_message(subject, recipients=[to], html=template)
 
@@ -1000,10 +1031,6 @@ def lostpass():
     reset_url = url_for('lostpass_reset', token=token, _external=True)
 
     try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.application import MIMEApplication
-        from email.mime.multipart import MIMEMultipart
         gmail_pw = cfg.GRDO_GMAIL_PW
 
         #compose email
@@ -1477,11 +1504,10 @@ def series_upload():
                 x = sp_in(fnlong, gmtoff)
             else:
                 if len(fnlong) > 1:
-                    flash('At least one of your files uses the legacy file ' +\
-                        'naming convention. You may use this convention, but ' +\
-                        'then please merge files prior to upload. You may want ' +\
-                        'to follow the updated upload instructions instead.',
-                        'alert-danger')
+                    flash('To upload multiple files at a time, or to upload raw logger ' +\
+                        'data, you must first supply us with some information. ' +\
+                        'See "Enabling raw logger file upload" in the general ' +\
+                        'instructions below.', 'alert-danger')
                     [os.remove(f) for f in fnlong]
                     return redirect(request.url)
                 x = sp_in_lev(fnlong[0])
@@ -1501,13 +1527,38 @@ def series_upload():
             cdict = dict(zip(cdict['rawcol'],cdict['dbcol'])) #varname mappings
 
         except Exception as e:
-            [os.remove(f) for f in fnlong]
+
             tb = traceback.format_exc()
-            log_exception('E001', tb)
-            msg = Markup('Error 001. Please <a href="mailto:michael.vlah@duke.edu"' +\
-                ' class="alert-link">email StreamPULSE development</a> ' +\
-                'with the error number and a copy of the file you tried to upload.')
+
+            try:
+                # [os.remove(f) for f in fnlong]
+                for f in fnlong:
+                    print f
+                    fn = re.search('/([A-Za-z0-9\._\-]+)$', f).group(1)
+                    print fn
+                    ferr = os.path.join(app.config['ERRFILE_FOLDER'], fn)
+                    print ferr
+                    os.rename(f, ferr)
+            except:
+                pass
+
+            error_details = '\n\nfn_to_db: ' + ', '.join(filenames) +\
+                '\nreplace: ' + replace + '\n\n'
+
+            errno = 'E001'
+            msg = Markup("Error 001. StreamPULSE development has been notified. " +\
+                "If you're uploading raw logger data from a" +\
+                " new site, you'll have to supply us with some information first." +\
+                " See the general instructions below.")
             flash(msg, 'alert-danger')
+
+            full_error_detail = tb + error_details
+            log_exception(errno, full_error_detail)
+            email_msg(errno + '\n' + full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+            # for file in ufiles:
+            #     filename = secure_filename(file.filename)
+            #     ferr = os.path.join(app.config['ERRFILE_FOLDER'], filename)
+            #     file.save(ferr)
 
             return redirect(request.url)
 
@@ -2379,6 +2430,7 @@ def confirmcolumns():
             'upload_id']]
 
         # replace = True if request.form['replacing'] == 'yes' else False
+        replace = request.form['replace']
 
         #add new information to upload table in db
         fn_to_db = [i[0] for i in filenamesNoV]
@@ -2391,21 +2443,42 @@ def confirmcolumns():
                 db.session.add(uq)
 
     except Exception as e:
+
+        tb = traceback.format_exc()
+
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+            [os.remove(f) for f in fnlong]
         except:
             pass
-        [os.remove(f) for f in fnlong]
-        tb = traceback.format_exc()
-        log_exception('E008', tb)
-        msg = Markup('Error 008. Please <a href="mailto:michael.vlah@duke.edu"' +\
-            ' class="alert-link">email StreamPULSE development</a> ' +\
-            'with the error number and a copy of the file you tried to upload.')
+
+        df_head = xx.head(2).to_string()
+        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
+        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
+
+        if request.form['existing'] == "no":
+            error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
+                request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
+                '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
+                request.form['embargo'] + '\ncontactname: ' +\
+                request.form['contactName'] + '\ncontactemail: ' +\
+                request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
+                '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+                replace + '\n\n'
+        else:
+            error_details = '\n\nfn_to_db: ' + ', '.join(fn_to_db) +\
+                '\nreplace: ' + replace + '\n\n'
+
+        errno = 'E008'
+        msg = Markup("Error 008. StreamPULSE development has been notified.")
         flash(msg, 'alert-danger')
+
+        full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
+        log_exception(errno, full_error_detail)
+        email_msg(errno + '\n' + full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
         return redirect(url_for('series_upload'))
 
-    replace = request.form['replace']
     timerange = xx.DateTime_UTC.max() - xx.DateTime_UTC.min()
     if replace == 'records' and timerange.days > 366:
         try:
@@ -2442,18 +2515,17 @@ def confirmcolumns():
             error_details = '\n\nfn_to_db: ' + ', '.join(fn_to_db) +\
                 '\nreplace: ' + replace + '\n\n'
 
-        if replace != 'no':
+        if replace == 'records':
             errno = 'E009b'
             msg = Markup("Error 009b. Try reducing the size of your revised " +\
                 "file by removing rows or columns that don't require revision.")
         else:
             errno = 'E009a'
-            msg = Markup('Error 009a. This is a particularly nasty error. Please ' +\
-                '<a href="mailto:michael.vlah@duke.edu"' +\
-                ' class="alert-link">email StreamPULSE development</a> ' +\
-                'with the error number and a copy of the file(s) you tried to upload.')
+            msg = Markup('Error 009a. StreamPULSE development has been notified.')
 
-        log_exception(errno, tb + error_details + df_head + log_rawcols + log_dbcols)
+        full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
+        log_exception(errno, full_error_detail)
+        email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
