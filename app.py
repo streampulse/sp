@@ -560,24 +560,41 @@ def allowed_file(filename):
 
 def read_hobo(f):
 
-    # f = '~/Downloads/AA_BB_2019-04-16_HC.csv'
-    # xt=pd.read_csv(f, skiprows=[0])
-    xt = pd.read_csv(f, skiprows=[0])
-    cols = [x for x in xt.columns.tolist() if re.match("^#$|Coupler|File|" +\
+    # f = '~/Downloads/MD_BARN2_2018-09-20_HP.csv'
+    # f = '~/Downloads/MD_BARN2_2018-09-20_HP2.csv'
+    # f = '~/Downloads/NC_Eno_2016-10-17_HP.csv'
+
+    xt = pd.read_csv(f, nrows=1, header=None)
+    if len(xt.loc[0,:].dropna()) == 1:
+        xt = pd.read_csv(f, skiprows=[0])
+    else:
+        xt = pd.read_csv(f)
+    cols = [x for x in xt.columns.tolist() if re.match("^(?: +)?#.*$|Coupler|File|" +\
         "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired|Sensor" +\
         "|Missing|New", x) is None]
     xt = xt[cols]
-    m = [re.sub(" ", "", x.split(",")[0]) for x in xt.columns.tolist()]
-    u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
-    tzoff = re.sub("GMT(.[0-9]{2}):([0-9]{2})", "\\1", u[0])
+
+    tzoff = re.sub('^(?:.*)?GMT(.[0-9]{2}).*$', '\\1', xt.columns[0])
+    regex1 = '(.*?),([^\(]+)'
+    regex2 = '([^\(]+)\(?([^\)]+)?'
+    mch = [re.match(regex1, x) for x in xt.columns.tolist()]
+    if not all(mch):
+        mch = [re.match(regex2, x) for x in xt.columns.tolist()]
+    headerPt1 = [re.sub(' ', '', x.group(1)) for x in mch]
+    headerPt2 = [re.sub(' ', '', x.group(2)) for x in mch]
+
+    # m = [re.sub(" ", "", x.split(",")[0]) for x in xt.columns.tolist()]
+    # u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
+    # tzoff = re.sub("GMT(.[0-9]{2}):([0-9]{2})", "\\1", u[0])
     logger_regex = ".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}" +\
         "(?:[0-9]+)?)(?:v[0-9]+)?\\.\\w{3}"
     ll = re.sub(logger_regex, "\\1", f)
     # ll = f.split("_")[3].split(".")[0].split("v")[0]
     inum = re.sub("[A-Z]{2}", "", ll)
-    uu = [re.sub("\\ |\\/|°", "", x) for x in u[1:]]
-    uu = [re.sub(r'[^\x00-\x7f]', r'', x) for x in uu] # get rid of unicode
-    newcols = ['DateTime'] + [nme + unit for unit, nme in zip(uu, m[1:])]
+    headerPt2Clean = [re.sub("\\ |\\/|°", "", x) for x in headerPt2[1:]]
+    headerPt2Clean = [re.sub(r'[^\x00-\x7f]', r'', x) for x in headerPt2Clean] # get rid of unicode
+    newcols = ['DateTime'] + [nme + unit for unit,
+        nme in zip(headerPt2Clean, headerPt1[1:])]
     xt = xt.rename(columns=dict(zip(xt.columns.tolist(), newcols)))
     xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
@@ -595,6 +612,7 @@ def read_hobo(f):
     xt.columns = [cc + inum for cc in xt.columns]
     cols = xt.columns.tolist()
     xx = xt[cols[-1:] + cols[1:-1]]
+
     return xx
 
 def read_csci(f, gmtoff):
@@ -1533,11 +1551,8 @@ def series_upload():
             try:
                 # [os.remove(f) for f in fnlong]
                 for f in fnlong:
-                    print f
                     fn = re.search('/([A-Za-z0-9\._\-]+)$', f).group(1)
-                    print fn
                     ferr = os.path.join(app.config['ERRFILE_FOLDER'], fn)
-                    print ferr
                     os.rename(f, ferr)
             except:
                 pass
