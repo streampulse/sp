@@ -72,7 +72,7 @@ dbClearResult(res)
 known_sites = resout$site
 
 # p=i=j=1;k=3
-# p=6;i=1;j=1;k=1
+# p=6;i=414;j=1;k=1 #for testing depth
 # sets_to_grab = sets_to_grab[61,]
 
 for(p in 1:length(products)){
@@ -500,7 +500,8 @@ for(p in 1:length(products)){
                     sensor_pos = read.delim(d$data$files$url[sensor_data_ind],
                         sep=",")
                     ref_elev = sensor_pos$referenceElevation[updown_order[j]]
-                    na_filt$value = na_filt$value - ref_elev
+                    offset = sensor_pos$zOffset[updown_order[j]]
+                    na_filt$value = na_filt$value - ref_elev + offset
                 }
                 if(prods_abb[p] == 'O2GasTransferVelocity'){
                     print('this isnt hooked up yet')
