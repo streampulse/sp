@@ -501,7 +501,7 @@ for(p in 1:length(products)){
                         sep=",")
                     ref_elev = sensor_pos$referenceElevation[updown_order[j]]
                     offset = sensor_pos$zOffset[updown_order[j]]
-                    na_filt$value = na_filt$value - ref_elev + offset
+                    na_filt$value = na_filt$value - ref_elev - offset
                 }
                 if(prods_abb[p] == 'O2GasTransferVelocity'){
                     print('this isnt hooked up yet')
