@@ -162,7 +162,7 @@
 
     <form id='alldailyres_form' action="/_alldailyres_download" method="POST" class="form-horizontal">
       <span style="display:inline-block; width:500px">
-        All public, daily model results:
+        All public, daily model results (as table):
       </span>
       <span style="display:inline-block">
         <button id="alldailyres" class="btn btn-sm btn-info" style="font-family:mono">
@@ -175,23 +175,20 @@
     <br>
     <!--"%s -%s"|format("hello", "foo")-->
 
-    <!-- <form id='alldailyres_form' action="/_alldailyres_download" method="POST" class="form-horizontal"> -->
-    <span style="display:inline-block; width:500px">
-      All public streamMetabolizer output objects?
-    </span>
-    <p class="text-muted">
-      If anyone is interested in this, contact
-      <a href='michael.vlah@duke.edu'>
-        StreamPULSE development,
-      </a> and we'll make it happen.
-    </p>
-    <!-- <span style="display:inline-block">
-      <button id="alldailyres" class="btn btn-sm btn-info" style="font-family:mono">
-        Download ({{ bulk_file_sizes["all_daily_model_results.csv.zip"]|filesizeformat }})
-      </button>
-    </span> -->
-    <!-- </form> -->
+    <form id='allspmodelobj_form' action="/_allspmodelobj_download" method="POST" class="form-horizontal">
+      <span style="display:inline-block; width:500px">
+        All public model objects in RDS format:
+      </span>
+      <span style="display:inline-block">
+        <button id="allspmodelobj" class="btn btn-sm btn-info" style="font-family:mono">
+          {% set bulksize = bulk_file_sizes["all_sp_model_objects.zip"]|filesizeformat %}
+          {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
+          Download {{ spaces|safe }}({{ bulksize }})
+        </button>
+      </span>
+    </form>
     <br>
+
   </div>
 
   <!-- <div class="col-md-6 col-md-offset-3">

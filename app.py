@@ -38,6 +38,10 @@ import markdown
 import time
 import traceback
 import regex
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -54,6 +58,7 @@ app.config['REACH_CHAR_FOLDER'] = cfg.REACH_CHAR_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
 app.config['BULK_DNLD_FOLDER'] = cfg.BULK_DNLD_FOLDER
 app.config['RESULTS_FOLDER'] = cfg.RESULTS_FOLDER
+app.config['ERRFILE_FOLDER'] = cfg.ERRFILE_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 700 * 1024 * 1024 # originally set to 16 MB; now 700
 app.config['SECURITY_PASSWORD_SALT'] = cfg.SECURITY_PASSWORD_SALT
 #app.config['PROPAGATE_EXCEPTIONS'] = True
@@ -495,11 +500,12 @@ pseudo_core = pseudo_core.set_index('SITECD')
 #DateTime_UTC must remain in the first position
 variables = ['DateTime_UTC', 'DO_mgL', 'DOSecondary_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 'WaterTemp2_C', 'WaterTemp3_C',
 'WaterPres_kPa', 'AirTemp_C', 'AirPres_kPa', 'Level_m', 'Depth_m',
-'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV',
+'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV', 'FDOM_mV',
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
-'SpecCond_uScm', 'CO2_ppm', 'Light_lux', 'Light_PAR', 'underwater_PAR', 'Light2_lux',
+'SpecCond_uScm', 'CO2_ppm', 'ChlorophyllA_ugL', 'Light_lux', 'Light_PAR', 'Light2_lux',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
-'Light5_lux', 'Light5_PAR', 'Battery_V', 'ChlorophyllA_ugL', 'underwater_lux', 'FDOM_mV']
+'Light5_lux', 'Light5_PAR', 'underwater_lux', 'underwater_PAR', 'benthic_lux',
+'benthic_PAR', 'Battery_V']
 # O2GasTransferVelocity_ms
 
 o = 'other'
@@ -583,23 +589,43 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 def read_hobo(f):
-    xt = pd.read_csv(f, skiprows=[0])
-    cols = [x for x in xt.columns.tolist() if re.match("^#$|Coupler|File|" +\
+
+    # f = '~/Downloads/MD_BARN2_2018-09-20_HP.csv'
+    # f = '~/Downloads/MD_BARN2_2018-09-20_HP2.csv'
+    # f = '~/Downloads/NC_Eno_2016-10-17_HP.csv'
+
+    xt = pd.read_csv(f, nrows=1, header=None)
+    if len(xt.loc[0,:].dropna()) == 1:
+        xt = pd.read_csv(f, skiprows=[0])
+    else:
+        xt = pd.read_csv(f)
+    cols = [x for x in xt.columns.tolist() if re.match("^(?: +)?#.*$|Coupler|File|" +\
         "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired|Sensor" +\
         "|Missing|New", x) is None]
     xt = xt[cols]
-    m = [re.sub(" ","",x.split(",")[0]) for x in xt.columns.tolist()]
-    u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
-    tzoff = re.sub("GMT(.[0-9]{2}):([0-9]{2})","\\1",u[0])
+
+    tzoff = re.sub('^(?:.*)?GMT(.[0-9]{2}).*$', '\\1', xt.columns[0])
+    regex1 = '(.*?),([^\(]+)'
+    regex2 = '([^\(]+)\(?([^\)]+)?'
+    mch = [re.match(regex1, x) for x in xt.columns.tolist()]
+    if not all(mch):
+        mch = [re.match(regex2, x) for x in xt.columns.tolist()]
+    headerPt1 = [re.sub(' ', '', x.group(1)) for x in mch]
+    headerPt2 = [re.sub(' ', '', x.group(2)) for x in mch]
+
+    # m = [re.sub(" ", "", x.split(",")[0]) for x in xt.columns.tolist()]
+    # u = [x.split(",")[1].split(" ")[1] for x in xt.columns.tolist()]
+    # tzoff = re.sub("GMT(.[0-9]{2}):([0-9]{2})", "\\1", u[0])
     logger_regex = ".*/\\w+_\\w+_[0-9]{4}-[0-9]{2}-[0-9]{2}_([A-Z]{2}" +\
         "(?:[0-9]+)?)(?:v[0-9]+)?\\.\\w{3}"
     ll = re.sub(logger_regex, "\\1", f)
     # ll = f.split("_")[3].split(".")[0].split("v")[0]
-    inum = re.sub("[A-Z]{2}","",ll)
-    uu = [re.sub("\\ |\\/|°","",x) for x in u[1:]]
-    uu = [re.sub(r'[^\x00-\x7f]',r'', x) for x in uu] # get rid of unicode
-    newcols = ['DateTime']+[nme+unit for unit,nme in zip(uu,m[1:])]
-    xt = xt.rename(columns=dict(zip(xt.columns.tolist(),newcols)))
+    inum = re.sub("[A-Z]{2}", "", ll)
+    headerPt2Clean = [re.sub("\\ |\\/|°", "", x) for x in headerPt2[1:]]
+    headerPt2Clean = [re.sub(r'[^\x00-\x7f]', r'', x) for x in headerPt2Clean] # get rid of unicode
+    newcols = ['DateTime'] + [nme + unit for unit,
+        nme in zip(headerPt2Clean, headerPt1[1:])]
+    xt = xt.rename(columns=dict(zip(xt.columns.tolist(), newcols)))
     xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
     # xt = xt.rename(columns={'HWAbsPreskPa':'WaterPres_kPa','HWTempC':'WaterTemp_C','HAAbsPreskPa':'AirPres_kPa','HATempC':'AirTemp_C',})
@@ -611,9 +637,12 @@ def read_hobo(f):
         xt = xt.rename(columns={'TempC':'DOLoggerTemp_C'})
     if "_HP" in f:
         xt = xt.rename(columns={'TempC':'LightLoggerTemp_C'})
-    xt.columns = [cc+inum for cc in xt.columns]
+    if "_HC" in f:
+        xt = xt.rename(columns={'TempC':'CondLoggerTemp_C'})
+    xt.columns = [cc + inum for cc in xt.columns]
     cols = xt.columns.tolist()
-    xx = xt[cols[-1:]+cols[1:-1]]
+    xx = xt[cols[-1:] + cols[1:-1]]
+
     return xx
 
 def read_csci(f, gmtoff):
@@ -944,6 +973,32 @@ def zipfile_listdir_recursive(dir_name):
 
     return fileList
 
+def email_msg(txt, subj, recipient):
+
+    gmail_pw = cfg.GRDO_GMAIL_PW
+
+    cur_user = str(current_user.get_id()) if current_user else 'anonymous'
+    deets = datetime.now().strftime('%Y-%m-%d %H:%M:%S') +\
+        '; userID=' + cur_user + '\n'
+        # ';\ntraceback:\n ' + traceback.__str__() + '\n\n')
+    txt = deets + txt
+
+    #compose email
+    msg = MIMEMultipart()
+    msg.attach(MIMEText(txt))
+    msg['Subject'] = subj
+    msg['From'] = 'grdouser@gmail.com'
+    msg['To'] = recipient
+
+    #log in to gmail, send email
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.ehlo()
+    server.starttls()
+    server.login("grdouser@gmail.com", gmail_pw)
+    server.sendmail('grdouser@gmail.com', [recipient],
+        msg.as_string())
+    server.quit()
+
 # def send_email(to, subject, template):
 #     mail.send_message(subject, recipients=[to], html=template)
 
@@ -1024,10 +1079,6 @@ def lostpass():
     reset_url = url_for('lostpass_reset', token=token, _external=True)
 
     try:
-        import smtplib
-        from email.mime.text import MIMEText
-        from email.mime.application import MIMEApplication
-        from email.mime.multipart import MIMEMultipart
         gmail_pw = cfg.GRDO_GMAIL_PW
 
         #compose email
@@ -1490,7 +1541,7 @@ def series_upload():
             if logger: #if there is a LOGGERID format
                 logger = logger[1:len(logger)] #remove underscore
 
-                if logger not in ['CS','HD','HW','HA','HP','EM','XX']:
+                if logger not in ['CS','HD','HW','HA','HP','HC','EM','XX']:
                     flash('"' + str(logger) + '" is an invalid LOGGERID. ' +\
                         'See formatting instructions.', 'alert-danger')
                     [os.remove(f) for f in fnlong]
@@ -1506,11 +1557,10 @@ def series_upload():
                 x = sp_in(fnlong, gmtoff)
             else:
                 if len(fnlong) > 1:
-                    flash('At least one of your files uses the legacy file ' +\
-                        'naming convention. You may use this convention, but ' +\
-                        'then please merge files prior to upload. You may want ' +\
-                        'to follow the updated upload instructions instead.',
-                        'alert-danger')
+                    flash('To upload multiple files at a time, or to upload raw logger ' +\
+                        'data, you must first supply us with some information. ' +\
+                        'See "Enabling raw logger file upload" in the general ' +\
+                        'instructions below.', 'alert-danger')
                     [os.remove(f) for f in fnlong]
                     return redirect(request.url)
                 x = sp_in_lev(fnlong[0])
@@ -1532,13 +1582,35 @@ def series_upload():
             ndict = dict(zip(coldict['rawcol'], coldict['notes'])) #note mappings
 
         except Exception as e:
-            [os.remove(f) for f in fnlong]
+
             tb = traceback.format_exc()
-            log_exception('E001', tb)
-            msg = Markup('Error 001. Please <a href="mailto:michael.vlah@duke.edu"' +\
-                ' class="alert-link">email StreamPULSE development</a> ' +\
-                'with the error number and a copy of the file you tried to upload.')
+
+            try:
+                # [os.remove(f) for f in fnlong]
+                for f in fnlong:
+                    fn = re.search('/([A-Za-z0-9\._\-]+)$', f).group(1)
+                    ferr = os.path.join(app.config['ERRFILE_FOLDER'], fn)
+                    os.rename(f, ferr)
+            except:
+                pass
+
+            error_details = '\n\nfn_to_db: ' + ', '.join(filenames) +\
+                '\nreplace: ' + replace + '\n\n'
+
+            errno = 'E001'
+            msg = Markup("Error 001. StreamPULSE development has been notified. " +\
+                "If you're uploading raw logger data from a" +\
+                " new site, you'll have to supply us with some information first." +\
+                " See the general instructions below.")
             flash(msg, 'alert-danger')
+
+            full_error_detail = tb + error_details
+            log_exception(errno, full_error_detail)
+            email_msg(errno + '\n' + full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+            # for file in ufiles:
+            #     filename = secure_filename(file.filename)
+            #     ferr = os.path.join(app.config['ERRFILE_FOLDER'], filename)
+            #     file.save(ferr)
 
             return redirect(request.url)
 
@@ -2415,6 +2487,7 @@ def confirmcolumns():
             'upload_id']]
 
         # replace = True if request.form['replacing'] == 'yes' else False
+        replace = request.form['replace']
 
         #add new information to upload table in db
         fn_to_db = [i[0] for i in filenamesNoV]
@@ -2427,21 +2500,42 @@ def confirmcolumns():
                 db.session.add(uq)
 
     except Exception as e:
+
+        tb = traceback.format_exc()
+
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+            [os.remove(f) for f in fnlong]
         except:
             pass
-        [os.remove(f) for f in fnlong]
-        tb = traceback.format_exc()
-        log_exception('E008', tb)
-        msg = Markup('Error 008. Please <a href="mailto:michael.vlah@duke.edu"' +\
-            ' class="alert-link">email StreamPULSE development</a> ' +\
-            'with the error number and a copy of the file you tried to upload.')
+
+        df_head = xx.head(2).to_string()
+        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
+        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
+
+        if request.form['existing'] == "no":
+            error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
+                request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
+                '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
+                request.form['embargo'] + '\ncontactname: ' +\
+                request.form['contactName'] + '\ncontactemail: ' +\
+                request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
+                '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+                replace + '\n\n'
+        else:
+            error_details = '\n\nfn_to_db: ' + ', '.join(fn_to_db) +\
+                '\nreplace: ' + replace + '\n\n'
+
+        errno = 'E008'
+        msg = Markup("Error 008. StreamPULSE development has been notified.")
         flash(msg, 'alert-danger')
+
+        full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
+        log_exception(errno, full_error_detail)
+        email_msg(errno + '\n' + full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
         return redirect(url_for('series_upload'))
 
-    replace = request.form['replace']
     timerange = xx.DateTime_UTC.max() - xx.DateTime_UTC.min()
     if replace == 'records' and timerange.days > 366:
         try:
@@ -2498,22 +2592,43 @@ def confirmcolumns():
                 m.write(lvltxt)
 
     except Exception as e:
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-        except:
-            pass
+
         tb = traceback.format_exc()
-        if replace != 'no':
-            log_exception('E009b', tb)
+        df_head = xx.head(2).to_string()
+        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
+        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
+
+        if request.form['existing'] == "no":
+            error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
+                request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
+                '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
+                request.form['embargo'] + '\ncontactname: ' +\
+                request.form['contactName'] + '\ncontactemail: ' +\
+                request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
+                '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+                replace + '\n\n'
+        else:
+            error_details = '\n\nfn_to_db: ' + ', '.join(fn_to_db) +\
+                '\nreplace: ' + replace + '\n\n'
+
+        if replace == 'records':
+            errno = 'E009b'
             msg = Markup("Error 009b. Try reducing the size of your revised " +\
                 "file by removing rows or columns that don't require revision.")
         else:
-            log_exception('E009a', tb)
-            msg = Markup('Error 009a. This is a particularly nasty error. Please ' +\
-                '<a href="mailto:michael.vlah@duke.edu"' +\
-                ' class="alert-link">email StreamPULSE development</a> ' +\
-                'with the error number and a copy of the file(s) you tried to upload.')
-        db.session.rollback()
+            errno = 'E009a'
+            msg = Markup('Error 009a. StreamPULSE development has been notified.')
+
+        full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
+        log_exception(errno, full_error_detail)
+        email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+            [os.remove(f) for f in fnlong]
+            db.session.rollback()
+        except:
+            pass
         flash(msg, 'alert-danger')
 
         return redirect(url_for('series_upload'))
@@ -4197,6 +4312,12 @@ def alldailyres_download():
 
     return send_from_directory('../bulk_download_files',
         'all_daily_model_results.csv.zip', as_attachment=True)
+
+@app.route('/_allspmodelobj_download', methods=['POST'])
+def allspmodelobj_download():
+
+    return send_from_directory('../bulk_download_files',
+        'all_sp_model_objects.zip', as_attachment=True)
 
 # @app.route('/_sp_logo_download', methods=['POST'])
 # def sp_logo_download():

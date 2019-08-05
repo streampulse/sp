@@ -83,15 +83,15 @@ os.remove(basic_site_data_path)
 #manually chown, mv, and zip the files exported to /var/lib/mysql-files
 
 
-#export all public sp data (will move and zip later in shell script)
-db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
-    ",'flagID','flagComment' union all select data.region, data.site, " +\
-    "data.DateTime_UTC, data.variable, data.value, " +\
-    "flag.flag, flag.comment from data left join flag on data.flag=flag.id " +\
-    "where (data.upload_id >= 0 or data.upload_id=-901) and concat(data.region, '_', data.site) not " +\
-    "in ('" + "','".join(embargoed_sites) + "') into outfile " +\
-    "'/var/lib/mysql-files/all_sp_data.csv' fields terminated by ',' " +\
-    "enclosed by '\"' lines terminated by '\\n';")
+##export all public sp data (will move and zip later in shell script)
+#db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
+#    ",'flagID','flagComment' union all select data.region, data.site, " +\
+#    "data.DateTime_UTC, data.variable, data.value, " +\
+#    "flag.flag, flag.comment from data left join flag on data.flag=flag.id " +\
+#    "where (data.upload_id >= 0 or data.upload_id=-901) and concat(data.region, '_', data.site) not " +\
+#    "in ('" + "','".join(embargoed_sites) + "') into outfile " +\
+#    "'/var/lib/mysql-files/all_sp_data.csv' fields terminated by ',' " +\
+#    "enclosed by '\"' lines terminated by '\\n';")
 
 # #export all neon data (will move and zip later in shell script)
 # db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
@@ -160,3 +160,14 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
 #     "in ('" + "','".join(embargoed_sites) + "')" +\
 #     " into outfile '/var/lib/mysql-files/all_daily_model_results.csv' " +\
 #     "fields terminated by ',' enclosed by '\"' lines terminated by '\\n';")
+
+#collect all streampulse model outputs and zip
+modeloutfolder = app.config['RESULTS_FOLDER']
+writefiles = zipfile_listdir_recursive(modeloutfolder)
+writefiles = [x for x in writefiles if re.search('(?:predictions|modOut)_((?:.*))_[0-9]{4}.rds',
+    x).group(1) not in embargoed_sites]
+rel_wfs = [re.match(modeloutfolder + '/(.*)', f).group(1) for f in writefiles]
+zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] + '/all_sp_model_objects.zip', 'w')
+for i in xrange(len(writefiles)):
+    zf.write(writefiles[i], 'all_sp_model_objects/' + rel_wfs[i])
+zf.close()

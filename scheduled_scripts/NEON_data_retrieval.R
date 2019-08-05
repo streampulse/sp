@@ -34,15 +34,15 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
 #DO must always be first in these vectors. Sitemonths from the other datasets
 #will be ignored if they're not represented in DO.
 products = c('DO_mgL', 'Nitrate_mgL', 'O2GasTransferVelocity_ms','Discharge_m3s',
-    'WaterTemp_C', 'Depth_m')
+    'WaterTemp_C')#, 'Depth_m')
 prods_abb = str_split(products, '_', simplify=TRUE)[,1]
 prod_codes = c('DP1.20288.001', 'DP1.20033.001', 'DP1.20190.001', 'DP4.00130.001',
-    'DP1.20053.001', 'DP1.20016.001')
+    'DP1.20053.001')#, 'DP1.20016.001')
 # NEON.DOM.SITE.DP1.20004.001, Barometric pressure above water on-buoy
 prod_varlists = list(c('Level_m','SpecCond_uScm','DO_mgL','DOsat_pct','pH',
     'ChlorophyllA_ugL','Turbidity_FNU'),
-    'Nitrate_mgL', 'O2GasTransferVelocity_ms', 'Discharge_m3s', 'WaterTemp_C',
-    'Depth_m')
+    'Nitrate_mgL', 'O2GasTransferVelocity_ms', 'Discharge_m3s', 'WaterTemp_C')#,
+    # 'Depth_m')
 
 
 varname_mappings = list(sensorDepth='Level_m',
@@ -72,7 +72,7 @@ dbClearResult(res)
 known_sites = resout$site
 
 # p=i=j=1;k=3
-# p=6;i=1;j=1;k=1
+# p=6;i=414;j=1;k=1 #for testing depth
 # sets_to_grab = sets_to_grab[61,]
 
 for(p in 1:length(products)){
@@ -500,7 +500,8 @@ for(p in 1:length(products)){
                     sensor_pos = read.delim(d$data$files$url[sensor_data_ind],
                         sep=",")
                     ref_elev = sensor_pos$referenceElevation[updown_order[j]]
-                    na_filt$value = na_filt$value - ref_elev
+                    offset = sensor_pos$zOffset[updown_order[j]]
+                    na_filt$value = na_filt$value - ref_elev - offset
                 }
                 if(prods_abb[p] == 'O2GasTransferVelocity'){
                     print('this isnt hooked up yet')

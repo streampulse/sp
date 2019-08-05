@@ -18,6 +18,7 @@ do
     chown aaron:aaron $fn'.csv'
     mv $fn'.csv' "$fp_base$fp_bulk"
     cd $fp_base$fp_bulk
+    sed -e 's/\\N/"NA"/g; s/""/"NA"/g' -i $fn'.csv'
     zip $fn'.csv.zip' $fn'.csv'
     rm $fn'.csv'
     cd /var/lib/mysql-files
