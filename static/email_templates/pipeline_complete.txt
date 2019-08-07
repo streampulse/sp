@@ -1,0 +1,18 @@
+<p>Hello StreamPULSE user,</p>
+<p>
+  We have finished processing your upload for %s_%s.
+  Please follow the link below to visually confirm or
+  edit the results of our automated QA/QC pipeline.
+</p>
+<p>
+    <a href="%s">%s</a>
+</p>
+<p>
+  This message was sent from the email address of the Global
+  Rivers Dissolved Oxygen database, which is affiliated with StreamPULSE.
+</p>
+<p>
+  Please contact <a href='streampulse.info@gmail.com'>StreamPULSE
+  development</a> if you have any questions.
+</p>
+<br>

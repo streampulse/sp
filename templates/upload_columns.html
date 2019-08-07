@@ -214,7 +214,7 @@ UTC. That column's name may have been changed here."
       <div data-toggle='' title="R: Raw (directly from sensor/logger)
 O: Outliers/anomalies removed
 G: Gaps imputed
-C: Corrected for drift (due to biofouling, calibration, etc.)
+C: Corrected for drift (biofouling, calibration, etc.)
 D: Derived from other variables (describe)"
         data-placement='right' style="display:inline-block; vertical-align=middle">
         <i class="fa fa-question-circle-o" style="color: blue"></i>
@@ -281,6 +281,7 @@ D: Derived from other variables (describe)"
     </div>
 
     <input type="hidden" name="ndict" value="">
+    <input type="hidden" id="notificationEmailVal" name="notificationEmailVal" value="">
     <div class='col-md-4 text-center'>
       <br>
       <p><strong>Describe derivation</strong></p>
@@ -305,6 +306,14 @@ D: Derived from other variables (describe)"
 
   <div class="row">
     <div class="col-md-4 col-md-offset-4">
+      <p>
+        Please supply <em>your</em> email address here. We will use this
+        address only to notify you when your upload has been processed.
+      </p>
+      <input id="notificationEmail" type="text" class="form-control" name="notificationEmail"
+      aria-describedby="notification email" maxlength="50"
+      value="{{notificationEmail}}" required>
+      <br>
       <button name="columnin" type="submit" class="btn btn-primary btn-block">
         Submit
       </button>
@@ -430,6 +439,7 @@ D: Derived from other variables (describe)"
       $('#choosecolumns input[name=ldict]').val( ldict );
       ndict = JSON.stringify(nvals);
       $('#choosecolumns input[name=ndict]').val( ndict );
+      $('#notificationEmailVal').val( $('#notificationEmail').val() );
 
     });
   })

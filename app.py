@@ -38,10 +38,12 @@ import markdown
 import time
 import traceback
 import regex
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
+# import smtplib
+# from email.mime.text import MIMEText
+# from email.mime.application import MIMEApplication
+# from email.mime.multipart import MIMEMultipart
+import subprocess
+from helpers import *
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -251,6 +253,18 @@ class Cols(db.Model):
     def __repr__(self):
         return '<Cols %r, %r, %r, %r, %r>' % (self.region, self.site, self.dbcol,
             self.level, self.notes)
+
+class Notificationemail(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(10))
+    site = db.Column(db.String(50))
+    email = db.Column(db.String(255))
+    def __init__(self, region, site, email):
+        self.region = region
+        self.site = site
+        self.email = email
+    def __repr__(self):
+        return '<Notificationemail %r, %r, %r>' % (self.region, self.site, self.email)
 
 class Grabcols(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -973,35 +987,6 @@ def zipfile_listdir_recursive(dir_name):
 
     return fileList
 
-def email_msg(txt, subj, recipient):
-
-    gmail_pw = cfg.GRDO_GMAIL_PW
-
-    cur_user = str(current_user.get_id()) if current_user else 'anonymous'
-    deets = datetime.now().strftime('%Y-%m-%d %H:%M:%S') +\
-        '; userID=' + cur_user + '\n'
-        # ';\ntraceback:\n ' + traceback.__str__() + '\n\n')
-    txt = deets + txt
-
-    #compose email
-    msg = MIMEMultipart()
-    msg.attach(MIMEText(txt))
-    msg['Subject'] = subj
-    msg['From'] = 'grdouser@gmail.com'
-    msg['To'] = recipient
-
-    #log in to gmail, send email
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.ehlo()
-    server.starttls()
-    server.login("grdouser@gmail.com", gmail_pw)
-    server.sendmail('grdouser@gmail.com', [recipient],
-        msg.as_string())
-    server.quit()
-
-# def send_email(to, subject, template):
-#     mail.send_message(subject, recipients=[to], html=template)
-
 ########## PAGES
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -1580,6 +1565,13 @@ def series_upload():
             cdict = dict(zip(coldict['rawcol'], coldict['dbcol'])) #varname mappings
             ldict = dict(zip(coldict['rawcol'], coldict['level'])) #level mappings
             ndict = dict(zip(coldict['rawcol'], coldict['notes'])) #note mappings
+            notificationEmail = pd.read_sql("select email from notificationemail" +\
+                " where region='" + rr + "' and site='" + ss + "'", db.engine)
+            notificationEmail = notificationEmail.email.tolist()
+            if notificationEmail:
+                notificationEmail = notificationEmail[0]
+            else:
+                notificationEmail = ''
 
         except Exception as e:
 
@@ -1626,7 +1618,8 @@ def series_upload():
             return render_template('upload_columns.html', filenames=filenames,
                 columns=columns, tmpfile=tmp_file, variables=variables,
                 existing=existing, sitenm=site[0], replace=replace,
-                cdict=cdict, ldict=ldict, ndict=ndict)
+                cdict=cdict, ldict=ldict, ndict=ndict,
+                notificationEmail=notificationEmail)
 
         except Exception as e:
             [os.remove(f) for f in fnlong]
@@ -2151,11 +2144,19 @@ def updatecdict(region, site, cdict, ldict, ndict):
             cx.dbcol = cdict[c]
             cx.level = ldict[c]
             cx.notes = ndict[c]
-            # db.session.commit()
         else: # add
             cx = Cols(region, site, c, cdict[c], ldict[c], ndict[c])
             db.session.add(cx)
-            # db.session.commit()
+
+def updateNotificationEmail(region, site, email):
+
+
+    q = Notificationemail.query.filter_by(region=region, site=site).first()
+    if q is not None: #update
+        q.email = email
+    else: # add
+        q = Notificationemail(region, site, email)
+        db.session.add(q)
 
 def chunker_ingester(df, chunksize=100000):
 
@@ -2394,12 +2395,15 @@ def confirmcolumns():
 
     #get combined inputs (tmpfile), varname mappings (cdict), and filenames
     tmpfile = request.form['tmpfile']
+    tmpcode = tmpfile.split('_')[2]
     cdict = json.loads(request.form['cdict'])
     cdict = dict([(r['name'], r['value']) for r in cdict])
     ldict = json.loads(request.form['ldict'])
     ldict = dict(zip(cdict.keys(), ldict))
     ndict = json.loads(request.form['ndict'])
     ndict = dict(zip(cdict.keys(), ndict))
+    notificationEmail = request.form['notificationEmail']
+
     fnlong = session.get('fnlong')
     filenamesNoV = session.get('filenamesNoV')
 
@@ -2473,18 +2477,18 @@ def confirmcolumns():
             #give uploading user access to this site
             add_site_permission(current_user, region, site)
 
-        #format df for database entry
-        xx = xx.set_index(["DateTime_UTC", "upload_id"])
-        xx.columns.name = 'variable'
-        xx = xx.stack() #one col each for vars and vals
-        xx.name="value"
-        xx = xx.reset_index()
-        xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
-        xx['region'] = region
-        xx['site'] = site
-        xx['flag'] = None
-        xx = xx[['region','site','DateTime_UTC','variable','value','flag',
-            'upload_id']]
+        # #format df for database entry
+        # xx = xx.set_index(["DateTime_UTC", "upload_id"])
+        # xx.columns.name = 'variable'
+        # xx = xx.stack() #one col each for vars and vals
+        # xx.name="value"
+        # xx = xx.reset_index()
+        # xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
+        # xx['region'] = region
+        # xx['site'] = site
+        # xx['flag'] = None
+        # xx = xx[['region','site','DateTime_UTC','variable','value','flag',
+        #     'upload_id']]
 
         # replace = True if request.form['replacing'] == 'yes' else False
         replace = request.form['replace']
@@ -2498,6 +2502,11 @@ def confirmcolumns():
                 uq = Upload(filename=f[0], uploadtime_utc=datetime.utcnow(),
                     user_id=current_user.get_id())
                 db.session.add(uq)
+
+        #update variable name mappings
+        updatecdict(region, site, cdict, ldict, ndict)
+        updateNotificationEmail(region, site, notificationEmail)
+        db.session.commit()
 
     except Exception as e:
 
@@ -2547,12 +2556,67 @@ def confirmcolumns():
             'by-record data revision.', 'alert-danger')
         return redirect(url_for('series_upload'))
 
+    #save dataframe and ancillary data so that it can be accessed when user returns
+    xx.to_csv('../spdumps/' + tmpcode + '_xx.csv', index=False)
+    dumpfile = '../spdumps/confirmcolumns' + tmpcode + '.json'
+    with open(dumpfile, 'w') as d:
+        dmp = json.dump({'region': region, 'site': site, 'cdict': cdict,
+            'ldict': ldict, 'ndict': ndict, 'fn_to_db': fn_to_db,
+            'replace': replace, 'metadata': request.form.get('metadata'),
+            'existing': request.form.get('existing'), 'usgs': request.form.get('usgs'),
+            'embargo': request.form.get('sitename'), 'contactName': request.form.get('contactName'),
+            'contactEmail': request.form.get('contactEmail'), 'lat': request.form.get('lat'),
+            'lng': request.form.get('lng'), 'fnlong': fnlong, 'replace': replace}, d)
+
+    #initiate data processing pipeline as background process
+    subprocess.Popen(['Rscript', '--vanilla',
+        'pipeline.R', request.form['notificationEmail'], tmpcode,
+        region, site])
+    # subprocess.Popen(['/home/mike/miniconda3/envs/python2/bin/python',
+    #     'pipeline.py', request.form['notificationEmail'], tmpcode,
+    #     region, site])
+
+    notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
+        site + '. We will send you an email notification when outlier ' +\
+        'detection and gap filling are complete.'
+    # email_msg(notification, 'StreamPULSE upload notification', uploader_email)
+    flash(notification, 'alert-success')
+    return redirect(url_for('series_upload'))
+
+@app.route("/pipeline-complete/<string:tmpcode>", methods=["GET"])
+@login_required
+def pipeline_complete(tmpcode):
+
     try:
 
-        #add data and mappings to db
-        updatecdict(region, site, cdict, ldict, ndict)
-        db.session.commit()
-        updatedb(xx, fn_to_db, replace)
+        dumpfile = '../spdumps/confirmcolumns' + tmpcode + '.json'
+        # dumpfile = '/home/mike/git/streampulse/server_copy/spdumps/confirmcolumns35_AQ_WB_e076b8930278.json'
+        with open(dumpfile) as d:
+            up_data = json.load(d)
+        region = up_data['region']
+        site = up_data['site']
+        replace = up_data['replace']
+
+        xx = pd.read_csv('../spdumps/' + tmpcode + '_xx.csv')
+
+
+        #format df for database entry
+        xx = xx.set_index(["DateTime_UTC", "upload_id"])
+        xx.columns.name = 'variable'
+        xx = xx.stack() #one col each for vars and vals
+        xx.name="value"
+        xx = xx.reset_index()
+        xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
+        xx['region'] = region
+        xx['site'] = site
+        xx['flag'] = None
+        xx = xx[['region','site','DateTime_UTC','variable','value','flag',
+            'upload_id']]
+
+
+        # xx = pd.read_csv('../spdumps/' + 'e7805b62369e' + '_xx.csv',na_filter=False)
+        # xx.flag = xx.flag.where(pd.notnull(xx.flag), None)
+        updatedb(xx, up_data['fn_to_db'], up_data['replace'])
 
         # make a new text file with the metadata
         lvltxt = '\n\n--- Data status codes ---\n\n' +\
@@ -2575,9 +2639,11 @@ def confirmcolumns():
         lvltxt2 = leveldata.to_string() + '\n'
         lvltxt = lvltxt + lvltxt2
 
-        if request.form['existing'] == "no":
-            metastring = request.form['metadata']
-            metastring = metastring + lvltxt
+        # if request.form['existing'] == "no":
+        if up_data['existing'] == "no":
+            # metastring = request.form['metadata']
+            # metastring = metastring + lvltxt
+            metastring = metadata + lvltxt
             with open(metafilepath, 'a') as metafile:
                 metafile.write(metastring.encode('utf-8'))
         else:
@@ -2595,20 +2661,29 @@ def confirmcolumns():
 
         tb = traceback.format_exc()
         df_head = xx.head(2).to_string()
-        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
-        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
+        log_rawcols = '\n\nrawcols: ' + ', '.join(up_data['cdict'].keys())
+        log_dbcols = '\ndbcols: ' + ', '.join(up_data['cdict'].values())
 
-        if request.form['existing'] == "no":
-            error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
-                request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
-                '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
-                request.form['embargo'] + '\ncontactname: ' +\
-                request.form['contactName'] + '\ncontactemail: ' +\
-                request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
-                '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+        # if request.form['existing'] == "no":
+        #     error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
+        #         request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
+        #         '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
+        #         request.form['embargo'] + '\ncontactname: ' +\
+        #         request.form['contactName'] + '\ncontactemail: ' +\
+        #         request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
+        #         '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+        #         replace + '\n\n'
+        if up_data['existing'] == "no":
+            error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
+                up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
+                '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
+                up_data['embargo'] + '\ncontactname: ' +\
+                up_data['contactName'] + '\ncontactemail: ' +\
+                up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
+                '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
                 replace + '\n\n'
         else:
-            error_details = '\n\nfn_to_db: ' + ', '.join(fn_to_db) +\
+            error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
                 '\nreplace: ' + replace + '\n\n'
 
         if replace == 'records':
@@ -2624,8 +2699,8 @@ def confirmcolumns():
         email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
         try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-            [os.remove(f) for f in fnlong]
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
+            [os.remove(f) for f in up_data['fnlong']]
             db.session.rollback()
         except:
             pass
@@ -2634,7 +2709,7 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     try:
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
     except:
         pass
     db.session.commit() #persist all db changes made during upload
