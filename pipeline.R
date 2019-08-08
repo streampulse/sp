@@ -1,22 +1,21 @@
-library(mailR)
-library(sourcetools)
-library(stringr)
+# library(sourcetools)
+# library(stringr)
 
 #retrieve arguments passed from app.py
 args = commandArgs(trailingOnly=TRUE)
 names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 
-#read in gmail password
-setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
-# setwd('/home/aaron/sp/scheduled_scripts/')
-
-conf = readLines('../config.py')
-extract_from_config = function(key){
-    ind = which(lapply(conf, function(x) grepl(key, x)) == TRUE)
-    val = str_match(conf[ind], '.*\\"(.*)\\"')[2]
-    return(val)
-}
-pw = extract_from_config('GRDO_GMAIL_PW')
+# #read in gmail password
+# setwd('/home/mike/git/streampulse/server_copy/sp')
+# # setwd('/home/aaron/sp')
+#
+# conf = readLines('config.py')
+# extract_from_config = function(key){
+#     ind = which(lapply(conf, function(x) grepl(key, x)) == TRUE)
+#     val = str_match(conf[ind], '.*\\"(.*)\\"')[2]
+#     return(val)
+# }
+# pw = extract_from_config('GRDO_GMAIL_PW')
 
 #read in dataset saved during first part of upload process
 x = read.csv('~/Desktop/xxwide.csv', stringsAsFactors=FALSE)
@@ -76,31 +75,31 @@ range_check = function(df, flagdf){
         for(c in colnames(df)[-c(1, ncol(df))]){
             rmin = ranges[[c]][1]
             rmax = ranges[[c]][2]
-            flagdf[[c]] = df[[c]] < rmin | df[[c]] > rmax
+            flagdf[[c]] = as.numeric(df[[c]] < rmin | df[[c]] > rmax)
         }
 
-        flagdf = as.numeric(flagdf)
-
-        return(list(df, flagdf))
+        return(list('df'=df, 'flagdf'=flagdf))
 }
 
 df_and_flagcodes = range_check(z, flagdf)
 
-#notify user that it's done
-email_template = 'static/email_templates/pipeline_complete.txt'
-# email_template = '/home/mike/git/streampulse/server_copy/sp/static/email_templates/pipeline_complete.txt'
-email_body = read(email_template)
 
-tmpurl = 'https://data.streampulse.org/pipeline-complete/' + args['tmpcode']
-email_body = sprintf(email_body, args['region'], args['site'],
-    args['tmpurl'], args['tmpurl'])
+# # write(names(args), file='/home/mike/Desktop/foo.txt')
 
-send.mail(from='grdouser@gmail.com',
-    # to=c(args['notificationEmail']), subject='StreamPULSE upload complete',
-    to=c('vlahm13@gmail.com'), subject='StreamPULSE upload complete',
-    body=email_body, authenticate=TRUE, send=TRUE,
-    smtp=list(host.name='smtp.gmail.com', port=587,
-        user.name="grdouser@gmail.com",
-        passwd=pw, ssl=TRUE))
-
-# write(names(args), file='/home/mike/Desktop/foo.txt')
+# #notify user that it's done
+# email_template = 'static/email_templates/pipeline_complete.txt'
+# # email_template = '/home/mike/git/streampulse/server_copy/sp/static/email_templates/pipeline_complete.txt'
+# email_body = read(email_template)
+#
+# tmpurl = 'https://data.streampulse.org/pipeline-complete/' + args['tmpcode']
+# email_body = sprintf(email_body, args['region'], args['site'],
+#     args['tmpurl'], args['tmpurl'])
+#
+# send.mail(from='grdouser@gmail.com',
+#     # to=c(args['notificationEmail']), subject='StreamPULSE upload complete',
+#     to=c('vlahm13@gmail.com'), subject='StreamPULSE upload complete',
+#     body=email_body, authenticate=TRUE, send=TRUE,
+#     smtp=list(host.name='smtp.gmail.com', port=587,
+#         user.name="grdouser@gmail.com",
+#         passwd=pw, ssl=TRUE))
+#
