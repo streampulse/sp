@@ -1,19 +1,15 @@
-# library(mailR)
 # library(sourcetools)
 # library(stringr)
-library(AnomalyDetection)
-library(dplyr)
-
 
 #retrieve arguments passed from app.py
 args = commandArgs(trailingOnly=TRUE)
 names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 
 # #read in gmail password
-# setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
-# # setwd('/home/aaron/sp/scheduled_scripts/')
+# setwd('/home/mike/git/streampulse/server_copy/sp')
+# # setwd('/home/aaron/sp')
 #
-# conf = readLines('../config.py')
+# conf = readLines('config.py')
 # extract_from_config = function(key){
 #     ind = which(lapply(conf, function(x) grepl(key, x)) == TRUE)
 #     val = str_match(conf[ind], '.*\\"(.*)\\"')[2]
@@ -81,12 +77,10 @@ range_check = function(df, flagdf){
         for(c in colnames(df)[-c(1, ncol(df))]){
             rmin = ranges[[c]][1]
             rmax = ranges[[c]][2]
-            flagdf[[c]] = df[[c]] < rmin | df[[c]] > rmax
+            flagdf[[c]] = as.numeric(df[[c]] < rmin | df[[c]] > rmax)
         }
 
-        flagdf = as.numeric(flagdf)
-
-        return(list(df, flagdf))
+        return(list('df'=df, 'flagdf'=flagdf))
 }
 
 df_and_flagcodes = range_check(z, flagdf)
@@ -144,8 +138,10 @@ plot(y, type='l', col='red')
 #lstm
 
 
-
 # #notify user that it's done (to avoid java baloney, use python for this)
+# # write(names(args), file='/home/mike/Desktop/foo.txt')
+
+# #notify user that it's done
 # email_template = 'static/email_templates/pipeline_complete.txt'
 # # email_template = '/home/mike/git/streampulse/server_copy/sp/static/email_templates/pipeline_complete.txt'
 # email_body = read(email_template)
@@ -162,4 +158,3 @@ plot(y, type='l', col='red')
 #         user.name="grdouser@gmail.com",
 #         passwd=pw, ssl=TRUE))
 #
-# # write(names(args), file='/home/mike/Desktop/foo.txt')
