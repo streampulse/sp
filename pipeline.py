@@ -29,7 +29,7 @@ upids = x.pop('upload_id')
 # newcols = x.columns[x.columns != 'DateTime_UTC'].tolist()
 # newcols.insert(0, 'DateTime_UTC')
 # x = x.reindex(newcols, axis='columns')
-z = x.head(30)
+z = x.head(1000)
 df = z
 z.iloc[0, 2] = -50; z.iloc[1, 3] = 2000
 
@@ -97,9 +97,9 @@ z, flagdf = range_check(z, flagdf)
 def anomaly_detect(df, flagdf):
 
     # Set tree parameters for robust random cut forest (rrcf)
-    num_trees = 4#40
+    num_trees = 20#40
     shingle_size = 20
-    tree_size = 16#256
+    tree_size = 64#256
     codisps = []
     # i=0
     # pp = list(enumerate(points))
@@ -113,6 +113,7 @@ def anomaly_detect(df, flagdf):
 
 for i in range(df.shape[1]):
     print('var' + str(i))
+    varname = df.columns[i]
     xseries = df.iloc[:,i].interpolate(method='linear').to_numpy()
     if all(np.isnan(xseries)):
         continue
@@ -152,18 +153,22 @@ for i in range(df.shape[1]):
 
     codisps.append(avg_codisp)
 
-
     avg_codisp = codisps[0]
 
     #get top 2% of anomaly scores
     avg_codisp_df = pd.DataFrame.from_dict(avg_codisp, orient='index',
         columns=['score'])
     thresh = float(avg_codisp_df.quantile(0.98))
-    outl_inds = avg_codisp_df[avg_codisp_df.iloc[:,0] > thresh]
+    outl_inds_bool = avg_codisp_df.iloc[:,0] > thresh
+    flagdf.loc[outl_inds_bool, varname] = 2
+    any(outl_inds_bool)
+    any(flagdf.loc[outl_inds_bool, varname]) #insertion on bool index not working
+
+    outl_inds = avg_codisp_df[]
     outl = pd.merge(outl_inds, pd.DataFrame(xseries, columns=['val']), how='left', left_index=True,
         right_index=True)
 
-    flagdf
+
 
     #view series, anomaly score, and outliers
     fig, ax1 = plt.subplots(figsize=(20, 10))
