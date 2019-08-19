@@ -33,10 +33,12 @@ upids = origdf.pop('upload_id')
 # newcols = x.columns[x.columns != 'DateTime_UTC'].tolist()
 # newcols.insert(0, 'DateTime_UTC')
 # x = x.reindex(newcols, axis='columns')
-z = origdf.copy()
 
-zz = origdf.head(100)#.copy()
-zz.iloc[0, 2] = -50; zz.iloc[1, 4] = 2000
+z = origdf.copy()
+z.iloc[0, 2] = -50; z.iloc[400, 4] = 20
+
+zz = origdf.head(4000)#.copy()
+zz.iloc[0, 2] = -50; zz.iloc[400, 4] = 15
 z = zz.copy()
 # df = z
 
@@ -102,6 +104,7 @@ def range_check(df, flagdf):
     return (df, flagdf)
 
 z2, flagdf = range_check(z, flagdf)
+
 
 def anomaly_detect(df, flagdf):
 
@@ -217,39 +220,172 @@ def plot_flags(origdf, df, flagdf):
         ax[i].scatter(outlier.index, outlier, color='orange')
         # plt.title('Dissolved O2 (gray) and anomaly score (orange)', size=14)
         ax[i].tick_params(axis='y', labelcolor=linecol, labelsize=12)
+        # ax[i].set_xticklabels([])
+        # ax[i].xticks([])
+        # ax[i].gca().axes.get_xaxis().set_visible(False)
+        # cur_axes = ax[i].gca()
+        # cur_axes.axes.get_xaxis().set_visible(False)
+        ax[i].xaxis.set_visible(False)
+        # ax[i].xticks(np.arange(min(x), max(x)+1, 1.0))
 
 # import matplotlib
 # matplotlib.use('TkAgg')
 # matplotlib.use('GTKAgg')
 
-start_time = time.time()
-plot_flags(origdf, z3, flagdf) #full
-# plot_flags(zz, z3, flagdf) #subset
-print(round((time.time() - start_time) / 60, 2))
+# plot_flags(origdf, z3, flagdf) #full
+plot_flags(zz, z3, flagdf) #subset
+
+
+
+
+df = z
+num_trees = 40#40
+shingle_size = 1
+tree_size = 256#256
+
+i=1
+varname = df.columns[i]
+
+xseries = df.iloc[:,i].interpolate(method='linear').to_numpy()
+
+if np.isnan(xseries[0]):
+    xseries[0] = xseries[1]
+
+#create a forest of empty trees
+forest = []
+for _ in range(num_trees):
+    tree = rrcf.RCTree()
+    forest.append(tree)
+
+#create rolling window
+points = rrcf.shingle(xseries, size=shingle_size)
+
+avg_codisp = {}
+for index, point in enumerate(points):
+    if index % 2000 == 0:
+        # if index > 16000:
+        print('point' + str(index))
+    # if index == 17920:
+    #     raise ValueError('a')
+    for tree in forest:
+        #drop the oldest point (FIFO) if tree is too big
+        if len(tree.leaves) > tree_size:
+            tree.forget_point(index - tree_size)
+
+        tree.insert_point(point, index=index)
+
+        #compute collusive displacement on the inserted point
+        new_codisp = tree.codisp(index)
+
+        #take the average codisp across all trees; that's anomaly score
+        if not index in avg_codisp:
+            avg_codisp[index] = 0
+        avg_codisp[index] += new_codisp / num_trees
+
+
+
+
+
 
 
 
 # #extras
-# fig, ax1 = plt.subplots(nrows=nr, ncols=nc, figsize=(20, 10))
-# color = 'tab:gray'
-# ax1.set_ylabel('Dissolved Oxygen', color=color, size=14)
-# ax1.plot(xseries, color=color)
+# nplots = z3.shape[1]
+# sqp = math.sqrt(nplots)
+# nr = round(sqp)
+# nc = math.ceil(sqp)
+# xseries = z3.iloc[:,5].interpolate(method='linear').to_numpy()
+
+fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(20, 10))
+color = 'tab:gray'
+ax1.set_ylabel('Dissolved Oxygen', color=color, size=14)
+ax1.plot(xseries, color=color, marker='.')
 # ax1.scatter(outl.index, outl['val'], color='red')
-# ax1.tick_params(axis='y', labelcolor=color, labelsize=12)
-# # ax1.set_ylim(0,15)
-# # ax1.set_xlim(750,850)
-# ax2 = ax1.twinx()
-# color = 'tab:orange'
-# ax2.set_ylabel('CoDisp', color=color, size=14)
-# ax2.plot(pd.Series(avg_codisp).sort_index(), color=color)
-# ax2.tick_params(axis='y', labelcolor=color, labelsize=12)
-# ax2.grid(False)
-# # ax2.set_ylim(0, 140)
-# # ax1.set_xlim(750,850)
+ax1.tick_params(axis='y', labelcolor=color, labelsize=12)
+# ax1.set_ylim(0,2)
+# ax1.set_xlim(23300,23400)
+ax2 = ax1.twinx()
+color = 'tab:blue'
+ax2.set_ylabel('CoDisp', color=color, size=14)
+ax2.plot(pd.Series(avg_codisp).sort_index(), color=color)
+avg_codisp_df = pd.DataFrame.from_dict(avg_codisp, orient='index',
+    columns=['score'])
+thresh = float(avg_codisp_df.quantile(0.99))
+potential_outl = avg_codisp_df[avg_codisp_df['score'] > thresh]
+ax2.scatter(potential_outl.index, potential_outl['score'], color='black')
+flect = np.median(potential_outl) + 1 * np.std(potential_outl)
+potential_outl2 = potential_outl[potential_outl['score'] > list(flect)[0]]
+ax2.scatter(potential_outl2.index, potential_outl2['score'], color='yellow')
+flect = np.median(potential_outl) + 2 * np.std(potential_outl)
+potential_outl3 = potential_outl[potential_outl['score'] > list(flect)[0]]
+ax2.scatter(potential_outl3.index, potential_outl3['score'], color='orange')
+flect = np.median(potential_outl) + 3 * np.std(potential_outl)
+potential_outl4 = potential_outl[potential_outl['score'] > list(flect)[0]]
+ax2.scatter(potential_outl4.index, potential_outl4['score'], color='red')
+ax2.tick_params(axis='y', labelcolor=color, labelsize=12)
+ax2.grid(False)
+# ax2.set_ylim(0, 140)
+# ax1.set_xlim(750,850)
 plt.title('Dissolved O2 (gray) and anomaly score (orange)', size=14)
 
 
 
+#flip through
+for i in potential_outl4.itertuples():
+    fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(20, 10))
+    color = 'tab:gray'
+    ax1.set_ylabel('Dissolved Oxygen', color=color, size=14)
+    ax1.plot(xseries, color=color, marker='.')
+    # ax1.scatter(outl.index, outl['val'], color='red')
+    ax1.tick_params(axis='y', labelcolor=color, labelsize=12)
+    ax1.set_ylim(0, max(xseries))
+    ax1.set_xlim(i.Index - 50, i.Index + 50)
+    # ax1.set_xlim(max([i.Index - 50, potential_outl4.index[0]]),
+    #     min([i.Index + 50, potential_outl4.index[-1]]))
+    ax2 = ax1.twinx()
+    color = 'tab:blue'
+    ax2.set_ylabel('CoDisp', color=color, size=14)
+    ax2.plot(pd.Series(avg_codisp).sort_index(), color=color)
+    avg_codisp_df = pd.DataFrame.from_dict(avg_codisp, orient='index',
+        columns=['score'])
+    thresh = float(avg_codisp_df.quantile(0.99))
+    potential_outl = avg_codisp_df[avg_codisp_df['score'] > thresh]
+    ax2.scatter(potential_outl.index, potential_outl['score'], color='black')
+    flect = np.median(potential_outl) + 1 * np.std(potential_outl)
+    potential_outl2 = potential_outl[potential_outl['score'] > list(flect)[0]]
+    ax2.scatter(potential_outl2.index, potential_outl2['score'], color='yellow')
+    flect = np.median(potential_outl) + 2 * np.std(potential_outl)
+    potential_outl3 = potential_outl[potential_outl['score'] > list(flect)[0]]
+    ax2.scatter(potential_outl3.index, potential_outl3['score'], color='orange')
+    flect = np.median(potential_outl) + 3 * np.std(potential_outl)
+    potential_outl4 = potential_outl[potential_outl['score'] > list(flect)[0]]
+    ax2.scatter(potential_outl4.index, potential_outl4['score'], color='red')
+    ax2.tick_params(axis='y', labelcolor=color, labelsize=12)
+    ax2.grid(False)
+    # ax2.set_ylim(0, 140)
+    # ax1.set_xlim(750,850)
+    plt.title('Dissolved O2 (gray) and anomaly score (orange)', size=14)
+
+
+
+avg_codisp_df = pd.DataFrame.from_dict(avg_codisp, orient='index',
+    columns=['score'])
+thresh = float(avg_codisp_df.quantile(0.95))
+potential_outl = avg_codisp_df[avg_codisp_df['score'] > thresh]
+flect = np.median(potential_outl) + np.std(potential_outl)
+import seaborn as sns
+plt = sns.distplot(potential_outl)
+plt.axvline(list(flect)[0], 0, 99999, linestyle='--')
+potential_outl = potential_outl[potential_outl > flect]
+plt.scatter(potential_outl)
+
+
+outl_inds_bool = avg_codisp_df.loc[:,'score'] > thresh
+outl_inds_int = outl_inds_bool[outl_inds_bool].index
+outl_vals = flagdf.loc[flagdf.index[outl_inds_int], c]
+flagdf.loc[flagdf.index[outl_inds_int], c] = outl_vals + 2
+
+df.loc[df.index[outl_inds_int], varname] = np.nan
 
 
 #put upload id column back on
