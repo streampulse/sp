@@ -17,7 +17,7 @@ import copy
 import re
 
 # import random
-q = np.load('/home/mike/Downloads/telemanom_hmm/data/train/F-2.npy')
+q = np.load('/home/mike/Downloads/telemanom_hmm/data/test/F-2.npy')
 qq = pd.DataFrame(q)
 qq.to_csv('/home/mike/temp/arse.csv')
 
@@ -54,9 +54,9 @@ scaler = scaler.fit(dd)
 scaler = scaler.fit(train)
 train = pd.DataFrame(scaler.transform(train))
 test = pd.DataFrame(scaler.transform(test))
-test.iloc[1000,1] = 5
-test.iloc[1000,2] = 1
-test.iloc[1000,0] = 0
+test.iloc[1000:1010,1] = -1
+test.iloc[1000:1001,2] = 1
+test.iloc[1000:1010,0] = 0
 train.columns = vars
 test.columns = vars
 dd.apply(lambda x: sum(x.isnull()), axis=0)
@@ -71,8 +71,8 @@ for i in range(train.shape[1]):
     testSer = test.iloc[:,i]#.interpolate(method='linear')
     # if ser[0] == np.nan:
     #     ser[0] = ser[1]
-    trainNpy = pd.concat([trainSer, pd.Series(np.repeat(0, trainR.shape[0]))], axis=1)
-    testNpy = pd.concat([testSer, pd.Series(np.repeat(0, testR.shape[0]))], axis=1)
+    # trainNpy = pd.concat([trainSer, pd.Series(np.repeat(0, trainR.shape[0]))], axis=1)
+    # testNpy = pd.concat([testSer, pd.Series(np.repeat(0, testR.shape[0]))], axis=1)
     # trn = npy.head(6000)
     # tst = npy.iloc[6001:10000,:].reset_index(drop=True)
     # trn = npy.head(16126)
