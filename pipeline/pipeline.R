@@ -31,7 +31,7 @@ flagdf[, 2:(ncol(flagdf) - 1)] = 0
 range_check = function(df, flagdf){
 
     ranges = list(
-        'DO_mgL'=c(0, 40),
+        'DO_mgL'=c(-0.5, 40),
         'DOSecondary_mgL'=c(0, 40),
         'satDO_mgL'=c(0, 30),
         'DOsat_pct'=c(0, 200),
