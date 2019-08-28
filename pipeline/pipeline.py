@@ -25,10 +25,6 @@ script_name, notificationEmail, tmpcode, region, site = sys.argv
 # with open(dumpfile) as d:
 #     up_data = json.load(d)
 
-origdf = pd.read_csv('~/Dropbox/streampulse/data/pipeline/1.csv',
-    index_col='DateTime_UTC')
-upids = origdf.pop('upload_id')
-
 # %% trained outl detector
 
 q = np.load('/home/mike/Downloads/telemanom_hmm/data/test/F-2.npy')
@@ -89,12 +85,19 @@ for i in range(train.shape[1]):
 
 # %% rrcf detector
 
-z = origdf.copy()
-# z.iloc[0, 2] = -50; z.iloc[400, 4] = 20
+odf = pd.read_csv('~/Dropbox/streampulse/data/pipeline/1.csv',
+    index_col='DateTime_UTC')
+upids = odf.pop('upload_id')
+
+odf = odf.apply(lambda x: x.interpolate(method='linear'), axis=0)
+odf.iloc[[10, 20,21,22,23,24], [0,1]] = [5, 10]; odf.iloc[0, 2] = -50
+odf.iloc[[10, 20,21,22,23,24], [2,4]] = [-1, 6]; odf.iloc[0, 2] = -50
+z = odf.copy()
 
 # zz = z.head(1000).copy()
 # zz.iloc[[10, 20,21,22,23,24], [0,1]] = [15, 20]; zz.iloc[0, 2] = -50
 # z = zz.copy()
+
 flagdf = z.applymap(lambda x: 0)
 # flagdf = z.set_index('DateTime_UTC').applymap(lambda x: 0).reset_index()
 
@@ -163,6 +166,7 @@ def anomaly_detect2(df, flagdf, num_trees, tree_size):
 
     n = df.shape[0]
     codisps = {}
+    pot_outl_dict = {}
 
     for i in range(df.shape[1]):
         print('var' + str(i))
@@ -171,6 +175,7 @@ def anomaly_detect2(df, flagdf, num_trees, tree_size):
         xseries = df.iloc[:,i].interpolate(method='linear')
 
         if all(np.isnan(xseries)):
+            pot_outl_dict[varname] = None
             continue
         if np.isnan(xseries[0]):
             xseries[0] = xseries[1]
@@ -212,29 +217,43 @@ def anomaly_detect2(df, flagdf, num_trees, tree_size):
         # avg_codisp_df = pd.DataFrame.from_dict(avg_codisp, orient='index',
         #     columns=['score'])
         avg_codisp_df = pd.DataFrame(avg_codisp, columns=['score'])
-        thresh = float(avg_codisp_df.quantile(0.98))
+        thresh = float(avg_codisp_df.quantile(0.995))
         outl_inds_bool = avg_codisp_df.loc[:,'score'] > thresh
         outl_inds_int = outl_inds_bool[outl_inds_bool].index
+
+        # from scipy.stats import kurtosis, skew
+        potential_outl = avg_codisp_df.loc[outl_inds_int]
+        # potential_outl = avg_codisp_df.loc[outl_inds_int, 'score']
+        # dist = avg_codisp_df.loc[:,'score'].dropna()
+        # dist = avg_codisp_df.quantile(0.98)
+        # kurtosis(dist)
+        # import seaborn as sns
+        # sns.distplot(dist)
+
         outl_vals = flagdf.loc[flagdf.index[outl_inds_int], c]
         flagdf.loc[flagdf.index[outl_inds_int], c] = outl_vals + 2
 
         df.loc[df.index[outl_inds_int], varname] = np.nan
 
+        pot_outl_dict[c] = potential_outl
+
         # outl_inds = avg_codisp_df[outl_inds_bool]
         # outl = pd.merge(outl_inds, pd.DataFrame(xseries, columns=['val']), how='left', left_index=True,
         #     right_index=True)
 
-    return (df, flagdf)
+    return (df, flagdf, pot_outl_dict)
 
 
 import time
 start_time = time.time()
-z3, flagdf = anomaly_detect2(z2, flagdf, 100, 256)
+z3, flagdf, potential_outl = anomaly_detect2(z2, flagdf, 200, 1024)
 print(round((time.time() - start_time) / 60, 2))
 
 flagdf.apply(sum, axis=0)
+z.apply(lambda x: sum(x.isnull()), axis=0)
 
-def plot_flags(origdf, df, flagdf, xlim=None):
+# origdf = odf; df = z3; i=5
+def plot_flags(origdf, df, flagdf, potential_outl=None, xlim=None, ylim=None):
     # df=z3; i=2
     nplots = df.shape[1]
     sqp = math.sqrt(nplots)
@@ -246,19 +265,41 @@ def plot_flags(origdf, df, flagdf, xlim=None):
     linecol = 'tab:gray'
     fig, ax = plt.subplots(nrows=nr, ncols=nc, figsize=(20, 10))
     ax = [p for sub in ax for p in sub]
+
     for i in range(df.shape[1]):
+
         varname = df.columns[i]
+        if potential_outl is not None:
+            if not isinstance(potential_outl[varname], pd.DataFrame):
+                ax[i].plot([1, 2, 3], [1, 2, 3])
+                continue
+        origdf.index = range(len(origdf))
+        flagdf.index = range(len(flagdf))
         varseries = origdf[varname]
         out_of_range = origdf.loc[flagdf.index[flagdf[varname] == 1], varname]
         outlier = origdf.loc[flagdf.index[flagdf[varname].isin([2, 3])], varname]
-
         ax[i].set_ylabel(varname, color=linecol, size=14)
         ax[i].plot(varseries, color=linecol, marker='.')
-        ax[i].scatter(out_of_range.index, out_of_range, color='red')
-        ax[i].scatter(outlier.index, outlier, color='orange')
+        # p = potential_outl[varname]
+
+        # ax[i].scatter(p.index, p['score'], color='black')
+        # flect = np.median(p) + 1 * np.std(p)
+        # p2 = p[p['score'] > list(flect)[0]]
+        # ax[i].scatter(p2.index, p2['score'], color='yellow')
+        # flect = np.median(p) + 2 * np.std(p)
+        # p3 = p[p['score'] > list(flect)[0]]
+        # ax[i].scatter(p3.index, p3['score'], color='orange')
+        # flect = np.median(p) + 3 * np.std(p)
+        # p4 = p[p['score'] > list(flect)[0]]
+        # ax[i].scatter(p4.index, p4['score'], color='red')
+
+        ax[i].scatter(out_of_range.index, out_of_range, color='green')
+        ax[i].scatter(outlier.index, outlier, color='blue')
         # plt.title('Dissolved O2 (gray) and anomaly score (orange)', size=14)
-        if xlim:
+        if xlim is not None:
             ax[i].set_xlim(xlim[0], xlim[1])
+        if ylim is not None:
+            ax[i].set_ylim(ylim[0], ylim[1])
         ax[i].tick_params(axis='y', labelcolor=linecol, labelsize=12)
         # ax[i].set_xticklabels([])
         # ax[i].xticks([])
@@ -268,9 +309,10 @@ def plot_flags(origdf, df, flagdf, xlim=None):
         # ax[i].xticks(np.arange(min(x), max(x)+1, 1.0))
         ax[i].xaxis.set_visible(False)
 
-
-# plot_flags(origdf, z3, flagdf) #full
-plot_flags(zz, z3, flagdf, [0,100]) #subset
+# plot_flags(odf, z3, flagdf, xlim=[1600,1700], ylim=[300,700]) #full
+# plot_flags(odf, z3, flagdf, xlim=[1500,2000])
+plot_flags(odf, z3, flagdf) #full
+# plot_flags(zz, z3, flagdf, potential_outl, [0,1000]) #subset
 
 # %% lstm tuning
 
