@@ -135,19 +135,28 @@ for(c in colnames(diffs)){
     if(c %in% c('Level_m', 'Depth_m', 'Discharge_m3s')) alpha=0.0001
     if(sum(is.na(diffs[, c])) / nrow(diffs) > 0.99) next
 
+    #find extreme points
     anom_df = as_tibble(df) %>%
         time_decompose(c, method='twitter') %>%
         anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
     outls1 = which(anom_df$anomaly == 'Yes')
 
+    #find extreme jumps
     anom_df = as_tibble(diffs) %>%
         time_decompose(c, method='twitter') %>%
         anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
     outls2 = which(anom_df$anomaly == 'Yes') + 1
+
+    #find super extreme points
+    anom_df = as_tibble(df) %>%
+        time_decompose(c, method='twitter') %>%
+        anomalize(remainder, max_anoms=0.001, alpha=alpha, method='gesd')
+    outls3 = which(anom_df$anomaly == 'Yes')
     # anom_df = time_recompose(anom_df)
     # plot_anomalies(anom_df, time_recomposed=TRUE, ncol=1, alpha_dots=.2)
 
-    outls = intersect(outls1, outls2)
+    #outls are overlap of extreme points+jumps, as well as super extreme points
+    outls = union(intersect(outls1, outls2), outls3)
 
     flagdf[outls, c] = flagdf[outls, c] + 2
 }
