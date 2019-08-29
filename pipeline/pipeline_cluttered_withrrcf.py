@@ -83,6 +83,8 @@ for i in range(train.shape[1]):
 # newcols.insert(0, 'DateTime_UTC')
 # x = x.reindex(newcols, axis='columns')
 
+# %% rrcf detector
+
 odf = pd.read_csv('~/Dropbox/streampulse/data/pipeline/1.csv',
     index_col='DateTime_UTC')
 upids = odf.pop('upload_id')
@@ -158,7 +160,173 @@ def range_check(df, flagdf):
 
 z2, flagdf = range_check(z, flagdf)
 
+# df = z2; num_trees=200; shingle_size=1; tree_size=64; i=1
+# del(df, num_trees, shingle_size, tree_size, i)
 
+
+def anomaly_detect(df, flagdf, num_trees, shingle_size, tree_size):
+
+    # df = z
+    # Set tree parameters for robust random cut forest (rrcf)
+    # num_trees = 40#40
+    # shingle_size = 20
+    # tree_size = 64#256
+    codisps = {}
+    # i=1
+    # pp = list(enumerate(points))
+    # index, point = pp[17920]
+    # tree=forest[0]
+    # np.isnan(xseries)
+    # xseries.interpolate(method='linear')
+    # all(x.iloc[:,i].isnull())
+    # z.iloc[1,3] = np.nan
+    # z.pH.interpolate()
+
+    for i in range(df.shape[1]):
+        print('var' + str(i))
+        varname = df.columns[i]
+
+        xseries = df.iloc[:,i].interpolate(method='linear').to_numpy()
+
+        if all(np.isnan(xseries)):
+            continue
+        if np.isnan(xseries[0]):
+            xseries[0] = xseries[1]
+
+        #create a forest of empty trees
+        forest = []
+        for _ in range(num_trees):
+            tree = rrcf.RCTree()
+            forest.append(tree)
+
+        #create rolling window
+        points = rrcf.shingle(xseries, size=shingle_size)
+
+        avg_codisp = {}
+        for index, point in enumerate(points):
+            if index % 2000 == 0:
+                # if index > 16000:
+                print('point' + str(index))
+            # if index == 17920:
+            #     raise ValueError('a')
+            for tree in forest:
+                #drop the oldest point (FIFO) if tree is too big
+                if len(tree.leaves) > tree_size:
+                    tree.forget_point(index - tree_size)
+
+                tree.insert_point(point, index=index)
+
+                #compute collusive displacement on the inserted point
+                new_codisp = tree.codisp(index)
+
+                #take the average codisp across all trees; that's anomaly score
+                if not index in avg_codisp:
+                    avg_codisp[index] = 0
+                avg_codisp[index] += new_codisp / num_trees
+
+        codisps[varname] = avg_codisp
+
+    # c='WaterTemp_C'
+    for c in codisps.keys():
+        avg_codisp = codisps[c]
+
+        #get top 2% of anomaly scores; flag those points with +2
+        avg_codisp_df = pd.DataFrame.from_dict(avg_codisp, orient='index',
+            columns=['score'])
+        thresh = float(avg_codisp_df.quantile(0.98))
+        outl_inds_bool = avg_codisp_df.loc[:,'score'] > thresh
+        outl_inds_int = outl_inds_bool[outl_inds_bool].index
+        outl_vals = flagdf.loc[flagdf.index[outl_inds_int], c]
+        flagdf.loc[flagdf.index[outl_inds_int], c] = outl_vals + 2
+
+        df.loc[df.index[outl_inds_int], varname] = np.nan
+
+        # outl_inds = avg_codisp_df[outl_inds_bool]
+        # outl = pd.merge(outl_inds, pd.DataFrame(xseries, columns=['val']), how='left', left_index=True,
+        #     right_index=True)
+
+    return (df, flagdf)
+
+def anomaly_detect2(df, flagdf, num_trees, tree_size):
+
+    n = df.shape[0]
+    codisps = {}
+    pot_outl_dict = {}
+
+    for i in range(df.shape[1]):
+        print('var' + str(i))
+        varname = df.columns[i]
+
+        xseries = df.iloc[:,i].interpolate(method='linear')
+
+        if all(np.isnan(xseries)):
+            pot_outl_dict[varname] = None
+            continue
+        if np.isnan(xseries[0]):
+            xseries[0] = xseries[1]
+
+        xseries = pd.concat([xseries,
+            pd.Series(np.repeat(0, df.shape[0]), index=xseries.index)],
+            axis=1).to_numpy()
+
+        sample_size_range = (n // tree_size, tree_size)
+
+        # Construct forest
+        forest = []
+        while len(forest) < num_trees:
+            # Select random subsets of points uniformly
+            ixs = np.random.choice(n, size=sample_size_range,
+                                   replace=False)
+            # Add sampled trees to forest
+            trees = [rrcf.RCTree(xseries[ix], index_labels=ix) for ix in ixs]
+            forest.extend(trees)
+
+        # Compute average CoDisp
+        avg_codisp = pd.Series(0.0, index=np.arange(n))
+        # avg_codisp_dict = {}
+        index = np.zeros(n)
+        for tree in forest:
+            codisp = pd.Series({leaf : tree.codisp(leaf)
+                               for leaf in tree.leaves})
+            avg_codisp[codisp.index] += codisp
+            np.add.at(index, codisp.index.values, 1)
+        avg_codisp /= index
+        # avg_codisp_dict[index] = avg_codisp
+        codisps[varname] = avg_codisp
+
+    # c='WaterTemp_C'
+    for c in codisps.keys():
+        avg_codisp = codisps[c]
+
+        #get top 2% of anomaly scores; flag those points with +2
+        # avg_codisp_df = pd.DataFrame.from_dict(avg_codisp, orient='index',
+        #     columns=['score'])
+        avg_codisp_df = pd.DataFrame(avg_codisp, columns=['score'])
+        thresh = float(avg_codisp_df.quantile(0.995))
+        outl_inds_bool = avg_codisp_df.loc[:,'score'] > thresh
+        outl_inds_int = outl_inds_bool[outl_inds_bool].index
+
+        # from scipy.stats import kurtosis, skew
+        potential_outl = avg_codisp_df.loc[outl_inds_int]
+        # potential_outl = avg_codisp_df.loc[outl_inds_int, 'score']
+        # dist = avg_codisp_df.loc[:,'score'].dropna()
+        # dist = avg_codisp_df.quantile(0.98)
+        # kurtosis(dist)
+        # import seaborn as sns
+        # sns.distplot(dist)
+
+        outl_vals = flagdf.loc[flagdf.index[outl_inds_int], c]
+        flagdf.loc[flagdf.index[outl_inds_int], c] = outl_vals + 2
+
+        df.loc[df.index[outl_inds_int], varname] = np.nan
+
+        pot_outl_dict[c] = potential_outl
+
+        # outl_inds = avg_codisp_df[outl_inds_bool]
+        # outl = pd.merge(outl_inds, pd.DataFrame(xseries, columns=['val']), how='left', left_index=True,
+        #     right_index=True)
+
+    return (df, flagdf, pot_outl_dict)
 
 
 import time
