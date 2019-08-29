@@ -1,9 +1,14 @@
+rm(list=ls()); cat('/014')
+
 # library(sourcetools)
 # library(stringr)
+library(dplyr)
+library(zoo)
+# library(imputeTS)
 
 #retrieve arguments passed from app.py
-args = commandArgs(trailingOnly=TRUE)
-names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
+# args = commandArgs(trailingOnly=TRUE)
+# names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 
 # #read in gmail password
 # setwd('/home/mike/git/streampulse/server_copy/sp')
@@ -18,16 +23,34 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # pw = extract_from_config('GRDO_GMAIL_PW')
 
 #read in dataset saved during first part of upload process
-x = read.csv('~/Desktop/xxwide.csv', stringsAsFactors=FALSE)
+x = read.csv('~/Dropbox/streampulse/data/pipeline/1.csv',
+    stringsAsFactors=FALSE)
+x = select(x, DateTime_UTC, everything())
 x$DateTime_UTC = as.POSIXct(x$DateTime_UTC, tz='UTC')
 # x$DateTime_UTC = as.POSIXlt(x$DateTime_UTC, tz='UTC')
-z = head(x)
-z[1,3] = -50; z[2,4] = 2000
+z = x
+# z = head(x)
 
 flagdf = z
 flagdf[, 2:(ncol(flagdf) - 1)] = 0
 
+# sensorcols = which(! colnames(z) %in% c('DateTime_UTC','upload_id'))
+dtcol = z$DateTime_UTC
+upload_id = z$upload_id
+z$DateTime_UTC = NULL
+z$upload_id = NULL
+
 #pipeline
+# z = as.data.frame(zoo::na.approx(z, na.rm=FALSE, rule=2))
+z = as.data.frame(apply(z, 2,
+    function(x){
+        if(sum(is.na(x)) / length(x) > 0.95) return(x)
+        zoo::na.approx(x, na.rm=FALSE, rule=2)
+    }))
+
+# z[seq(10, 25010, 5000), ] = -50
+z[2:10, ] = 2; z[1000:1020, ] = 10
+
 range_check = function(df, flagdf){
 
     ranges = list(
@@ -74,7 +97,8 @@ range_check = function(df, flagdf){
         'benthic_PAR'=c(0, 100000),
         'Battery_V'=c(0, 1000))
 
-        for(c in colnames(df)[-c(1, ncol(df))]){
+        for(c in colnames(df)){
+            if(all(is.na(df[[c]]))) next
             rmin = ranges[[c]][1]
             rmax = ranges[[c]][2]
             flagdf[[c]] = as.numeric(df[[c]] < rmin | df[[c]] > rmax)
@@ -84,6 +108,65 @@ range_check = function(df, flagdf){
 }
 
 df_and_flagcodes = range_check(z, flagdf)
+df = df_and_flagcodes$df
+flagdf = df_and_flagcodes$flagdf
+
+
+#anomalize
+library(anomalize)
+# x$DateTime_UTC = as.POSIXct(x$DateTime_UTC, tz='UTC')
+diffs = as.data.frame(apply(df, 2, diff))
+# dtcol_diff = dtcol[-1]
+
+par(mfrow=c(2,3), mar=c(0,0,3,0))
+for(i in 1:ncol(diffs)){
+    if(all(is.na(diffs[,i]))){
+        plot(1,1)
+        next
+    }
+    plot(diffs[,i], type='l', main=colnames(diffs)[i])
+}
+
+diffs$dt = dtcol[-1]
+df$dt = dtcol
+
+for(c in colnames(diffs)){
+    alpha = 0.01
+    if(c %in% c('Level_m', 'Depth_m', 'Discharge_m3s')) alpha=0.0001
+    if(sum(is.na(diffs[, c])) / nrow(diffs) > 0.99) next
+
+    anom_df = as_tibble(df) %>%
+        time_decompose(c, method='twitter') %>%
+        anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
+    outls1 = which(anom_df$anomaly == 'Yes')
+
+    anom_df = as_tibble(diffs) %>%
+        time_decompose(c, method='twitter') %>%
+        anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
+    outls2 = which(anom_df$anomaly == 'Yes') + 1
+    # anom_df = time_recompose(anom_df)
+    # plot_anomalies(anom_df, time_recomposed=TRUE, ncol=1, alpha_dots=.2)
+
+    outls = intersect(outls1, outls2)
+
+    flagdf[outls, c] = flagdf[outls, c] + 2
+}
+
+# c = 'WaterTemp_C'
+par(mfrow=c(2,3), mar=c(0,2,3,0))
+for(c in colnames(z)){
+    if(all(is.na(diffs[, c]))){
+        plot(1,1)
+        next
+    }
+    # plot(z[, c], type='l', main=c, xlim=c(6400, 6900))
+    plot(z[, c], type='l', main=c)
+    range_exceed = which(flagdf[, c] == 1)
+    outl_detect = which(flagdf[, c] %in% c(2, 3))
+    points(range_exceed, z[range_exceed, c], col='red')
+    points(outl_detect, z[outl_detect, c], col='orange')
+}
+
 
 #shit package
 # data(raw_data)
@@ -94,13 +177,6 @@ res = AnomalyDetectionVec(x[,4], max_anoms=0.4, period=96, direction='both',
     only_last=FALSE, plot=TRUE)
 res$plot
 
-#anomalize
-library(anomalize)
-x$DateTime_UTC = as.POSIXct(x$DateTime_UTC, tz='UTC')
-as_tibble(x) %>% time_decompose(WaterTemp_C) %>%
-    anomalize(remainder) %>%
-    time_recompose() %>%
-    plot_anomalies(time_recomposed=TRUE, ncol=3, alpha_dots=.2)
 
 #xgboost cart
 library(xgboost)
