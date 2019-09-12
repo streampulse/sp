@@ -1,6 +1,6 @@
 import sys
 sys.path.insert(0, '/home/mike/git/streampulse/server_copy/sp')
-import rrcf
+# import rrcf
 import pandas as pd
 from helpers import email_msg
 
@@ -31,13 +31,12 @@ q = np.load('/home/mike/Downloads/telemanom_hmm/data/test/F-2.npy')
 qq = pd.DataFrame(q)
 qq.to_csv('/home/mike/temp/arse.csv')
 
-trainR = pd.read_csv('~/Downloads/telemanom/training_dev/train.csv',
+trainR = pd.read_csv('~/Downloads/telemanom/training_dev/trainMud.csv',
     index_col='solar.time')
-testR = pd.read_csv('~/Downloads/telemanom/training_dev/test.csv',
-    index_col='solar.time')
-testR = pd.read_csv('~/Downloads/telemanom/training_dev/testAT.csv',
+testR = pd.read_csv('~/Downloads/telemanom/training_dev/testMud.csv',
     index_col='solar.time')
 
+trainR.head()
 dd = pd.concat([trainR, testR])
 dd = dd.reset_index().drop(['solar.time', 'light', 'DO.sat', 'depth'], axis=1)
 dd = dd.apply(lambda x: x.interpolate(method='linear'))
