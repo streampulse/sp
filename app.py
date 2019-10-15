@@ -2558,7 +2558,8 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     #save dataframe and ancillary data so that it can be accessed when user returns
-    xx.to_feather('../spdumps/' + tmpcode + '_xx.feather')
+    feather.write_feather(xx, '../spdumps/' + tmpcode + '_xx.feather')
+    # xx.to_feather('../spdumps/' + tmpcode + '_xx.feather')
     # xx.to_csv('../spdumps/' + tmpcode + '_xx.csv', index=False)
     dumpfile = '../spdumps/confirmcolumns' + tmpcode + '.json'
     with open(dumpfile, 'w') as d:
@@ -2599,9 +2600,68 @@ def pipeline_complete(tmpcode):
         site = up_data['site']
         replace = up_data['replace']
 
-        # xx = pd.read_csv('../spdumps/' + tmpcode + '_xx.csv')
-        xx = pd.read_feather('../spdumps/' + tmpcode + '_xx.feather')
-        
+        origdf = pd.read_feather('../spdumps/' + tmpcode + '_xx.feather')
+        pldf = pd.read_feather('../spdumps/' + tmpcode + '_cleaned.feather')
+        flagdf = pd.read_feather('../spdumps/' + tmpcode + '_flags.feather')
+
+        print origdf.head(1)
+        print pldf.head(1)
+        print flagdf.head(1)
+
+    except Exception as e:
+
+        tb = traceback.format_exc()
+        origdf_head = origdf.head(2).to_string()
+        pldf_head = pldf.head(2).to_string()
+        # log_rawcols = '\n\nrawcols: ' + ', '.join(up_data['cdict'].keys())
+        # log_dbcols = '\ndbcols: ' + ', '.join(up_data['cdict'].values())
+        #
+        # if up_data['existing'] == "no":
+        #     error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
+        #         up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
+        #         '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
+        #         up_data['embargo'] + '\ncontactname: ' +\
+        #         up_data['contactName'] + '\ncontactemail: ' +\
+        #         up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
+        #         '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
+        #         replace + '\n\n'
+        # else:
+        #     error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
+        #         '\nreplace: ' + replace + '\n\n'
+        #
+        # if replace == 'records':
+        #     errno = 'E009b'
+        #     msg = Markup("Error 009b. Try reducing the size of your revised " +\
+        #         "file by removing rows or columns that don't require revision.")
+        # else:
+        #     errno = 'E009a'
+        #     msg = Markup('Error 009a. StreamPULSE development has been notified.')
+        #
+        # full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
+        full_error_detail = tb + origdf_head + pldf_head + dumpfile +\
+            updata['region'] + updata['site']
+        log_exception(errno, full_error_detail)
+        email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+
+        # try:
+        #     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
+        #     [os.remove(f) for f in up_data['fnlong']]
+        #     db.session.rollback()
+        # except:
+        #     pass
+        msg = Markup('Error 012. StreamPULSE development has been notified.')
+        flash(msg, 'alert-danger')
+
+        return redirect(url_for('series_upload'))
+
+    return redirect(url_for('pipeline1'))
+
+
+@app.route("/submit_dataset/<string:tmpcode>", methods=["GET"])
+@login_required
+def submit_dataset(tmpcode):
+
+    try:
 
         #format df for database entry
         xx = xx.set_index(["DateTime_UTC", "upload_id"])
@@ -2615,7 +2675,6 @@ def pipeline_complete(tmpcode):
         xx['flag'] = None
         xx = xx[['region','site','DateTime_UTC','variable','value','flag',
             'upload_id']]
-
 
         # xx = pd.read_csv('../spdumps/' + 'e7805b62369e' + '_xx.csv',na_filter=False)
         # xx.flag = xx.flag.where(pd.notnull(xx.flag), None)
@@ -2719,8 +2778,8 @@ def pipeline_complete(tmpcode):
     flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
         'alert-success')
 
-    # return redirect(url_for('series_upload'))
-    return redirect(url_for('pipeline1'))
+    # return redirect(url_for('pipeline1'))
+    return redirect(url_for('series_upload'))
 
 @app.route("/grab_upload_confirm", methods=["POST"])
 def grab_confirmcolumns():
