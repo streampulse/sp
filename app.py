@@ -44,6 +44,7 @@ import regex
 # from email.mime.multipart import MIMEMultipart
 import subprocess
 from helpers import *
+import feather
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -2557,7 +2558,8 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     #save dataframe and ancillary data so that it can be accessed when user returns
-    xx.to_csv('../spdumps/' + tmpcode + '_xx.csv', index=False)
+    xx.to_feather('../spdumps/' + tmpcode + '_xx.feather')
+    # xx.to_csv('../spdumps/' + tmpcode + '_xx.csv', index=False)
     dumpfile = '../spdumps/confirmcolumns' + tmpcode + '.json'
     with open(dumpfile, 'w') as d:
         dmp = json.dump({'region': region, 'site': site, 'cdict': cdict,
@@ -2597,8 +2599,9 @@ def pipeline_complete(tmpcode):
         site = up_data['site']
         replace = up_data['replace']
 
-        xx = pd.read_csv('../spdumps/' + tmpcode + '_xx.csv')
-
+        # xx = pd.read_csv('../spdumps/' + tmpcode + '_xx.csv')
+        xx = pd.read_feather('../spdumps/' + tmpcode + '_xx.feather')
+        
 
         #format df for database entry
         xx = xx.set_index(["DateTime_UTC", "upload_id"])

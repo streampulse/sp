@@ -9,10 +9,10 @@
 </p>
 <p>
   This message was sent from the email address of the Global
-  Rivers Dissolved Oxygen database, which is affiliated with StreamPULSE.
+  Rivers Dissolved Oxygen database, an affiliate of StreamPULSE.
 </p>
 <p>
-  Please contact <a href='streampulse.info@gmail.com'>StreamPULSE
+  Please contact <a href='mailto:streampulse.info@gmail.com'>StreamPULSE
   development</a> if you have any questions.
 </p>
 <br>

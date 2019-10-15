@@ -1,7 +1,7 @@
-# library(stringr)
 library(tidyverse)
 library(imputeTS)
 library(anomalize)
+library(feather)
 
 setwd('/home/mike/git/streampulse/server_copy/sp')
 # setwd('/home/aaron/sp')
@@ -12,25 +12,19 @@ source('pipeline/helpers.R')
 args = commandArgs(trailingOnly=TRUE)
 names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 
-# #read in gmail password
-# conf = readLines('config.py')
-# extract_from_config = function(key){
-#     ind = which(lapply(conf, function(x) grepl(key, x)) == TRUE)
-#     val = str_match(conf[ind], '.*\\"(.*)\\"')[2]
-#     return(val)
-# }
-# pw = extract_from_config('GRDO_GMAIL_PW')
-
 #read in dataset saved during first part of upload process
 # x = read_csv('/home/mike/Dropbox/streampulse/data/pipeline/1.csv')
 # x = read.csv('/home/mike/Dropbox/streampulse/data/pipeline/1.csv',
 #     stringsAsFactors=FALSE)
 # z = x
 
-z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
-    stringsAsFactors=FALSE)
+# z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
+#     stringsAsFactors=FALSE)
+# write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
+z = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
 z = select(z, DateTime_UTC, everything()) %>%
-    mutate(DateTime_UTC=as.POSIXct(x$DateTime_UTC, tz='UTC'))
+    mutate(DateTime_UTC=as.POSIXct(z$DateTime_UTC, tz='UTC')) %>%
+    as.data.frame()
 
 #create df of same structure as data, to hold flag information
 flagdf = z
@@ -55,9 +49,16 @@ df_and_flagcodes = range_check(z, flagdf)
 z = df_and_flagcodes$df
 flagdf = df_and_flagcodes$flagdf
 
-#operation 2: residual error based outlier detection with anomalize package
+#operation 2: residual error based outlier detection via anomalize package
 #flags outliers with code 2
 df_and_flagcodes = basic_outlier_detect(z, flagdf)
-df = df_and_flagcodes$df
+z = df_and_flagcodes$df
 flagdf = df_and_flagcodes$flagdf
 
+#save flag codes to be read by flask app when user follows email link
+write_feather(z, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
+
+#notify user that pipeline processing is complete
+system2('/home/mike/miniconda3/envs/python2/bin/python',
+# system2('/home/aaron/sp/spenv/bin/python',
+    args=c('pipeline/notify_user.py', args))
