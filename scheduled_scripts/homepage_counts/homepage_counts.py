@@ -1,30 +1,23 @@
 import os
 import sys
-import MySQLdb
+import sqlalchemy as sa
 import pandas as pd
+
 wrk_dir = '/home/aaron/sp'
-#wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
+# wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, wrk_dir)
 os.chdir(wrk_dir)
 import config as cfg
 
 pw = cfg.MYSQL_PW
-
-db = MySQLdb.connect(host="localhost", user="root", passwd=pw, db="sp")
-cur = db.cursor()
+db = sa.create_engine('mysql://root:{0}@localhost/sp'.format(pw))
 
 #get number of users, observations, and sites to post on SP landing page
-cur.execute("select count(id) as n from user")
-nusers = int(cur.fetchone()[0])
-cur.execute("select count(id) as n from data")
-nobs = int(cur.fetchone()[0])
-cur.execute("select count(id) as n from powell")
-nobs_powell = int(cur.fetchone()[0])
+nusers = pd.read_sql("select count(id) as n from user", db.engine).n[0]
+nobs = pd.read_sql("select count(id) as n from data", db.engine).n[0]
+nobs_powell = pd.read_sql("select count(id) as n from powell", db.engine).n[0]
 nobs = nobs + nobs_powell
-cur.execute("select count(id) as n from site")
-nsites = int(cur.fetchone()[0])
-
-db.close()
+nsites = pd.read_sql("select count(id) as n from site", db.engine).n[0]
 
 #write to csv
 spstats = pd.DataFrame({'nusers':[nusers], 'nobs':[nobs], 'nsites':[nsites]})

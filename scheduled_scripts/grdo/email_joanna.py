@@ -2,7 +2,7 @@
 from builtins import str
 import os
 import sys
-import MySQLdb
+import sqlalchemy as sa
 import pandas as pd
 import datetime
 #for emailing:
@@ -12,7 +12,7 @@ from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 
 wrk_dir = '/home/aaron/sp'
-#wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
+# wrk_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, wrk_dir)
 os.chdir(wrk_dir)
 import config as cfg
@@ -20,17 +20,11 @@ import config as cfg
 mysql_pw = cfg.MYSQL_PW
 gmail_pw = cfg.GRDO_GMAIL_PW
 
-db = MySQLdb.connect(host="localhost", user="root", passwd=mysql_pw, db="sp")
-cur = db.cursor()
+db = sa.create_engine('mysql://root:{0}@localhost/sp'.format(mysql_pw))
 
 #get number of users, observations, and sites to post on SP landing page
-cur.execute("select * from grdo;")
-uploads = cur.fetchall()
-uploads = pd.DataFrame(list(uploads))
+uploads = pd.read_sql("select * from site;", db.engine)
 uploads.drop(0, axis=1, inplace=True)
-uploads.columns = ['name', 'email', 'addDate', 'embargo', 'notes', 'dataFiles', 'metaFiles']
-
-db.close()
 
 uploads.to_csv('scheduled_scripts/grdo/grdo_uploads.csv', index=False)
 
