@@ -1,4 +1,5 @@
 # os.chdir('/home/mike/git/streampulse/server_copy/sp')
+from builtins import str
 import os
 import sys
 import MySQLdb

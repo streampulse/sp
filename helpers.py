@@ -1,3 +1,4 @@
+from builtins import str
 import config as cfg
 from flask_login import current_user
 from datetime import datetime, timedelta

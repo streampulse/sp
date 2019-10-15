@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -168,6 +169,6 @@ writefiles = [x for x in writefiles if re.search('(?:predictions|modOut)_((?:.*)
     x).group(1) not in embargoed_sites]
 rel_wfs = [re.match(modeloutfolder + '/(.*)', f).group(1) for f in writefiles]
 zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] + '/all_sp_model_objects.zip', 'w')
-for i in xrange(len(writefiles)):
+for i in range(len(writefiles)):
     zf.write(writefiles[i], 'all_sp_model_objects/' + rel_wfs[i])
 zf.close()

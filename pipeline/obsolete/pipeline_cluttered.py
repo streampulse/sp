@@ -1,3 +1,6 @@
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import sys
 sys.path.insert(0, '/home/mike/git/streampulse/server_copy/sp')
 import rrcf
@@ -288,7 +291,7 @@ def anomaly_detect2(df, flagdf, num_trees, tree_size):
         codisps[varname] = avg_codisp
 
     # c='WaterTemp_C'
-    for c in codisps.keys():
+    for c in list(codisps.keys()):
         avg_codisp = codisps[c]
 
         #get top 2% of anomaly scores; flag those points with +2

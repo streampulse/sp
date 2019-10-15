@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import range
 import sys
 sys.path.insert(0, '/home/mike/git/streampulse/server_copy/sp')
 # import rrcf
@@ -190,8 +192,8 @@ def plot_flags(origdf, df, flagdf, potential_outl=None, xlim=None, ylim=None):
             if not isinstance(potential_outl[varname], pd.DataFrame):
                 ax[i].plot([1, 2, 3], [1, 2, 3])
                 continue
-        origdf.index = range(len(origdf))
-        flagdf.index = range(len(flagdf))
+        origdf.index = list(range(len(origdf)))
+        flagdf.index = list(range(len(flagdf)))
         varseries = origdf[varname]
         out_of_range = origdf.loc[flagdf.index[flagdf[varname] == 1], varname]
         outlier = origdf.loc[flagdf.index[flagdf[varname].isin([2, 3])], varname]

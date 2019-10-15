@@ -1,3 +1,4 @@
+from builtins import range
 import os
 import sys
 import pandas as pd
@@ -192,7 +193,7 @@ def chunker_ingester(df, chunksize=100000):
         xdict = df.to_dict('records')
         session.bulk_insert_mappings(Data, xdict) #ingest all records
     else:
-        for i in xrange(n_full_chunks):
+        for i in range(n_full_chunks):
             chunk = df.head(chunksize)
             df = df.drop(df.head(chunksize).index)
             chunk = chunk.to_dict('records')

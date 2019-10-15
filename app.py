@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 # os.chdir('/home/mike/git/streampulse/server_copy/sp')
 # import timeit
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
 from flask import (Flask, Markup, session, flash, render_template, request,
     jsonify, url_for, make_response, send_file, redirect, g, send_from_directory)
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
@@ -31,6 +35,7 @@ import sys
 import config as cfg
 # import logging
 import readline #needed for rpy2 import in conda env
+from functools import reduce
 os.environ['R_HOME'] = '/usr/lib/R' #needed for rpy2 to find R. has to be a better way
 import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
@@ -317,7 +322,7 @@ class User(db.Model):
     def is_anonymous(self):
         return False
     def get_id(self):
-        return unicode(self.id)
+        return str(self.id)
     def qaqc_auth(self):
         return self.qaqc.split(",") # which tables can they edit
     def __repr__(self):
@@ -640,7 +645,7 @@ def read_hobo(f):
     headerPt2Clean = [re.sub(r'[^\x00-\x7f]', r'', x) for x in headerPt2Clean] # get rid of unicode
     newcols = ['DateTime'] + [nme + unit for unit,
         nme in zip(headerPt2Clean, headerPt1[1:])]
-    xt = xt.rename(columns=dict(zip(xt.columns.tolist(), newcols)))
+    xt = xt.rename(columns=dict(list(zip(xt.columns.tolist(), newcols))))
     xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
     # xt = xt.rename(columns={'HWAbsPreskPa':'WaterPres_kPa','HWTempC':'WaterTemp_C','HAAbsPreskPa':'AirPres_kPa','HATempC':'AirTemp_C',})
@@ -741,7 +746,7 @@ def load_multi_file(ff, gmtoff, logger):
     #get list of uploaded files with a particular logger extension
     f = [fi for fi in ff if "_" + logger in fi]
     if len(f) > 1:
-        xx = map(lambda x: load_file(x, gmtoff, logger), f)
+        xx = [load_file(x, gmtoff, logger) for x in f]
         xx = reduce(lambda x, y: x.append(y), xx)
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
@@ -765,7 +770,7 @@ def sp_in(ff, gmtoff): # ff must be a list
 
         # if multiple loggers, map over loggers
         if len(logger) > 1:
-            xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
+            xx = [load_multi_file(ff, gmtoff, x) for x in logger]
             xx = reduce(lambda x,y: x.merge(y, how='outer', left_index=True,
                 right_index=True), xx)
 
@@ -885,7 +890,7 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
     xs['regionsite'] = xs["region"].map(str) + "_" + xs["site"]
     # for each region site...
     sitex = xs.loc[xs.regionsite.isin(regionsite)].usgs.tolist()
-    sitedict = dict(zip(sitex, regionsite))
+    sitedict = dict(list(zip(sitex, regionsite)))
     sitex = [x for x in sitex if x is not None]
     usgs = ",".join(sitex)
     #lat,lng = sitex.loc[:,['latitude','longitude']].values.tolist()[0]
@@ -897,16 +902,16 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
         usgs + "&startDT=" + startDate + "T01:15Z&endDT=" + endDate + \
         "T23:59Z&parameterCd=" + vcds + "&siteStatus=all"
     r = requests.get(url)
-    print r.status_code
+    print(r.status_code)
     if r.status_code != 200:
         return ['USGS_error']
     xf = r.json()
-    xx = map(lambda x: panda_usgs(x, xf), range(len(xf['value']['timeSeries'])))
+    xx = [panda_usgs(x, xf) for x in range(len(xf['value']['timeSeries']))]
     xoo = []
 
     try:
         for s in sitex:
-            x2 = [k.values()[0] for k in xx if k.keys()[0]==s]
+            x2 = [list(k.values())[0] for k in xx if list(k.keys())[0]==s]
             x2 = reduce(lambda x,y: x.merge(y,how='outer',left_index=True,right_index=True), x2)
             x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
             x2['site']=sitedict[s]
@@ -1261,7 +1266,7 @@ def sitelist():
             var_arr = ', '.join(np.concatenate((core, not_core)))
             varcells.append(var_arr)
 
-    for i in xrange(len(varcells)):
+    for i in range(len(varcells)):
         if varcells[i] is None:
             varcells[i] = '-'
             # continue
@@ -1350,7 +1355,7 @@ def download_bulk():
     #     else:
     #         bulk_sizes[i] = str(round(bulk_sizes[i] / 1073741824, 2)) + ' GB'
 
-    bulk_dict = dict(zip(bulk_files, bulk_sizes))
+    bulk_dict = dict(list(zip(bulk_files, bulk_sizes)))
 
 
     #all files must be present or an error will arise during rendering
@@ -1439,9 +1444,9 @@ def series_upload():
 
             #get lists of new and existing files, filter uploaded files by new
             new = [fn not in ld for fn in ufnms]
-            existing = [ufnms[f] for f in xrange(len(ufnms)) if not new[f]]
-            ufiles = [ufiles[f] for f in xrange(len(ufiles)) if new[f]]
-            ufnms = [ufnms[f] for f in xrange(len(ufnms)) if new[f]]
+            existing = [ufnms[f] for f in range(len(ufnms)) if not new[f]]
+            ufiles = [ufiles[f] for f in range(len(ufiles)) if new[f]]
+            ufnms = [ufnms[f] for f in range(len(ufnms)) if new[f]]
 
             if not ufnms: #if no files left in list
                 if len(existing) == 1:
@@ -1520,7 +1525,7 @@ def series_upload():
         session['fnlong'] = fnlong
 
         #make sure LOGGERID formats are valid
-        for i in xrange(len(filenamesNoV)):
+        for i in range(len(filenamesNoV)):
             logger = re.search(".*\\d{4}-\\d{2}-\\d{2}(_[A-Z]{2})?" +\
                 "(?:[0-9]+)?\\.\\w{3}", filenamesNoV[i][0]).group(1)
 
@@ -1563,9 +1568,9 @@ def series_upload():
             rr, ss = site[0].split("_") #region and site
             coldict = pd.read_sql("select * from cols where region='" + rr +\
                 "' and site='" + ss + "'", db.engine)
-            cdict = dict(zip(coldict['rawcol'], coldict['dbcol'])) #varname mappings
-            ldict = dict(zip(coldict['rawcol'], coldict['level'])) #level mappings
-            ndict = dict(zip(coldict['rawcol'], coldict['notes'])) #note mappings
+            cdict = dict(list(zip(coldict['rawcol'], coldict['dbcol']))) #varname mappings
+            ldict = dict(list(zip(coldict['rawcol'], coldict['level']))) #level mappings
+            ndict = dict(list(zip(coldict['rawcol'], coldict['notes']))) #note mappings
             notificationEmail = pd.read_sql("select email from notificationemail" +\
                 " where region='" + rr + "' and site='" + ss + "'", db.engine)
             notificationEmail = notificationEmail.email.tolist()
@@ -1774,10 +1779,10 @@ def grab_upload():
             coldict = pd.read_sql("select * from grabcols where site in ('" +\
                 "', '".join(usites) + "') and region='" + ureg + "';",
                 db.engine)
-            cdict = dict(zip(coldict['rawcol'], coldict['dbcol'])) #varname mappings
-            mdict = dict(zip(coldict['rawcol'], coldict['method'])) #method mappings
-            wdict = dict(zip(coldict['rawcol'], coldict['write_in'])) #more method mappings
-            adict = dict(zip(coldict['rawcol'], coldict['addtl'])) #additional mappings
+            cdict = dict(list(zip(coldict['rawcol'], coldict['dbcol']))) #varname mappings
+            mdict = dict(list(zip(coldict['rawcol'], coldict['method']))) #method mappings
+            wdict = dict(list(zip(coldict['rawcol'], coldict['write_in']))) #more method mappings
+            adict = dict(list(zip(coldict['rawcol'], coldict['addtl']))) #additional mappings
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -1923,7 +1928,7 @@ def reach_characterization_filedrop():
             already_have = []
             moved = []
             if any(uploaded_bool):
-                already_have = [fnms_secure[i] for i in xrange(len(fnms_secure)) \
+                already_have = [fnms_secure[i] for i in range(len(fnms_secure)) \
                 if uploaded_bool[i]]
 
                 # if request.form.get('replacebox') == 'on':
@@ -1941,7 +1946,7 @@ def reach_characterization_filedrop():
                 #     return redirect(request.url)
 
             #write files
-            for i in xrange(len(files_secure)):
+            for i in range(len(files_secure)):
                 # fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
                 savepath = os.path.join(reachchar_dir, fnms_secure[i])
                 files_secure[i].save(savepath)
@@ -1981,7 +1986,7 @@ def reach_characterization_filedrop():
 
             lfnms = len(fnms_changed)
             if lfnms:
-                name_changes = [a[0] + ' -> ' + a[1] for a in fnms_changed.items()]
+                name_changes = [a[0] + ' -> ' + a[1] for a in list(fnms_changed.items())]
                 ww = 'These filenames have' if lfnms != 1 else 'This filename has'
                 flash(ww + ' been changed as a precaution: ' +\
                     ', '.join(name_changes) + '.', 'alert-warning')
@@ -2139,7 +2144,7 @@ def updatecdict(region, site, cdict, ldict, ndict):
     rawcols = pd.read_sql("select * from cols where region='" + region +\
         "' and site ='" + site + "'", db.engine)
     rawcols = rawcols['rawcol'].tolist()
-    for c in cdict.keys():
+    for c in list(cdict.keys()):
         if c in rawcols: # update
             cx = Cols.query.filter_by(region=region, site=site, rawcol=c).first()
             cx.dbcol = cdict[c]
@@ -2162,7 +2167,7 @@ def updateNotificationEmail(region, site, email):
 def chunker_ingester(df, chunksize=100000):
 
     #determine chunks based on number of records
-    n_full_chunks = df.shape[0] / chunksize
+    n_full_chunks = df.shape[0] // chunksize
     partial_chunk_len = df.shape[0] % chunksize
 
     #convert directly to dict if small enough, otherwise do it chunkwise
@@ -2170,7 +2175,7 @@ def chunker_ingester(df, chunksize=100000):
         xdict = df.to_dict('records')
         db.session.bulk_insert_mappings(Data, xdict) #ingest all records
     else:
-        for i in xrange(n_full_chunks):
+        for i in range(n_full_chunks):
             chunk = df.head(chunksize)
             df = df.drop(df.head(chunksize).index)
             chunk = chunk.to_dict('records')
@@ -2289,7 +2294,7 @@ def grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict):
     rawcols = set(rawcols['rawcol'].tolist())
 
     #update or establish varname, method, addtl mappings
-    for c in cdict.keys():
+    for c in list(cdict.keys()):
         for s in sitelist:
             if c in rawcols: # update/add
 
@@ -2327,14 +2332,14 @@ def grab_updatedb(xx, fnamelist, replace=False):
                 db.session.delete(rec)
 
         #insert new (replacement) data (chunk it if > 100k records)
-        n_full_chunks = xx.shape[0] / 100000
+        n_full_chunks = xx.shape[0] // 100000
         partial_chunk_len = xx.shape[0] % 100000
 
         if n_full_chunks == 0:
             xx = xx.to_dict('records')
             db.session.bulk_insert_mappings(Grabdata, xx) #ingest all records
         else:
-            for i in xrange(n_full_chunks): #ingest full (100k-record) chunks
+            for i in range(n_full_chunks): #ingest full (100k-record) chunks
                 chunk = xx.head(100000)
                 xx = xx.drop(xx.head(100000).index)
                 chunk = chunk.to_dict('records')
@@ -2363,7 +2368,7 @@ def grab_updatedb(xx, fnamelist, replace=False):
     #create and call stored procedure to update site table with var list and time range
     unique_regionsites = unique_regionsites.reset_index()
 
-    for i in xrange(unique_regionsites.shape[0]):
+    for i in range(unique_regionsites.shape[0]):
 
         with open('site_update_stored_procedure_grab.sql', 'r') as f:
             t = f.read()
@@ -2400,9 +2405,9 @@ def confirmcolumns():
     cdict = json.loads(request.form['cdict'])
     cdict = dict([(r['name'], r['value']) for r in cdict])
     ldict = json.loads(request.form['ldict'])
-    ldict = dict(zip(cdict.keys(), ldict))
+    ldict = dict(list(zip(list(cdict.keys()), ldict)))
     ndict = json.loads(request.form['ndict'])
-    ndict = dict(zip(cdict.keys(), ndict))
+    ndict = dict(list(zip(list(cdict.keys()), ndict)))
     notificationEmail = request.form['notificationEmail']
 
     fnlong = session.get('fnlong')
@@ -2421,7 +2426,7 @@ def confirmcolumns():
             'lng':'longitude', 'datum':'datum', 'sitename':'site name', 'usgs':'USGS gage ID'}
         if not illegal_input:
 
-            for i in input_dict.keys():
+            for i in list(input_dict.keys()):
                 input_is_legal = sanitize_input_allow_unicode(request.form[i])
                 if not input_is_legal:
                     illegal_input = input_dict[i]
@@ -2450,7 +2455,7 @@ def confirmcolumns():
         xx = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'],
             tmpfile + ".csv"), parse_dates=[0])
         upid_col = xx['upload_id']
-        xx = xx[cdict.keys()].rename(columns=cdict) #assign canonical names
+        xx = xx[list(cdict.keys())].rename(columns=cdict) #assign canonical names
 
         datetimecollist = [1 for i in xx.columns if i == 'DateTime_UTC']
         if len(datetimecollist) > 1:
@@ -2520,8 +2525,8 @@ def confirmcolumns():
             pass
 
         df_head = xx.head(2).to_string()
-        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
-        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
+        log_rawcols = '\n\nrawcols: ' + ', '.join(list(cdict.keys()))
+        log_dbcols = '\ndbcols: ' + ', '.join(list(cdict.values()))
 
         if request.form['existing'] == "no":
             error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
@@ -2604,9 +2609,9 @@ def pipeline_complete(tmpcode):
         pldf = pd.read_feather('../spdumps/' + tmpcode + '_cleaned.feather')
         flagdf = pd.read_feather('../spdumps/' + tmpcode + '_flags.feather')
 
-        print origdf.head(1)
-        print pldf.head(1)
-        print flagdf.head(1)
+        print(origdf.head(1))
+        print(pldf.head(1))
+        print(flagdf.head(1))
 
     except Exception as e:
 
@@ -2723,8 +2728,8 @@ def submit_dataset(tmpcode):
 
         tb = traceback.format_exc()
         df_head = xx.head(2).to_string()
-        log_rawcols = '\n\nrawcols: ' + ', '.join(up_data['cdict'].keys())
-        log_dbcols = '\ndbcols: ' + ', '.join(up_data['cdict'].values())
+        log_rawcols = '\n\nrawcols: ' + ', '.join(list(up_data['cdict'].keys()))
+        log_dbcols = '\ndbcols: ' + ', '.join(list(up_data['cdict'].values()))
 
         # if request.form['existing'] == "no":
         #     error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
@@ -2803,7 +2808,7 @@ def grab_confirmcolumns():
             'lng':'longitude', 'datum':'datum', 'sitename':'site name', 'usgs':'USGS gage ID'}
         illegal_input = None
 
-        for i in xrange(int(request.form['newlen'])):
+        for i in range(int(request.form['newlen'])):
 
             input_is_legal = sanitize_input_email(request.form['contactEmail' + str(i)])
             if not input_is_legal:
@@ -2811,7 +2816,7 @@ def grab_confirmcolumns():
 
             if not illegal_input:
 
-                for j in input_dict.keys():
+                for j in list(input_dict.keys()):
                     input_is_legal = sanitize_input_allow_unicode(request.form[j + str(i)])
                     if not input_is_legal:
                         illegal_input = input_dict[j]
@@ -2869,7 +2874,7 @@ def grab_confirmcolumns():
 
             #for each new site included in the uploaded csv...
             newsitelist = []
-            for i in xrange(int(request.form['newlen'])):
+            for i in range(int(request.form['newlen'])):
 
                 #get the name, split into site and region components
                 newsite = request.form['newsite' + str(i)]
@@ -2910,7 +2915,7 @@ def grab_confirmcolumns():
         # xx_post = xx.iloc[:,2:]
         # xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
         # xx = pd.concat([xx_pre, xx_post], axis=1)
-        cols_to_drop = [i for i in xx.columns[2:] if i not in cdict.keys()]
+        cols_to_drop = [i for i in xx.columns[2:] if i not in list(cdict.keys())]
         xx = xx.drop(cols_to_drop, axis=1)
         xx['upload_id'] = upID
 
@@ -2921,7 +2926,7 @@ def grab_confirmcolumns():
         xx.name = "value"
         xx = xx.reset_index()
 
-        for i in cdict.keys():
+        for i in list(cdict.keys()):
             xx.loc[xx.variable == i, 'method'] = mdict[i]
             xx.loc[xx.variable == i, 'write_in'] = wdict[i]
             xx.loc[xx.variable == i, 'addtl'] = adict[i]
@@ -3020,7 +3025,7 @@ def download():
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
     # sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
-    for i in xrange(len(sitedict)):
+    for i in range(len(sitedict)):
         sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
     #separating powell/sp data could be final step to save some time, but
@@ -3043,17 +3048,17 @@ def download():
     dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
-    for i in xrange(len(sitedictP)):
+    for i in range(len(sitedictP)):
         sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
     #list available reach characterization datasets, replace synoptic fns with 'synoptic'
     sd_files = os.listdir(app.config['REACH_CHAR_FOLDER'])
     reg_dset_list = [re.match('^([A-Za-z]{2})_(.*)?.csv$',
         s).groups() for s in sd_files]
-    reg_dset_list = map(lambda x: (x[0],
-        'synoptic') if 'synoptic' in x[1] else x, reg_dset_list)
+    reg_dset_list = [(x[0],
+        'synoptic') if 'synoptic' in x[1] else x for x in reg_dset_list]
     reg_dset_list = list(set(reg_dset_list))
-    reg_set = set(map(lambda x: x[0], reg_dset_list))
+    reg_set = set([x[0] for x in reg_dset_list])
 
     reg_dset_dict = {}
     for e in reg_set:
@@ -3209,7 +3214,7 @@ def getcsv():
     sitechar_reqs['_cross_section.csv'] = True if csect else False
     sitechar_reqs['_substrate.csv'] = True if substrate else False
     sitechar_reqs['_geomorphology.csv'] = True if geo else False
-    sitechar_sel = [x[0] for x in sitechar_reqs.items() if x[1]]
+    sitechar_sel = [x[0] for x in list(sitechar_reqs.items()) if x[1]]
     if synoptic:
         sitechar_sel.extend(['_synoptic' + x for x in sitechar_sel])
 
@@ -3246,7 +3251,7 @@ def getcsv():
     rel_wfs = [re.match(tmp + '/(.*)', f).group(1) for f in writefiles]
     zipname = 'SPdata_' + datetime.now().strftime("%Y-%m-%d") + '.zip'
     zf = zipfile.ZipFile(tmp + '/' + zipname, 'w')
-    for i in xrange(len(writefiles)):
+    for i in range(len(writefiles)):
         zf.write(writefiles[i], rel_wfs[i])
     zf.close()
 
@@ -3285,7 +3290,7 @@ def visualize():
     dvv.iloc[:,0:4] = dvv.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
-    for i in xrange(len(sitedict)):
+    for i in range(len(sitedict)):
         sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
     #separating powell/sp data could be final step to save some time, but
@@ -3308,7 +3313,7 @@ def visualize():
     dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
-    for i in xrange(len(sitedictP)):
+    for i in range(len(sitedictP)):
         sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
     #get set of sites for which models have been fit (for overlays)
@@ -3813,7 +3818,7 @@ def outlier_detect():
     outl_ind_r = find_outliers(dat_chunk) #call R code for outlier detect
 
     outl_ind = {}
-    for j in xrange(1, len(outl_ind_r) + 1): #loop through R-ified list
+    for j in range(1, len(outl_ind_r) + 1): #loop through R-ified list
 
         if outl_ind_r.rx2(j)[0] == 'NONE':
             outl_ind[outl_ind_r.names[j-1]] = None
@@ -4058,7 +4063,7 @@ def clean_query_response(r):
 
     #convert embargo years and addDate to days of embargo remaining
     emb = []
-    for i in xrange(len(r.embargoDaysLeft)):
+    for i in range(len(r.embargoDaysLeft)):
         timediff = (r.addDate[i] + pd.Timedelta(days=365 * r.embargoDaysLeft[i])) -\
             datetime.today()
         emb.append(timediff.days)
@@ -4375,7 +4380,7 @@ def reachchar_exfiles_download():
     #find files from the requested region
     rc_files = os.listdir(sdf)
     rc_bool = [True if re.match(region + '_.*', x) else False for x in rc_files]
-    req_files = [rc_files[i] for i in xrange(len(rc_bool)) if rc_bool[i]]
+    req_files = [rc_files[i] for i in range(len(rc_bool)) if rc_bool[i]]
 
     #add files to temp directory and zip, with readme
     tmp = tempfile.mkdtemp()

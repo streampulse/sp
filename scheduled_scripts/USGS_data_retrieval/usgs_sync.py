@@ -1,4 +1,7 @@
+from builtins import str
+from builtins import range
 import os
+from functools import reduce
 
 #see usgs_sync_setup
 
@@ -25,9 +28,9 @@ lastrec = sitedf.loc[sitedf.regionsite.isin(regionsite)].lastRecord.dt.\
     strftime('%Y-%m-%d').tolist()
 sitedict = {}
 
-for i in xrange(len(regionsite)):
-    df_ind = [j for j in xrange(len(sitedf)) if sitedf.usgs[j] == gageid[i]][0]
-    rs_ind = [j for j in xrange(len(regionsite)) if regionsite[j] == sitedf.regionsite[df_ind]][0]
+for i in range(len(regionsite)):
+    df_ind = [j for j in range(len(sitedf)) if sitedf.usgs[j] == gageid[i]][0]
+    rs_ind = [j for j in range(len(regionsite)) if regionsite[j] == sitedf.regionsite[df_ind]][0]
     sitedict[gageid[i]] = (regionsite[rs_ind], variables[rs_ind],
         firstrec[i], lastrec[i])
 
@@ -95,7 +98,7 @@ for g in gageid:
     usgs_raw = r.json()
 
     xx = []
-    for i in xrange(len(usgs_raw['value']['timeSeries'])):
+    for i in range(len(usgs_raw['value']['timeSeries'])):
         try:
             xx.append(parse_usgs_response(i, usgs_raw=usgs_raw, g=g))
         except ValueError:
@@ -104,7 +107,7 @@ for g in gageid:
     #     range(len(usgs_raw['value']['timeSeries'])))
 
     #merge dfs for each variable into a single df and then append to list
-    gage_df = [k.values()[0] for k in xx if k.keys()[0] == g]
+    gage_df = [list(k.values())[0] for k in xx if list(k.keys())[0] == g]
     gage_df = reduce(lambda x,y: x.merge(y, how='outer', left_index=True,
         right_index=True), gage_df)
     gage_df = gage_df.sort_index().apply(lambda x: pd.to_numeric(x,
@@ -144,9 +147,9 @@ if gage_df_list:
     session.close()
 
     #store record of which time ranges have been pulled from usgs for each site
-    coverage_tracking = pd.DataFrame({'site': [x[0] for x in sitedict.values()],
-        'coverage_start': [x[2] for x in sitedict.values()],
-        'coverage_end': [x[3] for x in sitedict.values()]})
+    coverage_tracking = pd.DataFrame({'site': [x[0] for x in list(sitedict.values())],
+        'coverage_start': [x[2] for x in list(sitedict.values())],
+        'coverage_end': [x[3] for x in list(sitedict.values())]})
     coverage_tracking = coverage_tracking[['site', 'coverage_start', 'coverage_end']]
     coverage_tracking.to_csv('coverage_tracking.csv', index=False)
 
