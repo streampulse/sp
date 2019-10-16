@@ -2382,7 +2382,7 @@ def grab_updatedb(xx, fnamelist, replace=False):
         db.session.execute('CALL update_site_table_grab();')
 
 def sanitize_input_allow_unicode(input):
-    mch = regex.search(ur'[^A-Za-z0-9\p{L} \-\.]', input)
+    mch = regex.search(r'[^A-Za-z0-9\p{L} \-\.]', input)
     out = False if mch else True
     return out
 
