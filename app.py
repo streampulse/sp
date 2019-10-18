@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # os.chdir('/home/mike/git/streampulse/server_copy/sp')
 # import timeit
 from __future__ import print_function
@@ -306,7 +305,7 @@ class User(db.Model):
     def __init__(self, username, password, email):
         self.username = username
         self.set_password(password)
-        self.token = binascii.hexlify(os.urandom(10))
+        self.token = binascii.hexlify(os.urandom(10)).decode('utf-8')
         self.email = email
         self.registered_on = datetime.utcnow()
         self.confirmed = True # do they agree to the policy?
@@ -667,7 +666,7 @@ def read_hobo(f):
 
 def read_csci(f, gmtoff):
     xt = pd.read_csv(f, header=0, skiprows=[0,2,3])
-    xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=gmtoff) for x in xt.TIMESTAMP]
+    xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(gmtoff)) for x in xt.TIMESTAMP]
     cols = xt.columns.tolist()
     return xt[cols[-1:]+cols[1:-1]]
 
@@ -681,7 +680,8 @@ def read_manta(f, gmtoff):
         xt.columns = xt.loc[0].tolist()
     xt = xt[xt.DATE.str.contains('[0-9]+/[0-9]+/[0-9]{4}')] #drop excess header/blank rows
     xt['DateTime'] = xt['DATE'] + " " + xt['TIME']
-    xt['DateTimeUTC'] = [dtparse.parse(x) - timedelta(hours=gmtoff) for x in xt.DateTime]
+    xt['DateTimeUTC'] = [dtparse.parse(x) - timedelta(hours=int(gmtoff)) \
+        for x in xt.DateTime]
     xt.drop(["DATE","TIME","DateTime"], axis=1, inplace=True)
     xt = xt[[x for x in xt.columns.tolist() if " ." not in x and x!=" "]]
     xt.columns = [re.sub("\/|%","",x) for x in xt.columns.tolist()]
@@ -1241,10 +1241,6 @@ def sitelist():
     #format date range and varlist
     sitedata['First record'] = sitedata['First record'].dt.strftime('%Y-%m-%d')
     sitedata['Last record'] = sitedata['Last record'].dt.strftime('%Y-%m-%d')
-    # fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
-    # lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
-    # timerange = fr + ' to ' + lr
-    # sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
 
     pd.set_option('display.max_colwidth', 500)
     core_variables = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
@@ -1260,8 +1256,9 @@ def sitelist():
             core = var_arr[isCore]
             not_core = var_arr[~isCore]
             if any(core):
-                core = core[np.argsort(pd.match(core, core_variables))]
-                # core = ['<strong>' + y + '</strong>' for y in core]
+                cc = [core_variables.index(x) if x in core_variables \
+                    else -1 for x in core] #equiv of pd.match
+                core = core[np.argsort(cc)]
             not_core.sort()
             var_arr = ', '.join(np.concatenate((core, not_core)))
             varcells.append(var_arr)
@@ -1269,11 +1266,6 @@ def sitelist():
     for i in range(len(varcells)):
         if varcells[i] is None:
             varcells[i] = '-'
-            # continue
-        # varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
-        #     'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
-        #     '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
-        #     'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
 
     sitedata.Variables = varcells
 
@@ -1293,45 +1285,16 @@ def sitelist():
     sitedata.rename(columns={'by':'Source'}, inplace=True)
 
     #additional arranging and modification of data frame
-    # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'],
-    #     axis=1)
     sitedata = sitedata.drop(['addDate'], axis=1)
     sitedata = sitedata[['Region', 'Site', 'Name', 'Lat', 'Lon', 'Geodetic datum', 'Source',
         'Contact', 'Email', 'Embargo (days)', 'USGS gage', 'First record',
         'Last record', 'Variables']]
-    # neworder = list(sitedata.columns)
-    # varsind = neworder.index('Variables')
-    # neworder[neworder.index('Coverage')] = 'Variables'
-    # neworder[varsind] = 'Coverage'
-    # sitedata = sitedata[neworder]
     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
         ascending=True)
 
-    #create separate tables for streampulse, neon, powell data
-    # powell = sitedata.loc[sitedata.by == -902,
-    #     ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
-    # neon = sitedata.loc[sitedata.by == -900,
-    #     ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
-    # sp = sitedata.loc[~sitedata.by.isin([-900, -902]), sitedata.columns != 'by']
-
-    # powell = powell.to_html(index=False,
-    #     classes=['table', 'table-condensed'], escape=False)
-    # neon = neon.to_html(index=False,
-    #     classes=['table', 'table-condensed'], escape=False)
-    # sp = sp.to_html(index=False,
-    #     classes=['table', 'table-condensed'], escape=False)
     header = list(sitedata.columns)
-    header = [x.encode('utf-8') for x in header]
     sitedata = sitedata.to_json(orient='values', date_format='iso')
 
-
-    # powell = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll',
-    #     powell)
-    # neon = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', neon)
-    # sp = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', sp)
-
-    # return render_template('sitelist.html', powell=powell, neon=neon, sp=sp,
-    #     sp_header=sp_header)
     return render_template('sitelist.html', sitedata=sitedata, header=header)
 
 @app.route('/upload_choice')
@@ -1557,8 +1520,8 @@ def series_upload():
                 x = sp_in_lev(fnlong[0])
 
             #save combined input files to a temporary csv
-            tmp_file = site[0].encode('ascii') + "_" +\
-                binascii.hexlify(os.urandom(6))
+            tmp_file = site[0] + "_" +\
+                binascii.hexlify(os.urandom(6)).decode('utf-8')
             out_file = os.path.join(upfold, tmp_file + ".csv")
             x.to_csv(out_file, index=False)
 
@@ -2563,10 +2526,8 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     #save dataframe and ancillary data so that it can be accessed when user returns
-    feather.write_feather(xx, '../spdumps/' + tmpcode + '_xx.feather')
-    # xx.to_feather('../spdumps/' + tmpcode + '_xx.feather')
-    # xx.to_csv('../spdumps/' + tmpcode + '_xx.csv', index=False)
-    dumpfile = '../spdumps/confirmcolumns' + tmpcode + '.json'
+    feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
+    dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
     with open(dumpfile, 'w') as d:
         dmp = json.dump({'region': region, 'site': site, 'cdict': cdict,
             'ldict': ldict, 'ndict': ndict, 'fn_to_db': fn_to_db,
@@ -2597,21 +2558,17 @@ def pipeline_complete(tmpcode):
 
     try:
 
-        dumpfile = '../spdumps/confirmcolumns' + tmpcode + '.json'
-        # dumpfile = '/home/mike/git/streampulse/server_copy/spdumps/confirmcolumns35_AQ_WB_e076b8930278.json'
+        # tmpcode = 'a5fd2f248f1e'
+        dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
         with open(dumpfile) as d:
             up_data = json.load(d)
         region = up_data['region']
         site = up_data['site']
         replace = up_data['replace']
 
-        origdf = pd.read_feather('../spdumps/' + tmpcode + '_xx.feather')
-        pldf = pd.read_feather('../spdumps/' + tmpcode + '_cleaned.feather')
-        flagdf = pd.read_feather('../spdumps/' + tmpcode + '_flags.feather')
-
-        print(origdf.head(1))
-        print(pldf.head(1))
-        print(flagdf.head(1))
+        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_xx.feather')
+        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
     except Exception as e:
 
@@ -2712,7 +2669,7 @@ def submit_dataset(tmpcode):
             # metastring = metastring + lvltxt
             metastring = metadata + lvltxt
             with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring.encode('utf-8'))
+                metafile.write(metastring)
         else:
             #update level data in metadata files
             if os.path.isfile(metafilepath):
@@ -3021,12 +2978,10 @@ def download():
         x.strftime('%Y-%m-%d'))
     sitedata.name = sitedata.region + " - " + sitedata.name
     dvv = sitedata[['regionsite','name','startdate','enddate','variable']]
-    dvv.iloc[:,0:4] = dvv.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvv.iloc[:,0:2] = dvv.iloc[:,0:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
-    # sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
-    for i in range(len(sitedict)):
-        sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
     #separating powell/sp data could be final step to save some time, but
     #i'm allowing reduncancy here because the execution time cost is lower than
@@ -3045,11 +3000,10 @@ def download():
         x.strftime('%Y-%m-%d'))
     sitedataP.name = sitedataP.region + " - " + sitedataP.name
     dvvP = sitedataP[['regionsite','name','startdate','enddate','variable']]
-    dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvvP.iloc[:,0:2] = dvvP.iloc[:,0:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
-    for i in range(len(sitedictP)):
-        sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
     #list available reach characterization datasets, replace synoptic fns with 'synoptic'
     sd_files = os.listdir(app.config['REACH_CHAR_FOLDER'])
@@ -3284,14 +3238,11 @@ def visualize():
     sitedata.enddate = sitedata.enddate.apply(lambda x:
         x.strftime('%Y-%m-%d'))
     sitedata.name = sitedata.region + " - " + sitedata.name
-    # dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
-    # sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
     dvv = sitedata[['regionsite','name','startdate','enddate','variable']]
-    dvv.iloc[:,0:4] = dvv.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvv.iloc[:,1:2] = dvv.iloc[:,1:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
-    for i in range(len(sitedict)):
-        sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
     #separating powell/sp data could be final step to save some time, but
     #i'm allowing reduncancy here because the execution time cost is lower than
@@ -3310,11 +3261,10 @@ def visualize():
         x.strftime('%Y-%m-%d'))
     sitedataP.name = sitedataP.region + " - " + sitedataP.name
     dvvP = sitedataP[['regionsite','name','startdate','enddate','variable']]
-    dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvvP.iloc[:,1:2] = dvvP.iloc[:,1:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
-    for i in range(len(sitedictP)):
-        sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
     #get set of sites for which models have been fit (for overlays)
     outputs = os.listdir(cfg.RESULTS_FOLDER)
@@ -3561,7 +3511,7 @@ def getviz():
     rss = []
 
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+        rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
             longitude=lng).calculate())
         if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
@@ -3697,7 +3647,7 @@ def getqaqc():
     lng = sxx.longitude[0]
     rss = []
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+        rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
             longitude=lng).calculate())
         if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
@@ -3763,7 +3713,7 @@ def getqaqc_grab():
     lng = sxx.longitude[0]
     rss = []
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+        rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
             longitude=lng).calculate())
         if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC

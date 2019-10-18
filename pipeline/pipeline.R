@@ -21,6 +21,7 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
 #     stringsAsFactors=FALSE)
 # write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
+# args = list('tmpcode'='a5fd2f248f1e')
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
 pldf = select(origdf, DateTime_UTC, everything()) %>%
     mutate(DateTime_UTC=as.POSIXct(DateTime_UTC, tz='UTC')) %>%
@@ -53,6 +54,8 @@ flagdf = df_and_flagcodes$flagdf
 #flags outliers with code 2
 df_and_flagcodes = basic_outlier_detect(pldf, flagdf)
 pldf = df_and_flagcodes$df
+pldf = dplyr::bind_cols(list('DateTime_UTC'=dtcol),
+    pldf, list('upload_id'=upload_id))
 flagdf = df_and_flagcodes$flagdf
 
 #save flag codes, cleaned data to be read by flask when user follows email link

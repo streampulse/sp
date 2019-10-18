@@ -315,7 +315,7 @@ $(function(){
             });
             flags = JSON.parse(response.flagdat);
             // flagtypes = JSON.parse(response.flagtypes);
-            Plots(variables, data, flags, outliers, 'qaqc', 'grab');
+            Plots(variables, data, flags, outliers, 'qaqc', undefined, datamode='grab');
             if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
             $('#flagging').show();
 
@@ -426,7 +426,7 @@ function async_replot(data){
       //pull in outliers, empty plots, replot
       outliers = response.outliers;
       $("#graphs").empty();
-      Plots(variables, data, flags, outliers, 'qaqc', 'grab');
+      Plots(variables, data, flags, outliers, 'qaqc', undefined, datamode='grab');
       if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
       //show panback if applicable

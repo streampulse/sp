@@ -61,7 +61,7 @@ basic_outlier_detect = function(df, flagdf){
     diffs$dt = dtcol[-1]
     df$dt = dtcol
 
-    for(c in colnames(diffs)){
+    for(c in colnames(df)[-ncol(df)]){
 
         alpha = 0.01
         if(c %in% c('Level_m', 'Depth_m', 'Discharge_m3s')) alpha = 0.0001
@@ -69,19 +69,19 @@ basic_outlier_detect = function(df, flagdf){
 
         #find extreme points
         anom_df = as_tibble(df) %>%
-            time_decompose(c, method='twitter') %>%
+            time_decompose(c, method='twitter', message=FALSE) %>%
             anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
         outls1 = which(anom_df$anomaly == 'Yes')
 
         #find extreme jumps
         anom_df = as_tibble(diffs) %>%
-            time_decompose(c, method='twitter') %>%
+            time_decompose(c, method='twitter', message=FALSE) %>%
             anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
         outls2 = which(anom_df$anomaly == 'Yes') + 1
 
         #find super extreme points
         anom_df = as_tibble(df) %>%
-            time_decompose(c, method='twitter') %>%
+            time_decompose(c, method='twitter', message=FALSE) %>%
             anomalize(remainder, max_anoms=0.001, alpha=alpha, method='gesd')
         outls3 = which(anom_df$anomaly == 'Yes')
 
@@ -91,5 +91,6 @@ basic_outlier_detect = function(df, flagdf){
         flagdf[outls, c] = flagdf[outls, c] + 2
     }
 
+    df$dt = NULL
     return(list('df'=df, 'flagdf'=flagdf))
 }
