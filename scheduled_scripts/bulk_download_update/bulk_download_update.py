@@ -9,7 +9,7 @@ import re
 import zipfile
 
 app_dir = '/home/aaron/sp'
-# app_dir = '/home/mike/git/streampulse/server_copy/sp'
+#app_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, app_dir)
 os.chdir(app_dir)
 import config as cfg
