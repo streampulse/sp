@@ -20,7 +20,7 @@ def email_msg(txt, subj, recipient, header=True, render_html=False):
 
     #compose email
     msg = MIMEMultipart()
-    
+
     if render_html:
         msg.attach(MIMEText(txt, 'html'))
     else:
@@ -38,3 +38,10 @@ def email_msg(txt, subj, recipient, header=True, render_html=False):
     server.sendmail('grdouser@gmail.com', [recipient],
         msg.as_string())
     server.quit()
+
+# Get 2 week plot intervals
+def get_twoweek_windows(start, end):
+    r = (end + timedelta(days=1) - start).days
+    if r % 14 >= 0:
+        r = r + 14
+    return [(end - timedelta(days=i)).strftime('%Y-%m-%d') for i in range(0, r, 14)]

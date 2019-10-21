@@ -21,44 +21,42 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
 #     stringsAsFactors=FALSE)
 # write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
-# args = list('tmpcode'='a5fd2f248f1e')
+# args = list('tmpcode'='f32f3893c4cb')
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
 pldf = select(origdf, DateTime_UTC, everything()) %>%
     mutate(DateTime_UTC=as.POSIXct(DateTime_UTC, tz='UTC')) %>%
     as.data.frame()
 
-#create df of same structure as data, to hold flag information
-flagdf = pldf
-flagdf[, 2:(ncol(flagdf) - 1)] = 0
-
 #trim data before processing; datetime and upload id will be reattached at end
-dtcol = pldf$DateTime_UTC
-upload_id = pldf$upload_id
 pldf$DateTime_UTC = NULL
 pldf$upload_id = NULL
 
-# impute gaps, ignoring series that are 95% gap or more
-pldf = as.data.frame(apply(pldf, 2,
-    function(x){
-        if(sum(is.na(x)) / length(x) > 0.95) return(x)
-        imputeTS::na_interpolation(x, option='linear')
-    }))
+#keep track of NAs; create df for storing flag codes
+na_inds = which(is.na(pldf))
+flagdf = pldf
+flagdf[,] = 0
+
+# pldf$pH[20:30] = NA
+# pldf$SpecCond_uScm[10:30] = NA
+# pldf$WaterTemp_C[20] = NA
 
 #operation 1: simple range checker
-#flags anything that's physically impossible with code 1
+#flags physically impossible values with code 1
 df_and_flagcodes = range_check(pldf, flagdf)
-pldf = df_and_flagcodes$df
-flagdf = df_and_flagcodes$flagdf
+pldf = df_and_flagcodes$d
+pldf = lin_interp_gaps(pldf)
+flagdf = df_and_flagcodes$flagd
 
 #operation 2: residual error based outlier detection via anomalize package
 #flags outliers with code 2
-df_and_flagcodes = basic_outlier_detect(pldf, flagdf)
-pldf = df_and_flagcodes$df
-pldf = dplyr::bind_cols(list('DateTime_UTC'=dtcol),
-    pldf, list('upload_id'=upload_id))
-flagdf = df_and_flagcodes$flagdf
+df_and_flagcodes = basic_outlier_detect(pldf, flagdf, origdf$DateTime_UTC)
+pldf = df_and_flagcodes$d
+pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
+    pldf, list('upload_id'=origdf$upload_id))
+flagdf = df_and_flagcodes$flagd
 
 #save flag codes, cleaned data to be read by flask when user follows email link
+flagdf$DateTime_UTC = origdf$DateTime_UTC
 write_feather(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned.feather'))
 write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 

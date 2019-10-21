@@ -1,4 +1,16 @@
-range_check = function(df, flagdf){
+
+lin_interp_gaps = function(d, thresh=1){
+
+    d = as.data.frame(apply(d, 2,
+        function(x){
+            if(sum(is.na(x)) / length(x) > thresh) return(x)
+            imputeTS::na_interpolation(x, option='linear')
+        }))
+
+    return(d)
+}
+
+range_check = function(d, flagd){
 
     ranges = list(
         'DO_mgL'=c(-0.5, 40),
@@ -44,53 +56,59 @@ range_check = function(df, flagdf){
         'benthic_PAR'=c(0, 100000),
         'Battery_V'=c(0, 1000))
 
-    for(c in colnames(df)){
-        if(all(is.na(df[[c]]))) next
+    for(c in colnames(d)){
+        if(all(is.na(d[[c]]))) next
         rmin = ranges[[c]][1]
         rmax = ranges[[c]][2]
-        flagdf[[c]] = as.numeric(df[[c]] < rmin | df[[c]] > rmax)
+        flagd[[c]] = as.numeric(d[[c]] < rmin | d[[c]] > rmax)
     }
 
-    return(list('df'=df, 'flagdf'=flagdf))
+    d[flagd == 1] = NA
+
+    return(list('d'=d, 'flagd'=flagd))
 }
 
-basic_outlier_detect = function(df, flagdf){
+basic_outlier_detect = function(d, flagd, dtcol){
 
-    diffs = as.data.frame(apply(df, 2, diff))
+    variables = colnames(d)
+    diffs = as.data.frame(apply(d, 2, diff))
+    # na_inds = which(is.na(d))
 
     diffs$dt = dtcol[-1]
-    df$dt = dtcol
+    d$dt = dtcol
 
-    for(c in colnames(df)[-ncol(df)]){
+    for(c in variables){
 
         alpha = 0.01
         if(c %in% c('Level_m', 'Depth_m', 'Discharge_m3s')) alpha = 0.0001
         if(sum(is.na(diffs[, c])) / nrow(diffs) > 0.99) next
 
         #find extreme points
-        anom_df = as_tibble(df) %>%
+        anom_d = as_tibble(d) %>%
             time_decompose(c, method='twitter', message=FALSE) %>%
             anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
-        outls1 = which(anom_df$anomaly == 'Yes')
+        outls1 = which(anom_d$anomaly == 'Yes')
 
         #find extreme jumps
-        anom_df = as_tibble(diffs) %>%
+        anom_d = as_tibble(diffs) %>%
             time_decompose(c, method='twitter', message=FALSE) %>%
             anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
-        outls2 = which(anom_df$anomaly == 'Yes') + 1
+        outls2 = which(anom_d$anomaly == 'Yes') + 1
 
         #find super extreme points
-        anom_df = as_tibble(df) %>%
+        anom_d = as_tibble(d) %>%
             time_decompose(c, method='twitter', message=FALSE) %>%
             anomalize(remainder, max_anoms=0.001, alpha=alpha, method='gesd')
-        outls3 = which(anom_df$anomaly == 'Yes')
+        outls3 = which(anom_d$anomaly == 'Yes')
 
         #outliers are overlap of extreme points+jumps, or just super extreme points
         outls = union(intersect(outls1, outls2), outls3)
 
-        flagdf[outls, c] = flagdf[outls, c] + 2
+        flagd[outls, c] = flagd[outls, c] + 2
     }
 
-    df$dt = NULL
-    return(list('df'=df, 'flagdf'=flagdf))
+    d$dt = NULL
+    d[flagd > 0] = NA
+
+    return(list('d'=d, 'flagd'=flagd))
 }

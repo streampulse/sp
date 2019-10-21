@@ -2558,7 +2558,7 @@ def pipeline_complete(tmpcode):
 
     try:
 
-        # tmpcode = 'a5fd2f248f1e'
+        # tmpcode = 'f32f3893c4cb'
         dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
         with open(dumpfile) as d:
             up_data = json.load(d)
@@ -2570,54 +2570,62 @@ def pipeline_complete(tmpcode):
         pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
         flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
+        #json format original data, pipeline data, and flag data
+        origjson = origdf.to_json(orient='records', date_format='iso')
+        pljson = pldf.to_json(orient='records', date_format='iso')
+
+        flagdf = flagdf.set_index('DateTime_UTC').stack().reset_index().\
+            rename(columns={'level_1': 'variable', 0: 'code'}, inplace=False)
+        flagdf = flagdf[flagdf['code'] != 0]
+        flagjson = flagdf.to_json(orient='records', date_format='iso')
+
+        variables = origdf.columns[1:-1].tolist()
+
+        # Get sunrise sunset data
+        sxx = pd.read_sql("select latitude, longitude from site where region='" +\
+            region + "' and site='" + site + "'", db.engine)
+        sdt = min(origdf.DateTime_UTC).replace(hour=0, minute=0, second=0,
+            microsecond=0)
+        edt = max(origdf.DateTime_UTC).replace(hour=0, minute=0, second=0,
+            microsecond=0) + timedelta(days=1)
+
+        ddt = edt - sdt
+        lat = sxx.latitude[0]
+        lng = sxx.longitude[0]
+        rss = []
+        for i in range(ddt.days + 1):
+            rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
+                longitude=lng).calculate())
+            if rise > sets:
+                sets = sets + timedelta(days=1) # account for UTC
+            rss.append([rise, sets])
+
+        rss = pd.DataFrame(rss, columns=("rise", "set"))
+        rss.set = rss.set.shift(1)
+        sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
+
+        drr = get_twoweek_windows(sdt, edt)
+
     except Exception as e:
 
         tb = traceback.format_exc()
         origdf_head = origdf.head(2).to_string()
         pldf_head = pldf.head(2).to_string()
-        # log_rawcols = '\n\nrawcols: ' + ', '.join(up_data['cdict'].keys())
-        # log_dbcols = '\ndbcols: ' + ', '.join(up_data['cdict'].values())
-        #
-        # if up_data['existing'] == "no":
-        #     error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
-        #         up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
-        #         '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
-        #         up_data['embargo'] + '\ncontactname: ' +\
-        #         up_data['contactName'] + '\ncontactemail: ' +\
-        #         up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
-        #         '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
-        #         replace + '\n\n'
-        # else:
-        #     error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
-        #         '\nreplace: ' + replace + '\n\n'
-        #
-        # if replace == 'records':
-        #     errno = 'E009b'
-        #     msg = Markup("Error 009b. Try reducing the size of your revised " +\
-        #         "file by removing rows or columns that don't require revision.")
-        # else:
-        #     errno = 'E009a'
-        #     msg = Markup('Error 009a. StreamPULSE development has been notified.')
-        #
-        # full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
-        full_error_detail = tb + origdf_head + pldf_head + dumpfile +\
-            updata['region'] + updata['site']
-        log_exception(errno, full_error_detail)
+        flagdf_head = flagdf.head(2).to_string()
+
+        full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
+            dumpfile + region + site
+        log_exception('E012', full_error_detail)
         email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
-        # try:
-        #     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
-        #     [os.remove(f) for f in up_data['fnlong']]
-        #     db.session.rollback()
-        # except:
-        #     pass
         msg = Markup('Error 012. StreamPULSE development has been notified.')
         flash(msg, 'alert-danger')
 
         return redirect(url_for('series_upload'))
 
-    return redirect(url_for('pipeline1'))
-
+    return render_template('pipeline1.html', variables=variables,
+        origjson=origjson, pljson=pljson, flagjson=flagjson,
+        sunriseset=sunriseset, plotdates=drr)
 
 @app.route("/submit_dataset/<string:tmpcode>", methods=["GET"])
 @login_required
