@@ -1,0 +1,710 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<br>
+<div class="col-md-4 col-md-offset-4 text-center">
+  <a href="qaqc_help">
+    <p style="font: 20px sans-serif">Instructions Here</p>
+  </a>
+</div>
+<br><br><br>
+
+<div class="row">
+  <div class="col-md-6 col-md-offset-3">
+    <p class="text-muted">
+      Note: if you suspect that you're seeing an old version of this app, delete
+      cookies and clear your web cache.
+      <a href="https://www.thewindowsclub.com/clear-cache-cookies-specific-website"
+      target="_bank" rel="noopener noreferrer">
+        Here's how
+      </a>
+      to do that for a specific website using Chrome or Firefox. Reload this
+      page when you're done.
+    </p>
+    <p>
+      <strong>Also note</strong>: Points you've just flagged may revert to default blue if
+      you switch back and forth between time ranges. Don't worry. The flag information
+      is still in the system. The points will appear as flagged the next time you
+      load the page.
+    </p>
+  </div>
+</div>
+<br>
+
+<div class="row" id="flagging">
+
+<div class="row text-center">
+  <div class="col-md-12">
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <div class="form-inline">
+        Show local night-time: <input type="checkbox" id="shownight" value="no"> &nbsp;
+        Compare variable: <select class="form-control" id="backgraphlist2" name="backgraphlist2"></select>
+        <br>
+        <button class="btn btn-link" type="button" id="zoomreset">Reset zoom</button>
+        (or double-click any plot to reset zoom)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-4 text-left">
+      <button class="btn btn-link" type="button" id="panback">
+        << Previous two weeks
+      </button>
+    </div>
+    <div class="col-md-4 text-center">
+      <p>Jump to date range: </p>
+      <select class="form-control" id="jumptodate" name="jumptodate">
+      </select>
+    </div>
+    <div class="col-md-4 text-right">
+      <button class="btn btn-link" type="button" id="panforward">
+        <!-- Next four weeks >> -->
+      </button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+
+<div class="row" id="graphs"></div>
+<br><br>
+
+<!-- <form id="startpipeline" action="/qaqc_sensordata" method="GET" class="form-horizontal"> -->
+<!-- <form id="submit_dataset" action="/submit-dataset-<tmpcode>" method="GET" class="form-horizontal">
+  <div class="col-md-6 col-md-offset-3">
+    <br><br>
+    <button id="plbutton" type="submit" value=submit_dataset class="btn btn-primary btn-block">
+      Submit
+    </button>
+  </div>
+</form> -->
+
+<div class="col-md-6 col-md-offset-3">
+  <br><br>
+  <button id="getpl" type="button" class="btn btn-primary btn-block">
+    Review automated QA/QC
+  </button>
+</div>
+
+<script type="application/javascript" src="static/js/graphs.js"></script>
+
+<script type="application/javascript">
+
+  var qaqc_options = '{{ qaqc_options|safe }}';
+  var tmpcode = '{{ tmpcode|safe }}';
+  var plotdates;
+  var plotstart;
+  var plotend;
+  // var origdata;
+  // var pldata;
+  // var flagdata;
+  var origdisp;
+  var pldisp;
+
+  function PlotsPL(variables, origdata, pldata, flagdata){
+
+    origdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+    pldata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+    flagdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+
+    //set x domain to extent of dates
+    x.domain(d3.extent(origdata, function(d) { return d.date; }));
+
+    for (var i = 0; i < variables.length; ++i) {
+
+      vvv = variables[i];
+
+      //set y domain to extent of data
+      var origlim = d3.extent(origdata, function(d) { return d[vvv]; })
+      var pllim = d3.extent(pldata, function(d) { return d[vvv]; })
+      var ylim = d3.extent(origlim.concat(pllim))
+      y.domain(ylim);
+
+      //create line accessor and handler for ignoring undefined values
+      var line = d3.line()
+        .defined(function(d){ return d[vvv]; })
+        .x(function(d) { return x(d.date); })
+        .y(function(d) { return y(d[vvv]); });
+
+      var svg = d3.select("#graphs")
+        .append('div').attr('id', 'svgrow_' + vvv)
+        .append('div').attr('class', 'inline')
+        .append("svg")
+        .datum(origdata) //initialize and position
+          .attr("class", vvv)
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      svg.append("g") //x axis and x label
+          .attr("class", "axis axis--x")
+          .attr("transform", "translate(0," + (height-1) + ")") //1px adj shows lines
+          .call(xAxis)
+          .append("text") //label here
+            .attr("fill", "#000")
+            .attr("dy", "3em")
+            .attr("dx", width)
+            .style("text-anchor", "end")
+            .text("DateTime (UTC)");
+      svg.append("g")
+          .attr("class", "axis axis--y")
+          .call(d3.axisLeft().scale(y).ticks(6))
+        .append("text")
+          .attr("fill", "#000")
+          .attr("dy", "-0.71em")
+          .attr("dx", "0.71em")
+          .attr('class', vvv + '_txt')
+          .style("text-anchor", "start")
+          .text(vvv);
+
+      svg.append("g") //secondary axis for backgraphs and overlays
+          .attr('id', vvv + 'rightaxis')
+          .attr("class", "axis axis--y")
+          .attr("transform", "translate(" + width + ", 0)");
+
+      svg.append("g")
+          .attr("class", "backgraph");
+      svg.append("g")
+          .attr("class", "sunriseset");
+      dff = {} // flagged values
+      flagdata.forEach(function(e){
+        if(e.variable == vvv){ // only if this is the right variable
+          dff[e.DateTime_UTC] = e.variable //so ugly...
+        }
+      });
+
+      svg.on('dblclick',function(){
+        redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true)
+      });
+      svg.append("g").attr("class", "brush")
+        .attr("id", vvv)
+        .call(brush);
+      svg.selectAll(".dot")
+          .data(origdata.filter(function(d) { return d[vvv]; }))
+        .enter().append("circle")
+          .attr("class", "dot")
+          .attr("cx", line.x())
+          .attr("cy", line.y())
+        // .classed("maybe_outl", function(d, j){
+        //   return outliers[vvv] && outliers[vvv].includes(j+1) &&
+        //     vvv != dff[d.DateTime_UTC];
+        // })
+        // .attr("r", function(d, j){
+        //   if(outliers[vvv] && outliers[vvv].includes(j+1) &&
+        //     vvv != dff[d.DateTime_UTC]) {
+        //     return datamode == 'sensor' ? 3 : 5
+        //   } else {
+        //     return datamode == 'sensor' ? 2 : 4
+        //   };
+        // })
+        // .classed("flagdot", function(d){
+        //   return vvv == dff[d.DateTime_UTC]
+        // })
+        // .filter('.flagdot')
+        // .on("mouseover", function(d, j) {
+        //
+        //   //get the name (which for some reason is a class) of the svg under the mouse
+        //   var hovered_point = this.getBoundingClientRect();
+        //   var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+        //   for(var i = 0; i < elems.length; ++i){
+        //     if(elems[i].tagName.toLowerCase() == 'svg'){
+        //       var svgname = elems[i].classList[0];
+        //     }
+        //   }
+        //
+        //   var this_point_flaginfo = $.grep(flags, function(v) {
+        //     return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
+        //   })[0];
+        //
+        //   point_tooltip.transition()
+        //     .duration(200)
+        //     .style("opacity", .9);
+        //   point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+        //     this_point_flaginfo.comment)
+        //     .style("left", (d3.event.pageX) + "px")
+        //     .style("top", (d3.event.pageY - 28) + "px");
+        // })
+        // .on("mouseout", function(d) {
+        //   point_tooltip.transition()
+        //     .duration(500)
+        //     .style("opacity", 0);
+        // });
+
+      // svg.append("g")
+      //     .attr("class", "foregraph");
+    }
+  }
+
+  //initial plot function that runs on page load
+  $(function(){
+    $("#getpl").click(function(){
+      $.ajax({
+        type: 'POST',
+        url:'/get_pipeline_data',
+        data: JSON.stringify(tmpcode),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(response){
+
+          plotdates = response.plotdates; // list of 2-week window boundaries
+
+          //reformat plot dates as DD/MM/YYYY, remove leading zeros on D and M
+          plotdates_reform = plotdates.slice(0) //copy mutable array
+          for (var i = 0; i < plotdates_reform.length; ++i){
+            splt = plotdates_reform[i].split('-')
+            plotdates_reform[i] = splt[1].replace(/^0/, '') + '/' +
+              splt[2].replace(/^0/, '') + '/' + splt[0]
+          }
+          plotstart = plotdates[1];
+          plotend = plotdates[0];
+
+          var origdata = JSON.parse(response.origjson);
+          var pldata = JSON.parse(response.pljson);
+          var flagdata = JSON.parse(response.flagjson);
+          variables = response.variables;
+
+          sundat = JSON.parse(response.sunriseset);
+          sundat.forEach(function(d){
+            d.rise = parseDate(d.rise);
+            d.set = parseDate(d.set);
+          });
+
+          origdisp = getdisplaydata(plotstart, plotend, origdata);
+          pldisp = getdisplaydata(plotstart, plotend, pldata);
+
+          PlotsPL(variables, origdisp, pldisp, flagdata);
+          $('#flagging').show();
+
+          //populate dropdown of potential comparison variables
+          $('#backgraphlist2')
+            .find('option').remove().end()
+            .append('<option value="None" selected>None</option>');
+          for (var i = 0; i < response.variables.length; ++i){
+            $('#backgraphlist2').append('<option value="' + response.variables[i] +
+              '">'+response.variables[i] + '</option>');
+          }
+
+          //populate dropdown of potential date ranges to jump to.
+          //this part establishes the most recent range as the selected option
+          default_range = plotdates_reform[1] + ' - ' + plotdates_reform[0]
+          default_range_val = plotdates[1] + ' ' + plotdates[0]
+          $('#jumptodate')
+            .find('option').remove().end()
+            .append('<option value="' + default_range_val +
+              '" selected>' + default_range + '</option>');
+
+          //and now the rest of the options
+          for (var i = 1; i < plotdates_reform.length-1; ++i){
+            daterange = plotdates_reform[i+1] + ' - ' + plotdates_reform[i]
+            daterange_val = plotdates[i+1] + ' ' + plotdates[i]
+            $('#jumptodate').append('<option value="' + daterange_val +
+              '">' + daterange + '</option>');
+          }
+        },
+        error: function(error){
+          console.log(error);
+        }
+      });
+    });
+  });
+
+  function redrawPointsPL(zoom_in, sbrush, reset, data){
+
+    sbb = d3.select("." + sbrush).select(".brush").node()
+    if(!sbb){ // check if there is a brush
+      s = null
+    }else{ // if it exists, get the extent
+      s = d3.brushSelection(sbb)
+    }
+    if(!s || reset){ // nothing selected or resetting graph, extent goes to maximum
+      extent = d3.extent(data, function(d) {
+        return d.date;
+      })//"none"
+    }else{ // calculate extent bounds
+      ext0 = x.invert(s[0])
+      ext1 = x.invert(s[1])
+      extent = [ext0, ext1]
+    }
+    if(zoom_in){ // if zooming, reset the extent
+      x.domain(extent);
+    }
+
+    // redraw data
+    for (var i = 0; i < variables.length; ++i) {
+      vvv = variables[i];
+      if(datna != null){
+        dna = {}
+        datna.forEach(function(e){dna[e.DateTime_UTC]=e[vvv]})
+        y.domain(d3.extent(datna, function(d) { return d[vvv]; })); // reset Y to get rid of NA values
+      }else{
+        dna = {}
+        data.forEach(function(e){dna[e.DateTime_UTC]=e[vvv]})
+        y.domain(d3.extent(data, function(d) { return d[vvv]; })); // reset Y to get rid of NA values
+      }
+      d3.select("." + vvv).select(".axis--x").call(xAxis); //redraw axis
+      var line = d3.line()
+          .defined(function(d){return d[vvv];})
+          .x(function(d) { return x(d.date); })
+          .y(function(d) { return y(d[vvv]); });
+      d3.select("."+vvv).selectAll(".dot")
+          .attr("cx", line.x())
+          .attr("cy", line.y())
+      d3.select("."+vvv).selectAll('.sunriseset')
+          .attr('x', function(d) { return x(d.set); })
+          .attr('width', function(d) { return x(d.rise) - x(d.set); })
+      // if(!zoom_in){ // adding na values
+      d3.select("."+vvv).selectAll(".dot")
+        .classed("outside", function(d) {
+          return dna[d.DateTime_UTC] == null;
+        });
+      // }
+      if(zoom_in){ // check for outside points
+        // redraw points
+        d3.select("."+vvv).selectAll(".dot")
+          .classed("outside", function(d) {
+            is_inplot = extent[0] > d.date || d.date > extent[1];
+            return is_inplot;
+          });
+        // redraw sunriseset
+        d3.selectAll(".sunriseset")
+          .classed("outside", function(d) {
+            is_inplot = extent[0] > d.rise || d.set > extent[1];
+            return is_inplot;
+          });
+
+        // redraw backfill (commented parts will be relevant when brushing is added)
+        var backfill = $("#backgraphlist").val();
+        BackGraph(backfill, vvv, data, type='polygon');
+      }
+    }
+    d3.selectAll(".dot").classed("selected", false);
+    d3.selectAll(".brush").call(brush.move, null);
+    var selectedBrush;
+  }
+
+  //for subsetting time series by desired window
+  function getdisplaydata(start, end, dat){
+    stdt = Date.parse(start) //convert from YYYY-MM-DD to unix
+    endt = Date.parse(end)
+    pltdat = $(dat).filter(function(i, n){
+      return Date.parse(n.DateTime_UTC) > stdt && Date.parse(n.DateTime_UTC) < endt
+    })
+    return $.makeArray(pltdat)
+  }
+
+  //zoomin
+  $('body').ready(function(){
+    $('body').on("click", "#zoomin", function(){
+      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=false, data=origdisp)
+    });
+  });
+
+  //zoomreset
+  $(function(){
+    $("#zoomreset").click(function(){
+      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true, data=origdisp)
+    });
+  })
+
+  //compare variable
+  $(function(){
+    $("#backgraphlist2").change(function () {
+
+      if($(this).val() == 'None'){
+
+        // remove previous graph and secondary axis
+        d3.selectAll('.backgraph').select("path").remove()
+        d3.selectAll('[id*=rightaxis]').attr("visibility", "hidden");
+      } else {
+
+        //plot polygon for secondary variable
+        var backfill = this.value;
+        for (var i = 0; i < variables.length; ++i) {
+          BackGraph(backfill, variables[i], data, type='polygon');
+        }
+      }
+
+    });
+  })
+
+  //panback
+  $(function(){
+    $("#panback").click(function(){
+
+      // if the start date is not the last date in the list (i.e. the oldest)
+      if(plotstart != plotdates.slice(-1)[0]){
+        plotend = plotstart;
+        plotstart = plotdates[plotdates.indexOf(plotstart) + 1];
+        // if(datna != null){
+        //   data = getdisplaydata(plotstart,plotend,alldatna);
+        // }else{
+        data = getdisplaydata(plotstart, plotend, alldata);
+        // }
+        async_replot(data=data)
+      }
+    });
+  })
+
+  //panforward
+  $(function(){
+    $("#panforward").click(function(){
+
+      // if the end date is not the first date in the list
+      if(plotend != plotdates[0]){
+        plotstart = plotend;
+        plotend = plotdates[plotdates.indexOf(plotend)-1];
+        // if(datna != null){
+        //   data = getdisplaydata(plotstart,plotend,alldatna);
+        // }else{
+        data = getdisplaydata(plotstart,plotend,alldata);
+        // }
+        async_replot(data=data)
+      }
+    });
+  })
+
+  //jumptodate
+  $(function(){
+    $('#jumptodate').change(function(){
+      daterange_val = this.value
+      daterange_vals = daterange_val.split(' ')
+      plotstart = daterange_vals[0]
+      plotend = daterange_vals[1]
+      data = getdisplaydata(plotstart, plotend, alldata);
+      async_replot(data=data)
+    })
+  })
+
+  function alertbox(alrt, msg){
+    return '<div class="alert alert-dismissible alert-' + alrt + '">\
+      <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
+      ' + msg + '</div>'
+  }
+
+  // add flags for all highlighted points when yellow popup button is clicked
+  $('body').ready(function(){
+    $('body').on("click", "#addflag2", function(){
+      add_flag(red_points_only=false);
+    });
+  });
+
+  // add flags for red highlighted points when red popup button is clicked
+  $('body').ready(function(){
+    $('body').on("click", "#addflag_outl", function(){
+      add_flag(red_points_only=true);
+    });
+  });
+
+  // remove flags when green popup button is clicked
+  $('body').ready(function(){
+    $('body').on("click", "#rmflag", function(){
+      rm_flag();
+    });
+  });
+
+  // highlight/unhighlight across all variables when "apply vertically..." is toggled
+  $('body').ready(function(){
+    $('body').on("input", "#fillbrush", selection_manager);
+  });
+
+  function selection_manager() {
+
+    var brsh = d3.brushSelection(d3.select("#" + selectedBrush).node())
+
+    if (typeof $('#fillbrush')[0] != 'undefined') {
+
+      var b_strt = x.invert(brsh[0]);
+      var b_end = x.invert(brsh[1]);
+
+      if( $('#fillbrush')[0].checked ){
+        brushdown = true;
+        d3.selectAll(".dot, .maybe_outl, .highlighted").classed("selected",
+          function(d) { return b_strt <= d.date && d.date <= b_end; });
+
+      } else {
+
+        brushdown = false;
+        d3.selectAll(".selected").classed("selected", false);
+        d3.select("." + selectedBrush)
+          .selectAll(".dot, .maybe_outl, .highlighted")
+          .classed("selected", function(d) {
+            return b_strt <= d.date && d.date <= b_end;
+          });
+      }
+    }
+
+    return false
+  }
+
+  function rm_flag() {
+
+    if(undefined != selectedBrush){ // only do this if there is a brush selected
+
+      s = d3.brushSelection(d3.select("#"+selectedBrush).node())
+      dat = {}
+      dat['site'] = $('select[name=site]').val();
+      dat['startDate'] = x.invert(s[0]);
+      dat['endDate'] = x.invert(s[1]);
+
+      if(brushdown){
+        dat['var'] = variables;
+        b = d3.selectAll("svg").selectAll(".selected");
+      } else {
+        dat['var'] = [selectedBrush];
+        b = d3.select("." + selectedBrush).selectAll(".selected");
+      }
+
+      b.classed('highlighted', function(d) {
+        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+        return ! is_brushed;
+      });
+
+      b.classed('flagdot', function(d) {
+        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+        return ! is_brushed;
+      });
+
+      brushdown = false;
+      rmflag_ajax();
+
+      return false;
+
+    } else {
+
+      $("#alerts_floating").append(alertbox('warning', 'No points selected.'));
+    }
+  }
+
+  function add_flag(red_points_only) {
+
+    if(undefined != selectedBrush){ // only do this if there is a brush selected
+
+      if( $('#qaqc select').val() == null ){
+        $("#alerts_floating").append(alertbox('danger','Please select a flag label.'));
+        return false
+      }
+
+      s = d3.brushSelection(d3.select("#" + selectedBrush).node())
+      dat = {}
+      dat['site'] = $('select[name=site]').val();
+      dat['startDate'] = x.invert(s[0]);
+      dat['endDate'] = x.invert(s[1]);
+
+      if(brushdown){
+        dat['var'] = variables;
+        b = d3.selectAll("svg").selectAll(".dot");
+        if(red_points_only){
+          b = b.filter('.maybe_outl');
+        }
+      } else {
+        dat['var'] = [selectedBrush];
+        b = d3.select("." + selectedBrush).selectAll(".selected");
+        if(red_points_only){
+          b = b.filter('.maybe_outl');
+        }
+      }
+
+      b.classed('highlighted', function(d) {
+        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+        return is_brushed;
+      });
+
+      brushdown = false;
+      dat['comment'] = $("input[name=fcomment2]").val();
+      dat['flagid'] = $("select[name=flagID2]").val();
+
+      if(red_points_only){
+        so = d3.selectAll(".highlighted").filter('.maybe_outl').data();
+        counter = 0; //prepare for flag_ajax_serial recursion
+        dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
+        dat['endDate'] = so[counter].DateTime_UTC;
+      }
+
+      if (dat.flagid != null){
+
+        if(red_points_only){
+          flag_ajax_serial(counter, so);
+        } else {
+          flag_ajax_batch();
+        }
+        return false;
+
+      } else {
+        $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
+      }
+
+    } else {
+      $("#alerts_floating").append(alertbox('warning','No points selected.'));
+    }
+  }
+
+  //flag all selected points, the fast way
+  function flag_ajax_batch(){
+    $.ajax({
+      type: 'POST',
+      url:'/_addflag',
+      data: JSON.stringify(dat),
+      contentType: 'application/json;charset=UTF-8',
+      success: function(){
+        $('.popupbox').remove();
+        console.log("success");
+      },
+      error: function(error){
+        $('.popupbox').remove();
+        console.log(error);
+      }
+    });
+  }
+
+  //flag only selected points that are red. waits for callbacks
+  function flag_ajax_serial(counter, selection){
+    $.ajax({
+      type: 'POST',
+      url:'/_addflag',
+      data: JSON.stringify(dat),
+      contentType: 'application/json;charset=UTF-8',
+      success: function(){
+        if (counter < so.length - 1){
+          counter++;
+          dat['startDate'] = so[counter].DateTime_UTC; //focus on next red point
+          dat['endDate'] = so[counter].DateTime_UTC;
+          flag_ajax_serial(counter, so);
+        } else {
+          $('.popupbox').remove();
+        }
+      },
+      error: function(error){
+        $('.popupbox').remove();
+        console.log(error);
+      }
+    });
+  }
+
+  //remove all flags from selected points
+  function rmflag_ajax(){
+    $.ajax({
+      type: 'POST',
+      url:'/_rmflag',
+      data: JSON.stringify(dat),
+      contentType: 'application/json;charset=UTF-8',
+      success: function(){
+        $('.popupbox').remove();
+        console.log("success");
+      },
+      error: function(error){
+        $('.popupbox').remove();
+        console.log(error);
+      }
+    });
+  }
+
+</script>
+
+<!-- <script type="application/javascript" src="static/js/qaqc_helpers.js"></script> -->
+
+{% endblock %}

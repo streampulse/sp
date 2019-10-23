@@ -1324,10 +1324,10 @@ def download_bulk():
     #all files must be present or an error will arise during rendering
     return render_template('download_bulk.html', bulk_file_sizes=bulk_dict)
 
-@app.route('/pipeline1')
-def pipeline1():
-
-    return render_template('pipeline1.html')
+# @app.route('/pipeline1')
+# def pipeline1():
+#
+#     return render_template('pipeline1.html')
 
 @app.route('/viz_choice')
 def viz_choice():
@@ -2552,11 +2552,12 @@ def confirmcolumns():
     flash(notification, 'alert-success')
     return redirect(url_for('series_upload'))
 
-@app.route("/pipeline-complete/<string:tmpcode>", methods=["GET"])
-@login_required
-def pipeline_complete(tmpcode):
+@app.route("/get_pipeline_data", methods=["POST"])
+def get_pipeline_data():
 
     try:
+
+        tmpcode = request.json
 
         # tmpcode = 'f32f3893c4cb'
         dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
@@ -2614,7 +2615,7 @@ def pipeline_complete(tmpcode):
         flagdf_head = flagdf.head(2).to_string()
 
         full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
-            dumpfile + region + site
+            dumpfile + region + site + tmpcode
         log_exception('E012', full_error_detail)
         email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
@@ -2623,11 +2624,22 @@ def pipeline_complete(tmpcode):
 
         return redirect(url_for('series_upload'))
 
-    return render_template('pipeline1.html', variables=variables,
-        origjson=origjson, pljson=pljson, flagjson=flagjson,
-        sunriseset=sunriseset, plotdates=drr)
+    return jsonify(variables=variables, origjson=origjson, pljson=pljson,
+        flagjson=flagjson, sunriseset=sunriseset, plotdates=drr)
 
-@app.route("/submit_dataset/<string:tmpcode>", methods=["GET"])
+@app.route("/pipeline-complete-<string:tmpcode>", methods=["GET"])
+@login_required
+def pipeline_complete(tmpcode):
+
+    #load static html for popup menu
+    with open('static/html/qaqcPopupMenu_sensor.html', 'r') as html_file:
+        qaqc_options_sensor = html_file.read()
+    qaqc_options_sensor = qaqc_options_sensor.replace('\n', '')
+
+    return render_template('pipeline_qaqc.html', tmpcode=tmpcode,
+        qaqc_options=qaqc_options_sensor)
+
+@app.route("/submit-dataset-<string:tmpcode>", methods=["GET"])
 @login_required
 def submit_dataset(tmpcode):
 

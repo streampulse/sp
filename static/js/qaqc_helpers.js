@@ -9,20 +9,6 @@ function getdisplaydata(start, end, dat){
   return $.makeArray(pltdat)
 }
 
-//zoomin
-$('body').ready(function(){
-  $('body').on("click", "#zoomin", function(){
-    redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=false)
-  });
-});
-
-//zoomreset
-$(function(){
-  $("#zoomreset").click(function(){
-    redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true)
-  });
-})
-
 //compare variable
 $(function(){
   $("#backgraphlist2").change(function () {
@@ -43,44 +29,6 @@ $(function(){
 
   });
 })
-
-function async_replot(data){
-  $.ajax({
-    type: 'POST',
-    url: '/_outlierdetect',
-    data: JSON.stringify(data),
-    contentType: 'application/json;charset=UTF-8',
-    success: function(response){
-
-      //pull in outliers, empty plots, replot
-      outliers = response.outliers;
-      $("#graphs").empty();
-      Plots(variables, data, flags, outliers, "qaqc");
-      if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
-
-      //show panback if applicable
-      if(plotstart != plotdates.slice(-1)[0]){
-        $('#panback').html('<< Previous two weeks')
-      } else {
-        $('#panback').html('')
-      }
-
-      //show panforward if applicable
-      if(plotend != plotdates[0]){
-        $('#panforward').html('Next two weeks >>')
-      } else {
-        $('#panforward').html('')
-      }
-
-      //update selected value in date range dropdown
-      $('#jumptodate').val(plotstart + ' ' + plotend)
-
-    },
-    error: function(error){
-      console.log(error);
-    }
-  });
-}
 
 //panback
 $(function(){

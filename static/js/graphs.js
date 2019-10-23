@@ -48,22 +48,8 @@ var modeVal = function mode(arr){
 }
 var downtri = d3.symbol().type(d3.symbolTriangle);
 
-function Plots(variables, data, flags, outliers, page, unflagged_vnegatives, datamode='sensor'){
-
-  // if(page != 'qaqc') //page should be "viz", but comes through undefined
-  //   var nrecs = data.length
-  //
-  //   for(v in variables){
-  //     for(var i = 0; i < nrecs; i++){
-  //       data[i][v]
-  //     }
-  //   }
-  //
-  //   data = $.map(data, function(x){
-  //     x[solute] = x[solute] * multiplier
-  //     return x
-  //   })
-  // }
+function Plots(variables, data, flags, outliers, page, unflagged_vnegatives,
+  datamode='sensor'){
 
   data.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
   flags.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -882,18 +868,21 @@ function brushend(){
 }
 
 function redrawPoints(zoom_in, sbrush, reset){
-  sbb = d3.select("."+sbrush).select(".brush").node()
+
+  sbb = d3.select("." + sbrush).select(".brush").node()
   if(!sbb){ // check if there is a brush
     s = null
   }else{ // if it exists, get the extent
     s = d3.brushSelection(sbb)
   }
   if(!s || reset){ // nothing selected or resetting graph, extent goes to maximum
-    extent = d3.extent(data, function(d) { return d.date; })//"none"
+    extent = d3.extent(data, function(d) {
+      return d.date;
+    })//"none"
   }else{ // calculate extent bounds
     ext0 = x.invert(s[0])
     ext1 = x.invert(s[1])
-    extent = [ext0,ext1]
+    extent = [ext0, ext1]
   }
   if(zoom_in){ // if zooming, reset the extent
     x.domain(extent);
@@ -925,7 +914,7 @@ function redrawPoints(zoom_in, sbrush, reset){
       data.forEach(function(e){dna[e.DateTime_UTC]=e[vvv]})
       y.domain(d3.extent(data, function(d) { return d[vvv]; })); // reset Y to get rid of NA values
     }
-    d3.select("."+vvv).select(".axis--x").call(xAxis); //redraw axis
+    d3.select("." + vvv).select(".axis--x").call(xAxis); //redraw axis
     var line = d3.line()
         .defined(function(d){return d[vvv];})
         .x(function(d) { return x(d.date); })
