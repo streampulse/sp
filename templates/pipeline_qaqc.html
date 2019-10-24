@@ -172,25 +172,34 @@
           .attr("class", "backgraph");
       svg.append("g")
           .attr("class", "sunriseset");
-      dff = {} // flagged values
+      var outliers = {}
+      var justfortesting = {}
       flagdata.forEach(function(e){
-        if(e.variable == vvv){ // only if this is the right variable
-          dff[e.DateTime_UTC] = e.variable //so ugly...
+        if(e.variable == vvv){
+          if(e.code < 2){
+            outliers[e.DateTime_UTC] = e.variable
+          } else if (e.code >= 2){
+            justfortesting[e.DateTime_UTC] = e.variable
+          }
         }
       });
 
       svg.on('dblclick',function(){
-        redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true)
+        redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true,
+          data=origdata)
       });
       svg.append("g").attr("class", "brush")
         .attr("id", vvv)
         .call(brush);
-      svg.selectAll(".dot")
-          .data(origdata.filter(function(d) { return d[vvv]; }))
+      svg.selectAll(".pldot")
+          .data(origdata.filter(function(d) {
+            return d[vvv];
+          }))
         .enter().append("circle")
-          .attr("class", "dot")
+          .attr("class", "pldot")
           .attr("cx", line.x())
           .attr("cy", line.y())
+          .attr('r', 2)
         // .classed("maybe_outl", function(d, j){
         //   return outliers[vvv] && outliers[vvv].includes(j+1) &&
         //     vvv != dff[d.DateTime_UTC];
@@ -203,39 +212,42 @@
         //     return datamode == 'sensor' ? 2 : 4
         //   };
         // })
-        // .classed("flagdot", function(d){
-        //   return vvv == dff[d.DateTime_UTC]
-        // })
-        // .filter('.flagdot')
-        // .on("mouseover", function(d, j) {
-        //
-        //   //get the name (which for some reason is a class) of the svg under the mouse
-        //   var hovered_point = this.getBoundingClientRect();
-        //   var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
-        //   for(var i = 0; i < elems.length; ++i){
-        //     if(elems[i].tagName.toLowerCase() == 'svg'){
-        //       var svgname = elems[i].classList[0];
-        //     }
-        //   }
-        //
-        //   var this_point_flaginfo = $.grep(flags, function(v) {
-        //     return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
-        //   })[0];
-        //
-        //   point_tooltip.transition()
-        //     .duration(200)
-        //     .style("opacity", .9);
-        //   point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
-        //     this_point_flaginfo.comment)
-        //     .style("left", (d3.event.pageX) + "px")
-        //     .style("top", (d3.event.pageY - 28) + "px");
-        // })
-        // .on("mouseout", function(d) {
-        //   point_tooltip.transition()
-        //     .duration(500)
-        //     .style("opacity", 0);
-        // });
-
+        .classed("ploutlier", function(d){
+          return vvv == outliers[d.DateTime_UTC]
+        })
+        .classed("plgapfill", function(d){
+          return vvv == justfortesting[d.DateTime_UTC]
+        })
+      //   .filter('.flagdot')
+      //   .on("mouseover", function(d, j) {
+      //
+      //     //get the name (which for some reason is a class) of the svg under the mouse
+      //     var hovered_point = this.getBoundingClientRect();
+      //     var elems = document.elementsFromPoint(hovered_point.x, hovered_point.y);
+      //     for(var i = 0; i < elems.length; ++i){
+      //       if(elems[i].tagName.toLowerCase() == 'svg'){
+      //         var svgname = elems[i].classList[0];
+      //       }
+      //     }
+      //
+      //     var this_point_flaginfo = $.grep(flags, function(v) {
+      //       return v.DateTime_UTC == d.DateTime_UTC && v.variable == svgname;
+      //     })[0];
+      //
+      //     point_tooltip.transition()
+      //       .duration(200)
+      //       .style("opacity", .9);
+      //     point_tooltip.html('Flag: ' + this_point_flaginfo.flag + '<br>Comment: ' +
+      //       this_point_flaginfo.comment)
+      //       .style("left", (d3.event.pageX) + "px")
+      //       .style("top", (d3.event.pageY - 28) + "px");
+      //   })
+      //   .on("mouseout", function(d) {
+      //     point_tooltip.transition()
+      //       .duration(500)
+      //       .style("opacity", 0);
+      //   });
+      //
       // svg.append("g")
       //     .attr("class", "foregraph");
     }
@@ -277,7 +289,8 @@
           origdisp = getdisplaydata(plotstart, plotend, origdata);
           pldisp = getdisplaydata(plotstart, plotend, pldata);
 
-          PlotsPL(variables, origdisp, pldisp, flagdata);
+          PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
+            flagdata=flagdata);
           $('#flagging').show();
 
           //populate dropdown of potential comparison variables
@@ -351,21 +364,21 @@
           .defined(function(d){return d[vvv];})
           .x(function(d) { return x(d.date); })
           .y(function(d) { return y(d[vvv]); });
-      d3.select("."+vvv).selectAll(".dot")
+      d3.select("."+vvv).selectAll(".pldot")
           .attr("cx", line.x())
           .attr("cy", line.y())
       d3.select("."+vvv).selectAll('.sunriseset')
           .attr('x', function(d) { return x(d.set); })
           .attr('width', function(d) { return x(d.rise) - x(d.set); })
       // if(!zoom_in){ // adding na values
-      d3.select("."+vvv).selectAll(".dot")
+      d3.select("."+vvv).selectAll(".pldot")
         .classed("outside", function(d) {
           return dna[d.DateTime_UTC] == null;
         });
       // }
       if(zoom_in){ // check for outside points
         // redraw points
-        d3.select("."+vvv).selectAll(".dot")
+        d3.select("."+vvv).selectAll(".pldot")
           .classed("outside", function(d) {
             is_inplot = extent[0] > d.date || d.date > extent[1];
             return is_inplot;
@@ -382,7 +395,7 @@
         BackGraph(backfill, vvv, data, type='polygon');
       }
     }
-    d3.selectAll(".dot").classed("selected", false);
+    d3.selectAll(".pldot").classed("selected", false);
     d3.selectAll(".brush").call(brush.move, null);
     var selectedBrush;
   }
