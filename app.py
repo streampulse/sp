@@ -1212,7 +1212,7 @@ def sitelist():
         db.engine)
 
     #calculate remaining embargo days
-    timedeltas = datetime.utcnow() - sitedata.addDate
+    timedeltas = pd.Series([datetime.utcnow() - x for x in sitedata.addDate])
     days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
     sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
     sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
