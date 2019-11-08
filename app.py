@@ -472,7 +472,7 @@ variables = ['DateTime_UTC', 'DO_mgL', 'DOSecondary_mgL', 'satDO_mgL', 'DOsat_pc
 'WaterPres_kPa', 'AirTemp_C', 'AirPres_kPa', 'Level_m', 'Depth_m',
 'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV', 'FDOM_mV',
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
-'SpecCond_uScm', 'CO2_ppm', 'ChlorophyllA_ugL', 'Light_lux', 'Light_PAR', 'Light2_lux',
+'SpecCond_uScm', 'EC_uScm', 'CO2_ppm', 'ChlorophyllA_ugL', 'Light_lux', 'Light_PAR', 'Light2_lux',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',
 'Light5_lux', 'Light5_PAR', 'underwater_lux', 'underwater_PAR', 'benthic_lux',
 'benthic_PAR', 'Battery_V']
