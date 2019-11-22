@@ -3278,14 +3278,18 @@ def getviz():
         'comment']].dropna().drop(['flagid'], axis=1)
 
     #separate very negative values without flags
-    ufv = xx[(xx.value < -10) & (xx.comment.isnull()) & (xx.variable != 'AirTemp_C')]
+    ufv = xx[((xx.value < -10) & (xx.comment.isnull()) & (xx.variable != 'AirTemp_C')) |\
+        ((xx.value < 0) & (xx.comment.isnull()) & (xx.variable == 'DO_mgL'))]
     # ufv = xx[(xx.value < -10) & (xx.comment.isnull()) & (~xx.variable.isin(['AirTemp_C',
     #     'WaterTemp_C']))]
     ufv['display_val'] = -9.99095 #left for compatibility with old numpy
+    ufv.loc[ufv.variable == 'DO_mgL', 'display_val'] = 0.00095
     # ufv.loc[:, 'display_val'] = -9.99095
 
-    #very negative (and thus erroneous points) will show up as arrows at y=-10.
+    #very negative (and thus erroneous points) will show up as arrows at y~-10.
+    #(or y~0 for DO)
     xx.value[(xx.value < -10) & (xx.variable != 'AirTemp_C')] = -9.99095
+    xx.value[(xx.value < -0) & (xx.variable == 'DO_mgL')] = 0.00095
 
     #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
     #data results in good points receiving "bad data" labels, so remove those flags
