@@ -726,7 +726,8 @@ def load_file(f, gmtoff, logger):
 
         #find out what the next upload_id will be and update working list
         pending_upIDs = [i[1] for i in filenamesNoV]
-        upID = max(last_upID[0], max(pending_upIDs)) + 1
+        maxpend = max(pending_upIDs) if all([x is not None for x in pending_upIDs]) else -1
+        upID = max(last_upID[0], maxpend) + 1
         filenamesNoV[filenamesNoV.index([fn, None])][1] = upID #update
         session['filenamesNoV'] = filenamesNoV
 
