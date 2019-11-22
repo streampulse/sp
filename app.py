@@ -3431,7 +3431,7 @@ def getviz():
     variables = request.json['variables']
     dsource = request.json['source']
     src = 'powell' if dsource == 'pow' else 'data'
-    # region='NC'; site='NHC'; startDate='2017-06-01'; endDate='2018-06-20'
+    # region='NC'; site='NHC'; startDate='2017-11-01'; endDate='2018-01-01'
     # region='AK'; site='CARI-down'; startDate='2018-04-01'; endDate='2018-04-20'
     # variables=['DO_mgL','WaterTemp_C','Light_lux']; src='data'
 
@@ -3459,6 +3459,7 @@ def getviz():
     xx = pd.read_sql(sqlq, db.engine)
     # xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs so bad datapoints dont plot
     xx = xx[xx.flag != 'Bad Data'] #instead, just remove bad data rows
+    # xx.loc[(xx.variable == 'DO_mgL') & (xx.index < 8),'value'] = -888
 
     #thin data to 1/15 if data source is NEON
     is_neon = pd.read_sql("select `by` from site where region='" + region +\
@@ -3474,14 +3475,18 @@ def getviz():
         'comment']].dropna().drop(['flagid'], axis=1)
 
     #separate very negative values without flags
-    ufv = xx[(xx.value < -10) & (xx.comment.isnull()) & (xx.variable != 'AirTemp_C')]
+    ufv = xx[((xx.value < -10) & (xx.comment.isnull()) & (xx.variable != 'AirTemp_C')) |\
+        ((xx.value < 0) & (xx.comment.isnull()) & (xx.variable == 'DO_mgL'))]
     # ufv = xx[(xx.value < -10) & (xx.comment.isnull()) & (~xx.variable.isin(['AirTemp_C',
     #     'WaterTemp_C']))]
     ufv['display_val'] = -9.99095 #left for compatibility with old numpy
+    ufv.loc[ufv.variable == 'DO_mgL', 'display_val'] = 0.00095
     # ufv.loc[:, 'display_val'] = -9.99095
 
-    #very negative (and thus erroneous points) will show up as arrows at y=-10.
+    #very negative (and thus erroneous points) will show up as arrows at y~-10.
+    #(or y~0 for DO)
     xx.value[(xx.value < -10) & (xx.variable != 'AirTemp_C')] = -9.99095
+    xx.value[(xx.value < -0) & (xx.variable == 'DO_mgL')] = 0.00095
 
     #some datetime-value pairs are duplicated, and only one is flagged. sending all flag
     #data results in good points receiving "bad data" labels, so remove those flags
