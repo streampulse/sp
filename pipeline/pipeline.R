@@ -2,6 +2,7 @@ library(tidyverse)
 library(imputeTS)
 library(anomalize)
 library(feather)
+library(lubridate)
 
 setwd('/home/mike/git/streampulse/server_copy/sp')
 # setwd('/home/aaron/sp')
@@ -21,15 +22,22 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
 #     stringsAsFactors=FALSE)
 # write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
-# args = list('tmpcode'='f32f3893c4cb')
-origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
-pldf = select(origdf, DateTime_UTC, everything()) %>%
-    mutate(DateTime_UTC=as.POSIXct(DateTime_UTC, tz='UTC')) %>%
-    as.data.frame()
+# args = list('tmpcode'='8461a107c644')
+origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
+    mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
+
+#determine the sampling interval and fill in any missing records
+samp_int_m = determine_sample_interval(origdf)
+origdf = populate_missing_rows(origdf, samp_int_m)
+
+#copy and trim df for pipeline traversal
+pldf = select(origdf, -DateTime_UTC, -upload_id)
+# pldf = select(origdf, DateTime_UTC, everything(), -upload_id) %>%
+    # as.data.frame()
 
 #trim data before processing; datetime and upload id will be reattached at end
-pldf$DateTime_UTC = NULL
-pldf$upload_id = NULL
+# pldf$DateTime_UTC = NULL
+# pldf$upload_id = NULL
 
 #keep track of NAs; create df for storing flag codes
 na_inds = which(is.na(pldf))
@@ -44,7 +52,7 @@ flagdf[,] = 0
 #flags physically impossible values with code 1
 df_and_flagcodes = range_check(pldf, flagdf)
 pldf = df_and_flagcodes$d
-pldf = lin_interp_gaps(pldf)
+pldf = lin_interp_gaps(pldf, flagdf)
 flagdf = df_and_flagcodes$flagd
 
 #operation 2: residual error based outlier detection via anomalize package
@@ -54,6 +62,9 @@ pldf = df_and_flagcodes$d
 pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
     pldf, list('upload_id'=origdf$upload_id))
 flagdf = df_and_flagcodes$flagd
+
+#operation 3: linearly interpolate gaps <= 3 hours
+
 
 #save flag codes, cleaned data to be read by flask when user follows email link
 flagdf$DateTime_UTC = origdf$DateTime_UTC

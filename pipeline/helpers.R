@@ -1,12 +1,52 @@
 
-lin_interp_gaps = function(d, thresh=1){
+determine_sample_interval = function(d){
+
+    intervals = int_diff(origdf$DateTime_UTC) %>%
+        time_length(unit='minute') %>%
+        table()
+    primary_interval_m = as.numeric(names(intervals)[which.max(intervals)])
+
+    return(primary_interval_m)
+}
+
+populate_missing_rows = function(d, samp_int){
+    #samp_int is the sample interval in minutes
+
+    daterange = range(d$DateTime_UTC, na.rm=TRUE)
+    dt_filled = data.frame(DateTime_UTC=seq(daterange[1], daterange[2],
+        by=paste(samp_int, 'min')))
+    d = right_join(d, dt_filled, by='DateTime_UTC')
+
+    return(d)
+}
+
+lin_interp_gaps = function(d, flagd, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
+    #if > na_thresh proportion of a series is NA, don't interpolate
+    #samp_int is the sample interval in minutes
+    #gaps larger than gap_thresh minutes will not be filled
+
+    if(! is.null(samp_int) && (length(samp_int) != 1 || ! is.numeric(samp_int))){
+        stop('samp_int must be a numeric of length 1.')
+    }
+
+    if(is.null(samp_int) && gap_thresh < Inf){
+        warning('samp_int is NULL, so ignoring gap_thresh.')
+    }
+
+    gap_thresh_n = gap_thresh / samp_int
+
+    if(gap_thresh_n <= 0){
+        stop(paste('Cannot interpolate gaps of length', gap_thresh, '/',
+            samp_int, '=', gap_thresh_n))
+    }
 
     d = as.data.frame(apply(d, 2,
         function(x){
             if(sum(is.na(x)) / length(x) > thresh) return(x)
-            imputeTS::na_interpolation(x, option='linear')
+            imputeTS::na_interpolation(x, option='linear', maxgap=gap_thresh_n)
         }))
 
+    # return(list('d'=d, 'flagd'=flagd))
     return(d)
 }
 

@@ -101,11 +101,11 @@
   var plotdates;
   var plotstart;
   var plotend;
-  // var origdata;
-  // var pldata;
-  // var flagdata;
-  var origdisp;
-  var pldisp;
+  var origdata;
+  var pldata;
+  var flagdata;
+  // var origdisp;
+  // var pldisp;
 
   function PlotsPL(variables, origdata, pldata, flagdata){
 
@@ -173,33 +173,47 @@
       svg.append("g")
           .attr("class", "sunriseset");
       var outliers = {}
-      var justfortesting = {}
+      var interps = {}
       flagdata.forEach(function(e){
         if(e.variable == vvv){
           if(e.code < 2){
             outliers[e.DateTime_UTC] = e.variable
-          } else if (e.code >= 2){
-            justfortesting[e.DateTime_UTC] = e.variable
+          } else if ([2, 3].includes(e.code)){
+            interps[e.DateTime_UTC] = e.variable
           }
         }
       });
 
       svg.on('dblclick',function(){
         redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true,
-          data=origdata)
+          origdata, pldata)
       });
       svg.append("g").attr("class", "brush")
         .attr("id", vvv)
         .call(brush);
-      svg.selectAll(".pldot")
+      svg.selectAll(".plorigdot")
           .data(origdata.filter(function(d) {
+            return d[vvv];
+          }))
+        .enter().append("circle")
+          .attr("class", "plorigdot")
+          .attr("cx", line.x())
+          .attr("cy", line.y())
+          .classed("ploutlier", function(d){
+            return vvv == outliers[d.DateTime_UTC]
+          });
+      svg.selectAll(".pldot")
+          .data(pldata.filter(function(d) {
             return d[vvv];
           }))
         .enter().append("circle")
           .attr("class", "pldot")
           .attr("cx", line.x())
           .attr("cy", line.y())
-          .attr('r', 2)
+          .classed("plgapfill", function(d){
+            return vvv == justfortesting[d.DateTime_UTC]
+          });
+          // .attr('r', 2)
         // .classed("maybe_outl", function(d, j){
         //   return outliers[vvv] && outliers[vvv].includes(j+1) &&
         //     vvv != dff[d.DateTime_UTC];
@@ -212,12 +226,6 @@
         //     return datamode == 'sensor' ? 2 : 4
         //   };
         // })
-        .classed("ploutlier", function(d){
-          return vvv == outliers[d.DateTime_UTC]
-        })
-        .classed("plgapfill", function(d){
-          return vvv == justfortesting[d.DateTime_UTC]
-        })
       //   .filter('.flagdot')
       //   .on("mouseover", function(d, j) {
       //
@@ -275,9 +283,9 @@
           plotstart = plotdates[1];
           plotend = plotdates[0];
 
-          var origdata = JSON.parse(response.origjson);
-          var pldata = JSON.parse(response.pljson);
-          var flagdata = JSON.parse(response.flagjson);
+          origdata = JSON.parse(response.origjson);
+          pldata = JSON.parse(response.pljson);
+          flagdata = JSON.parse(response.flagjson);
           variables = response.variables;
 
           sundat = JSON.parse(response.sunriseset);
@@ -326,19 +334,19 @@
     });
   });
 
-  function redrawPointsPL(zoom_in, sbrush, reset, data){
+  function redrawPointsPL(zoom_in, sbrush, reset, origdisp, pldisp){
 
     sbb = d3.select("." + sbrush).select(".brush").node()
     if(!sbb){ // check if there is a brush
       s = null
-    }else{ // if it exists, get the extent
+    } else { // if it exists, get the extent
       s = d3.brushSelection(sbb)
     }
     if(!s || reset){ // nothing selected or resetting graph, extent goes to maximum
-      extent = d3.extent(data, function(d) {
+      extent = d3.extent(origdisp, function(d) {
         return d.date;
       })//"none"
-    }else{ // calculate extent bounds
+    } else { // calculate extent bounds
       ext0 = x.invert(s[0])
       ext1 = x.invert(s[1])
       extent = [ext0, ext1]
@@ -350,35 +358,43 @@
     // redraw data
     for (var i = 0; i < variables.length; ++i) {
       vvv = variables[i];
-      if(datna != null){
-        dna = {}
-        datna.forEach(function(e){dna[e.DateTime_UTC]=e[vvv]})
-        y.domain(d3.extent(datna, function(d) { return d[vvv]; })); // reset Y to get rid of NA values
-      }else{
-        dna = {}
-        data.forEach(function(e){dna[e.DateTime_UTC]=e[vvv]})
-        y.domain(d3.extent(data, function(d) { return d[vvv]; })); // reset Y to get rid of NA values
-      }
+      // if(datna != null){
+      //   dna = {}
+      //   datna.forEach(function(e){dna[e.DateTime_UTC]=e[vvv]})
+      //   y.domain(d3.extent(datna, function(d) { return d[vvv]; })); // reset Y to get rid of NA values
+      // }else{
+      dna = {}
+      origdisp.forEach(function(e){
+        dna[e.DateTime_UTC] = e[vvv]
+      })
+
+      //set y domain to extent of data
+      var origlim = d3.extent(origdisp, function(d) { return d[vvv]; });
+      var pllim = d3.extent(pldisp, function(d) { return d[vvv]; });
+      var ylim = d3.extent(origlim.concat(pllim));
+      y.domain(ylim);
+      //   y.domain(d3.extent(data, function(d) { return d[vvv]; }));
+      // }
       d3.select("." + vvv).select(".axis--x").call(xAxis); //redraw axis
       var line = d3.line()
           .defined(function(d){return d[vvv];})
           .x(function(d) { return x(d.date); })
           .y(function(d) { return y(d[vvv]); });
-      d3.select("."+vvv).selectAll(".pldot")
+      d3.select("." + vvv).selectAll(".pldot, .plorigdot")
           .attr("cx", line.x())
-          .attr("cy", line.y())
-      d3.select("."+vvv).selectAll('.sunriseset')
+          .attr("cy", line.y());
+      d3.select("." + vvv).selectAll('.sunriseset')
           .attr('x', function(d) { return x(d.set); })
-          .attr('width', function(d) { return x(d.rise) - x(d.set); })
+          .attr('width', function(d) { return x(d.rise) - x(d.set); });
       // if(!zoom_in){ // adding na values
-      d3.select("."+vvv).selectAll(".pldot")
+      d3.select("." + vvv).selectAll(".pldot, .plorigdot")
         .classed("outside", function(d) {
           return dna[d.DateTime_UTC] == null;
         });
       // }
       if(zoom_in){ // check for outside points
         // redraw points
-        d3.select("."+vvv).selectAll(".pldot")
+        d3.select("." + vvv).selectAll(".pldot, .plorigdot")
           .classed("outside", function(d) {
             is_inplot = extent[0] > d.date || d.date > extent[1];
             return is_inplot;
@@ -392,7 +408,7 @@
 
         // redraw backfill (commented parts will be relevant when brushing is added)
         var backfill = $("#backgraphlist").val();
-        BackGraph(backfill, vvv, data, type='polygon');
+        BackGraph(backfill, vvv, pldisp, type='polygon');
       }
     }
     d3.selectAll(".pldot").classed("selected", false);
@@ -402,27 +418,32 @@
 
   //for subsetting time series by desired window
   function getdisplaydata(start, end, dat){
+
     stdt = Date.parse(start) //convert from YYYY-MM-DD to unix
     endt = Date.parse(end)
+
     pltdat = $(dat).filter(function(i, n){
       return Date.parse(n.DateTime_UTC) > stdt && Date.parse(n.DateTime_UTC) < endt
     })
+
     return $.makeArray(pltdat)
   }
 
   //zoomin
   $('body').ready(function(){
     $('body').on("click", "#zoomin", function(){
-      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=false, data=origdisp)
+      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=false,
+        origdata, pldata)
     });
   });
 
   //zoomreset
   $(function(){
     $("#zoomreset").click(function(){
-      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true, data=origdisp)
+      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true,
+        origdata, pldata)
     });
-  })
+  });
 
   //compare variable
   $(function(){
@@ -438,12 +459,12 @@
         //plot polygon for secondary variable
         var backfill = this.value;
         for (var i = 0; i < variables.length; ++i) {
-          BackGraph(backfill, variables[i], data, type='polygon');
+          BackGraph(backfill, variables[i], pldata, type='polygon');
         }
       }
 
     });
-  })
+  });
 
   //panback
   $(function(){
@@ -456,12 +477,33 @@
         // if(datna != null){
         //   data = getdisplaydata(plotstart,plotend,alldatna);
         // }else{
-        data = getdisplaydata(plotstart, plotend, alldata);
+        pldisp = getdisplaydata(plotstart, plotend, pldata);
+        origdisp = getdisplaydata(plotstart, plotend, origdata);
         // }
-        async_replot(data=data)
+        // async_replot(data=pldisp)
+        PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
+          flagdata=flagdata);
+
+        //show panback if applicable
+        if(plotstart != plotdates.slice(-1)[0]){
+          $('#panback').html('<< Previous two weeks')
+        } else {
+          $('#panback').html('')
+        }
+
+        //show panforward if applicable
+        if(plotend != plotdates[0]){
+          $('#panforward').html('Next two weeks >>')
+        } else {
+          $('#panforward').html('')
+        }
+
+        //update selected value in date range dropdown
+        $('#jumptodate').val(plotstart + ' ' + plotend)
+
       }
     });
-  })
+  });
 
   //panforward
   $(function(){
@@ -474,22 +516,70 @@
         // if(datna != null){
         //   data = getdisplaydata(plotstart,plotend,alldatna);
         // }else{
-        data = getdisplaydata(plotstart,plotend,alldata);
+        // data = getdisplaydata(plotstart, plotend, alldata);
         // }
-        async_replot(data=data)
+        // async_replot(data=data)
+        pldisp = getdisplaydata(plotstart, plotend, pldata);
+        origdisp = getdisplaydata(plotstart, plotend, origdata);
+
+        PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
+          flagdata=flagdata);
+
+        //show panback if applicable
+        if(plotstart != plotdates.slice(-1)[0]){
+          $('#panback').html('<< Previous two weeks')
+        } else {
+          $('#panback').html('')
+        }
+
+        //show panforward if applicable
+        if(plotend != plotdates[0]){
+          $('#panforward').html('Next two weeks >>')
+        } else {
+          $('#panforward').html('')
+        }
+
+        //update selected value in date range dropdown
+        $('#jumptodate').val(plotstart + ' ' + plotend)
+
       }
     });
-  })
+  });
 
   //jumptodate
   $(function(){
     $('#jumptodate').change(function(){
+
       daterange_val = this.value
       daterange_vals = daterange_val.split(' ')
       plotstart = daterange_vals[0]
       plotend = daterange_vals[1]
-      data = getdisplaydata(plotstart, plotend, alldata);
-      async_replot(data=data)
+      // data = getdisplaydata(plotstart, plotend, alldata);
+      // async_replot(data=data)
+
+      pldisp = getdisplaydata(plotstart, plotend, pldata);
+      origdisp = getdisplaydata(plotstart, plotend, origdata);
+
+      PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
+        flagdata=flagdata);
+
+      //show panback if applicable
+      if(plotstart != plotdates.slice(-1)[0]){
+        $('#panback').html('<< Previous two weeks')
+      } else {
+        $('#panback').html('')
+      }
+
+      //show panforward if applicable
+      if(plotend != plotdates[0]){
+        $('#panforward').html('Next two weeks >>')
+      } else {
+        $('#panforward').html('')
+      }
+
+      //update selected value in date range dropdown
+      $('#jumptodate').val(plotstart + ' ' + plotend)
+
     })
   })
 
@@ -536,7 +626,7 @@
 
       if( $('#fillbrush')[0].checked ){
         brushdown = true;
-        d3.selectAll(".dot, .maybe_outl, .highlighted").classed("selected",
+        d3.selectAll(".pldot, .ploutlier, .plgapfill, .pldriftcorr").classed("selected",
           function(d) { return b_strt <= d.date && d.date <= b_end; });
 
       } else {
@@ -544,7 +634,7 @@
         brushdown = false;
         d3.selectAll(".selected").classed("selected", false);
         d3.select("." + selectedBrush)
-          .selectAll(".dot, .maybe_outl, .highlighted")
+          .selectAll(".pldot, .ploutlier, .plgapfill, .pldriftcorr")
           .classed("selected", function(d) {
             return b_strt <= d.date && d.date <= b_end;
           });
