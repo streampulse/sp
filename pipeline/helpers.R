@@ -20,7 +20,7 @@ populate_missing_rows = function(d, samp_int){
     return(d)
 }
 
-lin_interp_gaps = function(d, flagd, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
+lin_interp_gaps = function(d, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
     #if > na_thresh proportion of a series is NA, don't interpolate
     #samp_int is the sample interval in minutes
     #gaps larger than gap_thresh minutes will not be filled
@@ -35,18 +35,19 @@ lin_interp_gaps = function(d, flagd, na_thresh=1, samp_int=NULL, gap_thresh=Inf)
 
     gap_thresh_n = gap_thresh / samp_int
 
-    if(gap_thresh_n <= 0){
+    if (length(gap_thresh_n) == 0) {
+        gap_thresh_n = Inf
+    } else if(gap_thresh_n <= 0){
         stop(paste('Cannot interpolate gaps of length', gap_thresh, '/',
             samp_int, '=', gap_thresh_n))
     }
 
     d = as.data.frame(apply(d, 2,
         function(x){
-            if(sum(is.na(x)) / length(x) > thresh) return(x)
+            if(sum(is.na(x)) / length(x) > na_thresh) return(x)
             imputeTS::na_interpolation(x, option='linear', maxgap=gap_thresh_n)
         }))
 
-    # return(list('d'=d, 'flagd'=flagd))
     return(d)
 }
 

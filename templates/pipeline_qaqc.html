@@ -104,25 +104,26 @@
   var origdata;
   var pldata;
   var flagdata;
+  var variables;
   // var origdisp;
   // var pldisp;
 
-  function PlotsPL(variables, origdata, pldata, flagdata){
+  function PlotsPL(variables, origdisp, pldisp, flagdisp){
 
-    origdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
-    pldata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
-    flagdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+    origdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+    pldisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
+    flagdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
 
     //set x domain to extent of dates
-    x.domain(d3.extent(origdata, function(d) { return d.date; }));
+    x.domain(d3.extent(origdisp, function(d) { return d.date; }));
 
     for (var i = 0; i < variables.length; ++i) {
 
       vvv = variables[i];
 
       //set y domain to extent of data
-      var origlim = d3.extent(origdata, function(d) { return d[vvv]; })
-      var pllim = d3.extent(pldata, function(d) { return d[vvv]; })
+      var origlim = d3.extent(origdisp, function(d) { return d[vvv]; })
+      var pllim = d3.extent(pldisp, function(d) { return d[vvv]; })
       var ylim = d3.extent(origlim.concat(pllim))
       y.domain(ylim);
 
@@ -136,7 +137,7 @@
         .append('div').attr('id', 'svgrow_' + vvv)
         .append('div').attr('class', 'inline')
         .append("svg")
-        .datum(origdata) //initialize and position
+        .datum(origdisp) //initialize and position
           .attr("class", vvv)
           .attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom)
@@ -173,26 +174,27 @@
       svg.append("g")
           .attr("class", "sunriseset");
       var outliers = {}
-      var interps = {}
-      flagdata.forEach(function(e){
+      // var interps = {}
+      flagdisp.forEach(function(e){
         if(e.variable == vvv){
-          if(e.code < 2){
+          if(e.code <= 2){
             outliers[e.DateTime_UTC] = e.variable
-          } else if ([2, 3].includes(e.code)){
-            interps[e.DateTime_UTC] = e.variable
           }
+          // } else if ([2, 3].includes(e.code)){
+          //   interps[e.DateTime_UTC] = e.variable
+          // }
         }
       });
 
       svg.on('dblclick',function(){
         redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true,
-          origdata, pldata)
+          origdisp, pldisp)
       });
       svg.append("g").attr("class", "brush")
         .attr("id", vvv)
         .call(brush);
       svg.selectAll(".plorigdot")
-          .data(origdata.filter(function(d) {
+          .data(origdisp.filter(function(d) {
             return d[vvv];
           }))
         .enter().append("circle")
@@ -203,7 +205,7 @@
             return vvv == outliers[d.DateTime_UTC]
           });
       svg.selectAll(".pldot")
-          .data(pldata.filter(function(d) {
+          .data(pldisp.filter(function(d) {
             return d[vvv];
           }))
         .enter().append("circle")
@@ -211,7 +213,7 @@
           .attr("cx", line.x())
           .attr("cy", line.y())
           .classed("plgapfill", function(d){
-            return vvv == justfortesting[d.DateTime_UTC]
+            return vvv == outliers[d.DateTime_UTC]
           });
           // .attr('r', 2)
         // .classed("maybe_outl", function(d, j){
@@ -297,8 +299,8 @@
           origdisp = getdisplaydata(plotstart, plotend, origdata);
           pldisp = getdisplaydata(plotstart, plotend, pldata);
 
-          PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
-            flagdata=flagdata);
+          PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+            flagdisp=flagdata);
           $('#flagging').show();
 
           //populate dropdown of potential comparison variables
@@ -307,7 +309,7 @@
             .append('<option value="None" selected>None</option>');
           for (var i = 0; i < response.variables.length; ++i){
             $('#backgraphlist2').append('<option value="' + response.variables[i] +
-              '">'+response.variables[i] + '</option>');
+              '">' + response.variables[i] + '</option>');
           }
 
           //populate dropdown of potential date ranges to jump to.
@@ -469,6 +471,7 @@
   //panback
   $(function(){
     $("#panback").click(function(){
+      console.log('a')
 
       // if the start date is not the last date in the list (i.e. the oldest)
       if(plotstart != plotdates.slice(-1)[0]){
@@ -481,8 +484,14 @@
         origdisp = getdisplaydata(plotstart, plotend, origdata);
         // }
         // async_replot(data=pldisp)
-        PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
-          flagdata=flagdata);
+        // console.log(variables);
+        // console.log(origdisp);
+        // console.log(pldisp);
+        // console.log(flagdata);
+        $("#graphs").empty();
+        PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+          flagdisp=flagdata);
+        if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
         if(plotstart != plotdates.slice(-1)[0]){
@@ -522,8 +531,10 @@
         pldisp = getdisplaydata(plotstart, plotend, pldata);
         origdisp = getdisplaydata(plotstart, plotend, origdata);
 
-        PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
-          flagdata=flagdata);
+        $("#graphs").empty();
+        PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+          flagdisp=flagdata);
+        if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
         if(plotstart != plotdates.slice(-1)[0]){
@@ -560,8 +571,10 @@
       pldisp = getdisplaydata(plotstart, plotend, pldata);
       origdisp = getdisplaydata(plotstart, plotend, origdata);
 
-      PlotsPL(variables=variables, origdata=origdisp, pldata=pldisp,
-        flagdata=flagdata);
+      $("#graphs").empty();
+      PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+        flagdisp=flagdata);
+      if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
       //show panback if applicable
       if(plotstart != plotdates.slice(-1)[0]){

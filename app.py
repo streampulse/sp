@@ -2560,7 +2560,7 @@ def get_pipeline_data():
 
         tmpcode = request.json
 
-        # tmpcode = 'f32f3893c4cb'
+        # tmpcode = '58fd34a09a2d'
         dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
         with open(dumpfile) as d:
             up_data = json.load(d)
@@ -2568,7 +2568,7 @@ def get_pipeline_data():
         site = up_data['site']
         replace = up_data['replace']
 
-        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_xx.feather')
+        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
         pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
         flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 

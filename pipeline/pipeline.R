@@ -22,7 +22,7 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
 #     stringsAsFactors=FALSE)
 # write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
-# args = list('tmpcode'='8461a107c644')
+# args = list('tmpcode'='58fd34a09a2d')
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
     mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 
@@ -40,7 +40,7 @@ pldf = select(origdf, -DateTime_UTC, -upload_id)
 # pldf$upload_id = NULL
 
 #keep track of NAs; create df for storing flag codes
-na_inds = which(is.na(pldf))
+na_inds = lapply(pldf, function(x) which(is.na(x)))
 flagdf = pldf
 flagdf[,] = 0
 
@@ -52,22 +52,30 @@ flagdf[,] = 0
 #flags physically impossible values with code 1
 df_and_flagcodes = range_check(pldf, flagdf)
 pldf = df_and_flagcodes$d
-pldf = lin_interp_gaps(pldf, flagdf)
+pldf = lin_interp_gaps(pldf) #operation 2 requires gapless series
 flagdf = df_and_flagcodes$flagd
 
 #operation 2: residual error based outlier detection via anomalize package
 #flags outliers with code 2
 df_and_flagcodes = basic_outlier_detect(pldf, flagdf, origdf$DateTime_UTC)
 pldf = df_and_flagcodes$d
-pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
-    pldf, list('upload_id'=origdf$upload_id))
 flagdf = df_and_flagcodes$flagd
 
-#operation 3: linearly interpolate gaps <= 3 hours
-
+#operation 3: restore NAs; lin interp gaps <= 3 hours; remove empty rows
+for(c in colnames(pldf)){
+    pldf[na_inds[[c]], c] = NA
+}
+pldf = lin_interp_gaps(pldf, samp_int=samp_int_m, gap_thresh=180)
+rm_rows = which(apply(pldf, 1, function(x) all(is.na(x))))
+pldf = pldf[-rm_rows, ]
+origdf = origdf[-rm_rows, ]
+flagdf = flagdf[-rm_rows, ]
 
 #save flag codes, cleaned data to be read by flask when user follows email link
+pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
+    pldf, list('upload_id'=origdf$upload_id))
 flagdf$DateTime_UTC = origdf$DateTime_UTC
+write_feather(origdf, paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
 write_feather(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned.feather'))
 write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 
