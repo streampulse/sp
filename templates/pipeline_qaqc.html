@@ -33,47 +33,63 @@
 
 <div class="row" id="flagging">
 
-<div class="row text-center">
-  <div class="col-md-12">
-    <div class="panel panel-default">
-      <div class="panel-body">
-        <div class="form-inline">
-        Show local night-time: <input type="checkbox" id="shownight" value="no"> &nbsp;
-        Compare variable: <select class="form-control" id="backgraphlist2" name="backgraphlist2"></select>
-        <br>
-        <button class="btn btn-link" type="button" id="zoomreset">Reset zoom</button>
-        (or double-click any plot to reset zoom)
+  <div class="row text-center">
+    <div class="col-md-12">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <div class="form-inline">
+          Show local night-time: <input type="checkbox" id="shownight" value="no"> &nbsp;
+          Compare variable: <select class="form-control" id="backgraphlist2" name="backgraphlist2"></select>
+          <br>
+          <button class="btn btn-link" type="button" id="zoomreset">Reset zoom</button>
+          (or double-click any plot to reset zoom)
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-4 text-left">
+        <button class="btn btn-link" type="button" id="panback">
+          << Previous two weeks
+        </button>
+      </div>
+      <div class="col-md-4 text-center">
+        <p>Jump to date range: </p>
+        <select class="form-control" id="jumptodate" name="jumptodate">
+        </select>
+      </div>
+      <div class="col-md-4 text-right">
+        <button class="btn btn-link" type="button" id="panforward">
+          <!-- Next four weeks >> -->
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-md-4 text-left">
-      <button class="btn btn-link" type="button" id="panback">
-        << Previous two weeks
-      </button>
-    </div>
-    <div class="col-md-4 text-center">
-      <p>Jump to date range: </p>
-      <select class="form-control" id="jumptodate" name="jumptodate">
-      </select>
-    </div>
-    <div class="col-md-4 text-right">
-      <button class="btn btn-link" type="button" id="panforward">
-        <!-- Next four weeks >> -->
-      </button>
+<div class="row" id="graphs"></div>
+<br>
+
+<div class="row" id="flagging2" style="display:none">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-md-4 text-left">
+        <button class="btn btn-link" type="button" id="panback2">
+          << Previous two weeks
+        </button>
+      </div>
+      <div class="col-md-4 col-md-offset-4 text-right">
+        <button class="btn btn-link" type="button" id="panforward2">
+        </button>
+      </div>
     </div>
   </div>
 </div>
-
-</div>
-
-
-<div class="row" id="graphs"></div>
-<br><br>
+<br>
 
 <!-- <form id="startpipeline" action="/qaqc_sensordata" method="GET" class="form-horizontal"> -->
 <!-- <form id="submit_dataset" action="/submit-dataset-<tmpcode>" method="GET" class="form-horizontal">
@@ -90,6 +106,7 @@
   <button id="getpl" type="button" class="btn btn-primary btn-block">
     Review automated QA/QC
   </button>
+  <br><br>
 </div>
 
 <script type="application/javascript" src="static/js/graphs.js"></script>
@@ -188,7 +205,7 @@
 
       svg.on('dblclick',function(){
         redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true,
-          origdisp, pldisp)
+          origdata, pldata)
       });
       svg.append("g").attr("class", "brush")
         .attr("id", vvv)
@@ -215,6 +232,11 @@
           .classed("plgapfill", function(d){
             return vvv == outliers[d.DateTime_UTC]
           });
+
+      if($('#backgraphlist2').val() != 'None'){
+        var backfill = $('#backgraphlist2').val();
+        PLBackGraph(backfill, vvv, pldisp, origdisp);
+      }
           // .attr('r', 2)
         // .classed("maybe_outl", function(d, j){
         //   return outliers[vvv] && outliers[vvv].includes(j+1) &&
@@ -286,8 +308,11 @@
           plotend = plotdates[0];
 
           origdata = JSON.parse(response.origjson);
+          origdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
           pldata = JSON.parse(response.pljson);
+          pldata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
           flagdata = JSON.parse(response.flagjson);
+          flagdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
           variables = response.variables;
 
           sundat = JSON.parse(response.sunriseset);
@@ -302,6 +327,7 @@
           PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
             flagdisp=flagdata);
           $('#flagging').show();
+          $('#flagging2').show();
 
           //populate dropdown of potential comparison variables
           $('#backgraphlist2')
@@ -344,14 +370,17 @@
     } else { // if it exists, get the extent
       s = d3.brushSelection(sbb)
     }
-    if(!s || reset){ // nothing selected or resetting graph, extent goes to maximum
-      extent = d3.extent(origdisp, function(d) {
+    if(!s || reset){ // nothing selected or resetting graph, extent returns to 2 wk window
+      var dateview = $('#jumptodate').val()
+      var extent = d3.extent(origdisp, function(d) {
         return d.date;
-      })//"none"
+      })
+      var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
+        d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ]
     } else { // calculate extent bounds
       ext0 = x.invert(s[0])
       ext1 = x.invert(s[1])
-      extent = [ext0, ext1]
+      var extent = [ext0, ext1]
     }
     if(zoom_in){ // if zooming, reset the extent
       x.domain(extent);
@@ -408,9 +437,18 @@
             return is_inplot;
           });
 
-        // redraw backfill (commented parts will be relevant when brushing is added)
+        // redraw backfill
         var backfill = $("#backgraphlist").val();
-        BackGraph(backfill, vvv, pldisp, type='polygon');
+        var dateview = $('#jumptodate').val()
+        var extent = d3.extent(pldisp, function(d) {
+          return d.date;
+        })
+        var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
+          d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ]
+        var trimdisp = $.grep(pldisp, function(x) {
+          x.date >= extent[0] && x.date <= extent[1]
+        });
+        PLBackGraph(backfill, vvv, trimdisp, origdisp);
       }
     }
     d3.selectAll(".pldot").classed("selected", false);
@@ -458,10 +496,21 @@
         d3.selectAll('[id*=rightaxis]').attr("visibility", "hidden");
       } else {
 
+        d3.selectAll('[id*=rightaxis]').attr("visibility", "visible");
+
         //plot polygon for secondary variable
         var backfill = this.value;
+        var dateview = $('#jumptodate').val()
+        var extent = d3.extent(pldata, function(d) {
+          return d.date;
+        })
+        var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
+          d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ]
+        var trimdata = $.grep(pldata, function(x) {
+          return x.date >= extent[0] && x.date <= extent[1];
+        });
         for (var i = 0; i < variables.length; ++i) {
-          BackGraph(backfill, variables[i], pldata, type='polygon');
+          PLBackGraph(backfill, variables[i], trimdata, origdata);
         }
       }
 
@@ -470,8 +519,7 @@
 
   //panback
   $(function(){
-    $("#panback").click(function(){
-      console.log('a')
+    $("#panback,#panback2").click(function(){
 
       // if the start date is not the last date in the list (i.e. the oldest)
       if(plotstart != plotdates.slice(-1)[0]){
@@ -496,15 +544,19 @@
         //show panback if applicable
         if(plotstart != plotdates.slice(-1)[0]){
           $('#panback').html('<< Previous two weeks')
+          $('#panback2').html('<< Previous two weeks')
         } else {
           $('#panback').html('')
+          $('#panback2').html('')
         }
 
         //show panforward if applicable
         if(plotend != plotdates[0]){
           $('#panforward').html('Next two weeks >>')
+          $('#panforward2').html('Next two weeks >>')
         } else {
           $('#panforward').html('')
+          $('#panforward2').html('')
         }
 
         //update selected value in date range dropdown
@@ -516,7 +568,7 @@
 
   //panforward
   $(function(){
-    $("#panforward").click(function(){
+    $("#panforward,#panforward2").click(function(){
 
       // if the end date is not the first date in the list
       if(plotend != plotdates[0]){
@@ -539,15 +591,19 @@
         //show panback if applicable
         if(plotstart != plotdates.slice(-1)[0]){
           $('#panback').html('<< Previous two weeks')
+          $('#panback2').html('<< Previous two weeks')
         } else {
           $('#panback').html('')
+          $('#panback2').html('')
         }
 
         //show panforward if applicable
         if(plotend != plotdates[0]){
           $('#panforward').html('Next two weeks >>')
+          $('#panforward2').html('Next two weeks >>')
         } else {
           $('#panforward').html('')
+          $('#panforward2').html('')
         }
 
         //update selected value in date range dropdown
@@ -579,15 +635,19 @@
       //show panback if applicable
       if(plotstart != plotdates.slice(-1)[0]){
         $('#panback').html('<< Previous two weeks')
+        $('#panback2').html('<< Previous two weeks')
       } else {
         $('#panback').html('')
+        $('#panback2').html('')
       }
 
       //show panforward if applicable
       if(plotend != plotdates[0]){
         $('#panforward').html('Next two weeks >>')
+        $('#panforward2').html('Next two weeks >>')
       } else {
         $('#panforward').html('')
+        $('#panforward2').html('')
       }
 
       //update selected value in date range dropdown
@@ -595,6 +655,82 @@
 
     })
   })
+
+  function PLBackGraph(vvv, graph, data, ylimdata){
+
+    //make new y axis scale and select graph
+    var ynew = d3.scaleLinear().range([height, 0]);
+    cur_backgraph = d3.select("." + graph).select(".backgraph")
+    cur_foregraph = d3.select("." + graph).select(".foregraph");
+
+    // remove previous graph and secondary axis if it exists
+    cur_backgraph.selectAll("path").remove();
+    cur_backgraph.selectAll("circle").remove();
+    cur_foregraph.selectAll("path").remove();
+    cur_foregraph.selectAll("circle").remove();
+
+    if(typeof data !== 'string' || data !== 'None'){
+
+      ynew.domain(d3.extent(ylimdata, function(d) { return d[vvv]; }));
+
+      var area = d3.area()
+        .defined(function(d){
+          if(d[vvv] == null || d.date < x.domain()[0] || d.date > x.domain()[1]){
+            rrr = false
+          } else {
+            rrr = true
+          }
+          return rrr
+        });
+      area.x(function(d) {
+        return x(d.date);
+      });
+      area.y0(height).y1(function(d) {
+        return ynew(d[vvv]);
+      });
+
+      var diffs = timeDiffArray(data.map(x => x.date))
+      mode_val = modeVal(diffs.slice(0, 25))
+      var gapinds = diffs.map((x, i) => x == mode_val ? null : i).filter(x => x != null)
+      var bounds = [0].concat(gapinds).concat(diffs.length)
+      var data_chunked = []
+      for(var i = 0; i < bounds.length - 1; i++){
+        data_chunked.push(data.slice(bounds[i] + 1, bounds[i+1] + 1))
+          //+ 1 above converts from diff index to ranges index
+      }
+
+      for(d in data_chunked){
+        if(data_chunked[d].length){
+          cur_backgraph.append("path")
+            .datum(data_chunked[d])
+            .attr("class", "backarea")
+            .attr("d", area);
+        }
+      }
+
+    }
+
+    // refresh right axis
+    d3.select("#" + graph + 'rightaxis')
+      .selectAll('text')
+      .filter('.varlab')
+      .remove();
+    if(typeof data !== 'string' || data !== 'None'){
+      d3.select("#" + graph + 'rightaxis')
+        .call(d3.axisRight().scale(ynew).ticks(6))
+        .attr('class', 'backarea backarea_axis')
+        .attr("display", "")
+        .attr("visibility", "visible");
+      d3.select("#" + graph + 'rightaxis')
+        .append("text")
+          .attr("fill", "rgb(173, 20, 219)")
+          .attr("dy", "-0.71em")
+          .attr("dx", "0em")
+          .attr('class', 'varlab')
+          .style("text-anchor", "middle")
+          .text(vvv);
+    }
+  }
 
   function alertbox(alrt, msg){
     return '<div class="alert alert-dismissible alert-' + alrt + '">\

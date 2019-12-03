@@ -488,7 +488,7 @@ function Plots(variables, data, flags, outliers, page, unflagged_vnegatives,
 function Sunlight(variables, sundat){
   // console.time('sun')
   d3.selectAll(".sunriseset").remove();
-  extent = x.domain();
+  var extent = x.domain();
   for (var i = 0; i < variables.length; ++i) {
     vvv = variables[i];
     d3.select("." + vvv).selectAll('.sunriseset')
@@ -876,13 +876,13 @@ function redrawPoints(zoom_in, sbrush, reset){
     s = d3.brushSelection(sbb)
   }
   if(!s || reset){ // nothing selected or resetting graph, extent goes to maximum
-    extent = d3.extent(data, function(d) {
+    var extent = d3.extent(data, function(d) {
       return d.date;
     })//"none"
   }else{ // calculate extent bounds
     ext0 = x.invert(s[0])
     ext1 = x.invert(s[1])
-    extent = [ext0, ext1]
+    var extent = [ext0, ext1]
   }
   if(zoom_in){ // if zooming, reset the extent
     x.domain(extent);
