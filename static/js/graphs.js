@@ -788,7 +788,7 @@ $(function(){
 // Clear the previously active brush, if any.
 function brushstart(){
   $('.popupbox').remove();
-  d3.select("."+selectedBrush).select(".brush").call(brush.move, null);
+  d3.select("." + selectedBrush).select(".brush").call(brush.move, null);
   d3.selectAll(".dot").classed("selected", false); // clear on new start
   // d3.selectAll(".brush").clear();
   // d3.selectAll(".brush").call(brush.move, null);

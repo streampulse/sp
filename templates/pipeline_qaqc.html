@@ -109,9 +109,54 @@
   <br><br>
 </div>
 
-<script type="application/javascript" src="static/js/graphs.js"></script>
+<!-- <script type="application/javascript" src="static/js/graphs.js"></script> -->
 
 <script type="application/javascript">
+
+  var margin = {top: 40, right: 60, bottom: 40, left: 40},
+      width = $("#graphs").width() - margin.left - margin.right - 45, //45 for buttons
+      height = 250 - margin.top - margin.bottom;
+  var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
+  var x = d3.scaleUtc().range([0, width]),
+      y = d3.scaleLinear().range([height, 0]),
+      xAxis = d3.axisBottom().scale(x).ticks(10).tickFormat(function(date, i){
+        //conditional date formatting on tickmarks
+        return (i == 0 ? d3.utcFormat("%b %e, %Y") : d3.utcFormat("%b %e"))(date);
+      });
+  var brush = d3.brushX()
+    .on("start", brushstart)
+    .on("brush", brushmove)
+    .on("end", brushend);
+  var selectedBrush;
+  // var data;
+  var variables;
+  var fullvarlist = []
+  var sundat;
+  var zoom_in;
+  var brushdown = false; //variable for if brushing all panels
+  var dott_undef //for disabling popup options if no points selected
+  var point_tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
+  var button_tooltip = d3.select("body").append("div")
+      .attr("class", "tooltip button-tooltip")
+      .style("opacity", 0);
+  var timeDiffArray = function(x){
+    padright = x.concat(null)
+    padleft = [null].concat(x)
+    diffs = []
+    for(var i = 0; i < padright.length; i++){
+      diffs.push(padright[i] - padleft[i])
+    }
+    diffs = diffs.slice(1, diffs.length - 1)
+    return(diffs)
+  }
+  var modeVal = function mode(arr){
+      return arr.sort((a,b) =>
+            arr.filter(v => v===a).length
+          - arr.filter(v => v===b).length
+      ).pop();
+  }
 
   var qaqc_options = '{{ qaqc_options|safe }}';
   var tmpcode = '{{ tmpcode|safe }}';
@@ -121,9 +166,7 @@
   var origdata;
   var pldata;
   var flagdata;
-  var variables;
-  // var origdisp;
-  // var pldisp;
+  var brushextent;
 
   function PlotsPL(variables, origdisp, pldisp, flagdisp){
 
@@ -233,7 +276,7 @@
             return vvv == outliers[d.DateTime_UTC]
           });
 
-      if($('#backgraphlist2').val() != 'None'){
+      if(! ['None', null].includes($('#backgraphlist2').val()) ){
         var backfill = $('#backgraphlist2').val();
         PLBackGraph(backfill, vvv, pldisp, origdisp);
       }
@@ -284,6 +327,42 @@
       //     .attr("class", "foregraph");
     }
   }
+
+  //plot nighttime rectangles (weird name, yes.)
+  function Sunlight(variables, sundat){
+    // console.time('sun')
+    d3.selectAll(".sunriseset").remove();
+    var extent = x.domain();
+    for (var i = 0; i < variables.length; ++i) {
+      vvv = variables[i];
+      d3.select("." + vvv).selectAll('.sunriseset')
+          .data(sundat)
+        .enter().append('rect')
+          .attr('class', 'sunriseset')
+          .attr('x', function(d) { return x(d.set); })
+          .attr('y', 0)
+          .attr('width', function(d) { return x(d.rise) - x(d.set); })
+          .attr('height', height)
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+          .attr("pointer-events", "none")
+        .classed("outside", function(d) {
+          is_inplot = extent[0] > d.rise || d.set > extent[1];
+          return is_inplot;
+        });
+    }
+    // console.timeEnd('sun')
+  }
+
+  //control plotting of nighttime rectangles
+  $(function(){
+    $('#shownight').change(function() {
+      if($(this).is(":checked")) {
+        Sunlight(variables, sundat);
+      }else{
+        d3.select("#graphs").selectAll(".sunriseset").remove();
+      }
+    });
+  })
 
   //initial plot function that runs on page load
   $(function(){
@@ -376,11 +455,13 @@
         return d.date;
       })
       var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
-        d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ]
+        d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ];
+      window.brushextent = null;
     } else { // calculate extent bounds
-      ext0 = x.invert(s[0])
-      ext1 = x.invert(s[1])
-      var extent = [ext0, ext1]
+      ext0 = x.invert(s[0]);
+      ext1 = x.invert(s[1]);
+      var extent = [ext0, ext1];
+      window.brushextent = extent.slice(0, 2);
     }
     if(zoom_in){ // if zooming, reset the extent
       x.domain(extent);
@@ -399,14 +480,23 @@
         dna[e.DateTime_UTC] = e[vvv]
       })
 
+      //trim datasets to desired window
+      var pltrim = $.grep(pldisp, function(x) {
+        return x.date >= extent[0] && x.date <= extent[1]
+      });
+      var origtrim = $.grep(origdisp, function(x) {
+        return x.date >= extent[0] && x.date <= extent[1]
+      });
+
       //set y domain to extent of data
-      var origlim = d3.extent(origdisp, function(d) { return d[vvv]; });
-      var pllim = d3.extent(pldisp, function(d) { return d[vvv]; });
+      var origlim = d3.extent(origtrim, function(d) { return d[vvv]; });
+      var pllim = d3.extent(pltrim, function(d) { return d[vvv]; });
       var ylim = d3.extent(origlim.concat(pllim));
       y.domain(ylim);
       //   y.domain(d3.extent(data, function(d) { return d[vvv]; }));
       // }
-      d3.select("." + vvv).select(".axis--x").call(xAxis); //redraw axis
+      d3.select("." + vvv).select(".axis--x").call(xAxis); //redraw axes
+      d3.select("." + vvv).select(".axis--y").call(d3.axisLeft().scale(y).ticks(6));
       var line = d3.line()
           .defined(function(d){return d[vvv];})
           .x(function(d) { return x(d.date); })
@@ -438,17 +528,9 @@
           });
 
         // redraw backfill
-        var backfill = $("#backgraphlist").val();
+        var backfill = $("#backgraphlist2").val();
         var dateview = $('#jumptodate').val()
-        var extent = d3.extent(pldisp, function(d) {
-          return d.date;
-        })
-        var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
-          d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ]
-        var trimdisp = $.grep(pldisp, function(x) {
-          x.date >= extent[0] && x.date <= extent[1]
-        });
-        PLBackGraph(backfill, vvv, trimdisp, origdisp);
+        PLBackGraph(backfill, vvv, pltrim, origtrim);
       }
     }
     d3.selectAll(".pldot").classed("selected", false);
@@ -489,28 +571,38 @@
   $(function(){
     $("#backgraphlist2").change(function () {
 
-      if($(this).val() == 'None'){
+      if( ['None', null].includes($(this).val()) ){
 
         // remove previous graph and secondary axis
-        d3.selectAll('.backgraph').select("path").remove()
+        d3.selectAll('.backgraph').selectAll("path").remove()
         d3.selectAll('[id*=rightaxis]').attr("visibility", "hidden");
+
       } else {
 
         d3.selectAll('[id*=rightaxis]').attr("visibility", "visible");
 
         //plot polygon for secondary variable
         var backfill = this.value;
-        var dateview = $('#jumptodate').val()
-        var extent = d3.extent(pldata, function(d) {
-          return d.date;
-        })
-        var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
-          d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ]
-        var trimdata = $.grep(pldata, function(x) {
+
+        if(brushextent == null){
+          var dateview = $('#jumptodate').val()
+          var extent = d3.extent(pldata, function(d) {
+            return d.date;
+          })
+          var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
+            d3.min([extent[1]].concat(Date.parse(dateview.slice(11, 21)))) ]
+        } else {
+          var extent = brushextent.slice(0)
+        }
+
+        var pltrim = $.grep(pldata, function(x) {
+          return x.date >= extent[0] && x.date <= extent[1];
+        });
+        var origtrim = $.grep(origdata, function(x) {
           return x.date >= extent[0] && x.date <= extent[1];
         });
         for (var i = 0; i < variables.length; ++i) {
-          PLBackGraph(backfill, variables[i], trimdata, origdata);
+          PLBackGraph(backfill, variables[i], pltrim, origtrim);
         }
       }
 
@@ -669,7 +761,8 @@
     cur_foregraph.selectAll("path").remove();
     cur_foregraph.selectAll("circle").remove();
 
-    if(typeof data !== 'string' || data !== 'None'){
+    if(! ['None', null].includes($('#backgraphlist2').val()) &&
+        (typeof data !== 'string' || data !== 'None')){
 
       ynew.domain(d3.extent(ylimdata, function(d) { return d[vvv]; }));
 
@@ -715,7 +808,8 @@
       .selectAll('text')
       .filter('.varlab')
       .remove();
-    if(typeof data !== 'string' || data !== 'None'){
+    if(! ['None', null].includes($('#backgraphlist2').val()) &&
+        (typeof data !== 'string' || data !== 'None')){
       d3.select("#" + graph + 'rightaxis')
         .call(d3.axisRight().scale(ynew).ticks(6))
         .attr('class', 'backarea backarea_axis')
@@ -736,6 +830,87 @@
     return '<div class="alert alert-dismissible alert-' + alrt + '">\
       <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
       ' + msg + '</div>'
+  }
+
+  function brushstart(){
+    $('.popupbox').remove();
+    d3.select("." + selectedBrush).select(".brush").call(brush.move, null);
+    d3.selectAll(".dot").classed("selected", false); // clear on new start
+    // d3.selectAll(".brush").clear();
+    // d3.selectAll(".brush").call(brush.move, null);
+    selectedBrush = $(this).attr("id")
+    // selection_manager();
+    brushdown = false;
+  }
+
+  function brushmove(){
+    var s = d3.event.selection;
+    if (s) {
+      ext0 = x.invert(s[0]);
+      ext1 = x.invert(s[1]);
+      // if(brushdown){ // select all dots (bad feature; removed)
+      //   var dott = d3.selectAll(".dot, .maybe_outl, .highlighted")
+      // }else{ // select just the dots in plot window = selectedBrush
+      var dott = d3.select("." + selectedBrush).selectAll(".dot, .maybe_outl")
+      // }
+      dott.classed("selected", function(d) {
+        is_brushed = ext0 <= d.date && d.date <= ext1;
+        return is_brushed;
+      });
+    }
+
+    //helps make sure the options bubble doesnt show up if there's no data selected
+    if (typeof dott == 'undefined') {
+      dott_undef = true
+    } else {
+      dott_undef = false
+    }
+
+  }
+
+  function brushend(){
+
+    $('.popupbox').remove();
+
+    // var popupx = d3.select('.' + selectedBrush)
+    //   .select('.brush')
+    //   .select('.selection')
+    //   .attr('x');
+
+    var popupx = document.querySelector('.' + selectedBrush + '_txt')//based on plot title
+      .getBoundingClientRect().right;
+
+    var popupy = document.querySelector('.' + selectedBrush + '_txt')
+      .getBoundingClientRect().bottom + window.scrollY;
+
+    if (!dott_undef) {
+
+      //get height of popup to offset by later
+      var height_of_popupbox = d3.select('body')
+        .append('div')
+        .attr('class', 'popupbox')
+        .html(qaqc_options).node().getBoundingClientRect().height
+
+      $('.popupbox').remove();
+
+      //create tooltop
+      d3.select('body')
+        .append('div')
+        .attr('class', 'popupbox')
+        .html(qaqc_options)
+        // .html('<button class="btn btn-danger btn-xs v_align" type="button" id="addflag_outl">Flag red<br />points</button>')
+        // .style("opacity", 0);
+        // .transition()
+    	  //   .duration(500)
+    	  //   .style("opacity", 0)
+    	  // .transition()
+    	  // .duration(200)
+    	  // .style("opacity", .9)
+        .style('left', (popupx) + 3 + 'px')
+        .style('top', (popupy) - height_of_popupbox + 'px');
+        // .style("text-anchor", "start");
+
+    }
   }
 
   // add flags for all highlighted points when yellow popup button is clicked
@@ -775,15 +950,17 @@
 
       if( $('#fillbrush')[0].checked ){
         brushdown = true;
-        d3.selectAll(".pldot, .ploutlier, .plgapfill, .pldriftcorr").classed("selected",
-          function(d) { return b_strt <= d.date && d.date <= b_end; });
+        d3.selectAll(".pldot, .plgapfill, .highlighted")
+          .classed("selected", function(d) {
+            return b_strt <= d.date && d.date <= b_end;
+          });
 
       } else {
 
         brushdown = false;
         d3.selectAll(".selected").classed("selected", false);
         d3.select("." + selectedBrush)
-          .selectAll(".pldot, .ploutlier, .plgapfill, .pldriftcorr")
+          .selectAll(".pldot, .plgapfill, .highlighted")
           .classed("selected", function(d) {
             return b_strt <= d.date && d.date <= b_end;
           });
