@@ -511,8 +511,8 @@ function rm_flag() {
 
   if(undefined != selectedBrush){ // only do this if there is a brush selected
 
-    s = d3.brushSelection(d3.select("#"+selectedBrush).node())
-    dat = {}
+    var s = d3.brushSelection(d3.select("#"+selectedBrush).node())
+    var dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['startDate'] = x.invert(s[0]);
     dat['endDate'] = x.invert(s[1]);
@@ -555,8 +555,8 @@ function add_flag(red_points_only) {
       return false
     }
 
-    s = d3.brushSelection(d3.select("#" + selectedBrush).node())
-    dat = {}
+    var s = d3.brushSelection(d3.select("#" + selectedBrush).node())
+    var dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['startDate'] = x.invert(s[0]);
     dat['endDate'] = x.invert(s[1]);

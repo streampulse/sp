@@ -167,6 +167,10 @@
   var pldata;
   var flagdata;
   var brushextent;
+  var userflags = [];
+  var undo_holder = [];
+  var rm_holder = [];
+  var instance_id = 1;
 
   function PlotsPL(variables, origdisp, pldisp, flagdisp){
 
@@ -445,9 +449,9 @@
 
     sbb = d3.select("." + sbrush).select(".brush").node()
     if(!sbb){ // check if there is a brush
-      s = null
+      var s = null
     } else { // if it exists, get the extent
-      s = d3.brushSelection(sbb)
+      var s = d3.brushSelection(sbb)
     }
     if(!s || reset){ // nothing selected or resetting graph, extent returns to 2 wk window
       var dateview = $('#jumptodate').val()
@@ -931,7 +935,12 @@
 
       if( $('#fillbrush')[0].checked ){
         brushdown = true;
-        d3.selectAll(".pldot, .plgapfill, .highlighted")
+        d3.selectAll(".pldot, .highlighted")
+          .classed("selected", function(d) {
+            return b_strt <= d.date && d.date <= b_end;
+          });
+        d3.select("." + selectedBrush)
+          .selectAll(".plgapfill")
           .classed("selected", function(d) {
             return b_strt <= d.date && d.date <= b_end;
           });
@@ -953,8 +962,8 @@
 
     if(undefined != selectedBrush){ // only do this if there is a brush selected
 
-      s = d3.brushSelection(d3.select("#"+selectedBrush).node())
-      dat = {}
+      var s = d3.brushSelection(d3.select("#"+selectedBrush).node())
+      var dat = {}
       dat['site'] = $('select[name=site]').val();
       dat['startDate'] = x.invert(s[0]);
       dat['endDate'] = x.invert(s[1]);
@@ -967,19 +976,10 @@
         b = d3.select("." + selectedBrush).selectAll(".selected");
       }
 
-      b.classed('highlighted', function(d) {
-        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-        return ! is_brushed;
-      });
+      b.classed('highlighted', false)
 
-      b.classed('flagdot', function(d) {
-        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-        return ! is_brushed;
-      });
-
-      brushdown = false;
-      rmflag_ajax();
-
+      window.brushdown = false;
+      window.rm_holder.push(dat)
       return false;
 
     } else {
@@ -997,8 +997,8 @@
         return false
       }
 
-      s = d3.brushSelection(d3.select("#" + selectedBrush).node())
-      dat = {}
+      var s = d3.brushSelection(d3.select("#" + selectedBrush).node())
+      var dat = {}
       dat['site'] = $('select[name=site]').val();
       dat['startDate'] = x.invert(s[0]);
       dat['endDate'] = x.invert(s[1]);
@@ -1017,12 +1017,14 @@
       //   return is_brushed;
       // });
 
-      brushdown = false;
+      window.brushdown = false;
       dat['comment'] = $("input[name=fcomment2]").val();
       dat['flagid'] = $("select[name=flagID2]").val();
 
       if (dat.flagid != null){
-        flag_ajax_batch();
+        dat['instance_id'] = instance_id
+        window.instance_id = instance_id + 1
+        window.userflags.push(dat)
         return false;
       } else {
         $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
@@ -1033,127 +1035,92 @@
     }
   }
 
-  // function reject_edits_scraps?(red_points_only) {
-  //
-  //   if(undefined != selectedBrush){ // only do this if there is a brush selected
-  //
-  //     if( $('#qaqc select').val() == null ){
-  //       $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
-  //       return false
-  //     }
-  //
-  //     s = d3.brushSelection(d3.select("#" + selectedBrush).node())
-  //     dat = {}
-  //     dat['site'] = $('select[name=site]').val();
-  //     dat['startDate'] = x.invert(s[0]);
-  //     dat['endDate'] = x.invert(s[1]);
-  //
-  //     if(brushdown){
-  //       dat['var'] = variables;
-  //       b = d3.selectAll("svg").selectAll(".dot");
-  //       if(red_points_only){
-  //         b = b.filter('.maybe_outl');
-  //       }
-  //     } else {
-  //       dat['var'] = [selectedBrush];
-  //       b = d3.select("." + selectedBrush).selectAll(".selected");
-  //       if(red_points_only){
-  //         b = b.filter('.maybe_outl');
-  //       }
-  //     }
-  //
-  //     b.classed('highlighted', function(d) {
-  //       is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-  //       return is_brushed;
-  //     });
-  //
-  //     brushdown = false;
-  //     dat['comment'] = $("input[name=fcomment2]").val();
-  //     dat['flagid'] = $("select[name=flagID2]").val();
-  //
-  //     if(red_points_only){
-  //       so = d3.selectAll(".highlighted").filter('.maybe_outl').data();
-  //       counter = 0; //prepare for flag_ajax_serial recursion
-  //       dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
-  //       dat['endDate'] = so[counter].DateTime_UTC;
-  //     }
-  //
-  //     if (dat.flagid != null){
-  //
-  //       if(red_points_only){
-  //         flag_ajax_serial(counter, so);
-  //       } else {
-  //         flag_ajax_batch();
-  //       }
-  //       return false;
-  //
-  //     } else {
-  //       $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
-  //     }
-  //
-  //   } else {
-  //     $("#alerts_floating").append(alertbox('warning','No points selected.'));
-  //   }
-  // }
+  function reject_pl_edits() {
 
-  //flag all selected points, the fast way
-  function flag_ajax_batch(){
-    $.ajax({
-      type: 'POST',
-      url:'/_addflag',
-      data: JSON.stringify(dat),
-      contentType: 'application/json;charset=UTF-8',
-      success: function(){
-        $('.popupbox').remove();
-        console.log("success");
-      },
-      error: function(error){
-        $('.popupbox').remove();
-        console.log(error);
-      }
-    });
+    if(undefined != selectedBrush){ // only do this if there is a brush selected
+
+      var s = d3.brushSelection(d3.select("#" + selectedBrush).node())
+      var dat = {}
+      // HERE: SELECT ONLY PLGAPFILLS WITHIN BRUSH
+      dat['site'] = $('select[name=site]').val();
+      dat['startDate'] = x.invert(s[0]);
+      dat['endDate'] = x.invert(s[1]);
+      dat['var'] = [selectedBrush];
+
+      d3.select("." + selectedBrush).selectAll(".plgapfill:not(.highlighted)")
+        .classed('pldot')
+      d3.select("." + selectedBrush).selectAll(".ploutlier").classed('invis')
+
+      window.brushdown = false;
+      window.undo_holder.push(dat) //NOT GOOD ENOUGH
+      return false;
+
+    } else {
+      $("#alerts_floating").append(alertbox('warning','No points selected.'));
+    }
   }
 
-  //flag only selected points that are red. waits for callbacks
-  function flag_ajax_serial(counter, selection){
-    $.ajax({
-      type: 'POST',
-      url:'/_addflag',
-      data: JSON.stringify(dat),
-      contentType: 'application/json;charset=UTF-8',
-      success: function(){
-        if (counter < so.length - 1){
-          counter++;
-          dat['startDate'] = so[counter].DateTime_UTC; //focus on next red point
-          dat['endDate'] = so[counter].DateTime_UTC;
+  function reject_edits_scraps?(red_points_only) {
+
+    if(undefined != selectedBrush){ // only do this if there is a brush selected
+
+      if( $('#qaqc select').val() == null ){
+        $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
+        return false
+      }
+
+      var s = d3.brushSelection(d3.select("#" + selectedBrush).node())
+      dat = {}
+      dat['site'] = $('select[name=site]').val();
+      dat['startDate'] = x.invert(s[0]);
+      dat['endDate'] = x.invert(s[1]);
+
+      if(brushdown){
+        dat['var'] = variables;
+        b = d3.selectAll("svg").selectAll(".dot");
+        if(red_points_only){
+          b = b.filter('.maybe_outl');
+        }
+      } else {
+        dat['var'] = [selectedBrush];
+        b = d3.select("." + selectedBrush).selectAll(".selected");
+        if(red_points_only){
+          b = b.filter('.maybe_outl');
+        }
+      }
+
+      b.classed('highlighted', function(d) {
+        is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+        return is_brushed;
+      });
+
+      brushdown = false;
+      dat['comment'] = $("input[name=fcomment2]").val();
+      dat['flagid'] = $("select[name=flagID2]").val();
+
+      if(red_points_only){
+        so = d3.selectAll(".highlighted").filter('.maybe_outl').data();
+        counter = 0; //prepare for flag_ajax_serial recursion
+        dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
+        dat['endDate'] = so[counter].DateTime_UTC;
+      }
+
+      if (dat.flagid != null){
+
+        if(red_points_only){
           flag_ajax_serial(counter, so);
         } else {
-          $('.popupbox').remove();
+          flag_ajax_batch();
         }
-      },
-      error: function(error){
-        $('.popupbox').remove();
-        console.log(error);
-      }
-    });
-  }
+        return false;
 
-  //remove all flags from selected points
-  function rmflag_ajax(){
-    $.ajax({
-      type: 'POST',
-      url:'/_rmflag',
-      data: JSON.stringify(dat),
-      contentType: 'application/json;charset=UTF-8',
-      success: function(){
-        $('.popupbox').remove();
-        console.log("success");
-      },
-      error: function(error){
-        $('.popupbox').remove();
-        console.log(error);
+      } else {
+        $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
       }
-    });
+
+    } else {
+      $("#alerts_floating").append(alertbox('warning','No points selected.'));
+    }
   }
 
 </script>
