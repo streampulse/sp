@@ -2633,7 +2633,7 @@ def get_pipeline_data():
 def pipeline_complete(tmpcode):
 
     #load static html for popup menu
-    with open('static/html/qaqcPopupMenu_sensor.html', 'r') as html_file:
+    with open('static/html/qaqcPopupMenu_pl.html', 'r') as html_file:
         qaqc_options_sensor = html_file.read()
     qaqc_options_sensor = qaqc_options_sensor.replace('\n', '')
 

@@ -526,12 +526,12 @@ function rm_flag() {
     }
 
     b.classed('highlighted', function(d) {
-      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return ! is_brushed;
     });
 
     b.classed('flagdot', function(d) {
-      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return ! is_brushed;
     });
 
@@ -576,7 +576,7 @@ function add_flag(red_points_only) {
     }
 
     b.classed('highlighted', function(d) {
-      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return is_brushed;
     });
 
