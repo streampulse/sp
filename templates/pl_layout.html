@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <title>StreamPULSE</title>
+  <!-- jquery -->
+  <script src="https://code.jquery.com/jquery-3.1.1.js"></script>
+  <!-- Bootstrap -->
+  <!-- <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> -->
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+  <!-- <link href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css" rel="stylesheet" type="text/css"> -->
+  <!-- Bootstrap Select -->
+  <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/css/bootstrap-select.min.css"> -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/js/bootstrap-select.min.js"></script> -->
+  <!-- Bootstrap Datepicker -->
+  <link id="bsdp-css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.min.js"></script>
+  <!-- Bootstrap Daterangepicker -->
+  <script type="application/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+  <script type="application/javascript" src="https://cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+  <!-- d3 -->
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <!-- selectize.js -->
+  <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.4/js/standalone/selectize.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.4/css/selectize.css" />
+  <!-- fontawesome -->
+  <link rel="stylesheet" href="/static/css/font-awesome.min.css">
+  <!-- handsontable -->
+  <!-- <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet" media="screen"> -->
+
+  {% block links %}
+  {% endblock %}
+
+  <style>
+
+    /* next three rules needed for pushed footer to work */
+    html, body {
+      margin:0;
+      padding:0;
+      height:100%;
+    }
+    #main_container {
+      min-height:100%;
+      position:relative;
+      /* height:100%; */
+    }
+    #body {
+      padding:10px;
+      padding-bottom:20px; /* Height of the footer */
+    }
+    #dnldspecs, #vizspecs, #qaqcspecs, #flagging, #graphcontrol, #newsite {
+      display:none;
+    }
+    .axis path,
+    .axis line {
+      fill: none;
+      stroke: #000;
+      shape-rendering: crispEdges;
+    }
+    .line {
+      fill: none;
+      stroke: rgba(0, 0, 102, 0.5);;
+      stroke-width: 1.5px;
+    }
+    .dot{
+      fill: steelblue;
+      stroke: none;
+      pointer-events: none;
+    }
+    .vdot{
+      fill: rgba(150,150,150,0.4);
+      stroke: none;
+      pointer-events: none;
+    }
+    .pldot{
+      fill: rgba(206,165,121, 0.9);
+      stroke: none;
+      pointer-events: none;
+      r: 2px;
+    }
+    .plorigdot{
+      fill: rgba(200,200,200,0.8);
+      stroke: none;
+      pointer-events: none;
+      r: 2px;
+    }
+    .ploutlier{
+      fill: none;
+      stroke: darkred;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .plgapfill{
+      fill: steelblue;
+      stroke: darkred;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .plflag {
+      fill: red;
+      stroke: orange;
+      stroke-width: 1px;
+    }
+    .invis{
+      fill: rgba(1, 1, 1, 0);
+      stroke: none;
+      pointer-events: none;
+      r: 2px;
+    }
+    .vtriangle{
+      fill: rgba(150,150,150,0.4);
+      stroke: red;
+      stroke-width: 1px;
+      pointer-events: visiblePainted;
+    }
+    .maybe_outl {
+      fill: purple;
+      stroke: red;
+      stroke-width: 1px;
+    }
+    .highlighted {
+      fill: red;
+      stroke: orange;
+      stroke-width: 2px;
+    }
+    .flagdot {
+      fill: orange;
+      stroke: rgba(0,0,0,0.5);
+      stroke-width: 0.5px;
+      pointer-events: visiblePainted;
+    }
+    .selected {
+      /* fill: steelblue; */
+      stroke: black;
+      stroke-width: 2px;
+    }
+    .outside {
+      stroke: none !important;
+      fill: none !important;
+    }
+    .naval {
+      fill: none;
+      stroke: #aaaaaa;
+    }
+    .anomdot {
+      stroke: deeppink;
+      stroke-width: 3px;
+    }
+    .tooltip {
+      position: absolute;
+      text-align: left;
+      width: 130px;
+      height: 60px;
+      padding: 2px;
+      font: 12px sans-serif;
+      background: #ffd68c;
+      border: 0px;
+      border-radius: 8px;
+      pointer-events: none;
+    }
+    .button-tooltip {
+      width: 210px;
+      height: 65px;
+    }
+    .inline{
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .secondarytext{
+      font-size:1.2em;
+      color:grey
+    }
+    .sunriseset { fill: rgba(0,0,0,0.15); }
+    .backarea { fill: rgba(173, 20, 219, 0.4); }
+    /* .backarea { fill: rgba(248,8,11,0.33); } */
+    .backarea_axis { stroke: rgba(173, 20, 219, 0.8); }
+    /* .interquartile { fill: rgba(102, 153, 153, 0.5); }
+    .interquart_axis { stroke: rgba(102, 153, 153, 0.5); } */
+    .interquartile { fill: rgba(30, 209, 44, 0.7); }
+    .interquartile_axis { fill: rgba(30, 209, 44, 0.7); }
+    .interquartile_line {
+      fill: none;
+      stroke: rgba(30, 209, 44, 0.7);;
+      stroke-width: 1.5px;
+    }
+    .grabdot {
+      fill: rgb(173, 20, 219);
+      pointer-events: none;
+    }
+    .grabdot_flagged {
+      stroke: rgb(173, 20, 219);
+      fill: orange;
+      stroke-width: 2px;
+      pointer-events: visiblePainted;
+    }
+    /* .interquartile_axis { fill: rgba(237, 166, 10, 0.7); } */
+    tt, code, pre {
+     font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;}
+    pre, img {
+      max-width: 100%;}
+    pre {
+      overflow-x: auto;}
+    pre code {
+       display: block; padding: 0.5em;}
+    code {
+      font-size: 92%;
+      border: 1px solid #ccc;}
+    code[class] {
+      background-color: #F8F8F8;}
+    table, td, th {
+      border: none;
+    }
+    table.pretty {
+      font-family: arial, sans-serif;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    td.pretty, th.pretty {
+      border: 1px solid #A9A9A9;
+      text-align: left;
+      padding: 8px;
+    }
+    tr.pretty:nth-child(even) {
+      background-color: #dddddd;
+    }
+    #loading {
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      position: fixed;
+      display: none;
+      opacity: 0.5;
+      background-color: #fff;
+      z-index: 99;
+      text-align: center;
+    }
+    .rcmt{color: #999999}
+    .rfn{color: #BF5700}
+    .robj{color: #4169E1}
+    .rparam{color: #FF1493}
+    #loading-image {
+      position: relative;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 200;
+    }
+    .v_align {
+      display: inline-block;
+      vertical-align: middle;
+    }
+    /* options menus that pop up after brushing in qaqc, etc. */
+    .popupbox {
+      position: absolute;
+      text-align: center;
+      /*width: 80%;*/
+      padding: 2px;
+      margin: 0px 10px;
+      font: 12pt sans-serif;
+      background: #F5F5F5;
+      border: 1px solid black;
+      border-radius: 8px;
+    }
+    #footer {
+      /* position:absolute; */
+      /* bottom:0; */
+      width:100%;
+      height:20px;
+      background:#e6e6e6;
+    }
+  </style>
+
+  {% block headcode %}
+  {% endblock %}
+
+  <!-- <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-102932201-1', 'auto');
+    ga('send', 'pageview');
+
+  </script> -->
+</head>
+
+<body>
+
+  <div class="container">
+
+  <div id="loading"><span id="loading-image">
+    <i class="fa fa-circle-o-notch fa-spin fa-5x fa-fw"></i><span class="sr-only">Loading...</span>
+  </span></div>
+
+  <div id="alerts">
+  {% with messages = get_flashed_messages(with_categories=True) %}
+  {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-dismissible {{category}}">
+      <button class="close" data-dismiss="alert" aria-label="close">&times;</button>
+      {{ message }}
+    </div>
+    {% endfor %}
+  {% endif %}
+  {% endwith %}
+  </div>
+
+  <div id="alerts_floating" style="position:fixed; z-index:100; width: 80%">
+  </div>
+
+  {% block body %}{% endblock %}
+
+  <script>
+    $(document).ajaxStart(function() {
+      $("#loading").show();
+    });
+
+    $(document).ajaxStop(function() {
+      $("#loading").hide();
+    });
+  </script>
+
+</body>
+</html>
