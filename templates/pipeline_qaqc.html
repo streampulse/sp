@@ -215,7 +215,7 @@
   // var undo_holder = {};
   var rm_holder = [];
   var instance_id = 1;
-  var pointcounts = {'flags': 0, 'rejections': }
+  var pointcounts = {'flags': 0, 'rejections': 0}
 
   function PlotsPL(variables, origdisp, pldisp, flagdisp, usrflgs, rms){
 
@@ -1052,7 +1052,8 @@
         var b = d3.select("." + selectedBrush).selectAll(".selected");
       }
 
-      b.classed('plflag', false)
+      var nsubstractions = b.classed('plflag', false).size()
+      window.pointcounts['flags'] = pointcounts['flags'] - nsubtractions
 
       window.brushdown = false;
       window.rm_holder.push(dat)
@@ -1089,7 +1090,8 @@
         var b = d3.select("." + selectedBrush).selectAll(".selected");
       }
 
-      b.classed('plflag', true);
+      var nadditions = b.classed('plflag', true).size()
+      window.pointcounts['flags'] = pointcounts['flags'] + nadditions
 
       window.brushdown = false;
       dat['comment'] = $("input[name=fcomment2]").val();
@@ -1141,6 +1143,8 @@
         })
         .classed('plreject', ! undo_bool);
 
+      //HERE: DEVISE A WAY TO COUNT REJECTIONS
+
       // rejected_ol.classed('pldot', true);
 
       window.brushdown = false;
@@ -1161,6 +1165,7 @@
       $('input[name=instance_id]').val(JSON.stringify(instance_id))
       $('input[name=userflagrms]').val(JSON.stringify(rm_holder))
 
+      //THIS ALL NEEDS TO BE REVAMPED TOO
       var plrejects = d3.selectAll('.plreject')
       var rejectvars = plrejects.nodes()
         .map(x => x.ownerSVGElement.className.baseVal)
@@ -1178,21 +1183,21 @@
       // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size()
       var npoints = pldata.length;
       var nedits = flagdata.length;
-      var noutls = 0;
-      var nrejections = d3.selectAll('.plreject').size();
+      var noutls = flagdata.map(x => x.code <= 2).reduce((a, b) => a + b, 0)
+      var nrejections = pointcounts['rejections']
       var nflags = userflags.length;
-      var nflagpoints = d3.selectAll('.plflag').size();
-      var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
+      var nflagpoints = pointcounts['flags']
+      // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
 
       $('#submit_details').replaceWith(
         'Total data points: ' + npoints + ',<br>' +
         'Automated edits: ' + nedits + ',<br>' +
         '  Anomalies adjusted: ' + noutls + ',<br>' +
-        '  Points imputed: ' + (nedits - noutls) + ',<br>' +
+        '  Missing points imputed: ' + (nedits - noutls) + ',<br>' +
         'Edits rejected: ' + nrejections + ',<br>' +
         'Flagged segments*: ' + nflags + ',<br>' +
-        'Flagged data points: ' + nflagpoints + ',<br>' +
-        'Edits flagged: ' + nflagpoints + ',<br>');
+        'Flagged data points: ' + nflagpoints + ',<br>');
+        // 'Edits flagged: ' + nflagpoints + ',<br>');
 
       $('#submitpldiv').hide();
       $('#confirmpldiv').show();

@@ -67,18 +67,21 @@ df_and_flagcodes = basic_outlier_detect(pldf, flagdf, origdf$DateTime_UTC)
 pldf = df_and_flagcodes$d
 flagdf = df_and_flagcodes$flagd
 
-#operation 3: restore NAs; lin interp gaps <= 3 hours; remove empty rows
+#operation 3: restore NAs
 for(c in colnames(pldf)){
     pldf[na_inds[[c]], c] = NA
 }
 
-pld = lin_interp_gaps(pldf, samp_int=samp_int_m, gap_thresh=180)
+#lin interp gaps <= 3 hours
+pldf = lin_interp_gaps(pldf, samp_int=samp_int_m, gap_thresh=180)
 
+#designate qaqc code 4 to imputed gaps that weren't introduced by the pipeline
 for(c in colnames(pldf)){
-    interp_inds = na_inds[[c]][which(! is.na(pld[na_inds[[c]], c]))]
+    interp_inds = na_inds[[c]][which(! is.na(pldf[na_inds[[c]], c]))]
     flagdf[interp_inds, c] = flagdf[interp_inds, c] + 4
 }
 
+#remove entirely empty rows
 rm_rows = which(apply(pldf, 1, function(x) all(is.na(x))))
 pldf = pldf[-rm_rows, ]
 origdf = origdf[-rm_rows, ]
