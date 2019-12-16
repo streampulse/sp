@@ -2560,7 +2560,7 @@ def get_pipeline_data():
 
         tmpcode = request.json
 
-        # tmpcode = '58fd34a09a2d'
+        # tmpcode = 'dad74156dab8'
         dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
         with open(dumpfile) as d:
             up_data = json.load(d)
@@ -2640,128 +2640,140 @@ def pipeline_complete(tmpcode):
     return render_template('pipeline_qaqc.html', tmpcode=tmpcode,
         qaqc_options=qaqc_options_sensor)
 
-@app.route("/submit-dataset-<string:tmpcode>", methods=["GET"])
+@app.route("/submit-dataset-<string:tmpcode>", methods=["POST"])
 @login_required
 def submit_dataset(tmpcode):
 
-    try:
+    # try:
 
-        #format df for database entry
-        xx = xx.set_index(["DateTime_UTC", "upload_id"])
-        xx.columns.name = 'variable'
-        xx = xx.stack() #one col each for vars and vals
-        xx.name="value"
-        xx = xx.reset_index()
-        xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
-        xx['region'] = region
-        xx['site'] = site
-        xx['flag'] = None
-        xx = xx[['region','site','DateTime_UTC','variable','value','flag',
-            'upload_id']]
+    userflags = request.form['userflags']
+    instance_id = request.form['instance_id']
+    userflagrms = request.form['userflagrms']
+    rejections = request.form['rejections']
+    print(userflags)
+    print(instance_id)
+    print(rejections)
 
-        # xx = pd.read_csv('../spdumps/' + 'e7805b62369e' + '_xx.csv',na_filter=False)
-        # xx.flag = xx.flag.where(pd.notnull(xx.flag), None)
-        updatedb(xx, up_data['fn_to_db'], up_data['replace'])
+    userflags = [{"startDate":"2017-08-12T08:03:39.512Z","endDate":"2017-08-12T12:56:20.487Z","var":["pH_mV"],"comment":"","flagid":"Interesting","instance_id":1}]
+    instance_id = 3
 
-        # make a new text file with the metadata
-        lvltxt = '\n\n--- Data status codes ---\n\n' +\
-            'Data level codes:\n' +\
-            '\tR: Raw (directly from sensor/logger)\n' +\
-            '\tO: Outliers/anomalies removed\n' +\
-            '\tG: Gaps imputed\n' +\
-            '\tC: Corrected for drift (due to biofouling, calibration, etc.)\n' +\
-            '\tD: Derived from other variables\n' +\
-            '\t-: No information\n\n--- Data status by variable ---\n\n'
+    raise ValueError('arse')
 
-        metafilepath = os.path.join(app.config['META_FOLDER'],
-            region + "_" + site + "_metadata.txt")
-        leveldata = pd.read_sql("select dbcol, level, notes from cols where region = '" +\
-            region + "' and site = '" + site + "';", db.engine)
-        leveldata = leveldata.loc[~leveldata.dbcol.isin(['DateTime_UTC',
-            'Battery_V']), :]
-        leveldata.columns = ['Variable', 'StatusCodes', 'VariableDerivation']
-        leveldata = leveldata.mask(leveldata == '', '-')
-        lvltxt2 = leveldata.to_string() + '\n'
-        lvltxt = lvltxt + lvltxt2
+    #format df for database entry
+    xx = xx.set_index(["DateTime_UTC", "upload_id"])
+    xx.columns.name = 'variable'
+    xx = xx.stack() #one col each for vars and vals
+    xx.name="value"
+    xx = xx.reset_index()
+    xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
+    xx['region'] = region
+    xx['site'] = site
+    xx['flag'] = None
+    xx = xx[['region','site','DateTime_UTC','variable','value','flag',
+        'upload_id']]
 
-        # if request.form['existing'] == "no":
-        if up_data['existing'] == "no":
-            # metastring = request.form['metadata']
-            # metastring = metastring + lvltxt
-            metastring = metadata + lvltxt
-            with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring)
-        else:
-            #update level data in metadata files
-            if os.path.isfile(metafilepath):
-                with open(metafilepath, 'r') as m:
-                    metatext = m.read()
-                meta1 = metatext.split('--- Data status codes ---')[0]
-                lvltxt = meta1 + lvltxt
+    # xx = pd.read_csv('../spdumps/' + 'e7805b62369e' + '_xx.csv',na_filter=False)
+    # xx.flag = xx.flag.where(pd.notnull(xx.flag), None)
+    updatedb(xx, up_data['fn_to_db'], up_data['replace'])
 
-            with open(metafilepath, 'w') as m:
-                m.write(lvltxt)
+    # make a new text file with the metadata
+    lvltxt = '\n\n--- Data status codes ---\n\n' +\
+        'Data level codes:\n' +\
+        '\tR: Raw (directly from sensor/logger)\n' +\
+        '\tO: Outliers/anomalies removed\n' +\
+        '\tG: Gaps imputed\n' +\
+        '\tC: Corrected for drift (due to biofouling, calibration, etc.)\n' +\
+        '\tD: Derived from other variables\n' +\
+        '\t-: No information\n\n--- Data status by variable ---\n\n'
 
-    except Exception as e:
+    metafilepath = os.path.join(app.config['META_FOLDER'],
+        region + "_" + site + "_metadata.txt")
+    leveldata = pd.read_sql("select dbcol, level, notes from cols where region = '" +\
+        region + "' and site = '" + site + "';", db.engine)
+    leveldata = leveldata.loc[~leveldata.dbcol.isin(['DateTime_UTC',
+        'Battery_V']), :]
+    leveldata.columns = ['Variable', 'StatusCodes', 'VariableDerivation']
+    leveldata = leveldata.mask(leveldata == '', '-')
+    lvltxt2 = leveldata.to_string() + '\n'
+    lvltxt = lvltxt + lvltxt2
 
-        tb = traceback.format_exc()
-        df_head = xx.head(2).to_string()
-        log_rawcols = '\n\nrawcols: ' + ', '.join(list(up_data['cdict'].keys()))
-        log_dbcols = '\ndbcols: ' + ', '.join(list(up_data['cdict'].values()))
+    # if request.form['existing'] == "no":
+    if up_data['existing'] == "no":
+        # metastring = request.form['metadata']
+        # metastring = metastring + lvltxt
+        metastring = metadata + lvltxt
+        with open(metafilepath, 'a') as metafile:
+            metafile.write(metastring)
+    else:
+        #update level data in metadata files
+        if os.path.isfile(metafilepath):
+            with open(metafilepath, 'r') as m:
+                metatext = m.read()
+            meta1 = metatext.split('--- Data status codes ---')[0]
+            lvltxt = meta1 + lvltxt
 
-        # if request.form['existing'] == "no":
-        #     error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
-        #         request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
-        #         '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
-        #         request.form['embargo'] + '\ncontactname: ' +\
-        #         request.form['contactName'] + '\ncontactemail: ' +\
-        #         request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
-        #         '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
-        #         replace + '\n\n'
-        if up_data['existing'] == "no":
-            error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
-                up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
-                '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
-                up_data['embargo'] + '\ncontactname: ' +\
-                up_data['contactName'] + '\ncontactemail: ' +\
-                up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
-                '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
-                replace + '\n\n'
-        else:
-            error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
-                '\nreplace: ' + replace + '\n\n'
+        with open(metafilepath, 'w') as m:
+            m.write(lvltxt)
 
-        if replace == 'records':
-            errno = 'E009b'
-            msg = Markup("Error 009b. Try reducing the size of your revised " +\
-                "file by removing rows or columns that don't require revision.")
-        else:
-            errno = 'E009a'
-            msg = Markup('Error 009a. StreamPULSE development has been notified.')
+    # except Exception as e:
+    #
+    #     tb = traceback.format_exc()
+    #     df_head = xx.head(2).to_string()
+    #     log_rawcols = '\n\nrawcols: ' + ', '.join(list(up_data['cdict'].keys()))
+    #     log_dbcols = '\ndbcols: ' + ', '.join(list(up_data['cdict'].values()))
+    #
+    #     # if request.form['existing'] == "no":
+    #     #     error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
+    #     #         request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
+    #     #         '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
+    #     #         request.form['embargo'] + '\ncontactname: ' +\
+    #     #         request.form['contactName'] + '\ncontactemail: ' +\
+    #     #         request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
+    #     #         '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+    #     #         replace + '\n\n'
+    #     if up_data['existing'] == "no":
+    #         error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
+    #             up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
+    #             '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
+    #             up_data['embargo'] + '\ncontactname: ' +\
+    #             up_data['contactName'] + '\ncontactemail: ' +\
+    #             up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
+    #             '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
+    #             replace + '\n\n'
+    #     else:
+    #         error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
+    #             '\nreplace: ' + replace + '\n\n'
+    #
+    #     if replace == 'records':
+    #         errno = 'E009b'
+    #         msg = Markup("Error 009b. Try reducing the size of your revised " +\
+    #             "file by removing rows or columns that don't require revision.")
+    #     else:
+    #         errno = 'E009a'
+    #         msg = Markup('Error 009a. StreamPULSE development has been notified.')
+    #
+    #     full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
+    #     log_exception(errno, full_error_detail)
+    #     email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+    #
+    #     try:
+    #         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
+    #         [os.remove(f) for f in up_data['fnlong']]
+    #         db.session.rollback()
+    #     except:
+    #         pass
+    #     flash(msg, 'alert-danger')
+    #
+    #     return redirect(url_for('series_upload'))
+    #
+    # try:
+    #     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
+    # except:
+    #     pass
+    # db.session.commit() #persist all db changes made during upload
+    # flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
+    #     'alert-success')
 
-        full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
-        log_exception(errno, full_error_detail)
-        email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
-
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
-            [os.remove(f) for f in up_data['fnlong']]
-            db.session.rollback()
-        except:
-            pass
-        flash(msg, 'alert-danger')
-
-        return redirect(url_for('series_upload'))
-
-    try:
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
-    except:
-        pass
-    db.session.commit() #persist all db changes made during upload
-    flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
-        'alert-success')
-
-    # return redirect(url_for('pipeline1'))
     return redirect(url_for('series_upload'))
 
 @app.route("/grab_upload_confirm", methods=["POST"])

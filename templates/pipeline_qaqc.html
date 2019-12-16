@@ -113,7 +113,7 @@
   </div>
 </form> -->
 
-<div class="col-md-6 col-md-offset-3">
+<div class="col-md-6 col-md-offset-3" id='getpldiv'>
   <br><br>
   <button id="getpl" type="button" class="btn btn-primary btn-block">
     Review automated QA/QC
@@ -121,7 +121,39 @@
   <br><br>
 </div>
 
-<!-- <script type="application/javascript" src="static/js/graphs.js"></script> -->
+<div class="col-md-6 col-md-offset-3" id='submitpldiv' style='display: none'>
+  <br><br>
+  <button id="submitpl" type="submit" class="btn btn-primary btn-block">
+    Submit dataset
+  </button>
+  <br><br>
+</div>
+
+<div class='row'>
+  <div class="col-md-6 col-md-offset-3 text-center" id='confirmpldiv' style='display: none'>
+    <br><br>
+      <form id="confirmpl" class="form-horizontal" method="POST" action="/submit-dataset-{{tmpcode}}">
+        <input type="hidden" name="userflags" value="">
+        <input type="hidden" name="instance_id" value="">
+        <input type="hidden" name="userflagrms" value="">
+        <input type="hidden" name="rejections" value="">
+        <div class='col-md-8 col-md-offset-2'>
+          <h3>Details</h3>
+          <p id='submit_details'></p>
+          <!-- <p class='text-muted'>
+            *This value reflects the number of times "Flag all selected points"
+            was clicked. If a continuous segment of flagged points
+            was subsequently broken into two or more segments by flag removal,
+            each will be treated as a separate flag instance within the database.
+          </p> -->
+        </div>
+        <button id="confirmpl_button" type="submit" value="" class="btn btn-success btn-block">
+          Confirm submission
+        </button>
+      </form>
+    <br><br>
+  </div>
+</div>
 
 <script type="application/javascript">
 
@@ -183,8 +215,9 @@
   // var undo_holder = {};
   var rm_holder = [];
   var instance_id = 1;
+  var pointcounts = {'flags': 0, 'rejections': }
 
-  function PlotsPL(variables, origdisp, pldisp, flagdisp){
+  function PlotsPL(variables, origdisp, pldisp, flagdisp, usrflgs, rms){
 
     origdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
     pldisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -249,16 +282,15 @@
           .attr("class", "backgraph");
       svg.append("g")
           .attr("class", "sunriseset");
-      var outliers = {}
-      // var interps = {}
+      var outliers = {};
+      var imputations = {};
       flagdisp.forEach(function(e){
         if(e.variable == vvv){
           if(e.code <= 2){
             outliers[e.DateTime_UTC] = e.variable
+          } else if(e.code >= 4){
+            imputations[e.DateTime_UTC] = e.variable
           }
-          // } else if ([2, 3].includes(e.code)){
-          //   interps[e.DateTime_UTC] = e.variable
-          // }
         }
       });
 
@@ -280,6 +312,13 @@
           .classed("ploutlier", function(d){
             return vvv == outliers[d.DateTime_UTC]
           });
+          // .classed("invis", function(d){
+          //   d.DateTime_UTC <=  && d.date <= unendt;
+          //   return is_brushed;
+          //   return vvv == outliers[d.DateTime_UTC]
+          // })
+          // .selectAll('.plgapfill:not(.plflag)')
+
       svg.selectAll(".pldot")
           .data(pldisp.filter(function(d) {
             return d[vvv];
@@ -290,6 +329,22 @@
           .attr("cy", line.y())
           .classed("plgapfill", function(d){
             return vvv == outliers[d.DateTime_UTC]
+          })
+          .classed("plgapfill2", function(d){
+            return vvv == imputations[d.DateTime_UTC]
+          })
+          .classed('plflag', function(d){
+            return usrflgs.some(function(x){
+              return x.var[0] == vvv && x.startDate <= d.date &&
+                x.endDate >= d.date;
+            });
+          })
+          .filter('.plflag')
+          .classed('plflag', function(d){
+            return ! rms.some(function(x){
+              return x.var[0] == vvv && x.startDate <= d.date &&
+                x.endDate >= d.date;
+            });
           });
 
       if(! ['None', null].includes($('#backgraphlist2').val()) ){
@@ -420,7 +475,7 @@
           pldisp = getdisplaydata(plotstart, plotend, pldata);
 
           PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-            flagdisp=flagdata);
+            flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
           $('#flagging').show();
           $('#flagging2').show();
 
@@ -449,6 +504,9 @@
             $('#jumptodate').append('<option value="' + daterange_val +
               '">' + daterange + '</option>');
           }
+
+          $('#getpldiv').hide();
+          $('#submitpldiv').show();
         },
         error: function(error){
           console.log(error);
@@ -646,7 +704,7 @@
         // console.log(flagdata);
         $("#graphs").empty();
         PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-          flagdisp=flagdata);
+          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
@@ -693,7 +751,7 @@
 
         $("#graphs").empty();
         PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-          flagdisp=flagdata);
+          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
@@ -737,7 +795,7 @@
 
       $("#graphs").empty();
       PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-        flagdisp=flagdata);
+        flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
       if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
       //show panback if applicable
@@ -1019,7 +1077,7 @@
       }
 
       var s = d3.brushSelection(d3.select("#" + selectedBrush).node())
-      var dat = {}
+      var dat = {};
       dat['startDate'] = x.invert(s[0]);
       dat['endDate'] = x.invert(s[1]);
 
@@ -1031,16 +1089,17 @@
         var b = d3.select("." + selectedBrush).selectAll(".selected");
       }
 
-      b.classed('plflag', true)
+      b.classed('plflag', true);
 
       window.brushdown = false;
       dat['comment'] = $("input[name=fcomment2]").val();
       dat['flagid'] = $("select[name=flagID2]").val();
 
       if (dat.flagid != null){
-        dat['instance_id'] = instance_id
-        window.instance_id = instance_id + 1
-        window.userflags.push(dat)
+        dat['instance_id'] = instance_id;
+        window.instance_id = instance_id + 1;
+        window.userflags.push(dat);
+        // window.userflagpts.push(flagpts)
       } else {
         $("#alerts_floating").append(alertbox('danger','Please select a flag label.'));
       }
@@ -1093,6 +1152,52 @@
 
     brushstart()
   };
+
+  //submit
+  $('body').ready(function(){
+    $('body').on("click", "#submitpl", function(){
+
+      $('input[name=userflags]').val(JSON.stringify(userflags))
+      $('input[name=instance_id]').val(JSON.stringify(instance_id))
+      $('input[name=userflagrms]').val(JSON.stringify(rm_holder))
+
+      var plrejects = d3.selectAll('.plreject')
+      var rejectvars = plrejects.nodes()
+        .map(x => x.ownerSVGElement.className.baseVal)
+      var rejectdates = plrejects.data().map(x => x.DateTime_UTC)
+      var zip = rows => rows[0].map((_, c) => rows.map(row => row[c]))
+      var rejections = zip([rejectdates, rejectvars])
+      $('input[name=rejections]').val(JSON.stringify(rejections))
+
+      // var npoints = d3.selectAll('.pldot').size()
+      // var nedits = d3.selectAll('.plgapfill').size()
+      // var noutls = d3.selectAll('.ploutlier').size()
+      // var nrejections = d3.selectAll('.plreject').size()
+      // var nflags = userflags.length
+      // var nflagpoints = d3.selectAll('.plflag').size()
+      // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size()
+      var npoints = pldata.length;
+      var nedits = flagdata.length;
+      var noutls = 0;
+      var nrejections = d3.selectAll('.plreject').size();
+      var nflags = userflags.length;
+      var nflagpoints = d3.selectAll('.plflag').size();
+      var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
+
+      $('#submit_details').replaceWith(
+        'Total data points: ' + npoints + ',<br>' +
+        'Automated edits: ' + nedits + ',<br>' +
+        '  Anomalies adjusted: ' + noutls + ',<br>' +
+        '  Points imputed: ' + (nedits - noutls) + ',<br>' +
+        'Edits rejected: ' + nrejections + ',<br>' +
+        'Flagged segments*: ' + nflags + ',<br>' +
+        'Flagged data points: ' + nflagpoints + ',<br>' +
+        'Edits flagged: ' + nflagpoints + ',<br>');
+
+      $('#submitpldiv').hide();
+      $('#confirmpldiv').show();
+    });
+  });
 
 </script>
 

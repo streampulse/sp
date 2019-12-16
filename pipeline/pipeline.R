@@ -4,6 +4,12 @@ library(anomalize)
 library(feather)
 library(lubridate)
 
+#NOTE:
+#range checker marks anomalies with code 1
+#outlier detectors mark anomalies with code 2
+#gap fillers mark imputations, not including those following anomaly removal,
+    #with code 4
+
 setwd('/home/mike/git/streampulse/server_copy/sp')
 # setwd('/home/aaron/sp')
 
@@ -22,7 +28,7 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
 #     stringsAsFactors=FALSE)
 # write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
-# args = list('tmpcode'='58fd34a09a2d')
+# args = list('tmpcode'='dad74156dab8')
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
     mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 
@@ -65,7 +71,14 @@ flagdf = df_and_flagcodes$flagd
 for(c in colnames(pldf)){
     pldf[na_inds[[c]], c] = NA
 }
-pldf = lin_interp_gaps(pldf, samp_int=samp_int_m, gap_thresh=180)
+
+pld = lin_interp_gaps(pldf, samp_int=samp_int_m, gap_thresh=180)
+
+for(c in colnames(pldf)){
+    interp_inds = na_inds[[c]][which(! is.na(pld[na_inds[[c]], c]))]
+    flagdf[interp_inds, c] = flagdf[interp_inds, c] + 4
+}
+
 rm_rows = which(apply(pldf, 1, function(x) all(is.na(x))))
 pldf = pldf[-rm_rows, ]
 origdf = origdf[-rm_rows, ]

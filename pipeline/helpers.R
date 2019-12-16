@@ -52,6 +52,7 @@ lin_interp_gaps = function(d, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
 }
 
 range_check = function(d, flagd){
+    # d=pldf;flagd=flagdf
 
     ranges = list(
         'DO_mgL'=c(-0.5, 40),
@@ -101,7 +102,8 @@ range_check = function(d, flagd){
         if(all(is.na(d[[c]]))) next
         rmin = ranges[[c]][1]
         rmax = ranges[[c]][2]
-        flagd[[c]] = as.numeric(d[[c]] < rmin | d[[c]] > rmax)
+        flagd[[c]] = as.numeric(! is.na(d[[c]]) &
+            (d[[c]] < rmin | d[[c]] > rmax))
     }
 
     d[flagd == 1] = NA
