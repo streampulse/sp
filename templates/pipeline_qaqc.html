@@ -212,10 +212,10 @@
   var flagdata;
   var brushextent;
   var userflags = [];
-  // var undo_holder = {};
+  var rej_holder = {};
   var rm_holder = [];
   var instance_id = 1;
-  var pointcounts = {'flags': 0, 'rejections': 0}
+  var pointcounts = {'flags': 0}//, 'rejections': 0}
 
   function PlotsPL(variables, origdisp, pldisp, flagdisp, usrflgs, rms){
 
@@ -464,6 +464,9 @@
           flagdata = JSON.parse(response.flagjson);
           flagdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
           variables = response.variables;
+          for(let v of variables){
+            rej_holder[v] = [];
+          }
 
           sundat = JSON.parse(response.sunriseset);
           sundat.forEach(function(d){
@@ -1046,13 +1049,13 @@
 
       if(brushdown){
         dat['var'] = variables;
-        var b = d3.selectAll("svg").selectAll(".selected");
+        var b = d3.selectAll("svg").selectAll(".plflag.selected");
       } else {
         dat['var'] = [selectedBrush];
-        var b = d3.select("." + selectedBrush).selectAll(".selected");
+        var b = d3.select("." + selectedBrush).selectAll(".plflag.selected");
       }
 
-      var nsubstractions = b.classed('plflag', false).size()
+      var nsubtractions = b.classed('plflag', false).size()
       window.pointcounts['flags'] = pointcounts['flags'] - nsubtractions
 
       window.brushdown = false;
@@ -1084,10 +1087,10 @@
 
       if(brushdown){
         dat['var'] = variables;
-        var b = d3.selectAll("svg").selectAll('.selected');
+        var b = d3.selectAll("svg").selectAll('.selected:not(.plflag)');
       } else {
         dat['var'] = [selectedBrush];
-        var b = d3.select("." + selectedBrush).selectAll(".selected");
+        var b = d3.select("." + selectedBrush).selectAll(".selected:not(.plflag)");
       }
 
       var nadditions = b.classed('plflag', true).size()
@@ -1121,19 +1124,49 @@
       var unvar = [selectedBrush];
       var unstdt = x.invert(s[0]);
       var unendt = x.invert(s[1]);
+      var nchange = 0;
 
-      d3.select("." + selectedBrush)
-        .selectAll('.plgapfill:not(.plflag)')
-        .filter(function(d) {
-          var is_brushed = unstdt <= d.date && d.date <= unendt;
-          return is_brushed;
-        })
-        .classed('invis', ! undo_bool);
-        // .each(function(d, i){
-        //   undo_holder
-        // });
+      if(! undo_bool){
 
-      // rejected_gf.classed('invis', true);
+        var rejections = d3.select("." + selectedBrush)
+          .selectAll('.plgapfill:not(.plflag):not(.invis), .plgapfill2:not(.plflag):not(.invis)')
+          .filter(function(d) {
+            var is_brushed = unstdt <= d.date && d.date <= unendt;
+            return is_brushed;
+          })
+          .classed('invis', true)
+          .data();
+
+        //store dates of rejected pipeline edits by variable
+        window.rej_holder[selectedBrush] = rej_holder[selectedBrush]
+          .concat(rejections.map(x => x.DateTime_UTC));
+
+        // nchange = rejections.size();
+
+      } else {
+        var undos = d3.select("." + selectedBrush)
+          .selectAll('.plgapfill.invis:not(.plflag), .plgapfill2.invis:not(.plflag)')
+          .filter(function(d) {
+            var is_brushed = unstdt <= d.date && d.date <= unendt;
+            return is_brushed;
+          })
+          .classed('invis', false)
+          .data();
+
+        //remove dates if user is undoing rejections
+        rm_inds = undos.map(x => rej_holder[selectedBrush].indexOf(x.DateTime_UTC));
+        rm_inds.sort().reverse();
+        rm_inds.forEach(x => {
+          if(x > -1) {
+            window.rej_holder[selectedBrush].splice(x, 1)
+          }
+        });
+
+        // nchange = undos.size();
+      }
+
+      // nchange = undo_bool ? nchange * -1 : nchange
+      // window.pointcounts['rejections'] = pointcounts['rejections'] + nreject
 
       d3.select("." + selectedBrush)
         .selectAll(".ploutlier")
@@ -1143,12 +1176,7 @@
         })
         .classed('plreject', ! undo_bool);
 
-      //HERE: DEVISE A WAY TO COUNT REJECTIONS
-
-      // rejected_ol.classed('pldot', true);
-
       window.brushdown = false;
-      // window.undo_holder = undo_holder.concat(rejected_gf);
 
     } else {
       $("#alerts_floating").append(alertbox('danger','No points selected.'));
@@ -1184,7 +1212,9 @@
       var npoints = pldata.length;
       var nedits = flagdata.length;
       var noutls = flagdata.map(x => x.code <= 2).reduce((a, b) => a + b, 0)
-      var nrejections = pointcounts['rejections']
+      var nrejections = Object.keys(rej_holder)
+        .map(x => rej_holder[x].length)
+        .reduce((a, b) => a + b, 0)
       var nflags = userflags.length;
       var nflagpoints = pointcounts['flags']
       // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
