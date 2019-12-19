@@ -133,10 +133,10 @@
   <div class="col-md-6 col-md-offset-3 text-center" id='confirmpldiv' style='display: none'>
     <br><br>
       <form id="confirmpl" class="form-horizontal" method="POST" action="/submit-dataset-{{tmpcode}}">
-        <input type="hidden" name="userflags" value="">
-        <input type="hidden" name="rm_holder" value="">
+        <input type="hidden" name="userflagpts" value="">
+        <!-- <input type="hidden" name="rm_holder" value=""> -->
         <input type="hidden" name="rej_holder" value="">
-        <input type="hidden" name="instance_id" value="">
+        <!-- <input type="hidden" name="instance_id" value=""> -->
         <div class='col-md-10 col-md-offset-1 text-left'>
           <p class='lead text-center'>Submission details</p>
           <p id='submit_details'></p>
@@ -352,20 +352,18 @@
           .classed('invis', function(d){
             return rej_holder[vvv].includes(d.DateTime_UTC);
           })
+          .filter('circle:not(.invis)')
           .classed('plflag', function(d){
             return usrflgs.some(function(x){
-              // return (x.var[0] == vvv || x.applyAll == true) &&
-              return x.var[0] == vvv &&
-                //HERE: MUST INSTEAD CHECK FOR PRESENCE OF d.DateTime_UTC IN userflagpts
-                //then can get rid of all machinery associated with userflags?
+              return (x.var[0] == vvv || x.hasOwnProperty('applyAll')) &&
                 x.startDate <= d.date && x.endDate >= d.date;
             });
           })
           .filter('.plflag')
           .classed('plflag', function(d){
             return ! rms.some(function(x){
-              return x.var[0] == vvv && x.startDate <= d.date &&
-                x.endDate >= d.date;
+              return (x.var[0] == vvv || x.hasOwnProperty('applyAll')) &&
+                x.startDate <= d.date && x.endDate >= d.date;
             });
           });
 
@@ -1070,15 +1068,17 @@
       dat['startDate'] = x.invert(s[0]);
       dat['endDate'] = x.invert(s[1]);
 
-      // if(brushdown){
-      //   dat['var'] = variables;
-      //   var b = d3.selectAll("svg").selectAll(".plflag.selected");
-      // } else {
-      //   dat['var'] = [selectedBrush];
-      //   var b = d3.select("." + selectedBrush).selectAll(".plflag.selected");
-      // }
 
-      dat['var'] = brushdown ? variables : [selectedBrush];
+      if(brushdown){
+        dat['var'] = variables;
+        dat['applyAll'] = 'y'
+        // var b = d3.selectAll("svg").selectAll(".plflag.selected");
+      } else {
+        dat['var'] = [selectedBrush];
+        // var b = d3.select("." + selectedBrush).selectAll(".plflag.selected");
+      }
+
+      // dat['var'] = brushdown ? variables : [selectedBrush];
 
       for(let v of dat['var']){
 
@@ -1137,18 +1137,19 @@
       dat['comment'] = $("input[name=fcomment2]").val();
       window.userflags.push(dat);
 
-      // if(brushdown){
-      //   dat['var'] = variables;
-      //   // var b = d3.selectAll("svg").selectAll('.selected:not(.plflag):not(.invis)');
-      // } else {
-      //   dat['var'] = [selectedBrush];
-      //   // var b = d3.select("." + selectedBrush).selectAll(".selected:not(.plflag):not(.invis)");
-      //   // var set1 = new Set(b.data().map(x => x.DateTime_UTC))
-      //   // var set2 = new Set(userflagpts[selectedBrush])
-      //   // var newflagpts = [...set1].filter(x => ! set2.has(x));
-      // }
+      if(brushdown){
+        dat['var'] = variables;
+        dat['applyAll'] = 'y'
+        // var b = d3.selectAll("svg").selectAll('.selected:not(.plflag):not(.invis)');
+      } else {
+        dat['var'] = [selectedBrush];
+        // var b = d3.select("." + selectedBrush).selectAll(".selected:not(.plflag):not(.invis)");
+        // var set1 = new Set(b.data().map(x => x.DateTime_UTC))
+        // var set2 = new Set(userflagpts[selectedBrush])
+        // var newflagpts = [...set1].filter(x => ! set2.has(x));
+      }
 
-      dat['var'] = brushdown ? variables : [selectedBrush];
+      // dat['var'] = brushdown ? variables : [selectedBrush];
 
       for(let v of dat['var']){
 
@@ -1250,10 +1251,10 @@
       $('#flagging2').hide();
       $('#graphs').hide();
 
-      $('input[name=userflags]').val(JSON.stringify(userflags))
-      $('input[name=rm_holder]').val(JSON.stringify(rm_holder))
+      $('input[name=userflagpts]').val(JSON.stringify(userflagpts))
+      // $('input[name=rm_holder]').val(JSON.stringify(rm_holder))
       $('input[name=rej_holder]').val(JSON.stringify(rej_holder))
-      $('input[name=instance_id]').val(JSON.stringify(instance_id))
+      // $('input[name=instance_id]').val(JSON.stringify(instance_id))
 
       var npoints = pldata.length;
       var nedits = flagdata.length;

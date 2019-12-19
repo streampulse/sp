@@ -2646,28 +2646,25 @@ def submit_dataset(tmpcode):
 
     # try:
 
-    userflags = request.form['userflags']
-    userflagrms = request.form['rm_holder']
+    userflagpts = request.form['userflagpts']
+    # userflagrms = request.form['rm_holder']
     rejections = request.form['rej_holder']
-    max_instance_id = request.form['instance_id']
-    print(userflags)
-    print(userflagrms)
+    # max_instance_id = request.form['instance_id']
+    print(userflagpts)
     print(rejections)
-    print(instance_id)
 
-    userflags = [{"startDate":"2017-08-11T03:03:38.181Z","endDate":"2017-08-12T07:50:54.545Z","var":["pH_mV"],"comment":"","flagid":"Interesting","instance_id":1}]
-    userflagrms = [{"startDate":"2017-08-11T00:01:49.090Z","endDate":"2017-08-11T05:42:43.636Z","var":["pH_mV"]},{"startDate":"2017-08-11T12:09:05.454Z","endDate":"2017-08-11T18:35:27.272Z","var":["pH_mV"]},{"startDate":"2017-08-11T23:30:54.545Z","endDate":"2017-08-12T03:18:10.909Z","var":["pH_mV"]}]
+    # userflags = [{"startDate":"2017-08-11T03:03:38.181Z","endDate":"2017-08-12T07:50:54.545Z","var":["pH_mV"],"comment":"","flagid":"Interesting","instance_id":1}]
+    # userflagrms = [{"startDate":"2017-08-11T00:01:49.090Z","endDate":"2017-08-11T05:42:43.636Z","var":["pH_mV"]},{"startDate":"2017-08-11T12:09:05.454Z","endDate":"2017-08-11T18:35:27.272Z","var":["pH_mV"]},{"startDate":"2017-08-11T23:30:54.545Z","endDate":"2017-08-12T03:18:10.909Z","var":["pH_mV"]}]
     rejections = {"WaterTemp_C":[],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":["2017-08-13T10:30:00.000Z","2017-08-20T15:00:00.000Z"]}
-    max_instance_id = 2
 
-    def parsejsdt(d, key):
-        dt = [datetime.strptime(x[key][0:19], '%Y-%m-%dT%H:%M:%S') for x in d]
-        return dt
-
-    flagstarts = parsejsdt(userflags, 'startDate')
-    flagends = parsejsdt(userflags, 'endDate')
-    rmstarts = parsejsdt(userflagrms, 'startDate')
-    rmends = parsejsdt(userflagrms, 'endDate')
+    # def parsejsdt(d, key):
+    #     dt = [datetime.strptime(x[key][0:19], '%Y-%m-%dT%H:%M:%S') for x in d]
+    #     return dt
+    #
+    # flagstarts = parsejsdt(userflags, 'startDate')
+    # flagends = parsejsdt(userflags, 'endDate')
+    # rmstarts = parsejsdt(userflagrms, 'startDate')
+    # rmends = parsejsdt(userflagrms, 'endDate')
 
     raise ValueError('arse')
 
