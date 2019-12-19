@@ -2650,10 +2650,12 @@ def submit_dataset(tmpcode):
     # userflagrms = request.form['rm_holder']
     rejections = request.form['rej_holder']
     # max_instance_id = request.form['instance_id']
-    print(userflagpts)
-    print(rejections)
+    # print(userflagpts)
+    # print(rejections)
 
+    tmpcode = 'dad74156dab8'
     # userflags = [{"startDate":"2017-08-11T03:03:38.181Z","endDate":"2017-08-12T07:50:54.545Z","var":["pH_mV"],"comment":"","flagid":"Interesting","instance_id":1}]
+    userflagpts = {"WaterTemp_C":{"id":[1,1,1,2],"dt":["2017-08-10T13:15:00.000Z","2017-08-10T13:30:00.000Z","2017-08-10T13:45:00.000Z","2017-08-10T20:00:00.000Z"]},"pH":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"SpecCond_uScm":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"Depth_m":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"CDOM_ppb":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"Turbidity_NTU":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"DO_mgL":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"DOsat_pct":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"pH_mV":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]}}
     # userflagrms = [{"startDate":"2017-08-11T00:01:49.090Z","endDate":"2017-08-11T05:42:43.636Z","var":["pH_mV"]},{"startDate":"2017-08-11T12:09:05.454Z","endDate":"2017-08-11T18:35:27.272Z","var":["pH_mV"]},{"startDate":"2017-08-11T23:30:54.545Z","endDate":"2017-08-12T03:18:10.909Z","var":["pH_mV"]}]
     rejections = {"WaterTemp_C":[],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":["2017-08-13T10:30:00.000Z","2017-08-20T15:00:00.000Z"]}
 
@@ -2665,6 +2667,20 @@ def submit_dataset(tmpcode):
     # flagends = parsejsdt(userflags, 'endDate')
     # rmstarts = parsejsdt(userflagrms, 'startDate')
     # rmends = parsejsdt(userflagrms, 'endDate')
+
+    dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
+    with open(dumpfile) as d:
+        up_data = json.load(d)
+    region = up_data['region']
+    site = up_data['site']
+    replace = up_data['replace']
+
+    origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+    pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+    flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+
+    #HERE: PARSE REJECTIONS (REPLACE PL WITH ORIG)
+    # PARSE FLAGS (ADD TO DATA AND FLAG TABLES)
 
     raise ValueError('arse')
 
