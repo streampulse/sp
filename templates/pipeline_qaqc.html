@@ -15,7 +15,7 @@
 <div class='row'>
   <div class="col-md-10 col-md-offset-1 text-center">
     <p class='lead'>
-      Please carefully inspect all of your data for errors and either
+      Please carefully inspect <strong>all</strong> of your data for errors and either
       fix or flag them before submitting.
       Click and drag any plot to view the interaction menu.
     <!-- <a href="qaqc_help">
@@ -26,7 +26,9 @@
 </div>
 
 <div class="row text-center">
-  <div class="row" id="legend"></div>
+  <div class="row" style='border: 1px solid' id="legend"></div>
+  <!-- <p style='padding-top: 0px; margin-top: 0px'>*Cannot be rejected</p> -->
+  <!-- *Cannot be rejected -->
 </div>
 <br>
 
@@ -219,16 +221,18 @@
 
   $('body').ready(function(){
 
-    var legdat = [[0, 66, 'pldot', 2, 'Unmodified', ''],
-      [0, 33, 'plorigdot', 2, 'Pre-adjustment', ''],
-      [33, 33, 'ploutlier', 5, 'Potential error', 'Anomalies'],
-      [33, 0, 'ploutlfixed', 5, 'Infeasible value', ''],
-      [66, 66, 'plgapfill2', 5, 'Imputed', 'Corrections'],
-      [66, 33, 'plgapfill', 5, 'Adjusted error', ''],
-      [66, 0, 'plgapfixed', 5, 'Adjusted infeasible (unrejectable)', ''],
-      [99, 66, 'plreject', 5, 'Rejected correction', 'Edits'],
-      [99, 33, 'plflag', 2, 'Flagged', ''],
-      [99, 0, 'plflag', 5, 'Flagged', '']]
+    var legdat = [[0, 66, 'pldot', 2, 'Unmodified', 'Generics'],
+      [0, 33, 'plorigdot', 2, 'Original', ''],
+      [25, 33, 'ploutlier', 5, 'Potential error', 'Anomalies'],
+      [25, 0, 'ploutlfixed', 5, 'Infeasible value', ''],
+      [50, 66, 'plgapfill2', 5, 'Imputed', 'Corrections'],
+      [50, 33, 'plgapfill', 5, 'Adjusted error', ''],
+      [50, 0, 'plgapfixed', 5, 'Adjusted infeasible*', ''],
+      [57, -70, 'actuallyinvis', 2, '*cannot be rejected', ''],
+      [75, 66, 'invis', 5, 'Rejected correction', 'User Input'],
+      [75, 33, 'plreject', 5, 'Accepted original', ''],
+      [75, 0, 'plflag', 5, 'Flagged*', ''],
+      [75, -33, 'plflag', 2, 'Flagged', '']]
 
     var lheight = height / 4;
 
@@ -262,7 +266,7 @@
       .attr("r", function(d){ return d[3]; });
 
     lgnd.append('text')
-      .attr('x', function(d){ return lx(d[0] + 1.5); })
+      .attr('x', function(d){ return lx(d[0]); })
       .attr('y', ly(99))
       .attr('font-weight', 'bold')
       .text(function(d){ return d[5]; });
@@ -1136,7 +1140,13 @@
 
       for(let v of dat['var']){
 
-        var b = d3.select("." + v).selectAll(".plflag.selected");
+        var b = d3.select("." + v)
+          .selectAll(".plflag")
+          .filter(function(d){
+            var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+            return is_brushed;
+          })
+          .classed('selected', false);
         let rmflagpts = b.data().map(x => x.DateTime_UTC)
         var rm_inds = rmflagpts.map(x => userflagpts[v]['dt'].indexOf(x));
 
@@ -1152,8 +1162,10 @@
         // var keepers = [...set1].filter(x => ! set2.has(x));
         // window.userflagpts[v]['dt'] = keepers
 
-        var nsubtractions = b.classed('plflag', false).size()
-        window.pointcounts['flags'] = pointcounts['flags'] - nsubtractions
+        b.filter('.ploutlier').classed('ploutlflag', false);
+
+        var nsubtractions = b.classed('plflag', false).size();
+        window.pointcounts['flags'] = pointcounts['flags'] - nsubtractions;
       }
 
       window.brushdown = false;
@@ -1207,11 +1219,19 @@
 
       for(let v of dat['var']){
 
-        var b = d3.select("." + v).selectAll(".selected:not(.plflag):not(.invis)");
+        var b = d3.select("." + v)
+          .selectAll("circle:not(.plflag):not(.invis):not(.ploutlflag)")
+          .filter(function(d){
+            var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+            return is_brushed;
+          })
+          .classed('selected', false);
         let newflagpts = b.data().map(x => x.DateTime_UTC)
         window.userflagpts[v]['dt'] = userflagpts[v]['dt'].concat(newflagpts);
         window.userflagpts[v]['id'] = userflagpts[v]['id']
           .concat(newflagpts.map(x => instance_id));
+
+        b.filter('.ploutlier').classed('ploutlflag', true)
 
         var nadditions = b.classed('plflag', true).size()
         window.pointcounts['flags'] = pointcounts['flags'] + nadditions
@@ -1247,6 +1267,7 @@
             var is_brushed = unstdt <= d.date && d.date <= unendt;
             return is_brushed;
           })
+          .classed('selected', false)
           .classed('invis', true)
           .data();
 
@@ -1263,6 +1284,7 @@
             var is_brushed = unstdt <= d.date && d.date <= unendt;
             return is_brushed;
           })
+          .classed('selected', false)
           .classed('invis', false)
           .data();
 
@@ -1282,7 +1304,7 @@
       // window.pointcounts['rejections'] = pointcounts['rejections'] + nreject
 
       d3.select("." + selectedBrush)
-        .selectAll(".ploutlier")
+        .selectAll(".ploutlier:not(.ploutlflag)")
         .filter(function(d) {
           var is_brushed = unstdt <= d.date && d.date <= unendt;
           return is_brushed;
