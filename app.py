@@ -20,6 +20,8 @@ from math import log, sqrt, floor
 import simplejson as json
 from sklearn import svm
 from operator import itemgetter
+import itertools
+# import copy
 import pandas as pd
 import numpy as np
 import requests
@@ -2611,12 +2613,17 @@ def get_pipeline_data():
     except Exception as e:
 
         tb = traceback.format_exc()
-        origdf_head = origdf.head(2).to_string()
-        pldf_head = pldf.head(2).to_string()
-        flagdf_head = flagdf.head(2).to_string()
 
-        full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
-            dumpfile + region + site + tmpcode
+        if 'origdf' in locals():
+            origdf_head = origdf.head(2).to_string()
+            pldf_head = pldf.head(2).to_string()
+            flagdf_head = flagdf.head(2).to_string()
+
+            full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
+                dumpfile + region + site + tmpcode
+        else:
+            full_error_detail = tb + ' ORIGDF DID NOT EXIST!'
+
         log_exception('E012', full_error_detail)
         email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
@@ -2647,17 +2654,20 @@ def submit_dataset(tmpcode):
     # try:
 
     userflagpts = request.form['userflagpts']
+    userflags = request.form['userflags']
     # userflagrms = request.form['rm_holder']
     rejections = request.form['rej_holder']
     # max_instance_id = request.form['instance_id']
-    # print(userflagpts)
-    # print(rejections)
+    print(userflagpts)
+    print(userflags)
+    print(rejections)
+    raise ValueError('arse')
 
     tmpcode = 'dad74156dab8'
-    # userflags = [{"startDate":"2017-08-11T03:03:38.181Z","endDate":"2017-08-12T07:50:54.545Z","var":["pH_mV"],"comment":"","flagid":"Interesting","instance_id":1}]
-    userflagpts = {"WaterTemp_C":{"id":[1,1,1,2],"dt":["2017-08-10T13:15:00.000Z","2017-08-10T13:30:00.000Z","2017-08-10T13:45:00.000Z","2017-08-10T20:00:00.000Z"]},"pH":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"SpecCond_uScm":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"Depth_m":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"CDOM_ppb":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"Turbidity_NTU":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"DO_mgL":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"DOsat_pct":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]},"pH_mV":{"id":[2],"dt":["2017-08-10T20:00:00.000Z"]}}
+    userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
+    userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
     # userflagrms = [{"startDate":"2017-08-11T00:01:49.090Z","endDate":"2017-08-11T05:42:43.636Z","var":["pH_mV"]},{"startDate":"2017-08-11T12:09:05.454Z","endDate":"2017-08-11T18:35:27.272Z","var":["pH_mV"]},{"startDate":"2017-08-11T23:30:54.545Z","endDate":"2017-08-12T03:18:10.909Z","var":["pH_mV"]}]
-    rejections = {"WaterTemp_C":[],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":["2017-08-13T10:30:00.000Z","2017-08-20T15:00:00.000Z"]}
+    rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
 
     # def parsejsdt(d, key):
     #     dt = [datetime.strptime(x[key][0:19], '%Y-%m-%dT%H:%M:%S') for x in d]
@@ -2676,14 +2686,103 @@ def submit_dataset(tmpcode):
     replace = up_data['replace']
 
     origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+    origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
     pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+    pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
     flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
-    
+    # replace pldf values with origdf values where pldf has been rejected
+    for r in rejections.items():
+        rejdts = r[1]
+        if rejdts:
+            rejvar = r[0]
+            rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
+            pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
+
+    # flagids = userflagpts['WaterTemp_C']['id']
+    # dts = userflagpts['WaterTemp_C']['dt']
+    # i = 0
+    # dts.pop(1); dts.pop(2)
+    # userflagpts = {"WaterTemp_C":{"id":[1,"rm",1,"rm",1,1,1],"dt":["2017-08-20T00:00:00.000Z","rm","2017-08-20T00:45:00.000Z","rm","2017-08-20T01:30:00.000Z","2017-08-20T01:45:00.000Z","2017-08-20T02:00:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
+    newflagid = -1
+    mod_switch = False
+    flagdeetmap = {}
+    for f in userflagpts.items():
+
+        flagids = f[1]['id']
+        dts = f[1]['dt']
+
+        if flagids:
+            if any([x == 'rm' for x in flagids]):
+                # rle = [(sum(1 for _ in gp), x) for x, gp in itertools.groupby(flagids)]
+                runid = next(x for x in flagids if x != 'rm')
+                for i in range(1, len(flagids)):
+                    if flagids[i] == 'rm' and i >= (len(flagids) - 1):
+                        break
+                    elif flagids[i] == 'rm':
+                        if flagids[i + 1] == runid:
+                            # flagids[i + 1] = newflagid
+                            newflagid -= 1
+                            mod_switch = True
+                        elif flagids[i + 1] == 'rm':
+                            continue
+                        # else:
+                        #     newflagid -= newflagid
+                        #     mod_switch = False
+                    elif flagids[i] != runid:
+                        newflagid -= 1
+                        runid = flagids[i]
+                        mod_switch = False
+                    elif flagids[i] == runid and mod_switch:
+                        # if flagids[i] in flagdeetmap.keys():
+                        #     flagdeetmap[flagids[i]].extend([newflagid])
+                        # else:
+                        #     flagdeetmap[flagids[i]] = [newflagid]
+                        if newflagid not in flagdeetmap.keys():
+                            flagdeetmap[newflagid] = flagids[i]
+                        flagids[i] = newflagid
+
+                rminds = [i for i, item in enumerate(flagids) if item == 'rm']
+                rminds.reverse()
+                for x in rminds:
+                    flagids.pop(x)
+                    dts.pop(x)
+
+                # f[1]['id'] = flagids
+                # flagdeetmap[flagids[i]] = list(set(flagdeetmap[flagids[i]]))
+                # for k in flagdeetmap.keys():
+                #     flagdeetmap[k] = list(set(flagdeetmap[k]))
+
+                # HERE: LOOKUP FLAG INFO FOR INTRODUCED NEGFLAGS, FILL OUT NEXT CHUNK
+                # THEN WRITE FLAG AND DATA TABLES
+
+                uniqids = [x for x in set(flagids) if not isinstance(x, str)]
+                for i in range(len(uniqids)):
+                    u = uniqids[i]
+                    startdt = dts[flagids.index(u)]
+                    enddt = dts[::-1][flagids[::-1].index(u)]
+                    fvar = f[0]
+
+
+    sdt = datetime.strptime(request.json['startDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
+    edt = datetime.strptime(request.json['endDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
+    var = request.json['var']
+    flg = request.json['flagid']
+    cmt = request.json['comment']
+
+    for vv in var:
+        fff = Flag(rgn, ste, sdt, edt, vv, flg, cmt, int(current_user.get_id()))
+        db.session.add(fff)
+        # db.session.commit()
+        flgdat = Data.query.filter(Data.region==rgn, Data.site==ste, Data.DateTime_UTC>=sdt, Data.DateTime_UTC<=edt, Data.variable==vv).all()
+        for f in flgdat:
+            f.flag = fff.id
+        db.session.commit()
+    return jsonify(result="success")
+
     #HERE: PARSE REJECTIONS (REPLACE PL WITH ORIG)
     # PARSE FLAGS (ADD TO DATA AND FLAG TABLES)
 
-    raise ValueError('arse')
 
     #format df for database entry
     xx = xx.set_index(["DateTime_UTC", "upload_id"])

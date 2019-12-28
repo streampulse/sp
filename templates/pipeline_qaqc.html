@@ -17,7 +17,7 @@
     <p class='lead'>
       Please carefully inspect <strong>all</strong> of your data for errors and either
       fix or flag them before submitting.
-      Click and drag any plot to view the interaction menu.
+      Click and drag on any plot to view the interaction menu.
     <!-- <a href="qaqc_help">
       <p style="font: 20px sans-serif">Instructions Here</p>
     </a> -->
@@ -123,6 +123,7 @@
     <br><br>
       <form id="confirmpl" class="form-horizontal" method="POST" action="/submit-dataset-{{tmpcode}}">
         <input type="hidden" name="userflagpts" value="">
+        <input type="hidden" name="userflags" value="">
         <!-- <input type="hidden" name="rm_holder" value=""> -->
         <input type="hidden" name="rej_holder" value="">
         <!-- <input type="hidden" name="instance_id" value=""> -->
@@ -1156,8 +1157,16 @@
           if(x > -1) {
             window.userflagpts[v]['dt'].splice(x, 1)
             window.userflagpts[v]['id'].splice(x, 1)
+            // window.userflagpts[v]['fg'].splice(x, 1)
+            // window.userflagpts[v]['cm'].splice(x, 1)
           }
         });
+
+        let first_rm = rm_inds[rm_inds.length - 1]
+        window.userflagpts[v]['dt'].splice(first_rm, 0, 'rm')
+        window.userflagpts[v]['id'].splice(first_rm, 0, 'rm')
+        // window.userflagpts[v]['fg'].splice(first_rm, 0, 'rm')
+        // window.userflagpts[v]['cm'].splice(first_rm, 0, 'rm')
         // var set1 = new Set(userflagpts[v]['dt'])
         // var set2 = new Set(b.data().map(x => x.DateTime_UTC))
         // var keepers = [...set1].filter(x => ! set2.has(x));
@@ -1227,16 +1236,19 @@
             return is_brushed;
           })
           .classed('selected', false);
-        let newflagpts = b.data().map(x => x.DateTime_UTC)
+        let newflagpts = b.filter('.plgapfill, .plgapfill2, .plgapfixed, .pldot, .plreject')
+          .classed('plflag', true)
+        var nadditions = newflagpts.size();
+        newflagpts = newflagpts.data().map(x => x.DateTime_UTC);
         window.userflagpts[v]['dt'] = userflagpts[v]['dt'].concat(newflagpts);
         window.userflagpts[v]['id'] = userflagpts[v]['id']
           .concat(newflagpts.map(x => instance_id));
+        // window.userflagpts[v]['fg'] = userflagpts[v]['fg']
+        //   .concat(newflagpts.map(x => dat['flagid']));
+        // window.userflagpts[v]['cm'] = userflagpts[v]['cm']
+        //   .concat(newflagpts.map(x => dat['comment']));
 
         b.filter('.ploutlier, .ploutlfixed').classed('ploutlflag', true)
-
-        var nadditions = b.filter('.plgapfill, .plgapfill2, .plgapfixed, .pldot, .plreject')
-          .classed('plflag', true)
-          .size();
         window.pointcounts['flags'] = pointcounts['flags'] + nadditions
       }
 
@@ -1332,11 +1344,13 @@
       $('#graphs').hide();
 
       $('input[name=userflagpts]').val(JSON.stringify(userflagpts))
+      $('input[name=userflags]').val(JSON.stringify(userflags))
       // $('input[name=rm_holder]').val(JSON.stringify(rm_holder))
       $('input[name=rej_holder]').val(JSON.stringify(rej_holder))
       // $('input[name=instance_id]').val(JSON.stringify(instance_id))
 
-      var npoints = pldata.length;
+      var npoints = pldata.length * (Object.keys(pldata[0]).length - 1)
+      npoints = Math.round(npoints / 100) * 100
       var nedits = flagdata.length;
       var nimpossibles = flagdata.map(x => x.code == 1).reduce((a, b) => a + b, 0)
       var noutls = flagdata.map(x => x.code == 2).reduce((a, b) => a + b, 0)
@@ -1348,7 +1362,7 @@
       // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
 
       $('#submit_details').empty().append(
-        'Total data points: <strong>' + npoints + '</strong><br>' +
+        'Total data points: <strong>~' + npoints + '</strong><br>' +
         'Total Automated corrections: <strong>' + nedits + '</strong><br>' +
         '&nbsp;&nbsp;Infeasible values adjusted: <strong>' + nimpossibles + '</strong><br>' +
         '&nbsp;&nbsp;Potential anomalies adjusted: <strong>' + noutls + '</strong><br>' +
