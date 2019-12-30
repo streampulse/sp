@@ -62,6 +62,8 @@ app.config['SECRET_KEY'] = cfg.SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
+app.config['UPLOAD_ORIG_FOLDER'] = cfg.UPLOAD_ORIG_FOLDER
+# app.config['UPLOAD_ORIG_FOLDER'] = "/home/mike/git/streampulse/server_copy/spuploads_original"
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['REACH_CHAR_FOLDER'] = cfg.REACH_CHAR_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
@@ -2699,107 +2701,93 @@ def submit_dataset(tmpcode):
             rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
             pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
 
+
+    #insert post-pipeline, post-user-edit dataset into database
+    pldf = pldf.reset_index().set_index(['DateTime_UTC', 'upload_id'])
+    pldf.columns.name = 'variable'
+    pldf = pldf.stack() #one col each for vars and vals
+    pldf.name = "value"
+    pldf = pldf.reset_index()
+    pldf = pldf.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
+    pldf['region'] = region
+    pldf['site'] = site
+    pldf['flag'] = None
+    pldf = pldf[['region','site','DateTime_UTC','variable','value','flag',
+        'upload_id']]
+
+    # pldf = pd.read_csv('../spdumps/' + 'e7805b62369e' + '_pldf.csv',na_filter=False)
+    # pldf.flag = pldf.flag.where(pd.notnull(pldf.flag), None)
+    updatedb(pldf, up_data['fn_to_db'], replace)
+
     # flagids = userflagpts['WaterTemp_C']['id']
     # dts = userflagpts['WaterTemp_C']['dt']
     # i = 0
     # dts.pop(1); dts.pop(2)
     # userflagpts = {"WaterTemp_C":{"id":[1,"rm",1,"rm",1,1,1],"dt":["2017-08-20T00:00:00.000Z","rm","2017-08-20T00:45:00.000Z","rm","2017-08-20T01:30:00.000Z","2017-08-20T01:45:00.000Z","2017-08-20T02:00:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
-    newflagid = -1
-    mod_switch = False
-    flagdeetmap = {}
+
+    #parse user-added flags and flag removals...
+    newflagid = -1 #series split by removals must be regarded as multiple flag instances
     for f in userflagpts.items():
 
+        mod_switch = False #don't add new flag id when this is off
+        flagdeetmap = {} #hold mappings between new (neg) flag ids and original comments
         flagids = f[1]['id']
         dts = f[1]['dt']
 
         if flagids:
             if any([x == 'rm' for x in flagids]):
-                # rle = [(sum(1 for _ in gp), x) for x, gp in itertools.groupby(flagids)]
                 runid = next(x for x in flagids if x != 'rm')
                 for i in range(1, len(flagids)):
                     if flagids[i] == 'rm' and i >= (len(flagids) - 1):
-                        break
-                    elif flagids[i] == 'rm':
+                        break #end of series
+                    elif flagids[i] == 'rm': #get ready to add new flag id
                         if flagids[i + 1] == runid:
-                            # flagids[i + 1] = newflagid
                             newflagid -= 1
                             mod_switch = True
                         elif flagids[i + 1] == 'rm':
                             continue
-                        # else:
-                        #     newflagid -= newflagid
-                        #     mod_switch = False
-                    elif flagids[i] != runid:
+                    elif flagids[i] != runid: #non-rm-induced flag id break
                         newflagid -= 1
                         runid = flagids[i]
                         mod_switch = False
-                    elif flagids[i] == runid and mod_switch:
-                        # if flagids[i] in flagdeetmap.keys():
-                        #     flagdeetmap[flagids[i]].extend([newflagid])
-                        # else:
-                        #     flagdeetmap[flagids[i]] = [newflagid]
+                    elif flagids[i] == runid and mod_switch: #insert new flag id
                         if newflagid not in flagdeetmap.keys():
                             flagdeetmap[newflagid] = flagids[i]
                         flagids[i] = newflagid
 
+                #get rid of flag removal indicators (i.e. flag sequence separators)
                 rminds = [i for i, item in enumerate(flagids) if item == 'rm']
                 rminds.reverse()
                 for x in rminds:
                     flagids.pop(x)
                     dts.pop(x)
 
-                # f[1]['id'] = flagids
-                # flagdeetmap[flagids[i]] = list(set(flagdeetmap[flagids[i]]))
-                # for k in flagdeetmap.keys():
-                #     flagdeetmap[k] = list(set(flagdeetmap[k]))
+            #insert new flag data into db (flag table and data table)
+            uniqids = [x for x in set(flagids) if not isinstance(x, str)]
+            dts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in dts]
 
-                # HERE: LOOKUP FLAG INFO FOR INTRODUCED NEGFLAGS, FILL OUT NEXT CHUNK
-                # THEN WRITE FLAG AND DATA TABLES
+            for i in range(len(uniqids)):
+                u = uniqids[i]
+                sdt = dts[flagids.index(u)]
+                edt = dts[::-1][flagids[::-1].index(u)]
+                fvr = f[0]
+                u = flagdeetmap[u] if u < 0 else u
+                flg, cmt = next( (x['flagid'], x['comment']) for x\
+                    in userflags if x['instance_id'] == u)
 
-                uniqids = [x for x in set(flagids) if not isinstance(x, str)]
-                for i in range(len(uniqids)):
-                    u = uniqids[i]
-                    startdt = dts[flagids.index(u)]
-                    enddt = dts[::-1][flagids[::-1].index(u)]
-                    fvar = f[0]
+                z = Flag(region, site, sdt, edt, fvr, flg, cmt, int(current_user.get_id()))
+                db.session.add(z)
+                flgdat = Data.query.filter(Data.region == region,
+                    Data.site == site, Data.DateTime_UTC >= sdt,
+                    Data.DateTime_UTC <= edt, Data.variable == fvr).all()
 
+                for fd in flgdat:
+                    fd.flag = z.id
 
-    sdt = datetime.strptime(request.json['startDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
-    edt = datetime.strptime(request.json['endDate'],"%Y-%m-%dT%H:%M:%S.%fZ")
-    var = request.json['var']
-    flg = request.json['flagid']
-    cmt = request.json['comment']
-
-    for vv in var:
-        fff = Flag(rgn, ste, sdt, edt, vv, flg, cmt, int(current_user.get_id()))
-        db.session.add(fff)
-        # db.session.commit()
-        flgdat = Data.query.filter(Data.region==rgn, Data.site==ste, Data.DateTime_UTC>=sdt, Data.DateTime_UTC<=edt, Data.variable==vv).all()
-        for f in flgdat:
-            f.flag = fff.id
-        db.session.commit()
-    return jsonify(result="success")
-
-    #HERE: PARSE REJECTIONS (REPLACE PL WITH ORIG)
-    # PARSE FLAGS (ADD TO DATA AND FLAG TABLES)
-
-
-    #format df for database entry
-    xx = xx.set_index(["DateTime_UTC", "upload_id"])
-    xx.columns.name = 'variable'
-    xx = xx.stack() #one col each for vars and vals
-    xx.name = "value"
-    xx = xx.reset_index()
-    xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
-    xx['region'] = region
-    xx['site'] = site
-    xx['flag'] = None
-    xx = xx[['region','site','DateTime_UTC','variable','value','flag',
-        'upload_id']]
-
-    # xx = pd.read_csv('../spdumps/' + 'e7805b62369e' + '_xx.csv',na_filter=False)
-    # xx.flag = xx.flag.where(pd.notnull(xx.flag), None)
-    updatedb(xx, up_data['fn_to_db'], up_data['replace'])
+    db.session.commit()
+    # db.session.rollback()
+    os.path.join(app.config['UPLOAD_ORIG_FOLDER'], )
+    feather.write_dataframe('../spdumps/' + tmpcode + '_orig.feather')
 
     # make a new text file with the metadata
     lvltxt = '\n\n--- Data status codes ---\n\n' +\
@@ -2840,64 +2828,61 @@ def submit_dataset(tmpcode):
         with open(metafilepath, 'w') as m:
             m.write(lvltxt)
 
-    # except Exception as e:
-    #
-    #     tb = traceback.format_exc()
-    #     df_head = xx.head(2).to_string()
-    #     log_rawcols = '\n\nrawcols: ' + ', '.join(list(up_data['cdict'].keys()))
-    #     log_dbcols = '\ndbcols: ' + ', '.join(list(up_data['cdict'].values()))
-    #
-    #     # if request.form['existing'] == "no":
-    #     #     error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
-    #     #         request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
-    #     #         '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
-    #     #         request.form['embargo'] + '\ncontactname: ' +\
-    #     #         request.form['contactName'] + '\ncontactemail: ' +\
-    #     #         request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
-    #     #         '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
-    #     #         replace + '\n\n'
-    #     if up_data['existing'] == "no":
-    #         error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
-    #             up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
-    #             '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
-    #             up_data['embargo'] + '\ncontactname: ' +\
-    #             up_data['contactName'] + '\ncontactemail: ' +\
-    #             up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
-    #             '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
-    #             replace + '\n\n'
-    #     else:
-    #         error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
-    #             '\nreplace: ' + replace + '\n\n'
-    #
-    #     if replace == 'records':
-    #         errno = 'E009b'
-    #         msg = Markup("Error 009b. Try reducing the size of your revised " +\
-    #             "file by removing rows or columns that don't require revision.")
-    #     else:
-    #         errno = 'E009a'
-    #         msg = Markup('Error 009a. StreamPULSE development has been notified.')
-    #
-    #     full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
-    #     log_exception(errno, full_error_detail)
-    #     email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
-    #
-    #     try:
-    #         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
-    #         [os.remove(f) for f in up_data['fnlong']]
-    #         db.session.rollback()
-    #     except:
-    #         pass
-    #     flash(msg, 'alert-danger')
-    #
-    #     return redirect(url_for('series_upload'))
-    #
-    # try:
-    #     os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
-    # except:
-    #     pass
-    # db.session.commit() #persist all db changes made during upload
-    # flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
-    #     'alert-success')
+    except Exception as e:
+
+        tb = traceback.format_exc()
+
+        if 'pldf' in locals():
+            df_head = pldf.head(2).to_string()
+        else:
+            df_head = 'PLDF NOT IN LOCALS!'
+
+        log_rawcols = '\n\nrawcols: ' + ', '.join(list(up_data['cdict'].keys()))
+        log_dbcols = '\ndbcols: ' + ', '.join(list(up_data['cdict'].values()))
+
+        if up_data['existing'] == "no":
+            error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
+                up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
+                '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
+                up_data['embargo'] + '\ncontactname: ' +\
+                up_data['contactName'] + '\ncontactemail: ' +\
+                up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
+                '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
+                replace + '\n\n'
+        else:
+            error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
+                '\nreplace: ' + replace + '\n\n'
+
+        if replace == 'records':
+            errno = 'E009b'
+            msg = Markup('Error 009b. StreamPULSE development has been notified.')
+            # msg = Markup("Error 009b. Try reducing the size of your revised " +\
+            #     "file by removing rows or columns that don't require revision.")
+        else:
+            errno = 'E009a'
+            msg = Markup('Error 009a. StreamPULSE development has been notified.')
+
+        full_error_detail = tb + error_details + df_head + log_rawcols + log_dbcols
+        log_exception(errno, full_error_detail)
+        email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
+            [os.remove(f) for f in up_data['fnlong']]
+            db.session.rollback()
+        except:
+            pass
+        flash(msg, 'alert-danger')
+
+        return redirect(url_for('series_upload'))
+
+    try:
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
+    except:
+        pass
+    db.session.commit() #persist all db changes made during upload
+    flash('Uploaded ' + str(len(pldf.index)) + ' values, thank you!',
+        'alert-success')
 
     return redirect(url_for('series_upload'))
 
