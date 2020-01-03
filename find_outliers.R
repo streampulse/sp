@@ -30,7 +30,12 @@ function(df){
         big_outliers_l = which(tm < ts_u - (4*ts_sd))
         big_outliers = unique(c(big_outliers_h, big_outliers_l))
 
-        #interpolate NAs (could work around this without much hassle)
+        #interpolate NAs
+        if(sum(! is.na(tm)) < 3){
+            outlier_list[[col]] = 'NONE'
+            names(outlier_list)[col] = colnames(df)[col]
+            next
+        }
         tm = na.seadec(tm, algorithm='interpolation')
 
         #get diffs in value between each time point and the next

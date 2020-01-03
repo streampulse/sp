@@ -1,3 +1,4 @@
+from __future__ import print_function
 #this uses a sql stored procedure to update variableList and
 #the coverage columns in the sitelist tables. specify sites
 #below and source this script to update manually. Other
@@ -26,7 +27,7 @@ session = sa.orm.Session(bind=db.engine)
 #sites = pd.read_sql("select distinct concat(region, '_', site) as a from " +\
 #    "site;", db.engine).a.tolist()
 sites = ['AU_McCoys-Bridge-700']
-print sites
+print(sites)
    # "site where region='NC';", db.engine).a.tolist()
    # "site where `by` = -903;", db.engine).a.tolist()
     

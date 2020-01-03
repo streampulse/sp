@@ -13,6 +13,8 @@
   <!-- Bootstrap -->
   <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <!-- <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script> -->
   <!-- <link href="http://twitter.github.com/bootstrap/assets/css/bootstrap.css" rel="stylesheet" type="text/css"> -->
   <!-- Bootstrap Select -->
   <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/css/bootstrap-select.min.css"> -->
@@ -78,6 +80,86 @@
       fill: rgba(150,150,150,0.4);
       stroke: none;
       pointer-events: none;
+    }
+    .pldot{
+      fill: rgba(206,165,121, 0.9);
+      stroke: none;
+      pointer-events: none;
+      r: 2px;
+    }
+    .plorigdot{
+      fill: rgba(200,200,200,0.8);
+      stroke: none;
+      pointer-events: none;
+      r: 2px;
+    }
+    .ploutlier{
+      fill: none;
+      /* fill-opacity: 0; */
+      stroke: gray;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .ploutlflag{
+      fill: none;
+      /* fill-opacity: 0; */
+      stroke: gray;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .ploutlfixed{
+      fill: none;
+      /* fill-opacity: 0; */
+      stroke: black;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .plgapfill{
+      fill: steelblue;
+      stroke: darkred;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .plgapfill2{
+      fill: pink;
+      stroke: darkred;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .plgapfixed{
+      fill: black;
+      stroke: darkred;
+      stroke-width: 2px;
+      pointer-events: none;
+      r: 5px;
+    }
+    .invis{
+      fill: rgba(0, 0, 0, 0.2);
+      stroke: none;
+      pointer-events: none;
+      /* r: 2px; */
+    }
+    .actuallyinvis{
+      fill: rgba(0, 0, 0, 0);
+      stroke: none;
+      pointer-events: none;
+      /* r: 2px; */
+    }
+    .plreject{
+      fill: rgba(206,165,121, 0.9);
+      stroke: steelblue;
+      stroke-width: 1px;
+      pointer-events: none;
+    }
+    .plflag {
+      fill: orange;
+      stroke: red;
+      stroke-width: 1px;
     }
     .vtriangle{
       fill: rgba(150,150,150,0.4);
@@ -234,8 +316,8 @@
       border-radius: 8px;
     }
     #footer {
-      position:absolute;
-      bottom:0;
+      /* position:absolute; */
+      /* bottom:0; */
       width:100%;
       height:20px;
       background:#e6e6e6;
@@ -258,108 +340,30 @@
 </head>
 
 <body>
-  <div id='main_container'>
-    <nav class="navbar navbar-default navbar-static-top">
-      <div class="container">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">StreamPULSE</a>
-        </div>
 
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-          <ul class="nav navbar-nav">
-            <!-- <li><a href="upload"><i class="fa fa-lg fa-cloud-upload fa-fw" aria-hidden="true" aria-label="Upload"></i></a> </li>
-            <li><a href="clean"><i class="fa fa-lg fa-magic fa-fw" aria-hidden="true" aria-label="Clean"></i></a> </li>
-            <li><a href="visualize"><i class="fa fa-lg fa-line-chart fa-fw" aria-hidden="true" aria-label="Visualize"></i></a> </li>
-            <li><a href="download"><i class="fa fa-lg fa-download fa-fw" aria-hidden="true" aria-label="Download"></i></a> </li> -->
-            <li><a href="sitelist">Sitelist</a> </li>
-            <li><a href="upload_choice">Upload</a> </li>
-            <li><a href="clean_choice">Clean</a> </li>
-            <li><a href="viz_choice">Visualize</a> </li>
-            <li><a href="model">Model</a> </li>
-            <li><a href="download_choice">Download</a> </li>
-          </ul>
-          <ul class="nav navbar-nav navbar-right">
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown"
-              role="button" aria-haspopup="true" aria-expanded="false">
-                <i class="fa fa-lg fa-cog" aria-hidden="true" aria-label="Settings"></i>
-              </a>
-              <ul class="dropdown-menu">
-                {% if g.user.is_authenticated %}
-                  <li class="dropdown-header">Signed in as<br><b>{{g.user.username}}</b></li>
-                  <li role="separator" class="divider"></li>
-                  <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                  <li role="separator" class="divider"></li>
-                  <li><a href="{{ url_for('account') }}">Account</a></li>
-                {% endif %}
-                {% if not g.user.is_authenticated %}
-                  <li><a href="{{ url_for('login') }}">Login</a></li>
-                  <li role="separator" class="divider"></li>
-                  <li class="dropdown-header">Account</li>
-                {% endif %}
-              </ul>
-            </li>
-          </ul>
-        </div><!-- /.navbar-collapse -->
-      </div><!-- /.container-fluid -->
-    </nav>
+  <div class="container">
 
-    <div id='body'>
-      <div class="container">
-        <div id="loading">
-          <span id="loading-image">
-            <i class="fa fa-circle-o-notch fa-spin fa-5x fa-fw"></i>
-            <span class="sr-only">Loading...</span>
-          </span>
-        </div>
-        <div id="alerts">
-          {% with messages = get_flashed_messages(with_categories=True) %}
-            {% if messages %}
-              {% for category, message in messages %}
-                <div class="alert alert-dismissible {{category}}">
-                  <button class="close" data-dismiss="alert" aria-label="close">
-                    &times;
-                  </button>
-                  {{ message }}
-                </div>
-              {% endfor %}
-            {% endif %}
-          {% endwith %}
-        </div>
-        <div id="alerts_floating" style="position:fixed; z-index:100; width:80%">
-        </div>
+  <div id="loading"><span id="loading-image">
+    <i class="fa fa-circle-o-notch fa-spin fa-5x fa-fw"></i><span class="sr-only">Loading...</span>
+  </span></div>
 
-        {% block body %}
-        {% endblock %}
-
-      </div>
+  <div id="alerts">
+  {% with messages = get_flashed_messages(with_categories=True) %}
+  {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-dismissible {{category}}">
+      <button class="close" data-dismiss="alert" aria-label="close">&times;</button>
+      {{ message }}
     </div>
-
-    <div id='footer'>
-      <p class='text-muted text-center'>
-        To report a bug or request a feature, or if you have any questions,
-        contact
-        <a href='mailto:michael.vlah@duke.edu'>
-          StreamPULSE development.
-        </a>
-      </p>
-    </div>
-
+    {% endfor %}
+  {% endif %}
+  {% endwith %}
   </div>
 
-  <!--<script>
-    $(function(){
-      $("a:not(.dropdown-toggle)").click(function(){
-        $('#loading').show();
-      })
-    });
-  </script>-->
+  <div id="alerts_floating" style="position:fixed; z-index:100; width: 80%">
+  </div>
+
+  {% block body %}{% endblock %}
 
   <script>
     $(document).ajaxStart(function() {

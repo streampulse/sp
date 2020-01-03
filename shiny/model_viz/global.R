@@ -3,8 +3,8 @@ library(RMariaDB)
 library(DBI)
 
 #read in mysql pw
-# conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
-conf = readLines('/home/aaron/sp/config.py')
+conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
+# conf = readLines('/home/aaron/sp/config.py')
 ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
 pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
 # pw = readLines('/home/mike/Dropbox/stuff_2/credentials/spdb.txt')

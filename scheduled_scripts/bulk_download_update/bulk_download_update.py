@@ -1,3 +1,4 @@
+from builtins import range
 import sys
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -8,7 +9,7 @@ import re
 import zipfile
 
 app_dir = '/home/aaron/sp'
-# app_dir = '/home/mike/git/streampulse/server_copy/sp'
+#app_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, app_dir)
 os.chdir(app_dir)
 import config as cfg
@@ -144,7 +145,7 @@ writefiles = zipfile_listdir_recursive(metafolder)
 rel_wfs = [re.match(metafolder + '/(.*)', f).group(1) for f in writefiles]
 zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] +\
     '/all_supplementary_site_metadata.zip', 'w')
-for i in xrange(len(writefiles)):
+for i in range(len(writefiles)):
     zf.write(writefiles[i], 'all_supplementary_site_metadata/' + rel_wfs[i])
 zf.close()
 
@@ -154,7 +155,7 @@ writefiles = zipfile_listdir_recursive(reachcharfolder)
 rel_wfs = [re.match(reachcharfolder + '/(.*)', f).group(1) for f in writefiles]
 zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] +\
     '/all_reach_characterization_datasets.zip', 'w')
-for i in xrange(len(writefiles)):
+for i in range(len(writefiles)):
     zf.write(writefiles[i], 'all_reach_characterization_datasets/' + rel_wfs[i])
 zf.close()
 
@@ -198,7 +199,7 @@ writefiles = [x for x in writefiles if re.search('(?:predictions|modOut)_((?:.*)
     x).group(1) not in embargoed_sites]
 rel_wfs = [re.match(modeloutfolder + '/(.*)', f).group(1) for f in writefiles]
 zf = zipfile.ZipFile(app.config['BULK_DNLD_FOLDER'] + '/all_sp_model_objects.zip', 'w')
-for i in xrange(len(writefiles)):
+for i in range(len(writefiles)):
     zf.write(writefiles[i], 'all_sp_model_objects/' + rel_wfs[i])
 zf.close()
 

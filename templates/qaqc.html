@@ -1,5 +1,4 @@
 {% extends "layout.html" %}
-
 {% block body %}
 
 <div class="row">
@@ -45,35 +44,11 @@
   </div>
 </div>
 
-
-<!-- <div class="row"><div class="col-md-6 col-md-offset-3">
-  <h1>Clean Data</h1>
-  <p class="lead">Authorized users can visually clean data here.<br />This step is important for assuring data quality.</p>
-
-  <form id="qaqc2">
-    <div class="col-md-8">
-      <select placeholder="Choose a site" id="dsite" name="site">
-        <option value="">Choose a site</option>
-        {% for sv, sn in sites %}
-        <option value="{{sv}}">{{sn}}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-4">
-      <button name="qaqcsite" class="btn btn-primary btn-block">Select</button>
-    </div>
-  </form>
-</div></div> -->
-
 <br>
 <div class="col-md-4 col-md-offset-4 text-center">
-  <!-- <a target="_blank" rel="noopener noreferrer" href="https://data.streampulse.org/qaqc_help.html"> -->
-  <!-- <a href="http://localhost:5000/qaqc_help"> -->
   <a href="qaqc_help">
     <p style="font: 20px sans-serif">Instructions Here</p>
   </a>
-  <!-- <input type='button' class="btn btn-link"
-  value='Instructions' onclick="location.href = 'qaqc_help';"> -->
 </div>
 <br><br><br>
 
@@ -91,7 +66,7 @@
     </p>
     <p>
       <strong>Also note</strong>: Points you've just flagged may revert to default blue if
-      you switch back-and-forth between time ranges. Don't worry. The flag information
+      you switch back and forth between time ranges. Don't worry. The flag information
       is still in the system. The points will appear as flagged the next time you
       load the page.
     </p>
@@ -124,42 +99,6 @@
   </div>
 </div>
 
-<div class="row"> <!-- this chunk now just used as a placeholder -->
-  <!-- <div class="col-md-3">
-  </div>
-  <div class="col-md-6">
-    <div class="panel panel-default">
-      <div class="panel-heading"><span class="lead">Data Flagging</span> &ndash; Label points of interest or concern. </div>
-      <div class="panel-body">
-        <select id="flags" placeholder="Choose a flag" name="flagID">
-          <option value="">Choose (or enter) a flag ID</option>
-          {% for f in flags %}
-          <option value="{{f}}">{{f}}</option>
-          {% endfor %}
-        </select>
-        <input type="text" name="fcomment" class="form-control" placeholder='Add optional comments (e.g. "Sensor out of water")'>
-        <button class="btn btn-warning btn-block" type="button" id="addflag">Flag selected</button>
-      </div>
-    </div>
-  </div> -->
-
-<!--  <div class="col-md-6">
-    <div class="panel panel-default">
-      <div class="panel-heading"><span class="lead">Tags/notes</span> &ndash; interesting features in the data (storms, leaf drop, etc.)</div>
-      <div class="panel-body">
-        <select id="tags" placeholder="Choose (or enter) a tag ID (alphanumeric with no spaces please)" name="tagID">
-          <option value="">Choose (or enter) a tag ID</option>
-          {% for t in tags %}
-          <option value="{{f}}">{{t}}</option>
-          {% endfor %}
-        </select>
-        <input type="text" name="fcomment" class="form-control" placeholder="Add comments (optional)">
-        <button class="btn btn-info btn-block" type="button" id="addtag">Tag selected</button>
-      </div>
-    </div>
-  </div> -->
-</div>
-
 <div class="container-fluid">
   <div class="row">
     <div class="col-md-4 text-left">
@@ -182,10 +121,8 @@
 
 </div>
 
-
 <div class="row" id="graphs"></div>
 <br><br>
-
 
 <script src="static/js/graphs.js"></script>
 
@@ -285,39 +222,10 @@ $('#dsite').change(function(){
 
 });
 
-// $('#flags2').selectize({
-//     delimiter: ',',
-//     persist: false,
-//     create: function(input) { return {value: input,text: input} }
-// });
-
-// $('#jumptodate').selectize({
-//     delimiter: ',',
-//     persist: false,
-//     create: function(input) { return {value: input,text: input} }
-// });
-
-//$('#tags').selectize({
-//    delimiter: ',',
-//    persist: false,
-//    create: function(input) { return {value: input,text: input} }
-//});
-
 var plotdates;
 var alldata;
-// var alldatna;
 var plotstart;
 var plotend;
-
-//for subsetting time series by desired window
-function getdisplaydata(start, end, dat){
-  stdt = Date.parse(start) //convert from YYYY-MM-DD to unix
-  endt = Date.parse(end)
-  pltdat = $(dat).filter(function(i, n){
-    return Date.parse(n.DateTime_UTC) > stdt && Date.parse(n.DateTime_UTC) < endt
-  })
-  return $.makeArray(pltdat)
-}
 
 //generate plots and additional asynchronous options
 $(function(){
@@ -407,62 +315,6 @@ $(function(){
   })
 });
 
-//function ajaxtest(){
-//  $.ajax({
-//    type: 'POST',
-//    url: '/_outlier_detect',
-//    data: data,
-//    contentType: 'application/json;charset=UTF-8',
-//    success: function(response2){
-//      outliers = response2.outliers //a list of lists of outliers for each variable, perhaps?
-//      console.log(String(outliers)); //make sure this arrangement works
-//    },
-//    error: function(error){
-//      console.log(error);
-//    }
-//  });
-//}
-
-// $(function(){
-//   $("#zoomin").click(function(){
-//     redrawPoints(zoom_in = true, sbrush=selectedBrush, reset=false)
-//   });
-// })
-
-//zoomin
-$('body').ready(function(){
-  $('body').on("click", "#zoomin", function(){
-    redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=false)
-  });
-});
-
-//zoomreset
-$(function(){
-  $("#zoomreset").click(function(){
-    redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true)
-  });
-})
-
-$(function(){
-  $("#backgraphlist2").change(function () {
-
-    if($(this).val() == 'None'){
-
-      // remove previous graph and secondary axis
-      d3.selectAll('.backgraph').select("path").remove()
-      d3.selectAll('[id*=rightaxis]').attr("visibility", "hidden");
-    } else {
-
-      //plot polygon for secondary variable
-      var backfill = this.value;
-      for (var i = 0; i < variables.length; ++i) {
-        BackGraph(backfill, variables[i], data, type='polygon');
-      }
-    }
-
-  });
-})
-
 function async_replot(data){
   $.ajax({
     type: 'POST',
@@ -500,6 +352,51 @@ function async_replot(data){
     }
   });
 }
+
+//for subsetting time series by desired window
+function getdisplaydata(start, end, dat){
+  stdt = Date.parse(start) //convert from YYYY-MM-DD to unix
+  endt = Date.parse(end)
+  pltdat = $(dat).filter(function(i, n){
+    return Date.parse(n.DateTime_UTC) > stdt && Date.parse(n.DateTime_UTC) < endt
+  })
+  return $.makeArray(pltdat)
+}
+
+//zoomin
+$('body').ready(function(){
+  $('body').on("click", "#zoomin", function(){
+    redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=false)
+  });
+});
+
+//zoomreset
+$(function(){
+  $("#zoomreset").click(function(){
+    redrawPoints(zoom_in=true, sbrush=selectedBrush, reset=true)
+  });
+})
+
+//compare variable
+$(function(){
+  $("#backgraphlist2").change(function () {
+
+    if($(this).val() == 'None'){
+
+      // remove previous graph and secondary axis
+      d3.selectAll('.backgraph').select("path").remove()
+      d3.selectAll('[id*=rightaxis]').attr("visibility", "hidden");
+    } else {
+
+      //plot polygon for secondary variable
+      var backfill = this.value;
+      for (var i = 0; i < variables.length; ++i) {
+        BackGraph(backfill, variables[i], data, type='polygon');
+      }
+    }
+
+  });
+})
 
 //panback
 $(function(){
@@ -549,45 +446,11 @@ $(function(){
   })
 })
 
-//alertbox
 function alertbox(alrt, msg){
   return '<div class="alert alert-dismissible alert-' + alrt + '">\
     <button class="close" data-dismiss="alert" aria-label="close">&times;</button>\
     ' + msg + '</div>'
 }
-
-//addna
-// $(function(){
-//   $("#addna").click(function(){
-//     if (undefined != selectedBrush){ // only do this if there is a brush selected
-//       s = d3.brushSelection(d3.select("#"+selectedBrush).node())
-//       dat = {}
-//       dat['site'] = $('select[name=site]').val();
-//       dat['startDate'] = x.invert(s[0]);
-//       dat['endDate'] = x.invert(s[1]);
-//       dat['var'] = selectedBrush;
-//       $.ajax({
-//         type: 'POST',
-//         url:'/_addna',
-//         data: JSON.stringify(dat),
-//         contentType: 'application/json;charset=UTF-8',
-//         success: function(response){
-//           console.log("success")
-//           $("#alerts").append(alertbox('success','Added NA values.'))
-//           alldatna = JSON.parse(response.dat);
-//           datna = getdisplaydata(plotstart,plotend,alldatna);
-//           redrawPoints(zoom_in=false, sbrush=selectedBrush, reset=false)
-//         },
-//         error: function(error){
-//           console.log(error);
-//         }
-//       });
-//       return false;
-//     }else{
-//       $("#alerts").append(alertbox('warning','Please select points to add NAs.'))
-//     }
-//   });
-// })
 
 // add flags for all highlighted points when yellow popup button is clicked
 $('body').ready(function(){
@@ -615,28 +478,22 @@ $('body').ready(function(){
   $('body').on("input", "#fillbrush", selection_manager);
 });
 
-// point hover tooltips
-// $('body').ready(function(){
-//   $('body').on("hover", ".flagdot", hover_info);
-// });
-
-// function hover_info() {
-//   $(this)
-  // var div = d3.select("body").append("div")
-  //   .attr("class", "tooltip")
-  //   .style("opacity", 0);
-// }
-
 function selection_manager() {
+
   var brsh = d3.brushSelection(d3.select("#" + selectedBrush).node())
+
   if (typeof $('#fillbrush')[0] != 'undefined') {
+
     var b_strt = x.invert(brsh[0]);
     var b_end = x.invert(brsh[1]);
+
     if( $('#fillbrush')[0].checked ){
       brushdown = true;
       d3.selectAll(".dot, .maybe_outl, .highlighted").classed("selected",
         function(d) { return b_strt <= d.date && d.date <= b_end; });
+
     } else {
+
       brushdown = false;
       d3.selectAll(".selected").classed("selected", false);
       d3.select("." + selectedBrush)
@@ -645,127 +502,108 @@ function selection_manager() {
           return b_strt <= d.date && d.date <= b_end;
         });
     }
-  // } else {
-  //   d3.selectAll(".selected").classed("selected", false);
   }
+
   return false
 }
 
 function rm_flag() {
+
   if(undefined != selectedBrush){ // only do this if there is a brush selected
-    s = d3.brushSelection(d3.select("#"+selectedBrush).node())
-    dat = {}
+
+    var s = d3.brushSelection(d3.select("#"+selectedBrush).node())
+    var dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['startDate'] = x.invert(s[0]);
     dat['endDate'] = x.invert(s[1]);
+
     if(brushdown){
       dat['var'] = variables;
       b = d3.selectAll("svg").selectAll(".selected");
-      // if(red_points_only){
-      //   b = b.filter('.maybe_outl');
-      // }
-      // b.classed('dot', function(d) {
-      //   is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-      //   return is_brushed;
-      // });
     } else {
       dat['var'] = [selectedBrush];
       b = d3.select("." + selectedBrush).selectAll(".selected");
-      // if(red_points_only){
-      //   b = b.filter('.maybe_outl');
-      // }
-      // });
     }
+
     b.classed('highlighted', function(d) {
-      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return ! is_brushed;
     });
+
     b.classed('flagdot', function(d) {
-      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return ! is_brushed;
     });
+
     brushdown = false;
-    // dat['comment'] = $("input[name=fcomment2]").val();
-    // dat['flagid'] = $("select[name=flagID2]").val();
-    // if(red_points_only){
-    //   so = d3.select("."+selectedBrush).selectAll(".selected")
-    //   .filter('.maybe_outl').data(); //extract selected outliers
-    //   counter = 0; //prepare for flag_ajax_serial recursion
-    //   dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
-    //   dat['endDate'] = so[counter].DateTime_UTC;
-    // }
-    // if (dat.flagid != null){
-      // if(red_points_only){
-      //   flag_ajax_serial(counter, so);
-      // } else {
     rmflag_ajax();
-      // }
+
     return false;
-    // }
-    // } else {
-    //   $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
-    // }
+
   } else {
+
     $("#alerts_floating").append(alertbox('warning', 'No points selected.'));
   }
 }
 
 function add_flag(red_points_only) {
+
   if(undefined != selectedBrush){ // only do this if there is a brush selected
+
     if( $('#qaqc select').val() == null ){
       $("#alerts_floating").append(alertbox('danger','Please select a flag label.'));
       return false
     }
-    s = d3.brushSelection(d3.select("#" + selectedBrush).node())
-    dat = {}
+
+    var s = d3.brushSelection(d3.select("#" + selectedBrush).node())
+    var dat = {}
     dat['site'] = $('select[name=site]').val();
     dat['startDate'] = x.invert(s[0]);
     dat['endDate'] = x.invert(s[1]);
+
     if(brushdown){
       dat['var'] = variables;
       b = d3.selectAll("svg").selectAll(".dot");
       if(red_points_only){
         b = b.filter('.maybe_outl');
       }
-      // b.classed('highlighted', function(d) {
-      //   is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-      //   return is_brushed;
-      // });
     } else {
       dat['var'] = [selectedBrush];
       b = d3.select("." + selectedBrush).selectAll(".selected");
       if(red_points_only){
         b = b.filter('.maybe_outl');
       }
-      // b.classed('highlighted', function(d) {
-      //   is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
-      //   return is_brushed;
-      // });
     }
+
     b.classed('highlighted', function(d) {
-      is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
+      var is_brushed = dat['startDate'] <= d.date && d.date <= dat['endDate'];
       return is_brushed;
     });
+
     brushdown = false;
     dat['comment'] = $("input[name=fcomment2]").val();
     dat['flagid'] = $("select[name=flagID2]").val();
+
     if(red_points_only){
-      // so = d3.select("." + selectedBrush).selectAll(".selected")
       so = d3.selectAll(".highlighted").filter('.maybe_outl').data();
       counter = 0; //prepare for flag_ajax_serial recursion
       dat['startDate'] = so[counter].DateTime_UTC; //focus on first red point
       dat['endDate'] = so[counter].DateTime_UTC;
     }
+
     if (dat.flagid != null){
+
       if(red_points_only){
         flag_ajax_serial(counter, so);
       } else {
         flag_ajax_batch();
       }
       return false;
+
     } else {
       $("#alerts_floating").append(alertbox('warning','Please select a flag label.'));
     }
+
   } else {
     $("#alerts_floating").append(alertbox('warning','No points selected.'));
   }
@@ -778,11 +616,9 @@ function flag_ajax_batch(){
     url:'/_addflag',
     data: JSON.stringify(dat),
     contentType: 'application/json;charset=UTF-8',
-    // success: function(response){
     success: function(){
       $('.popupbox').remove();
       console.log("success");
-      // $("#alerts_floating").append(alertbox('success','Added flag.'));
     },
     error: function(error){
       $('.popupbox').remove();
@@ -798,7 +634,6 @@ function flag_ajax_serial(counter, selection){
     url:'/_addflag',
     data: JSON.stringify(dat),
     contentType: 'application/json;charset=UTF-8',
-    // success: function(response){
     success: function(){
       if (counter < so.length - 1){
         counter++;
@@ -807,7 +642,6 @@ function flag_ajax_serial(counter, selection){
         flag_ajax_serial(counter, so);
       } else {
         $('.popupbox').remove();
-        // $("#alerts_floating").append(alertbox('success','Added flag.'));
       }
     },
     error: function(error){
@@ -835,27 +669,8 @@ function rmflag_ajax(){
   });
 }
 
-// $(function(){
-//   $('#fillbrush').change(function() {
-//     if($(this).is(":checked")) {
-//       brushdown = true;
-//     }else{
-//       brushdown = false;
-//     }
-//   });
-// })
-
-//fillbrush
-// $('body').ready(function(){ //delegated event handler for filldown brush
-//   $('body').on('change', '#fillbrush', function(){
-//     if($(this).is(":checked")){
-//       brushdown = true;
-//     }else{
-//       brushdown = false;
-//     }
-//   });
-// });
-
 </script>
+
+<!-- <script src="static/js/qaqc_helpers.js"></script> -->
 
 {% endblock %}

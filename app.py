@@ -1,6 +1,9 @@
-# -*- coding: utf-8 -*-
 # os.chdir('/home/mike/git/streampulse/server_copy/sp')
 # import timeit
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
 from flask import (Flask, Markup, session, flash, render_template, request,
     jsonify, url_for, make_response, send_file, redirect, g, send_from_directory)
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
@@ -17,6 +20,8 @@ from math import log, sqrt, floor
 import simplejson as json
 from sklearn import svm
 from operator import itemgetter
+import itertools
+# import copy
 import pandas as pd
 import numpy as np
 import requests
@@ -31,6 +36,7 @@ import sys
 import config as cfg
 # import logging
 import readline #needed for rpy2 import in conda env
+from functools import reduce
 os.environ['R_HOME'] = '/usr/lib/R' #needed for rpy2 to find R. has to be a better way
 import rpy2.robjects as robjects
 from rpy2.robjects import pandas2ri
@@ -38,10 +44,13 @@ import markdown
 import time
 import traceback
 import regex
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
+# import smtplib
+# from email.mime.text import MIMEText
+# from email.mime.application import MIMEApplication
+# from email.mime.multipart import MIMEMultipart
+import subprocess
+from helpers import *
+import feather
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -53,6 +62,7 @@ app.config['SECRET_KEY'] = cfg.SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
+# app.config['UPLOAD_ORIG_FOLDER'] = "/home/mike/git/streampulse/server_copy/spuploads_original"
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['REACH_CHAR_FOLDER'] = cfg.REACH_CHAR_FOLDER
 app.config['GRAB_FOLDER'] = cfg.GRAB_FOLDER
@@ -103,6 +113,29 @@ class Data(db.Model):
 
     def __repr__(self):
         return '<Data %r, %r, %r, %r, %r>' % (self.region, self.site,
+        self.DateTime_UTC, self.variable, self.upload_id)
+
+class Data0(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(10))
+    site = db.Column(db.String(50))
+    DateTime_UTC = db.Column(db.DateTime)
+    variable = db.Column(db.String(50))
+    value = db.Column(db.Float)
+    flag = db.Column(db.Integer)
+    upload_id = db.Column(db.Integer)
+
+    def __init__(self, region, site, DateTime_UTC, variable, value, flag, upid):
+        self.region = region
+        self.site = site
+        self.DateTime_UTC = DateTime_UTC
+        self.variable = variable
+        self.value = value
+        self.flag = flag
+        self.upload_id = upid
+
+    def __repr__(self):
+        return '<Data0 %r, %r, %r, %r, %r>' % (self.region, self.site,
         self.DateTime_UTC, self.variable, self.upload_id)
 
 class Grabdata(db.Model):
@@ -187,18 +220,20 @@ class Site(db.Model):
     name = db.Column(db.String(100))
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
+    datum = db.Column(db.String(50))
     usgs = db.Column(db.String(20))
     addDate = db.Column(db.DateTime)
     embargo = db.Column(db.Integer)
     by = db.Column(db.Integer)
     contact = db.Column(db.String(50))
     contactEmail = db.Column(db.String(255))
-    def __init__(self, region, site, name, latitude, longitude, usgs, addDate, embargo, by, contact, contactEmail):
+    def __init__(self, region, site, name, latitude, longitude, datum, usgs, addDate, embargo, by, contact, contactEmail):
         self.region = region
         self.site = site
         self.name = name
         self.latitude = latitude
         self.longitude = longitude
+        self.datum = datum
         self.usgs = usgs
         self.addDate = addDate
         self.embargo = embargo
@@ -214,13 +249,30 @@ class Cols(db.Model):
     site = db.Column(db.String(50))
     rawcol = db.Column(db.String(100))
     dbcol = db.Column(db.String(100))
-    def __init__(self, region, site, rawcol, dbcol):
+    level = db.Column(db.String(50))
+    notes = db.Column(db.String(200))
+    def __init__(self, region, site, rawcol, dbcol, level, notes):
         self.region = region
         self.site = site
         self.rawcol = rawcol
         self.dbcol = dbcol
+        self.level = level
+        self.notes = notes
     def __repr__(self):
-        return '<Cols %r, %r, %r>' % (self.region, self.site, self.dbcol)
+        return '<Cols %r, %r, %r, %r, %r>' % (self.region, self.site, self.dbcol,
+            self.level, self.notes)
+
+class Notificationemail(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    region = db.Column(db.String(10))
+    site = db.Column(db.String(50))
+    email = db.Column(db.String(255))
+    def __init__(self, region, site, email):
+        self.region = region
+        self.site = site
+        self.email = email
+    def __repr__(self):
+        return '<Notificationemail %r, %r, %r>' % (self.region, self.site, self.email)
 
 class Grabcols(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -256,7 +308,7 @@ class User(db.Model):
     def __init__(self, username, password, email):
         self.username = username
         self.set_password(password)
-        self.token = binascii.hexlify(os.urandom(10))
+        self.token = binascii.hexlify(os.urandom(10)).decode('utf-8')
         self.email = email
         self.registered_on = datetime.utcnow()
         self.confirmed = True # do they agree to the policy?
@@ -272,7 +324,7 @@ class User(db.Model):
     def is_anonymous(self):
         return False
     def get_id(self):
-        return unicode(self.id)
+        return str(self.id)
     def qaqc_auth(self):
         return self.qaqc.split(",") # which tables can they edit
     def __repr__(self):
@@ -595,7 +647,7 @@ def read_hobo(f):
     headerPt2Clean = [re.sub(r'[^\x00-\x7f]', r'', x) for x in headerPt2Clean] # get rid of unicode
     newcols = ['DateTime'] + [nme + unit for unit,
         nme in zip(headerPt2Clean, headerPt1[1:])]
-    xt = xt.rename(columns=dict(zip(xt.columns.tolist(), newcols)))
+    xt = xt.rename(columns=dict(list(zip(xt.columns.tolist(), newcols))))
     xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
     # xt = xt.rename(columns={'HWAbsPreskPa':'WaterPres_kPa','HWTempC':'WaterTemp_C','HAAbsPreskPa':'AirPres_kPa','HATempC':'AirTemp_C',})
@@ -617,7 +669,7 @@ def read_hobo(f):
 
 def read_csci(f, gmtoff):
     xt = pd.read_csv(f, header=0, skiprows=[0,2,3])
-    xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=gmtoff) for x in xt.TIMESTAMP]
+    xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(gmtoff)) for x in xt.TIMESTAMP]
     cols = xt.columns.tolist()
     return xt[cols[-1:]+cols[1:-1]]
 
@@ -631,7 +683,8 @@ def read_manta(f, gmtoff):
         xt.columns = xt.loc[0].tolist()
     xt = xt[xt.DATE.str.contains('[0-9]+/[0-9]+/[0-9]{4}')] #drop excess header/blank rows
     xt['DateTime'] = xt['DATE'] + " " + xt['TIME']
-    xt['DateTimeUTC'] = [dtparse.parse(x) - timedelta(hours=gmtoff) for x in xt.DateTime]
+    xt['DateTimeUTC'] = [dtparse.parse(x) - timedelta(hours=int(gmtoff)) \
+        for x in xt.DateTime]
     xt.drop(["DATE","TIME","DateTime"], axis=1, inplace=True)
     xt = xt[[x for x in xt.columns.tolist() if " ." not in x and x!=" "]]
     xt.columns = [re.sub("\/|%","",x) for x in xt.columns.tolist()]
@@ -676,7 +729,8 @@ def load_file(f, gmtoff, logger):
 
         #find out what the next upload_id will be and update working list
         pending_upIDs = [i[1] for i in filenamesNoV]
-        upID = max(last_upID[0], max(pending_upIDs)) + 1
+        maxpend = max(pending_upIDs) if all([x is not None for x in pending_upIDs]) else -1
+        upID = max(last_upID[0], maxpend) + 1
         filenamesNoV[filenamesNoV.index([fn, None])][1] = upID #update
         session['filenamesNoV'] = filenamesNoV
 
@@ -696,7 +750,7 @@ def load_multi_file(ff, gmtoff, logger):
     #get list of uploaded files with a particular logger extension
     f = [fi for fi in ff if "_" + logger in fi]
     if len(f) > 1:
-        xx = map(lambda x: load_file(x, gmtoff, logger), f)
+        xx = [load_file(x, gmtoff, logger) for x in f]
         xx = reduce(lambda x, y: x.append(y), xx)
     else: # only one file for the logger, load it
         xx = load_file(f[0], gmtoff, logger)
@@ -720,7 +774,7 @@ def sp_in(ff, gmtoff): # ff must be a list
 
         # if multiple loggers, map over loggers
         if len(logger) > 1:
-            xx = map(lambda x: load_multi_file(ff, gmtoff, x), logger)
+            xx = [load_multi_file(ff, gmtoff, x) for x in logger]
             xx = reduce(lambda x,y: x.merge(y, how='outer', left_index=True,
                 right_index=True), xx)
 
@@ -835,12 +889,12 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
     # vvv is a list of variable codes
     #00060 is cfs, discharge; 00065 is feet, height
     xs = pd.read_sql('select id, region, site, name, latitude, ' +\
-        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
         'from site', db.engine)
     xs['regionsite'] = xs["region"].map(str) + "_" + xs["site"]
     # for each region site...
     sitex = xs.loc[xs.regionsite.isin(regionsite)].usgs.tolist()
-    sitedict = dict(zip(sitex, regionsite))
+    sitedict = dict(list(zip(sitex, regionsite)))
     sitex = [x for x in sitex if x is not None]
     usgs = ",".join(sitex)
     #lat,lng = sitex.loc[:,['latitude','longitude']].values.tolist()[0]
@@ -852,16 +906,16 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
         usgs + "&startDT=" + startDate + "T01:15Z&endDT=" + endDate + \
         "T23:59Z&parameterCd=" + vcds + "&siteStatus=all"
     r = requests.get(url)
-    print r.status_code
+    print(r.status_code)
     if r.status_code != 200:
         return ['USGS_error']
     xf = r.json()
-    xx = map(lambda x: panda_usgs(x, xf), range(len(xf['value']['timeSeries'])))
+    xx = [panda_usgs(x, xf) for x in range(len(xf['value']['timeSeries']))]
     xoo = []
 
     try:
         for s in sitex:
-            x2 = [k.values()[0] for k in xx if k.keys()[0]==s]
+            x2 = [list(k.values())[0] for k in xx if list(k.keys())[0]==s]
             x2 = reduce(lambda x,y: x.merge(y,how='outer',left_index=True,right_index=True), x2)
             x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
             x2['site']=sitedict[s]
@@ -942,35 +996,6 @@ def zipfile_listdir_recursive(dir_name):
             fileList.extend(zipfile_listdir_recursive(dirfile))
 
     return fileList
-
-def email_msg(txt, subj, recipient):
-
-    gmail_pw = cfg.GRDO_GMAIL_PW
-
-    cur_user = str(current_user.get_id()) if current_user else 'anonymous'
-    deets = datetime.now().strftime('%Y-%m-%d %H:%M:%S') +\
-        '; userID=' + cur_user + '\n'
-        # ';\ntraceback:\n ' + traceback.__str__() + '\n\n')
-    txt = deets + txt
-
-    #compose email
-    msg = MIMEMultipart()
-    msg.attach(MIMEText(txt))
-    msg['Subject'] = subj
-    msg['From'] = 'grdouser@gmail.com'
-    msg['To'] = recipient
-
-    #log in to gmail, send email
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.ehlo()
-    server.starttls()
-    server.login("grdouser@gmail.com", gmail_pw)
-    server.sendmail('grdouser@gmail.com', [recipient],
-        msg.as_string())
-    server.quit()
-
-# def send_email(to, subject, template):
-#     mail.send_message(subject, recipients=[to], html=template)
 
 ########## PAGES
 @app.route('/register', methods=['GET', 'POST'])
@@ -1204,7 +1229,7 @@ def sitelist():
 
     #pull in all site data
     sitedata = pd.read_sql('select region as Region, site as Site, name as ' +\
-        'Name, latitude as Lat, longitude as Lon, contact as Contact, ' +\
+        'Name, latitude as Lat, longitude as Lon, datum as `Geodetic datum`, contact as Contact, ' +\
         'contactEmail as Email, usgs as `USGS gage`, `by`,' +\
         'embargo as `Embargo (days)`, addDate, ' +\
         'firstRecord as `First record`, lastRecord as `Last record`,' +\
@@ -1220,10 +1245,6 @@ def sitelist():
     #format date range and varlist
     sitedata['First record'] = sitedata['First record'].dt.strftime('%Y-%m-%d')
     sitedata['Last record'] = sitedata['Last record'].dt.strftime('%Y-%m-%d')
-    # fr = sitedata['firstRecord'].dt.strftime('%Y-%m-%d')
-    # lr = sitedata['lastRecord'].dt.strftime('%Y-%m-%d')
-    # timerange = fr + ' to ' + lr
-    # sitedata['Coverage'] = timerange.apply(lambda x: x if x != 'NaT to NaT' else '-')
 
     pd.set_option('display.max_colwidth', 500)
     core_variables = ['DO_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C',
@@ -1239,20 +1260,16 @@ def sitelist():
             core = var_arr[isCore]
             not_core = var_arr[~isCore]
             if any(core):
-                core = core[np.argsort(pd.match(core, core_variables))]
-                # core = ['<strong>' + y + '</strong>' for y in core]
+                cc = [core_variables.index(x) if x in core_variables \
+                    else -1 for x in core] #equiv of pd.match
+                core = core[np.argsort(cc)]
             not_core.sort()
             var_arr = ', '.join(np.concatenate((core, not_core)))
             varcells.append(var_arr)
 
-    for i in xrange(len(varcells)):
+    for i in range(len(varcells)):
         if varcells[i] is None:
             varcells[i] = '-'
-            # continue
-        # varcells[i] = '<button data-toggle="collapse" class="btn btn-default ' +\
-        #     'collapsed" data-target="#vars' + str(i) + '" aria-expanded="false"' +\
-        #     '>show</button><div id="vars' + str(i) + '" class="collapse" ' +\
-        #     'aria-expanded="false" style="height: 0px;">' + varcells[i] + '</div>'
 
     sitedata.Variables = varcells
 
@@ -1272,45 +1289,16 @@ def sitelist():
     sitedata.rename(columns={'by':'Source'}, inplace=True)
 
     #additional arranging and modification of data frame
-    # sitedata = sitedata.drop(['addDate', 'firstRecord', 'lastRecord'],
-    #     axis=1)
     sitedata = sitedata.drop(['addDate'], axis=1)
-    sitedata = sitedata[['Region', 'Site', 'Name', 'Lat', 'Lon', 'Source',
+    sitedata = sitedata[['Region', 'Site', 'Name', 'Lat', 'Lon', 'Geodetic datum', 'Source',
         'Contact', 'Email', 'Embargo (days)', 'USGS gage', 'First record',
         'Last record', 'Variables']]
-    # neworder = list(sitedata.columns)
-    # varsind = neworder.index('Variables')
-    # neworder[neworder.index('Coverage')] = 'Variables'
-    # neworder[varsind] = 'Coverage'
-    # sitedata = sitedata[neworder]
     sitedata = sitedata.fillna('-').sort_values(['Region', 'Site'],
         ascending=True)
 
-    #create separate tables for streampulse, neon, powell data
-    # powell = sitedata.loc[sitedata.by == -902,
-    #     ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
-    # neon = sitedata.loc[sitedata.by == -900,
-    #     ~sitedata.columns.isin(['by', 'Contact', 'Email', 'Embargo (days)'])]
-    # sp = sitedata.loc[~sitedata.by.isin([-900, -902]), sitedata.columns != 'by']
-
-    # powell = powell.to_html(index=False,
-    #     classes=['table', 'table-condensed'], escape=False)
-    # neon = neon.to_html(index=False,
-    #     classes=['table', 'table-condensed'], escape=False)
-    # sp = sp.to_html(index=False,
-    #     classes=['table', 'table-condensed'], escape=False)
     header = list(sitedata.columns)
-    header = [x.encode('utf-8') for x in header]
     sitedata = sitedata.to_json(orient='values', date_format='iso')
 
-
-    # powell = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll',
-    #     powell)
-    # neon = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', neon)
-    # sp = re.sub(r'table-condensed"', 'table-condensed" overflow:scroll', sp)
-
-    # return render_template('sitelist.html', powell=powell, neon=neon, sp=sp,
-    #     sp_header=sp_header)
     return render_template('sitelist.html', sitedata=sitedata, header=header)
 
 @app.route('/upload_choice')
@@ -1334,11 +1322,16 @@ def download_bulk():
     #     else:
     #         bulk_sizes[i] = str(round(bulk_sizes[i] / 1073741824, 2)) + ' GB'
 
-    bulk_dict = dict(zip(bulk_files, bulk_sizes))
+    bulk_dict = dict(list(zip(bulk_files, bulk_sizes)))
 
 
     #all files must be present or an error will arise during rendering
     return render_template('download_bulk.html', bulk_file_sizes=bulk_dict)
+
+# @app.route('/pipeline1')
+# def pipeline1():
+#
+#     return render_template('pipeline1.html')
 
 @app.route('/viz_choice')
 def viz_choice():
@@ -1418,9 +1411,9 @@ def series_upload():
 
             #get lists of new and existing files, filter uploaded files by new
             new = [fn not in ld for fn in ufnms]
-            existing = [ufnms[f] for f in xrange(len(ufnms)) if not new[f]]
-            ufiles = [ufiles[f] for f in xrange(len(ufiles)) if new[f]]
-            ufnms = [ufnms[f] for f in xrange(len(ufnms)) if new[f]]
+            existing = [ufnms[f] for f in range(len(ufnms)) if not new[f]]
+            ufiles = [ufiles[f] for f in range(len(ufiles)) if new[f]]
+            ufnms = [ufnms[f] for f in range(len(ufnms)) if new[f]]
 
             if not ufnms: #if no files left in list
                 if len(existing) == 1:
@@ -1499,7 +1492,7 @@ def series_upload():
         session['fnlong'] = fnlong
 
         #make sure LOGGERID formats are valid
-        for i in xrange(len(filenamesNoV)):
+        for i in range(len(filenamesNoV)):
             logger = re.search(".*\\d{4}-\\d{2}-\\d{2}(_[A-Z]{2})?" +\
                 "(?:[0-9]+)?\\.\\w{3}", filenamesNoV[i][0]).group(1)
 
@@ -1531,8 +1524,8 @@ def series_upload():
                 x = sp_in_lev(fnlong[0])
 
             #save combined input files to a temporary csv
-            tmp_file = site[0].encode('ascii') + "_" +\
-                binascii.hexlify(os.urandom(6))
+            tmp_file = site[0] + "_" +\
+                binascii.hexlify(os.urandom(6)).decode('utf-8')
             out_file = os.path.join(upfold, tmp_file + ".csv")
             x.to_csv(out_file, index=False)
 
@@ -1540,9 +1533,18 @@ def series_upload():
             columns = x.columns.tolist() #col names
             columns.remove('upload_id')
             rr, ss = site[0].split("_") #region and site
-            cdict = pd.read_sql("select * from cols where region='" + rr +\
+            coldict = pd.read_sql("select * from cols where region='" + rr +\
                 "' and site='" + ss + "'", db.engine)
-            cdict = dict(zip(cdict['rawcol'],cdict['dbcol'])) #varname mappings
+            cdict = dict(list(zip(coldict['rawcol'], coldict['dbcol']))) #varname mappings
+            ldict = dict(list(zip(coldict['rawcol'], coldict['level']))) #level mappings
+            ndict = dict(list(zip(coldict['rawcol'], coldict['notes']))) #note mappings
+            notificationEmail = pd.read_sql("select email from notificationemail" +\
+                " where region='" + rr + "' and site='" + ss + "'", db.engine)
+            notificationEmail = notificationEmail.email.tolist()
+            if notificationEmail:
+                notificationEmail = notificationEmail[0]
+            else:
+                notificationEmail = ''
 
         except Exception as e:
 
@@ -1587,8 +1589,10 @@ def series_upload():
             flash("Please double check your variable name matching.",
                 'alert-warning')
             return render_template('upload_columns.html', filenames=filenames,
-                columns=columns, tmpfile=tmp_file, variables=variables, cdict=cdict,
-                existing=existing, sitenm=site[0], replace=replace)
+                columns=columns, tmpfile=tmp_file, variables=variables,
+                existing=existing, sitenm=site[0], replace=replace,
+                cdict=cdict, ldict=ldict, ndict=ndict,
+                notificationEmail=notificationEmail)
 
         except Exception as e:
             [os.remove(f) for f in fnlong]
@@ -1742,10 +1746,10 @@ def grab_upload():
             coldict = pd.read_sql("select * from grabcols where site in ('" +\
                 "', '".join(usites) + "') and region='" + ureg + "';",
                 db.engine)
-            cdict = dict(zip(coldict['rawcol'], coldict['dbcol'])) #varname mappings
-            mdict = dict(zip(coldict['rawcol'], coldict['method'])) #method mappings
-            wdict = dict(zip(coldict['rawcol'], coldict['write_in'])) #more method mappings
-            adict = dict(zip(coldict['rawcol'], coldict['addtl'])) #additional mappings
+            cdict = dict(list(zip(coldict['rawcol'], coldict['dbcol']))) #varname mappings
+            mdict = dict(list(zip(coldict['rawcol'], coldict['method']))) #method mappings
+            wdict = dict(list(zip(coldict['rawcol'], coldict['write_in']))) #more method mappings
+            adict = dict(list(zip(coldict['rawcol'], coldict['addtl']))) #additional mappings
 
         except Exception as e:
             tb = traceback.format_exc()
@@ -1891,7 +1895,7 @@ def reach_characterization_filedrop():
             already_have = []
             moved = []
             if any(uploaded_bool):
-                already_have = [fnms_secure[i] for i in xrange(len(fnms_secure)) \
+                already_have = [fnms_secure[i] for i in range(len(fnms_secure)) \
                 if uploaded_bool[i]]
 
                 # if request.form.get('replacebox') == 'on':
@@ -1909,7 +1913,7 @@ def reach_characterization_filedrop():
                 #     return redirect(request.url)
 
             #write files
-            for i in xrange(len(files_secure)):
+            for i in range(len(files_secure)):
                 # fn_base = re.match('^(.*?)\.csv$', fn_secure).groups()
                 savepath = os.path.join(reachchar_dir, fnms_secure[i])
                 files_secure[i].save(savepath)
@@ -1949,7 +1953,7 @@ def reach_characterization_filedrop():
 
             lfnms = len(fnms_changed)
             if lfnms:
-                name_changes = [a[0] + ' -> ' + a[1] for a in fnms_changed.items()]
+                name_changes = [a[0] + ' -> ' + a[1] for a in list(fnms_changed.items())]
                 ww = 'These filenames have' if lfnms != 1 else 'This filename has'
                 flash(ww + ' been changed as a precaution: ' +\
                     ', '.join(name_changes) + '.', 'alert-warning')
@@ -2101,23 +2105,36 @@ def cancelcolumns(): #only used when cancelling series_upload
 def datapolicy():
     return render_template("datapolicy.html")
 
-def updatecdict(region, site, cdict):
-    rawcols = pd.read_sql("select * from cols where region='"+region+"' and site ='"+site+"'", db.engine)
+def updatecdict(region, site, cdict, ldict, ndict):
+    # region='AZ'; site='WB'; c='Depth_m'
+
+    rawcols = pd.read_sql("select * from cols where region='" + region +\
+        "' and site ='" + site + "'", db.engine)
     rawcols = rawcols['rawcol'].tolist()
-    for c in cdict.keys():
+    for c in list(cdict.keys()):
         if c in rawcols: # update
-            cx = Cols.query.filter_by(rawcol=c).first()
-            cx.dbcol = cdict[c] # assign column to value
-            # db.session.commit()
+            cx = Cols.query.filter_by(region=region, site=site, rawcol=c).first()
+            cx.dbcol = cdict[c]
+            cx.level = ldict[c]
+            cx.notes = ndict[c]
         else: # add
-            cx = Cols(region, site, c, cdict[c])
+            cx = Cols(region, site, c, cdict[c], ldict[c], ndict[c])
             db.session.add(cx)
-            # db.session.commit()
+
+def updateNotificationEmail(region, site, email):
+
+
+    q = Notificationemail.query.filter_by(region=region, site=site).first()
+    if q is not None: #update
+        q.email = email
+    else: # add
+        q = Notificationemail(region, site, email)
+        db.session.add(q)
 
 def chunker_ingester(df, chunksize=100000):
 
     #determine chunks based on number of records
-    n_full_chunks = df.shape[0] / chunksize
+    n_full_chunks = df.shape[0] // chunksize
     partial_chunk_len = df.shape[0] % chunksize
 
     #convert directly to dict if small enough, otherwise do it chunkwise
@@ -2125,7 +2142,7 @@ def chunker_ingester(df, chunksize=100000):
         xdict = df.to_dict('records')
         db.session.bulk_insert_mappings(Data, xdict) #ingest all records
     else:
-        for i in xrange(n_full_chunks):
+        for i in range(n_full_chunks):
             chunk = df.head(chunksize)
             df = df.drop(df.head(chunksize).index)
             chunk = chunk.to_dict('records')
@@ -2244,7 +2261,7 @@ def grab_updatecdict(region, sitelist, cdict, mdict, wdict, adict):
     rawcols = set(rawcols['rawcol'].tolist())
 
     #update or establish varname, method, addtl mappings
-    for c in cdict.keys():
+    for c in list(cdict.keys()):
         for s in sitelist:
             if c in rawcols: # update/add
 
@@ -2282,14 +2299,14 @@ def grab_updatedb(xx, fnamelist, replace=False):
                 db.session.delete(rec)
 
         #insert new (replacement) data (chunk it if > 100k records)
-        n_full_chunks = xx.shape[0] / 100000
+        n_full_chunks = xx.shape[0] // 100000
         partial_chunk_len = xx.shape[0] % 100000
 
         if n_full_chunks == 0:
             xx = xx.to_dict('records')
             db.session.bulk_insert_mappings(Grabdata, xx) #ingest all records
         else:
-            for i in xrange(n_full_chunks): #ingest full (100k-record) chunks
+            for i in range(n_full_chunks): #ingest full (100k-record) chunks
                 chunk = xx.head(100000)
                 xx = xx.drop(xx.head(100000).index)
                 chunk = chunk.to_dict('records')
@@ -2318,7 +2335,7 @@ def grab_updatedb(xx, fnamelist, replace=False):
     #create and call stored procedure to update site table with var list and time range
     unique_regionsites = unique_regionsites.reset_index()
 
-    for i in xrange(unique_regionsites.shape[0]):
+    for i in range(unique_regionsites.shape[0]):
 
         with open('site_update_stored_procedure_grab.sql', 'r') as f:
             t = f.read()
@@ -2332,7 +2349,7 @@ def grab_updatedb(xx, fnamelist, replace=False):
         db.session.execute('CALL update_site_table_grab();')
 
 def sanitize_input_allow_unicode(input):
-    mch = regex.search(ur'[^A-Za-z0-9\p{L} \-\.]', input)
+    mch = regex.search(r'[^A-Za-z0-9\p{L} \-\.]', input)
     out = False if mch else True
     return out
 
@@ -2350,9 +2367,16 @@ def sanitize_input_email(input):
 def confirmcolumns():
 
     #get combined inputs (tmpfile), varname mappings (cdict), and filenames
-    cdict = json.loads(request.form['cdict'])
     tmpfile = request.form['tmpfile']
+    tmpcode = tmpfile.split('_')[2]
+    cdict = json.loads(request.form['cdict'])
     cdict = dict([(r['name'], r['value']) for r in cdict])
+    ldict = json.loads(request.form['ldict'])
+    ldict = dict(list(zip(list(cdict.keys()), ldict)))
+    ndict = json.loads(request.form['ndict'])
+    ndict = dict(list(zip(list(cdict.keys()), ndict)))
+    notificationEmail = request.form['notificationEmail']
+
     fnlong = session.get('fnlong')
     filenamesNoV = session.get('filenamesNoV')
 
@@ -2366,10 +2390,10 @@ def confirmcolumns():
             illegal_input = 'contact email'
 
         input_dict = {'contactName':'contact name', 'lat':'latitude',
-            'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
+            'lng':'longitude', 'datum':'datum', 'sitename':'site name', 'usgs':'USGS gage ID'}
         if not illegal_input:
 
-            for i in input_dict.keys():
+            for i in list(input_dict.keys()):
                 input_is_legal = sanitize_input_allow_unicode(request.form[i])
                 if not input_is_legal:
                     illegal_input = input_dict[i]
@@ -2398,7 +2422,7 @@ def confirmcolumns():
         xx = pd.read_csv(os.path.join(app.config['UPLOAD_FOLDER'],
             tmpfile + ".csv"), parse_dates=[0])
         upid_col = xx['upload_id']
-        xx = xx[cdict.keys()].rename(columns=cdict) #assign canonical names
+        xx = xx[list(cdict.keys())].rename(columns=cdict) #assign canonical names
 
         datetimecollist = [1 for i in xx.columns if i == 'DateTime_UTC']
         if len(datetimecollist) > 1:
@@ -2411,10 +2435,12 @@ def confirmcolumns():
         region, site = tmpfile.split("_")[:-1]
 
         if request.form['existing'] == "no":
+
             # add new site to database
             usgss = None if request.form['usgs'] == "" else request.form['usgs']
             sx = Site(region=region, site=site, name=request.form['sitename'],
                 latitude=request.form['lat'], longitude=request.form['lng'],
+                datum=request.form['datum'],
                 usgs=usgss, addDate=datetime.utcnow(),
                 embargo=request.form['embargo'],
                 by=current_user.get_id(), contact=request.form['contactName'],
@@ -2424,38 +2450,41 @@ def confirmcolumns():
             #give uploading user access to this site
             add_site_permission(current_user, region, site)
 
-            # make a new text file with the metadata
-            metastring = request.form['metadata']
-            metafilepath = os.path.join(app.config['META_FOLDER'],
-                region + "_" + site + "_metadata.txt")
-            with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring.encode('utf-8'))
-
-        #format df for database entry
-        xx = xx.set_index(["DateTime_UTC", "upload_id"])
-        xx.columns.name = 'variable'
-        xx = xx.stack() #one col each for vars and vals
-        xx.name="value"
-        xx = xx.reset_index()
-        xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
-        xx['region'] = region
-        xx['site'] = site
-        xx['flag'] = None
-        xx = xx[['region','site','DateTime_UTC','variable','value','flag',
-            'upload_id']]
+        # #format df for database entry
+        # xx = xx.set_index(["DateTime_UTC", "upload_id"])
+        # xx.columns.name = 'variable'
+        # xx = xx.stack() #one col each for vars and vals
+        # xx.name="value"
+        # xx = xx.reset_index()
+        # xx = xx.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
+        # xx['region'] = region
+        # xx['site'] = site
+        # xx['flag'] = None
+        # xx = xx[['region','site','DateTime_UTC','variable','value','flag',
+        #     'upload_id']]
 
         # replace = True if request.form['replacing'] == 'yes' else False
         replace = request.form['replace']
 
         #add new information to upload table in db
         fn_to_db = [i[0] for i in filenamesNoV]
-        filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
+        # unsortable = [x for x in filenamesNoV if x[1] is None]
+        # filenamesNoV = [x for x in filenamesNoV if x[1] is not None]
+        # if filenamesNoV:
+        #     filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
+        # filenamesNoV.extend(unsortable)
         filenamesNoV = [i for i in filenamesNoV if i[1] is not None]
         if filenamesNoV:
+            filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
             for f in filenamesNoV:
                 uq = Upload(filename=f[0], uploadtime_utc=datetime.utcnow(),
                     user_id=current_user.get_id())
                 db.session.add(uq)
+
+        #update variable name mappings
+        updatecdict(region, site, cdict, ldict, ndict)
+        updateNotificationEmail(region, site, notificationEmail)
+        db.session.commit()
 
     except Exception as e:
 
@@ -2468,8 +2497,8 @@ def confirmcolumns():
             pass
 
         df_head = xx.head(2).to_string()
-        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
-        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
+        log_rawcols = '\n\nrawcols: ' + ', '.join(list(cdict.keys()))
+        log_dbcols = '\ndbcols: ' + ', '.join(list(cdict.values()))
 
         if request.form['existing'] == "no":
             error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
@@ -2505,35 +2534,313 @@ def confirmcolumns():
             'by-record data revision.', 'alert-danger')
         return redirect(url_for('series_upload'))
 
+    #save dataframe and ancillary data so that it can be accessed when user returns
+    feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
+    dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
+    with open(dumpfile, 'w') as d:
+        dmp = json.dump({'region': region, 'site': site, 'cdict': cdict,
+            'ldict': ldict, 'ndict': ndict, 'fn_to_db': fn_to_db,
+            'replace': replace, 'metadata': request.form.get('metadata'),
+            'existing': request.form.get('existing'), 'usgs': request.form.get('usgs'),
+            'embargo': request.form.get('sitename'), 'contactName': request.form.get('contactName'),
+            'contactEmail': request.form.get('contactEmail'), 'lat': request.form.get('lat'),
+            'lng': request.form.get('lng'), 'fnlong': fnlong, 'replace': replace}, d)
+
+    #initiate data processing pipeline as background process
+    subprocess.Popen(['Rscript', '--vanilla',
+        'pipeline/pipeline.R', request.form['notificationEmail'], tmpcode,
+        region, site])
+    # subprocess.Popen(['/home/mike/miniconda3/envs/python2/bin/python',
+    #     'pipeline.py', request.form['notificationEmail'], tmpcode,
+    #     region, site])
+
+    notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
+        site + '. We will send you an email notification when outlier ' +\
+        'detection and gap filling are complete.'
+    # email_msg(notification, 'StreamPULSE upload notification', uploader_email)
+    flash(notification, 'alert-success')
+    return redirect(url_for('series_upload'))
+
+@app.route("/get_pipeline_data", methods=["POST"])
+def get_pipeline_data():
+
     try:
-        #add data and mappings to db
-        updatedb(xx, fn_to_db, replace)
-        updatecdict(region, site, cdict)
+
+        tmpcode = request.json
+
+        # tmpcode = '0fb817a766c0'
+        dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
+        with open(dumpfile) as d:
+            up_data = json.load(d)
+        region = up_data['region']
+        site = up_data['site']
+        replace = up_data['replace']
+
+        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+
+        #json format original data, pipeline data, and flag data
+        origjson = origdf.to_json(orient='records', date_format='iso')
+        pljson = pldf.to_json(orient='records', date_format='iso')
+
+        flagdf = flagdf.set_index('DateTime_UTC').stack().reset_index().\
+            rename(columns={'level_1': 'variable', 0: 'code'}, inplace=False)
+        flagdf = flagdf[flagdf['code'] != 0]
+        flagjson = flagdf.to_json(orient='records', date_format='iso')
+
+        variables = origdf.columns[1:-1].tolist()
+
+        # Get sunrise sunset data
+        sxx = pd.read_sql("select latitude, longitude from site where region='" +\
+            region + "' and site='" + site + "'", db.engine)
+        sdt = min(origdf.DateTime_UTC).replace(hour=0, minute=0, second=0,
+            microsecond=0)
+        edt = max(origdf.DateTime_UTC).replace(hour=0, minute=0, second=0,
+            microsecond=0) + timedelta(days=1)
+
+        ddt = edt - sdt
+        lat = sxx.latitude[0]
+        lng = sxx.longitude[0]
+        rss = []
+        for i in range(ddt.days + 1):
+            rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
+                longitude=lng).calculate())
+            if rise > sets:
+                sets = sets + timedelta(days=1) # account for UTC
+            rss.append([rise, sets])
+
+        rss = pd.DataFrame(rss, columns=("rise", "set"))
+        rss.set = rss.set.shift(1)
+        sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
+
+        drr = get_twoweek_windows(sdt, edt)
 
     except Exception as e:
 
         tb = traceback.format_exc()
-        df_head = xx.head(2).to_string()
-        log_rawcols = '\n\nrawcols: ' + ', '.join(cdict.keys())
-        log_dbcols = '\ndbcols: ' + ', '.join(cdict.values())
 
-        if request.form['existing'] == "no":
-            error_details = '\n\nusgs: ' + request.form['usgs'] + '\nsitename: ' +\
-                request.form['sitename'] + '\nlat: ' + request.form['lat'] +\
-                '\nlon: ' + request.form['lng'] + '\nembargo: ' +\
-                request.form['embargo'] + '\ncontactname: ' +\
-                request.form['contactName'] + '\ncontactemail: ' +\
-                request.form['contactEmail'] + '\n\nmeta: ' + metastring +\
-                '\n\nfn_to_db: ' + ', '.join(fn_to_db) + '\nreplace: ' +\
+        if 'origdf' in locals():
+            origdf_head = origdf.head(2).to_string()
+            pldf_head = pldf.head(2).to_string()
+            flagdf_head = flagdf.head(2).to_string()
+
+            full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
+                dumpfile + region + site + tmpcode
+        else:
+            full_error_detail = tb + ' ORIGDF DID NOT EXIST!'
+
+        log_exception('E012', full_error_detail)
+        email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+
+        msg = Markup('Error 012. StreamPULSE development has been notified.')
+        flash(msg, 'alert-danger')
+
+        return redirect(url_for('series_upload'))
+
+    return jsonify(variables=variables, origjson=origjson, pljson=pljson,
+        flagjson=flagjson, sunriseset=sunriseset, plotdates=drr)
+
+@app.route("/pipeline-complete-<string:tmpcode>", methods=["GET"])
+@login_required
+def pipeline_complete(tmpcode):
+
+    #load static html for popup menu
+    with open('static/html/qaqcPopupMenu_pl.html', 'r') as html_file:
+        qaqc_options_sensor = html_file.read()
+    qaqc_options_sensor = qaqc_options_sensor.replace('\n', '')
+
+    return render_template('pipeline_qaqc.html', tmpcode=tmpcode,
+        qaqc_options=qaqc_options_sensor)
+
+@app.route("/submit-dataset-<string:tmpcode>", methods=["POST"])
+@login_required
+def submit_dataset(tmpcode):
+
+    try:
+
+        userflagpts = json.loads(request.form['userflagpts'])
+        userflags = json.loads(request.form['userflags'])
+        rejections = json.loads(request.form['rej_holder'])
+
+        # tmpcode = 'dad74156dab8'
+        # tmpcode = 'c655a2b731df'
+        # userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
+        # userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
+        # rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
+
+        dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
+        with open(dumpfile) as d:
+            up_data = json.load(d)
+        region = up_data['region']
+        site = up_data['site']
+        replace = up_data['replace']
+
+        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
+        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
+        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+
+        # replace pldf values with origdf values where pldf has been rejected
+        for r in rejections.items():
+            rejdts = r[1]
+            if rejdts:
+                rejvar = r[0]
+                rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
+                pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
+
+
+        #insert post-pipeline, post-user-edit dataset into database
+        pldf = pldf.reset_index().set_index(['DateTime_UTC', 'upload_id'])
+        pldf.columns.name = 'variable'
+        pldf = pldf.stack() #one col each for vars and vals
+        pldf.name = "value"
+        pldf = pldf.reset_index()
+        pldf = pldf.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
+        pldf['region'] = region
+        pldf['site'] = site
+        pldf['flag'] = None
+        pldf = pldf[['region','site','DateTime_UTC','variable','value','flag',
+            'upload_id']]
+
+        updatedb(pldf, up_data['fn_to_db'], replace)
+
+        # flagids = userflagpts['WaterTemp_C']['id']
+        # dts = userflagpts['WaterTemp_C']['dt']
+        # i = 0
+
+        #parse user-added flags and flag removals...
+        newflagid = -1 #series split by removals must be regarded as multiple flag instances
+        for f in userflagpts.items():
+
+            mod_switch = False #don't add new flag id when this is off
+            flagdeetmap = {} #hold mappings between new (neg) flag ids and original comments
+            flagids = f[1]['id']
+            dts = f[1]['dt']
+
+            if flagids:
+                if any([x == 'rm' for x in flagids]):
+                    runid = next(x for x in flagids if x != 'rm')
+                    for i in range(1, len(flagids)):
+                        if flagids[i] == 'rm' and i >= (len(flagids) - 1):
+                            break #end of series
+                        elif flagids[i] == 'rm': #get ready to add new flag id
+                            if flagids[i + 1] == runid:
+                                newflagid -= 1
+                                mod_switch = True
+                            elif flagids[i + 1] == 'rm':
+                                continue
+                        elif flagids[i] != runid: #non-rm-induced flag id break
+                            newflagid -= 1
+                            runid = flagids[i]
+                            mod_switch = False
+                        elif flagids[i] == runid and mod_switch: #insert new flag id
+                            if newflagid not in flagdeetmap.keys():
+                                flagdeetmap[newflagid] = flagids[i]
+                            flagids[i] = newflagid
+
+                    #get rid of flag removal indicators (i.e. flag sequence separators)
+                    rminds = [i for i, item in enumerate(flagids) if item == 'rm']
+                    rminds.reverse()
+                    for x in rminds:
+                        flagids.pop(x)
+                        dts.pop(x)
+
+                #insert new flag data into db (flag table and data table)
+                uniqids = [x for x in set(flagids) if not isinstance(x, str)]
+                dts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in dts]
+
+                for i in range(len(uniqids)):
+                    u = uniqids[i]
+                    sdt = dts[flagids.index(u)]
+                    edt = dts[::-1][flagids[::-1].index(u)]
+                    fvr = f[0]
+                    u = flagdeetmap[u] if u < 0 else u
+                    flg, cmt = next( (x['flagid'], x['comment']) for x\
+                        in userflags if x['instance_id'] == u)
+
+                    z = Flag(region, site, sdt, edt, fvr, flg, cmt, int(current_user.get_id()))
+                    db.session.add(z)
+                    flgdat = Data.query.filter(Data.region == region,
+                        Data.site == site, Data.DateTime_UTC >= sdt,
+                        Data.DateTime_UTC <= edt, Data.variable == fvr).all()
+
+                    for fd in flgdat:
+                        fd.flag = z.id
+
+        # os.path.join(app.config['UPLOAD_ORIG_FOLDER'], )
+        # feather.write_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+
+        # make a new text file with the metadata
+        lvltxt = '\n\n--- Data status codes ---\n\n' +\
+            'Data level codes:\n' +\
+            '\tR: Raw (directly from sensor/logger)\n' +\
+            '\tO: Outliers/anomalies removed\n' +\
+            '\tG: Gaps imputed\n' +\
+            '\tC: Corrected for drift (due to biofouling, calibration, etc.)\n' +\
+            '\tD: Derived from other variables\n' +\
+            '\t-: No information\n\n--- Data status by variable ---\n\n'
+
+        metafilepath = os.path.join(app.config['META_FOLDER'],
+            region + "_" + site + "_metadata.txt")
+        leveldata = pd.read_sql("select dbcol, level, notes from cols where region = '" +\
+            region + "' and site = '" + site + "';", db.engine)
+        leveldata = leveldata.loc[~leveldata.dbcol.isin(['DateTime_UTC',
+            'Battery_V']), :]
+        leveldata.columns = ['Variable', 'StatusCodes', 'VariableDerivation']
+        leveldata = leveldata.mask(leveldata == '', '-')
+        lvltxt2 = leveldata.to_string() + '\n'
+        lvltxt = lvltxt + lvltxt2
+
+        # if request.form['existing'] == "no":
+        if up_data['existing'] == "no":
+            # metastring = request.form['metadata']
+            # metastring = metastring + lvltxt
+            metastring = metadata + lvltxt
+            with open(metafilepath, 'a') as metafile:
+                metafile.write(metastring)
+        else:
+            #update level data in metadata files
+            if os.path.isfile(metafilepath):
+                with open(metafilepath, 'r') as m:
+                    metatext = m.read()
+                meta1 = metatext.split('--- Data status codes ---')[0]
+                lvltxt = meta1 + lvltxt
+
+            with open(metafilepath, 'w') as m:
+                m.write(lvltxt)
+
+    except Exception as e:
+
+        tb = traceback.format_exc()
+
+        if 'pldf' in locals():
+            df_head = pldf.head(2).to_string()
+        else:
+            df_head = 'PLDF NOT IN LOCALS!'
+
+        log_rawcols = '\n\nrawcols: ' + ', '.join(list(up_data['cdict'].keys()))
+        log_dbcols = '\ndbcols: ' + ', '.join(list(up_data['cdict'].values()))
+
+        if up_data['existing'] == "no":
+            error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
+                up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
+                '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
+                up_data['embargo'] + '\ncontactname: ' +\
+                up_data['contactName'] + '\ncontactemail: ' +\
+                up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
+                '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
                 replace + '\n\n'
         else:
-            error_details = '\n\nfn_to_db: ' + ', '.join(fn_to_db) +\
+            error_details = '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) +\
                 '\nreplace: ' + replace + '\n\n'
 
         if replace == 'records':
             errno = 'E009b'
-            msg = Markup("Error 009b. Try reducing the size of your revised " +\
-                "file by removing rows or columns that don't require revision.")
+            msg = Markup('Error 009b. StreamPULSE development has been notified.')
+            # msg = Markup("Error 009b. Try reducing the size of your revised " +\
+            #     "file by removing rows or columns that don't require revision.")
         else:
             errno = 'E009a'
             msg = Markup('Error 009a. StreamPULSE development has been notified.')
@@ -2543,8 +2850,8 @@ def confirmcolumns():
         email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
 
         try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-            [os.remove(f) for f in fnlong]
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
+            [os.remove(f) for f in up_data['fnlong']]
             db.session.rollback()
         except:
             pass
@@ -2553,11 +2860,11 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     try:
-        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpcode + ".csv"))
     except:
         pass
     db.session.commit() #persist all db changes made during upload
-    flash('Uploaded ' + str(len(xx.index)) + ' values, thank you!',
+    flash('Uploaded ' + str(len(pldf.index)) + ' values, thank you!',
         'alert-success')
 
     return redirect(url_for('series_upload'))
@@ -2581,10 +2888,10 @@ def grab_confirmcolumns():
 
         #sanitize inputs
         input_dict = {'contactName':'contact name', 'lat':'latitude',
-            'lng':'longitude', 'sitename':'site name', 'usgs':'USGS gage ID'}
+            'lng':'longitude', 'datum':'datum', 'sitename':'site name', 'usgs':'USGS gage ID'}
         illegal_input = None
 
-        for i in xrange(int(request.form['newlen'])):
+        for i in range(int(request.form['newlen'])):
 
             input_is_legal = sanitize_input_email(request.form['contactEmail' + str(i)])
             if not input_is_legal:
@@ -2592,7 +2899,7 @@ def grab_confirmcolumns():
 
             if not illegal_input:
 
-                for j in input_dict.keys():
+                for j in list(input_dict.keys()):
                     input_is_legal = sanitize_input_allow_unicode(request.form[j + str(i)])
                     if not input_is_legal:
                         illegal_input = input_dict[j]
@@ -2650,7 +2957,7 @@ def grab_confirmcolumns():
 
             #for each new site included in the uploaded csv...
             newsitelist = []
-            for i in xrange(int(request.form['newlen'])):
+            for i in range(int(request.form['newlen'])):
 
                 #get the name, split into site and region components
                 newsite = request.form['newsite' + str(i)]
@@ -2667,6 +2974,7 @@ def grab_confirmcolumns():
                     name=request.form['sitename' + str(i)],
                     latitude=request.form['lat' + str(i)],
                     longitude=request.form['lng' + str(i)],
+                    datum=request.form['datum' + str(i)],
                     usgs=usgss, addDate=datetime.utcnow(),
                     embargo=request.form['embargo' + str(i)],
                     contact=request.form['contactName' + str(i)],
@@ -2690,7 +2998,7 @@ def grab_confirmcolumns():
         # xx_post = xx.iloc[:,2:]
         # xx_post = xx_post[cdict.keys()].rename(columns=cdict) #assign names
         # xx = pd.concat([xx_pre, xx_post], axis=1)
-        cols_to_drop = [i for i in xx.columns[2:] if i not in cdict.keys()]
+        cols_to_drop = [i for i in xx.columns[2:] if i not in list(cdict.keys())]
         xx = xx.drop(cols_to_drop, axis=1)
         xx['upload_id'] = upID
 
@@ -2701,7 +3009,7 @@ def grab_confirmcolumns():
         xx.name = "value"
         xx = xx.reset_index()
 
-        for i in cdict.keys():
+        for i in list(cdict.keys()):
             xx.loc[xx.variable == i, 'method'] = mdict[i]
             xx.loc[xx.variable == i, 'write_in'] = wdict[i]
             xx.loc[xx.variable == i, 'addtl'] = adict[i]
@@ -2796,12 +3104,10 @@ def download():
         x.strftime('%Y-%m-%d'))
     sitedata.name = sitedata.region + " - " + sitedata.name
     dvv = sitedata[['regionsite','name','startdate','enddate','variable']]
-    dvv.iloc[:,0:4] = dvv.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvv.iloc[:,0:2] = dvv.iloc[:,0:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
-    # sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
-    for i in xrange(len(sitedict)):
-        sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
     #separating powell/sp data could be final step to save some time, but
     #i'm allowing reduncancy here because the execution time cost is lower than
@@ -2820,20 +3126,19 @@ def download():
         x.strftime('%Y-%m-%d'))
     sitedataP.name = sitedataP.region + " - " + sitedataP.name
     dvvP = sitedataP[['regionsite','name','startdate','enddate','variable']]
-    dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvvP.iloc[:,0:2] = dvvP.iloc[:,0:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
-    for i in xrange(len(sitedictP)):
-        sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
     #list available reach characterization datasets, replace synoptic fns with 'synoptic'
     sd_files = os.listdir(app.config['REACH_CHAR_FOLDER'])
     reg_dset_list = [re.match('^([A-Za-z]{2})_(.*)?.csv$',
         s).groups() for s in sd_files]
-    reg_dset_list = map(lambda x: (x[0],
-        'synoptic') if 'synoptic' in x[1] else x, reg_dset_list)
+    reg_dset_list = [(x[0],
+        'synoptic') if 'synoptic' in x[1] else x for x in reg_dset_list]
     reg_dset_list = list(set(reg_dset_list))
-    reg_set = set(map(lambda x: x[0], reg_dset_list))
+    reg_set = set([x[0] for x in reg_dset_list])
 
     reg_dset_dict = {}
     for e in reg_set:
@@ -2976,7 +3281,7 @@ def getcsv():
             shutil.copy2(mdfile, tmp)
 
     #write site data to CSV in temp dir
-    sitequery = "select region, site, name, latitude, longitude, usgs" +\
+    sitequery = "select region, site, name, latitude, longitude, datum, usgs" +\
         " as usgsGage" +\
         ", contact, contactEmail from site where concat(region, '_'," +\
         " site) in ('" + "','".join(sitenm) + "');"
@@ -2989,7 +3294,7 @@ def getcsv():
     sitechar_reqs['_cross_section.csv'] = True if csect else False
     sitechar_reqs['_substrate.csv'] = True if substrate else False
     sitechar_reqs['_geomorphology.csv'] = True if geo else False
-    sitechar_sel = [x[0] for x in sitechar_reqs.items() if x[1]]
+    sitechar_sel = [x[0] for x in list(sitechar_reqs.items()) if x[1]]
     if synoptic:
         sitechar_sel.extend(['_synoptic' + x for x in sitechar_sel])
 
@@ -3026,7 +3331,7 @@ def getcsv():
     rel_wfs = [re.match(tmp + '/(.*)', f).group(1) for f in writefiles]
     zipname = 'SPdata_' + datetime.now().strftime("%Y-%m-%d") + '.zip'
     zf = zipfile.ZipFile(tmp + '/' + zipname, 'w')
-    for i in xrange(len(writefiles)):
+    for i in range(len(writefiles)):
         zf.write(writefiles[i], rel_wfs[i])
     zf.close()
 
@@ -3059,14 +3364,11 @@ def visualize():
     sitedata.enddate = sitedata.enddate.apply(lambda x:
         x.strftime('%Y-%m-%d'))
     sitedata.name = sitedata.region + " - " + sitedata.name
-    # dvv = sitedata[['regionsite','name','startdate','enddate','variable']].values
-    # sitedict = sorted([tuple(x) for x in dvv], key=lambda tup: tup[1])
     dvv = sitedata[['regionsite','name','startdate','enddate','variable']]
-    dvv.iloc[:,0:4] = dvv.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvv.iloc[:,1:2] = dvv.iloc[:,1:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
-    for i in xrange(len(sitedict)):
-        sitedict[i][4] = [j.encode('ascii') for j in sitedict[i][4]]
 
     #separating powell/sp data could be final step to save some time, but
     #i'm allowing reduncancy here because the execution time cost is lower than
@@ -3085,11 +3387,10 @@ def visualize():
         x.strftime('%Y-%m-%d'))
     sitedataP.name = sitedataP.region + " - " + sitedataP.name
     dvvP = sitedataP[['regionsite','name','startdate','enddate','variable']]
-    dvvP.iloc[:,0:4] = dvvP.iloc[:,0:4].apply(lambda x: x.str.encode('ascii', 'ignore'))
+    dvvP.iloc[:,1:2] = dvvP.iloc[:,1:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
-    for i in xrange(len(sitedictP)):
-        sitedictP[i][4] = [j.encode('ascii') for j in sitedictP[i][4]]
 
     #get set of sites for which models have been fit (for overlays)
     outputs = os.listdir(cfg.RESULTS_FOLDER)
@@ -3235,7 +3536,7 @@ def getviz():
     variables = request.json['variables']
     dsource = request.json['source']
     src = 'powell' if dsource == 'pow' else 'data'
-    # region='NC'; site='NHC'; startDate='2017-06-01'; endDate='2018-06-20'
+    # region='NC'; site='NHC'; startDate='2017-11-01'; endDate='2018-01-01'
     # region='AK'; site='CARI-down'; startDate='2018-04-01'; endDate='2018-04-20'
     # variables=['DO_mgL','WaterTemp_C','Light_lux']; src='data'
 
@@ -3263,6 +3564,7 @@ def getviz():
     xx = pd.read_sql(sqlq, db.engine)
     # xx.loc[xx.flag == 'Bad Data', 'value'] = None # set NaNs so bad datapoints dont plot
     xx = xx[xx.flag != 'Bad Data'] #instead, just remove bad data rows
+    # xx.loc[(xx.variable == 'DO_mgL') & (xx.index < 8),'value'] = -888
 
     #thin data to 1/15 if data source is NEON
     is_neon = pd.read_sql("select `by` from site where region='" + region +\
@@ -3340,7 +3642,7 @@ def getviz():
     rss = []
 
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+        rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
             longitude=lng).calculate())
         if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
@@ -3476,7 +3778,7 @@ def getqaqc():
     lng = sxx.longitude[0]
     rss = []
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+        rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
             longitude=lng).calculate())
         if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
@@ -3542,7 +3844,7 @@ def getqaqc_grab():
     lng = sxx.longitude[0]
     rss = []
     for i in range(ddt.days + 1):
-        rise, sets = list(suns(sdt + timedelta(days=i - 1), latitude=lat,
+        rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
             longitude=lng).calculate())
         if rise > sets:
             sets = sets + timedelta(days=1) # account for UTC
@@ -3597,7 +3899,7 @@ def outlier_detect():
     outl_ind_r = find_outliers(dat_chunk) #call R code for outlier detect
 
     outl_ind = {}
-    for j in xrange(1, len(outl_ind_r) + 1): #loop through R-ified list
+    for j in range(1, len(outl_ind_r) + 1): #loop through R-ified list
 
         if outl_ind_r.rx2(j)[0] == 'NONE':
             outl_ind[outl_ind_r.names[j-1]] = None
@@ -3747,7 +4049,7 @@ def api():
     qs2 = "or ".join(ss2)
 
     meta = pd.read_sql("select region, site, name, latitude as lat, " +\
-        "longitude as lon, usgs as usgsid from site where " + qs, db.engine)
+        "longitude as lon, datum, usgs as usgsid from site where " + qs, db.engine)
 
     sqlq = "select " + src + ".region, " + src + ".site, " + src + ".DateTime_UTC, " +\
         src + ".variable, " + src + ".value, flag.flag as flagtype, flag.comment as " +\
@@ -3842,7 +4144,7 @@ def clean_query_response(r):
 
     #convert embargo years and addDate to days of embargo remaining
     emb = []
-    for i in xrange(len(r.embargoDaysLeft)):
+    for i in range(len(r.embargoDaysLeft)):
         timediff = (r.addDate[i] + pd.Timedelta(days=365 * r.embargoDaysLeft[i])) -\
             datetime.today()
         emb.append(timediff.days)
@@ -3882,7 +4184,7 @@ def query_available_data():
     #only region supplied = requesting sites
     if region is not None and region != 'all' and site is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site where region='" + region + "';",
             db.engine)
         if list(r.region):
@@ -3895,7 +4197,7 @@ def query_available_data():
     #only region supplied and region is 'all' = requesting sites
     if region is not None and region == 'all':
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site;", db.engine)
         r = clean_query_response(r)
         return jsonify(sites=r.to_dict(orient='records'))
@@ -3907,7 +4209,7 @@ def query_available_data():
     #only variable supplied = requesting sites
     if variable is not None and startDate is None and region is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site where " +\
             "variableList like '%%" + variable + "%%';", db.engine)
         if list(r.region):
@@ -3939,7 +4241,7 @@ def query_available_data():
     #only dates supplied = requesting sites
     if startDate is not None and region is None and variable is None:
         r = pd.read_sql("select distinct region, site, name, latitude, " +\
-            "longitude, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
+            "longitude, datum, usgs as usgsGage, addDate, firstRecord, lastRecord, contact, contactEmail, " +\
             "embargo as embargoDaysLeft from site where " +\
             "firstRecord <='" + startDate + "' and lastRecord >='" +\
             endDate + "';", db.engine)
@@ -4159,7 +4461,7 @@ def reachchar_exfiles_download():
     #find files from the requested region
     rc_files = os.listdir(sdf)
     rc_bool = [True if re.match(region + '_.*', x) else False for x in rc_files]
-    req_files = [rc_files[i] for i in xrange(len(rc_bool)) if rc_bool[i]]
+    req_files = [rc_files[i] for i in range(len(rc_bool)) if rc_bool[i]]
 
     #add files to temp directory and zip, with readme
     tmp = tempfile.mkdtemp()
@@ -4448,13 +4750,13 @@ def site_map():
     core_sites = list(core_sites['REGIONID'] + '_' + core_sites['SITEID'])
 
     site_data = pd.read_sql('select id, region, site, name, latitude, ' +\
-        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
         'from site where `by` != -902;', db.engine)
     site_data.addDate = site_data.addDate.astype('str')
     site_dict = site_data.to_dict('records')
 
     powell_data = pd.read_sql('select id, region, site, name, latitude, ' +\
-        'longitude, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
         'from site where `by` = -902;', db.engine)
     powell_data.addDate = powell_data.addDate.astype('str')
     powell_dict = powell_data.to_dict('records')

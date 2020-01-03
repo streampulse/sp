@@ -48,11 +48,11 @@ type='video/mp4' />
 <div class="col-md-6 col-md-offset-3">
 <h1>Upload Sensor Data</h1>
 <p class="lead">
-  Only select files <b>from a single site</b> with each upload.
+  Only select files <strong>from a single site</strong> with each upload.
+  Raw data (with outliers, gaps, etc. intact) are preferred.
 </p>
 <p>
-  After clicking "Upload", you will be asked to match your variable names
-  to those in our system. You will also have the option to make your data
+  After clicking "Upload" you will have the option to make your data
   private. See the instructions below for more.
 </p>
 <hr>
@@ -85,6 +85,17 @@ type='video/mp4' />
     can upload multiple files at a time.
   </p>
   <ul>
+    <li>site region (the 2-letter abbreviation for your state, province, country, etc.)
+      <ul>
+        <li>
+          2-letter country codes can be found
+          <a href='https://www.nationsonline.org/oneworld/country_code_list.htm'
+          target="_bank" rel="noopener noreferrer">
+            here.
+          </a>
+        </li>
+      </ul>
+    </li>
     <li>full site name, e.g. Farmington River at Tariffville</li>
     <li>site abbreviation/code, e.g. FARM</li>
     <li>latitude in decimal degrees, e.g. 41.9083</li>
@@ -103,7 +114,7 @@ type='video/mp4' />
   <h3>File naming</h3>
   <p>Name your upload file &ndash; <code>REGIONID_SITEID_YYYY-MM-DD_LOGGERID.xxx</code> &ndash; where</p>
   <ul>
-    <li><code>REGIONID</code> is the 2-letter abbreviation for your country, state, province, etc.,
+    <li><code>REGIONID</code> is the 2-letter abbreviation for your state, province, country, etc.,
       <ul>
         <li>
           2-letter country codes can be found
@@ -133,7 +144,8 @@ type='video/mp4' />
           Use this if the format of your logger files doesn't work with our system,
           or if your site is enabled for direct logger file upload (see "For
           new sites" section above), but you still want to upload some manually
-          formatted data. If your logger file won't upload,
+          formatted data. See "Calibrated and formatted data" section below.
+          If your logger file won't upload,
           <a href="streampulse.info@gmail.com">Check with us</a>
           before resorting to this upload method, because there's a chance we can
           get your file format to work with our system.
