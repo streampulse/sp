@@ -62,7 +62,6 @@ app.config['SECRET_KEY'] = cfg.SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = cfg.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = cfg.SQLALCHEMY_TRACK_MODIFICATIONS
 app.config['UPLOAD_FOLDER'] = cfg.UPLOAD_FOLDER
-app.config['UPLOAD_ORIG_FOLDER'] = cfg.UPLOAD_ORIG_FOLDER
 # app.config['UPLOAD_ORIG_FOLDER'] = "/home/mike/git/streampulse/server_copy/spuploads_original"
 app.config['META_FOLDER'] = cfg.META_FOLDER
 app.config['REACH_CHAR_FOLDER'] = cfg.REACH_CHAR_FOLDER
@@ -2469,9 +2468,14 @@ def confirmcolumns():
 
         #add new information to upload table in db
         fn_to_db = [i[0] for i in filenamesNoV]
-        filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
+        # unsortable = [x for x in filenamesNoV if x[1] is None]
+        # filenamesNoV = [x for x in filenamesNoV if x[1] is not None]
+        # if filenamesNoV:
+        #     filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
+        # filenamesNoV.extend(unsortable)
         filenamesNoV = [i for i in filenamesNoV if i[1] is not None]
         if filenamesNoV:
+            filenamesNoV = sorted(filenamesNoV, key=itemgetter(1))
             for f in filenamesNoV:
                 uq = Upload(filename=f[0], uploadtime_utc=datetime.utcnow(),
                     user_id=current_user.get_id())
@@ -2653,180 +2657,159 @@ def pipeline_complete(tmpcode):
 @login_required
 def submit_dataset(tmpcode):
 
-    # try:
+    try:
 
-    userflagpts = request.form['userflagpts']
-    userflags = request.form['userflags']
-    # userflagrms = request.form['rm_holder']
-    rejections = request.form['rej_holder']
-    # max_instance_id = request.form['instance_id']
-    print(userflagpts)
-    print(userflags)
-    print(rejections)
-    raise ValueError('arse')
+        userflagpts = json.loads(request.form['userflagpts'])
+        userflags = json.loads(request.form['userflags'])
+        rejections = json.loads(request.form['rej_holder'])
 
-    tmpcode = 'dad74156dab8'
-    userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
-    userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
-    # userflagrms = [{"startDate":"2017-08-11T00:01:49.090Z","endDate":"2017-08-11T05:42:43.636Z","var":["pH_mV"]},{"startDate":"2017-08-11T12:09:05.454Z","endDate":"2017-08-11T18:35:27.272Z","var":["pH_mV"]},{"startDate":"2017-08-11T23:30:54.545Z","endDate":"2017-08-12T03:18:10.909Z","var":["pH_mV"]}]
-    rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
+        # tmpcode = 'dad74156dab8'
+        tmpcode = '43ef3f66eb0d'
+        userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
+        userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
+        rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
 
-    # def parsejsdt(d, key):
-    #     dt = [datetime.strptime(x[key][0:19], '%Y-%m-%dT%H:%M:%S') for x in d]
-    #     return dt
-    #
-    # flagstarts = parsejsdt(userflags, 'startDate')
-    # flagends = parsejsdt(userflags, 'endDate')
-    # rmstarts = parsejsdt(userflagrms, 'startDate')
-    # rmends = parsejsdt(userflagrms, 'endDate')
+        dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
+        with open(dumpfile) as d:
+            up_data = json.load(d)
+        region = up_data['region']
+        site = up_data['site']
+        replace = up_data['replace']
 
-    dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
-    with open(dumpfile) as d:
-        up_data = json.load(d)
-    region = up_data['region']
-    site = up_data['site']
-    replace = up_data['replace']
+        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
+        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
+        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
-    origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-    origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
-    pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
-    pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
-    flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
-
-    # replace pldf values with origdf values where pldf has been rejected
-    for r in rejections.items():
-        rejdts = r[1]
-        if rejdts:
-            rejvar = r[0]
-            rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
-            pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
+        # replace pldf values with origdf values where pldf has been rejected
+        for r in rejections.items():
+            rejdts = r[1]
+            if rejdts:
+                rejvar = r[0]
+                rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
+                pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
 
 
-    #insert post-pipeline, post-user-edit dataset into database
-    pldf = pldf.reset_index().set_index(['DateTime_UTC', 'upload_id'])
-    pldf.columns.name = 'variable'
-    pldf = pldf.stack() #one col each for vars and vals
-    pldf.name = "value"
-    pldf = pldf.reset_index()
-    pldf = pldf.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
-    pldf['region'] = region
-    pldf['site'] = site
-    pldf['flag'] = None
-    pldf = pldf[['region','site','DateTime_UTC','variable','value','flag',
-        'upload_id']]
+        #insert post-pipeline, post-user-edit dataset into database
+        pldf = pldf.reset_index().set_index(['DateTime_UTC', 'upload_id'])
+        pldf.columns.name = 'variable'
+        pldf = pldf.stack() #one col each for vars and vals
+        pldf.name = "value"
+        pldf = pldf.reset_index()
+        pldf = pldf.groupby(['DateTime_UTC','variable']).mean().reset_index() #dupes
+        pldf['region'] = region
+        pldf['site'] = site
+        pldf['flag'] = None
+        pldf = pldf[['region','site','DateTime_UTC','variable','value','flag',
+            'upload_id']]
 
-    # pldf = pd.read_csv('../spdumps/' + 'e7805b62369e' + '_pldf.csv',na_filter=False)
-    # pldf.flag = pldf.flag.where(pd.notnull(pldf.flag), None)
-    updatedb(pldf, up_data['fn_to_db'], replace)
+        updatedb(pldf, up_data['fn_to_db'], replace)
 
-    # flagids = userflagpts['WaterTemp_C']['id']
-    # dts = userflagpts['WaterTemp_C']['dt']
-    # i = 0
-    # dts.pop(1); dts.pop(2)
-    # userflagpts = {"WaterTemp_C":{"id":[1,"rm",1,"rm",1,1,1],"dt":["2017-08-20T00:00:00.000Z","rm","2017-08-20T00:45:00.000Z","rm","2017-08-20T01:30:00.000Z","2017-08-20T01:45:00.000Z","2017-08-20T02:00:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
+        # flagids = userflagpts['WaterTemp_C']['id']
+        # dts = userflagpts['WaterTemp_C']['dt']
+        # i = 0
 
-    #parse user-added flags and flag removals...
-    newflagid = -1 #series split by removals must be regarded as multiple flag instances
-    for f in userflagpts.items():
+        #parse user-added flags and flag removals...
+        newflagid = -1 #series split by removals must be regarded as multiple flag instances
+        for f in userflagpts.items():
 
-        mod_switch = False #don't add new flag id when this is off
-        flagdeetmap = {} #hold mappings between new (neg) flag ids and original comments
-        flagids = f[1]['id']
-        dts = f[1]['dt']
+            mod_switch = False #don't add new flag id when this is off
+            flagdeetmap = {} #hold mappings between new (neg) flag ids and original comments
+            flagids = f[1]['id']
+            dts = f[1]['dt']
 
-        if flagids:
-            if any([x == 'rm' for x in flagids]):
-                runid = next(x for x in flagids if x != 'rm')
-                for i in range(1, len(flagids)):
-                    if flagids[i] == 'rm' and i >= (len(flagids) - 1):
-                        break #end of series
-                    elif flagids[i] == 'rm': #get ready to add new flag id
-                        if flagids[i + 1] == runid:
+            if flagids:
+                if any([x == 'rm' for x in flagids]):
+                    runid = next(x for x in flagids if x != 'rm')
+                    for i in range(1, len(flagids)):
+                        if flagids[i] == 'rm' and i >= (len(flagids) - 1):
+                            break #end of series
+                        elif flagids[i] == 'rm': #get ready to add new flag id
+                            if flagids[i + 1] == runid:
+                                newflagid -= 1
+                                mod_switch = True
+                            elif flagids[i + 1] == 'rm':
+                                continue
+                        elif flagids[i] != runid: #non-rm-induced flag id break
                             newflagid -= 1
-                            mod_switch = True
-                        elif flagids[i + 1] == 'rm':
-                            continue
-                    elif flagids[i] != runid: #non-rm-induced flag id break
-                        newflagid -= 1
-                        runid = flagids[i]
-                        mod_switch = False
-                    elif flagids[i] == runid and mod_switch: #insert new flag id
-                        if newflagid not in flagdeetmap.keys():
-                            flagdeetmap[newflagid] = flagids[i]
-                        flagids[i] = newflagid
+                            runid = flagids[i]
+                            mod_switch = False
+                        elif flagids[i] == runid and mod_switch: #insert new flag id
+                            if newflagid not in flagdeetmap.keys():
+                                flagdeetmap[newflagid] = flagids[i]
+                            flagids[i] = newflagid
 
-                #get rid of flag removal indicators (i.e. flag sequence separators)
-                rminds = [i for i, item in enumerate(flagids) if item == 'rm']
-                rminds.reverse()
-                for x in rminds:
-                    flagids.pop(x)
-                    dts.pop(x)
+                    #get rid of flag removal indicators (i.e. flag sequence separators)
+                    rminds = [i for i, item in enumerate(flagids) if item == 'rm']
+                    rminds.reverse()
+                    for x in rminds:
+                        flagids.pop(x)
+                        dts.pop(x)
 
-            #insert new flag data into db (flag table and data table)
-            uniqids = [x for x in set(flagids) if not isinstance(x, str)]
-            dts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in dts]
+                #insert new flag data into db (flag table and data table)
+                uniqids = [x for x in set(flagids) if not isinstance(x, str)]
+                dts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in dts]
 
-            for i in range(len(uniqids)):
-                u = uniqids[i]
-                sdt = dts[flagids.index(u)]
-                edt = dts[::-1][flagids[::-1].index(u)]
-                fvr = f[0]
-                u = flagdeetmap[u] if u < 0 else u
-                flg, cmt = next( (x['flagid'], x['comment']) for x\
-                    in userflags if x['instance_id'] == u)
+                for i in range(len(uniqids)):
+                    u = uniqids[i]
+                    sdt = dts[flagids.index(u)]
+                    edt = dts[::-1][flagids[::-1].index(u)]
+                    fvr = f[0]
+                    u = flagdeetmap[u] if u < 0 else u
+                    flg, cmt = next( (x['flagid'], x['comment']) for x\
+                        in userflags if x['instance_id'] == u)
 
-                z = Flag(region, site, sdt, edt, fvr, flg, cmt, int(current_user.get_id()))
-                db.session.add(z)
-                flgdat = Data.query.filter(Data.region == region,
-                    Data.site == site, Data.DateTime_UTC >= sdt,
-                    Data.DateTime_UTC <= edt, Data.variable == fvr).all()
+                    z = Flag(region, site, sdt, edt, fvr, flg, cmt, int(current_user.get_id()))
+                    db.session.add(z)
+                    flgdat = Data.query.filter(Data.region == region,
+                        Data.site == site, Data.DateTime_UTC >= sdt,
+                        Data.DateTime_UTC <= edt, Data.variable == fvr).all()
 
-                for fd in flgdat:
-                    fd.flag = z.id
+                    for fd in flgdat:
+                        fd.flag = z.id
 
-    db.session.commit()
-    # db.session.rollback()
-    os.path.join(app.config['UPLOAD_ORIG_FOLDER'], )
-    feather.write_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        # os.path.join(app.config['UPLOAD_ORIG_FOLDER'], )
+        # feather.write_dataframe('../spdumps/' + tmpcode + '_orig.feather')
 
-    # make a new text file with the metadata
-    lvltxt = '\n\n--- Data status codes ---\n\n' +\
-        'Data level codes:\n' +\
-        '\tR: Raw (directly from sensor/logger)\n' +\
-        '\tO: Outliers/anomalies removed\n' +\
-        '\tG: Gaps imputed\n' +\
-        '\tC: Corrected for drift (due to biofouling, calibration, etc.)\n' +\
-        '\tD: Derived from other variables\n' +\
-        '\t-: No information\n\n--- Data status by variable ---\n\n'
+        # make a new text file with the metadata
+        lvltxt = '\n\n--- Data status codes ---\n\n' +\
+            'Data level codes:\n' +\
+            '\tR: Raw (directly from sensor/logger)\n' +\
+            '\tO: Outliers/anomalies removed\n' +\
+            '\tG: Gaps imputed\n' +\
+            '\tC: Corrected for drift (due to biofouling, calibration, etc.)\n' +\
+            '\tD: Derived from other variables\n' +\
+            '\t-: No information\n\n--- Data status by variable ---\n\n'
 
-    metafilepath = os.path.join(app.config['META_FOLDER'],
-        region + "_" + site + "_metadata.txt")
-    leveldata = pd.read_sql("select dbcol, level, notes from cols where region = '" +\
-        region + "' and site = '" + site + "';", db.engine)
-    leveldata = leveldata.loc[~leveldata.dbcol.isin(['DateTime_UTC',
-        'Battery_V']), :]
-    leveldata.columns = ['Variable', 'StatusCodes', 'VariableDerivation']
-    leveldata = leveldata.mask(leveldata == '', '-')
-    lvltxt2 = leveldata.to_string() + '\n'
-    lvltxt = lvltxt + lvltxt2
+        metafilepath = os.path.join(app.config['META_FOLDER'],
+            region + "_" + site + "_metadata.txt")
+        leveldata = pd.read_sql("select dbcol, level, notes from cols where region = '" +\
+            region + "' and site = '" + site + "';", db.engine)
+        leveldata = leveldata.loc[~leveldata.dbcol.isin(['DateTime_UTC',
+            'Battery_V']), :]
+        leveldata.columns = ['Variable', 'StatusCodes', 'VariableDerivation']
+        leveldata = leveldata.mask(leveldata == '', '-')
+        lvltxt2 = leveldata.to_string() + '\n'
+        lvltxt = lvltxt + lvltxt2
 
-    # if request.form['existing'] == "no":
-    if up_data['existing'] == "no":
-        # metastring = request.form['metadata']
-        # metastring = metastring + lvltxt
-        metastring = metadata + lvltxt
-        with open(metafilepath, 'a') as metafile:
-            metafile.write(metastring)
-    else:
-        #update level data in metadata files
-        if os.path.isfile(metafilepath):
-            with open(metafilepath, 'r') as m:
-                metatext = m.read()
-            meta1 = metatext.split('--- Data status codes ---')[0]
-            lvltxt = meta1 + lvltxt
+        # if request.form['existing'] == "no":
+        if up_data['existing'] == "no":
+            # metastring = request.form['metadata']
+            # metastring = metastring + lvltxt
+            metastring = metadata + lvltxt
+            with open(metafilepath, 'a') as metafile:
+                metafile.write(metastring)
+        else:
+            #update level data in metadata files
+            if os.path.isfile(metafilepath):
+                with open(metafilepath, 'r') as m:
+                    metatext = m.read()
+                meta1 = metatext.split('--- Data status codes ---')[0]
+                lvltxt = meta1 + lvltxt
 
-        with open(metafilepath, 'w') as m:
-            m.write(lvltxt)
+            with open(metafilepath, 'w') as m:
+                m.write(lvltxt)
 
     except Exception as e:
 

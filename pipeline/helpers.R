@@ -17,6 +17,10 @@ populate_missing_rows = function(d, samp_int){
         by=paste(samp_int, 'min')))
     d = right_join(d, dt_filled, by='DateTime_UTC')
 
+    if('upload_id' %in% colnames(d)){
+        d = mutate(d, upload_id=imputeTS::na_locf(upload_id))
+    }
+
     return(d)
 }
 
@@ -44,7 +48,7 @@ lin_interp_gaps = function(d, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
 
     d = as.data.frame(apply(d, 2,
         function(x){
-            if(sum(is.na(x)) / length(x) > na_thresh) return(x)
+            if(sum(is.na(x)) / length(x) >= na_thresh) return(x)
             imputeTS::na_interpolation(x, option='linear', maxgap=gap_thresh_n)
         }))
 
@@ -128,20 +132,38 @@ basic_outlier_detect = function(d, flagd, dtcol){
 
         #find extreme points
         anom_d = as_tibble(d) %>%
-            time_decompose(c, method='twitter', message=FALSE) %>%
-            anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
+            time_decompose(c, method='twitter', message=FALSE)
+        anom_d = tryCatch({
+                anomalize(anom_d, remainder, max_anoms=0.01,
+                alpha=alpha, method='gesd')
+            }, error=function(e) {
+                anomalize(anom_d, remainder, max_anoms=0.01,
+                alpha=alpha, method='iqr')
+            })
         outls1 = which(anom_d$anomaly == 'Yes')
 
         #find extreme jumps
         anom_d = as_tibble(diffs) %>%
-            time_decompose(c, method='twitter', message=FALSE) %>%
-            anomalize(remainder, max_anoms=0.01, alpha=alpha, method='gesd')
+            time_decompose(c, method='twitter', message=FALSE)
+        anom_d = tryCatch({
+            anomalize(anom_d, remainder, max_anoms=0.01,
+                alpha=alpha, method='gesd')
+        }, error=function(e) {
+            anomalize(anom_d, remainder, max_anoms=0.01,
+                alpha=alpha, method='iqr')
+        })
         outls2 = which(anom_d$anomaly == 'Yes') + 1
 
         #find super extreme points
         anom_d = as_tibble(d) %>%
-            time_decompose(c, method='twitter', message=FALSE) %>%
-            anomalize(remainder, max_anoms=0.001, alpha=alpha, method='gesd')
+            time_decompose(c, method='twitter', message=FALSE)
+        anom_d = tryCatch({
+            anomalize(anom_d, remainder, max_anoms=0.001,
+                alpha=alpha, method='gesd')
+        }, error=function(e) {
+            anomalize(anom_d, remainder, max_anoms=0.001,
+                alpha=alpha, method='iqr')
+        })
         outls3 = which(anom_d$anomaly == 'Yes')
 
         #outliers are overlap of extreme points+jumps, or just super extreme points
