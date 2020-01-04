@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#conda activate python2
-source /home/aaron/sp/spenv/bin/activate
+conda activate sp
+#source /home/aaron/sp/spenv/bin/activate
 #fp_base="/home/mike/git/streampulse/server_copy/sp/"
 fp_base="/home/aaron/sp/"
 fp_bulk="../bulk_download_files/"
@@ -23,3 +23,5 @@ do
     rm $fn'.csv'
     cd /var/lib/mysql-files
 done
+
+conda deactivate
