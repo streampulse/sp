@@ -3,6 +3,7 @@ library(imputeTS)
 library(anomalize)
 library(feather)
 library(lubridate)
+rm(list=ls()); cat('\014')                                          ####
 
 #NOTE:
 #range checker marks anomalies with code 1
@@ -11,13 +12,13 @@ library(lubridate)
     #with code 4
 
 setwd('/home/mike/git/streampulse/server_copy/sp')
-# setwd('/home/aaron/sp')
+#setwd('/home/aaron/sp')
 
 source('pipeline/helpers.R')
 
 #retrieve arguments passed from app.py
-args = commandArgs(trailingOnly=TRUE)
-names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
+# args = commandArgs(trailingOnly=TRUE)
+# names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 
 #read in dataset saved during first part of upload process
 # x = read_csv('/home/mike/Dropbox/streampulse/data/pipeline/1.csv')
@@ -29,7 +30,7 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 #     stringsAsFactors=FALSE)
 # write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
 # args = list('tmpcode'='dad74156dab8')
-# args = list('tmpcode'='0fb817a766c0')
+args = list('tmpcode'='d11977eccb22')                                     ####
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
     mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 
@@ -55,6 +56,10 @@ flagdf[,] = 0
 # pldf$SpecCond_uScm[10:30] = NA
 # pldf$WaterTemp_C[20] = NA
 
+x11()                                          ####
+testplot(pldf)                                          ####
+whichflags()
+
 #operation 1: simple range checker
 #flags physically impossible values with code 1
 df_and_flagcodes = range_check(pldf, flagdf)
@@ -62,12 +67,24 @@ pldf = df_and_flagcodes$d
 pldf = lin_interp_gaps(pldf) #operation 2 requires gapless series
 flagdf = df_and_flagcodes$flagd
 
+testplot(pldf)                                          ####
+whichflags()
+testplot(pldf, xmin='2019-07-30', xmax='2019-08-01', showpoints=T)
 #operation 2: residual error based outlier detection via anomalize package
 #flags outliers with code 2
 df_and_flagcodes = basic_outlier_detect(pldf, flagdf, origdf$DateTime_UTC)
+
+tpl = df_and_flagcodes$d                                          ####
+tflag = df_and_flagcodes$flagd
+flagd = flagdf; d = pldf; dtcol = origdf$DateTime_UTC
+apply(flagdf, 2, function(x) unique(x))
+apply(tflag, 2, function(x) any(x != 0))
+apply(tflag, 2, function(x) unique(x))
+
 pldf = df_and_flagcodes$d
 flagdf = df_and_flagcodes$flagd
 
+testplot(pldf)                                          ####
 #operation 3: restore NAs
 for(c in colnames(pldf)){
     pldf[na_inds[[c]], c] = NA
@@ -90,6 +107,8 @@ if(length(rm_rows)){
     flagdf = flagdf[-rm_rows, ]
 }
 
+testplot(pldf)                                          ####
+
 #save flag codes, cleaned data to be read by flask when user follows email link
 pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
     pldf, list('upload_id'=origdf$upload_id))
@@ -100,5 +119,5 @@ write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 
 #notify user that pipeline processing is complete
 system2('/home/mike/miniconda3/envs/python2/bin/python',
-# system2('/home/aaron/sp/spenv/bin/python',
+#system2('/home/aaron/miniconda3/envs/sp/bin/python',
     args=c('pipeline/notify_user.py', args))

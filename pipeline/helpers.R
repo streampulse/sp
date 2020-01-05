@@ -100,6 +100,7 @@ range_check = function(d, flagd){
         'underwater_PAR'=c(0, 100000),
         'benthic_lux'=c(0, 1000000),
         'benthic_PAR'=c(0, 100000),
+        'EC_uScm'=c(0, 100000),
         'Battery_V'=c(0, 1000))
 
     for(c in colnames(d)){
@@ -125,6 +126,8 @@ basic_outlier_detect = function(d, flagd, dtcol){
     d$dt = dtcol
 
     for(c in variables){
+
+        # c = 'DOSecondary_mgL'
 
         alpha = 0.01
         if(c %in% c('Level_m', 'Depth_m', 'Discharge_m3s')) alpha = 0.0001
@@ -176,4 +179,94 @@ basic_outlier_detect = function(d, flagd, dtcol){
     d[flagd > 0] = NA
 
     return(list('d'=d, 'flagd'=flagd))
+}
+
+testplot = function(d, xmin=NULL, xmax=NULL, showpoints=FALSE){
+
+    ranges = list(
+        'DO_mgL'=c(-0.5, 40),
+        'DOSecondary_mgL'=c(0, 40),
+        'satDO_mgL'=c(0, 30),
+        'DOsat_pct'=c(0, 200),
+        'WaterTemp_C'=c(-100, 100),
+        'WaterTemp2_C'=c(-100, 100),
+        'WaterTemp3_C'=c(-100, 100),
+        'WaterPres_kPa'=c(0, 1000),
+        'AirTemp_C'=c(-200, 100),
+        'AirPres_kPa'=c(0, 110),
+        'Level_m'=c(-10, 100),
+        'Depth_m'=c(0, 100),
+        'Discharge_m3s'=c(0, 250000),
+        'Velocity_ms'=c(0, 10),
+        'pH'=c(0, 14),
+        'pH_mV'=c(-1000, 1000),
+        'CDOM_ppb'=c(0, 10000),
+        'CDOM_mV'=c(0, 10000),
+        'FDOM_mV'=c(0, 10000),
+        'Turbidity_NTU'=c(0, 500000),
+        'Turbidity_mV'=c(0, 100000),
+        'Turbidity_FNU'=c(0, 500000),
+        'Nitrate_mgL'=c(0, 1000),
+        'SpecCond_mScm'=c(0, 1000),
+        'SpecCond_uScm'=c(0, 100000),
+        'CO2_ppm'=c(0, 100000),
+        'ChlorophyllA_ugL'=c(0, 1000),
+        'Light_lux'=c(0, 1000000),
+        'Light_PAR'=c(0, 100000),
+        'Light2_lux'=c(0, 1000000),
+        'Light2_PAR'=c(0, 100000),
+        'Light3_lux'=c(0, 1000000),
+        'Light3_PAR'=c(0, 100000),
+        'Light4_lux'=c(0, 1000000),
+        'Light4_PAR'=c(0, 100000),
+        'Light5_lux'=c(0, 1000000),
+        'Light5_PAR'=c(0, 100000),
+        'underwater_lux'=c(0, 1000000),
+        'underwater_PAR'=c(0, 100000),
+        'benthic_lux'=c(0, 1000000),
+        'benthic_PAR'=c(0, 100000),
+        'EC_uScm'=c(0, 100000),
+        'Battery_V'=c(0, 1000))
+
+    nr = floor(sqrt(ncol(d)))
+    nc = ncol(d) / nr
+    ptype = ifelse(showpoints, 'b', 'l')
+    par(mfrow=c(nr, nc))
+    for(c in colnames(d)){
+        if(is.null(xmin)){
+            xmin = origdf$DateTime_UTC[1]
+        } else {
+            xmin = as.POSIXct(xmin)
+        }
+        if(is.null(xmax)){
+            xmax = origdf$DateTime_UTC[nrow(origdf)]
+        } else {
+            xmax = as.POSIXct(xmax)
+        }
+        plot(origdf$DateTime_UTC, d[[c]], type=ptype, xlim=c(xmin, xmax),
+            ylab=c, main=paste(xmin, xmax))
+        abline(h=ranges[[c]], lty=3, col='blue', lwd=2)
+        origspec_color = plspec_color = rep(NA, nrow(origdf))
+
+        plspecials = d[[c]]
+        plspecials[flagdf[[c]] == 0] = NA
+        # plspec_color = as.character(plspecials)
+        plspec_color[flagdf[[c]] == 4] = 'green'
+        # plspec_color[flagdf[[c]] != 4] = NA
+        points(origdf$DateTime_UTC, plspecials, col=plspec_color)
+
+
+        origspecials = origdf[[c]]
+        origspecials[flagdf[[c]] == 0] = NA
+        # origspec_color = as.character(origspecials)
+        origspec_color[flagdf[[c]] == 1] = 'red'
+        origspec_color[flagdf[[c]] == 2] = 'orange'
+        # origspec_color[flagdf[[c]] != 4] = NA
+        points(origdf$DateTime_UTC, origspecials, col=origspec_color)
+    }
+}
+
+whichflags = function(){
+    f = Reduce(function(w, y) union(w, y), Map(function(z) unique(z), flagdf))
+    return(f)
 }
