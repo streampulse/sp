@@ -14,22 +14,15 @@ library(lubridate)
 setwd('/home/aaron/sp')
 
 source('pipeline/helpers.R')
+find_outliers = readChar('find_outliers.R', file.info('find_outliers.R')$size)
+find_outliers = eval(parse(text=find_outliers))
 
 #retrieve arguments passed from app.py
 args = commandArgs(trailingOnly=TRUE)
 names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
+# args = list('tmpcode'='e5b659a48490')
 
 #read in dataset saved during first part of upload process
-# x = read_csv('/home/mike/Dropbox/streampulse/data/pipeline/1.csv')
-# x = read.csv('/home/mike/Dropbox/streampulse/data/pipeline/1.csv',
-#     stringsAsFactors=FALSE)
-# z = x
-
-# z = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
-#     stringsAsFactors=FALSE)
-# write_feather(z, paste0('../spdumps/', args['tmpcode'], '_xx.feather'))
-# args = list('tmpcode'='dad74156dab8')
-# args = list('tmpcode'='0fb817a766c0')
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
     mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 
@@ -39,8 +32,6 @@ origdf = populate_missing_rows(origdf, samp_int_m)
 
 #copy and trim df for pipeline traversal
 pldf = select(origdf, -DateTime_UTC, -upload_id)
-# pldf = select(origdf, DateTime_UTC, everything(), -upload_id) %>%
-    # as.data.frame()
 
 #trim data before processing; datetime and upload id will be reattached at end
 # pldf$DateTime_UTC = NULL
@@ -50,10 +41,6 @@ pldf = select(origdf, -DateTime_UTC, -upload_id)
 na_inds = lapply(pldf, function(x) which(is.na(x)))
 flagdf = pldf
 flagdf[,] = 0
-
-# pldf$pH[20:30] = NA
-# pldf$SpecCond_uScm[10:30] = NA
-# pldf$WaterTemp_C[20] = NA
 
 #operation 1: simple range checker
 #flags physically impossible values with code 1
@@ -67,6 +54,8 @@ flagdf = df_and_flagcodes$flagd
 df_and_flagcodes = basic_outlier_detect(pldf, flagdf, origdf$DateTime_UTC)
 pldf = df_and_flagcodes$d
 flagdf = df_and_flagcodes$flagd
+# testplot(pldf, xmin='2019-12-27', xmax='2019-12-28',
+#     ylims=c(1, 2.3), showpoints=T)
 
 #operation 3: restore NAs
 for(c in colnames(pldf)){
@@ -102,3 +91,5 @@ write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 # system2('/home/mike/miniconda3/envs/python2/bin/python',
 system2('/home/aaron/miniconda3/envs/sp/bin/python',
     args=c('pipeline/notify_user.py', args))
+
+message('end of pipeline.R')
