@@ -120,24 +120,22 @@ basic_outlier_detect = function(d, flagd, dtcol){
 
     variables = colnames(d)
     diffs = as.data.frame(apply(d, 2, diff))
-    # na_inds = which(is.na(d))
-
     diffs$dt = dtcol[-1]
     d$dt = dtcol
 
-    zz = find_outliers(d)
+    #original method
+    heuristically_detected_outls = find_outliers(d)
 
-    for(c in variables){
-
-        # c = 'DOSecondary_mgL'
+    #additional methods
+    for(vv in variables){
 
         alpha = 0.01
-        if(c %in% c('Level_m', 'Depth_m', 'Discharge_m3s')) alpha = 0.0001
-        if(sum(is.na(diffs[, c])) / nrow(diffs) > 0.99) next
+        if(vv %in% c('Level_m', 'Depth_m', 'Discharge_m3s')) alpha = 0.0001
+        if(sum(is.na(diffs[, vv])) / nrow(diffs) > 0.99) next
 
         #find extreme points
         anom_d = as_tibble(d) %>%
-            time_decompose(c, method='twitter', message=FALSE)
+            time_decompose(vv, method='twitter', message=FALSE)
         anom_d = tryCatch({
                 anomalize(anom_d, remainder, max_anoms=0.01,
                 alpha=alpha, method='gesd')
@@ -149,32 +147,40 @@ basic_outlier_detect = function(d, flagd, dtcol){
 
         #find extreme jumps
         anom_d = as_tibble(diffs) %>%
-            time_decompose(c, method='twitter', message=FALSE)
+            time_decompose(vv, method='twitter', message=FALSE)
         anom_d = tryCatch({
-            anomalize(anom_d, remainder, max_anoms=0.01,
-                alpha=alpha, method='gesd')
-        }, error=function(e) {
-            anomalize(anom_d, remainder, max_anoms=0.01,
-                alpha=alpha, method='iqr')
-        })
+                anomalize(anom_d, remainder, max_anoms=0.01,
+                    alpha=alpha, method='gesd')
+            }, error=function(e) {
+                anomalize(anom_d, remainder, max_anoms=0.01,
+                    alpha=alpha, method='iqr')
+            })
         outls2 = which(anom_d$anomaly == 'Yes') + 1
 
         #find super extreme points
         anom_d = as_tibble(d) %>%
-            time_decompose(c, method='twitter', message=FALSE)
+            time_decompose(vv, method='twitter', message=FALSE)
         anom_d = tryCatch({
-            anomalize(anom_d, remainder, max_anoms=0.001,
-                alpha=alpha, method='gesd')
-        }, error=function(e) {
-            anomalize(anom_d, remainder, max_anoms=0.001,
-                alpha=alpha, method='iqr')
-        })
+                anomalize(anom_d, remainder, max_anoms=0.001,
+                    alpha=alpha, method='gesd')
+            }, error=function(e) {
+                anomalize(anom_d, remainder, max_anoms=0.001,
+                    alpha=alpha, method='iqr')
+            })
         outls3 = which(anom_d$anomaly == 'Yes')
 
-        #outliers are overlap of extreme points+jumps, or just super extreme points
-        outls = union(intersect(outls1, outls2), outls3)
+        outls4 = heuristically_detected_outls[[vv]]
+        if(length(outls4) == 1 && outls4 == 'NONE') outls4 = NULL
 
-        flagd[outls, c] = flagd[outls, c] + 2
+        #potential outliers = overlap of extreme points+jumps (1, 2, 4),
+        outls = base::intersect(base::intersect(outls1, outls2), outls4)
+
+        #or just super extreme points (3)
+        outls = base::union(outls, outls3)
+
+        if(! is.null(outls)){
+            flagd[outls, vv] = flagd[outls, vv] + 2
+        }
     }
 
     d$dt = NULL
@@ -183,7 +189,8 @@ basic_outlier_detect = function(d, flagd, dtcol){
     return(list('d'=d, 'flagd'=flagd))
 }
 
-testplot = function(d, xmin=NULL, xmax=NULL, showpoints=FALSE){
+testplot = function(d, xmin=NULL, xmax=NULL, ylims=NULL,
+    showpoints=FALSE){
 
     ranges = list(
         'DO_mgL'=c(-0.5, 40),
@@ -235,6 +242,7 @@ testplot = function(d, xmin=NULL, xmax=NULL, showpoints=FALSE){
     ptype = ifelse(showpoints, 'b', 'l')
     par(mfrow=c(nr, nc))
     for(c in colnames(d)){
+
         if(is.null(xmin)){
             xmin = origdf$DateTime_UTC[1]
         } else {
@@ -245,8 +253,14 @@ testplot = function(d, xmin=NULL, xmax=NULL, showpoints=FALSE){
         } else {
             xmax = as.POSIXct(xmax)
         }
-        plot(origdf$DateTime_UTC, d[[c]], type=ptype, xlim=c(xmin, xmax),
-            ylab=c, main=paste(xmin, xmax))
+        if(is.null(ylims)){
+            plot(origdf$DateTime_UTC, d[[c]], type=ptype, xlim=c(xmin, xmax),
+                ylab=c, main=paste(xmin, xmax))
+        } else {
+            plot(origdf$DateTime_UTC, d[[c]], type=ptype, xlim=c(xmin, xmax),
+                ylim=ylims, ylab=c, main=paste(xmin, xmax))
+        }
+
         abline(h=ranges[[c]], lty=3, col='blue', lwd=2)
         origspec_color = plspec_color = rep(NA, nrow(origdf))
 
