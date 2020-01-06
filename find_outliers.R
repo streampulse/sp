@@ -5,7 +5,7 @@ function(df){
     library(plotrix)
 
     #remove date/time cols
-    df = df[,-which(names(df) %in% c("DateTime_UTC","date")), drop=FALSE]
+    df = df[,-which(names(df) %in% c("DateTime_UTC","date","dt")), drop=FALSE]
 
     outlier_list = list()
 
@@ -36,7 +36,7 @@ function(df){
             names(outlier_list)[col] = colnames(df)[col]
             next
         }
-        tm = na.seadec(tm, algorithm='interpolation')
+        tm = na_seadec(tm, algorithm='interpolation')
 
         #get diffs in value between each time point and the next
         diffs = diff(tm)

@@ -15,6 +15,8 @@ setwd('/home/mike/git/streampulse/server_copy/sp')
 #setwd('/home/aaron/sp')
 
 source('pipeline/helpers.R')
+find_outliers = readChar('find_outliers.R', file.info('find_outliers.R')$size)
+find_outliers = eval(parse(text=find_outliers))
 
 #retrieve arguments passed from app.py
 # args = commandArgs(trailingOnly=TRUE)

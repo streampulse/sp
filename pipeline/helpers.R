@@ -125,6 +125,8 @@ basic_outlier_detect = function(d, flagd, dtcol){
     diffs$dt = dtcol[-1]
     d$dt = dtcol
 
+    zz = find_outliers(d)
+
     for(c in variables){
 
         # c = 'DOSecondary_mgL'
