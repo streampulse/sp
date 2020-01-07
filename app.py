@@ -2550,14 +2550,11 @@ def confirmcolumns():
     subprocess.Popen(['Rscript', '--vanilla',
         'pipeline/pipeline.R', request.form['notificationEmail'], tmpcode,
         region, site])
-    # subprocess.Popen(['/home/mike/miniconda3/envs/python2/bin/python',
-    #     'pipeline.py', request.form['notificationEmail'], tmpcode,
-    #     region, site])
 
     notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
         site + '. We will send you an email notification when outlier ' +\
         'detection and gap filling are complete.'
-    # email_msg(notification, 'StreamPULSE upload notification', uploader_email)
+
     flash(notification, 'alert-success')
     return redirect(url_for('series_upload'))
 
@@ -2653,6 +2650,82 @@ def pipeline_complete(tmpcode):
     return render_template('pipeline_qaqc.html', tmpcode=tmpcode,
         qaqc_options=qaqc_options_sensor)
 
+@app.route("/round2-gapfill-<string:tmpcode>", methods=["POST"])
+@login_required
+def round2_gapfill(tmpcode):
+
+    userflagpts = json.loads(request.form['userflagpts'])
+    userflags = json.loads(request.form['userflags'])
+    rejections = json.loads(request.form['rej_holder'])
+    interpdeluxe = request.form['interpdeluxe']
+
+    # tmpcode = 'dad74156dab8'
+    # tmpcode = 'c655a2b731df'
+    # userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
+    # userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
+    # rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
+
+    dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
+    with open(dumpfile2, 'w') as dmp:
+        json.dump({'userflags': userflags, 'userflagpts': userflagpts,
+            'rejections': rejections, 'interpdeluxe': interpdeluxe}, dmp)
+
+    # dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
+    # with open(dumpfile) as d:
+    #     up_data = json.load(d)
+    # region = up_data['region']
+    # site = up_data['site']
+    # replace = up_data['replace']
+
+    # notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
+    #     site + '. We will send you an email notification when outlier ' +\
+    #     'detection and gap filling are complete.'
+    #
+    # flash(notification, 'alert-success')
+    # return redirect(url_for('series_upload'))
+
+
+    # origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+    # origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
+    # pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+    # pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
+    # flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+    #
+    # # replace pldf values with origdf values where pldf has been rejected
+    # for r in rejections.items():
+    #     rejdts = r[1]
+    #     if rejdts:
+    #         rejvar = r[0]
+    #         rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
+    #         pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
+
+
+    #process user edits and fill remaining gaps (background process)
+    sp = subprocess.Popen(['Rscript', '--vanilla',
+        'pipeline/fill_remaining_gaps.R', request.form['notificationEmail'],
+        tmpcode, region, site])
+    print('pre-R')
+    sp.communicate() #wait for it to return
+    print('post-R')
+
+    return redirect(url_for('post_round2', tmpcode=tmpcode))
+
+@app.route("/post-round2-<string:tmpcode>", methods=["GET"])
+@login_required
+def post_round2(tmpcode):
+
+    dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
+    with open(dumpfile) as d:
+        useredits = json.load(d)
+            
+    #load static html for popup menu
+    with open('static/html/qaqcPopupMenu_pl.html', 'r') as html_file:
+        qaqc_options_sensor = html_file.read()
+    qaqc_options_sensor = qaqc_options_sensor.replace('\n', '')
+
+    return render_template('pipeline_qaqc2.html', tmpcode=tmpcode,
+        qaqc_options=qaqc_options_sensor, useredits=useredits)
+
 @app.route("/submit-dataset-<string:tmpcode>", methods=["POST"])
 @login_required
 def submit_dataset(tmpcode):
@@ -2668,6 +2741,9 @@ def submit_dataset(tmpcode):
         # userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
         # userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
         # rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
+        # print(userflags)
+        # print(userflagpts)
+        # print(rejections)
 
         dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
         with open(dumpfile) as d:

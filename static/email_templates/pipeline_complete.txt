@@ -1,8 +1,13 @@
 <p>Hello StreamPULSE user,</p>
 <p>
   We have finished processing your upload for %s_%s.
-  Please follow the link below to visually confirm or
+  Follow the link below to visually confirm or
   edit the results of our automated QA/QC pipeline.
+</p>
+<p>
+  <strong>Note:</strong> Before clicking the link,
+  please set aside 5-15 minutes for careful data
+  inspection.
 </p>
 <p>
     <a href="%s">%s</a>

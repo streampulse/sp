@@ -105,7 +105,7 @@
 <div class="col-md-6 col-md-offset-3" id='getpldiv'>
   <br><br>
   <button id="getpl" type="button" class="btn btn-primary btn-block">
-    Review automated QA/QC
+    View imputation results
   </button>
   <br><br>
 </div>
@@ -113,7 +113,7 @@
 <div class="col-md-6 col-md-offset-3" id='submitpldiv' style='display: none'>
   <br><br>
   <button id="submitpl" type="submit" class="btn btn-primary btn-block">
-    Done
+    Submit dataset
   </button>
   <br><br>
 </div>
@@ -121,13 +121,12 @@
 <div class='row'>
   <div class="col-md-6 col-md-offset-3 text-center" id='confirmpldiv' style='display: none'>
     <br><br>
-      <form id="confirmpl" class="form-horizontal" method="POST" action="/round2-gapfill-{{tmpcode}}">
+      <form id="confirmpl" class="form-horizontal" method="POST" action="/submit-dataset-{{tmpcode}}">
         <input type="hidden" name="userflagpts" value="">
         <input type="hidden" name="userflags" value="">
         <!-- <input type="hidden" name="rm_holder" value=""> -->
         <input type="hidden" name="rej_holder" value="">
         <!-- <input type="hidden" name="instance_id" value=""> -->
-        <input type="hidden" name="interpdeluxe" value="false">
         <div class='col-md-10 col-md-offset-1 text-left'>
           <p class='lead text-center'>Submission details</p>
           <p id='submit_details'></p>
@@ -140,26 +139,11 @@
             each resultant segment will be treated as a separate "event" within our system.
           </p> -->
           <br>
-          <p class='lead text-center'>Next: imputation of gaps</p>
-          <p>
-            Gaps of &lt;3 hours will be filled via univariate, linear interpolation.
-            You may impute remaining gaps by leveraging correlation between
-            variables (method described below). You will have a chance to visually
-            inspect imputation results either way.
-          </p>
-          <br>
         </div>
         <div class='row'>
-          <div class='col-md-3 col-md-offset-1'>
-            <button id="interpbasic_button" type="submit" value="" class="btn btn-info btn-block">
-              Interpolation only
-            </button>
-          </div>
-          <div class='col-md-3 col-md-offset-1'>
-            <button id="interpdeluxe_button" type="button" value="" class="btn btn-primary btn-block">
-              Interpolation + ICI
-            </button>
-            <button id="interpdeluxe_submitter" type="submit" value="" hidden>
+          <div class='col-md-5 col-md-offset-1'>
+            <button id="confirmpl_button" type="submit" value="" class="btn btn-success btn-block">
+              Confirm submission
             </button>
           </div>
           <div class='col-md-5 col-md-offset-1'>
@@ -167,12 +151,6 @@
               Go back
             </button>
           </div>
-        </div>
-        <div class='row'>
-          <p>
-            <strong>Imputation by Correlative Inference (ICI)</strong>...
-            (description pending additional development)
-          </p>
         </div>
       </form>
     <br><br>
@@ -1357,7 +1335,7 @@
     brushstart()
   };
 
-  //submit (brings up final confirmation screen)
+  //submit
   $('body').ready(function(){
     $('body').on("click", "#submitpl", function(){
 
@@ -1384,6 +1362,7 @@
       // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
 
       $('#submit_details').empty().append(
+        'OI! UPDATE THIS SECTION!' +
         // 'Total data points: <strong>~' + npoints + '</strong><br>' +
         'Total Automated corrections: <strong>' + nedits + '</strong><br>' +
         '&nbsp;&nbsp;Infeasible values adjusted: <strong>' + nimpossibles + '</strong><br>' +
@@ -1411,14 +1390,6 @@
       $('#confirmpldiv').hide();
       $('#submitpldiv').show();
 
-    });
-  });
-
-  //send form when deluxe interp button is clicked
-  $('body').ready(function(){
-    $('body').on("click", "#interpdeluxe_button", function(){
-      $('input[name=interpdeluxe]').val('true')
-      $('#interpdeluxe_submitter').trigger('click');
     });
   });
 

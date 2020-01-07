@@ -10,8 +10,8 @@ library(lubridate)
 #gap fillers mark imputations, not including those following anomaly removal,
     #with code 4
 
-# setwd('/home/mike/git/streampulse/server_copy/sp')
-setwd('/home/aaron/sp')
+#setwd('/home/aaron/sp')
+setwd('/home/mike/git/streampulse/server_copy/sp')
 
 source('pipeline/helpers.R')
 find_outliers = readChar('find_outliers.R', file.info('find_outliers.R')$size)
@@ -42,14 +42,14 @@ na_inds = lapply(pldf, function(x) which(is.na(x)))
 flagdf = pldf
 flagdf[,] = 0
 
-#operation 1: simple range checker
+#pl operation 1: simple range checker
 #flags physically impossible values with code 1
 df_and_flagcodes = range_check(pldf, flagdf)
 pldf = df_and_flagcodes$d
 pldf = lin_interp_gaps(pldf) #operation 2 requires gapless series
 flagdf = df_and_flagcodes$flagd
 
-#operation 2: residual error based outlier detection via anomalize package
+#pl operation 2: residual error based outlier detection via anomalize package
 #flags outliers with code 2
 df_and_flagcodes = basic_outlier_detect(pldf, flagdf, origdf$DateTime_UTC)
 pldf = df_and_flagcodes$d
@@ -57,15 +57,13 @@ flagdf = df_and_flagcodes$flagd
 # testplot(pldf, xmin='2019-12-27', xmax='2019-12-28',
 #     ylims=c(1, 2.3), showpoints=T)
 
-#operation 3: restore NAs
+#pl operation 3: restore NAs and do some imputation
 for(c in colnames(pldf)){
     pldf[na_inds[[c]], c] = NA
 }
-
-#lin interp gaps <= 3 hours
 pldf = lin_interp_gaps(pldf, samp_int=samp_int_m, gap_thresh=180)
 
-#designate qaqc code 4 to imputed gaps that weren't introduced by the pipeline
+#designate qaqc code 4 to imputed gaps that weren't introduced by the detectors
 for(c in colnames(pldf)){
     interp_inds = na_inds[[c]][which(! is.na(pldf[na_inds[[c]], c]))]
     flagdf[interp_inds, c] = flagdf[interp_inds, c] + 4
@@ -88,8 +86,8 @@ write_feather(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned.feather'))
 write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 
 #notify user that pipeline processing is complete
-# system2('/home/mike/miniconda3/envs/python2/bin/python',
-system2('/home/aaron/miniconda3/envs/sp/bin/python',
+system2('/home/mike/miniconda3/envs/python2/bin/python',
+#system2('/home/aaron/miniconda3/envs/sp/bin/python',
     args=c('pipeline/notify_user.py', args))
 
 message('end of pipeline.R')
