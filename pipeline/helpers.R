@@ -1,7 +1,7 @@
 
 determine_sample_interval = function(d){
 
-    intervals = int_diff(origdf$DateTime_UTC) %>%
+    intervals = int_diff(d$DateTime_UTC) %>%
         time_length(unit='minute') %>%
         table()
     primary_interval_m = as.numeric(names(intervals)[which.max(intervals)])
@@ -53,6 +53,10 @@ lin_interp_gaps = function(d, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
         }))
 
     return(d)
+}
+
+ici = function(d){
+    NULL
 }
 
 range_check = function(d, flagd){

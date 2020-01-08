@@ -63,7 +63,7 @@ for(c in colnames(pldf)){
 }
 pldf = lin_interp_gaps(pldf, samp_int=samp_int_m, gap_thresh=180)
 
-#designate qaqc code 4 to imputed gaps that weren't introduced by the detectors
+#assign qaqc code 4 to imputed gaps that weren't introduced by the detectors
 for(c in colnames(pldf)){
     interp_inds = na_inds[[c]][which(! is.na(pldf[na_inds[[c]], c]))]
     flagdf[interp_inds, c] = flagdf[interp_inds, c] + 4
@@ -77,7 +77,8 @@ if(length(rm_rows)){
     flagdf = flagdf[-rm_rows, ]
 }
 
-#save flag codes, cleaned data to be read by flask when user follows email link
+#save flag codes, cleaned data to be read by flask controllers when
+#user follows email link
 pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
     pldf, list('upload_id'=origdf$upload_id))
 flagdf$DateTime_UTC = origdf$DateTime_UTC
