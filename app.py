@@ -2659,65 +2659,45 @@ def round2_gapfill(tmpcode):
     rejections = json.loads(request.form['rej_holder'])
     interpdeluxe = request.form['interpdeluxe']
 
-    # tmpcode = 'dad74156dab8'
-    # tmpcode = 'c655a2b731df'
-    # userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
-    # userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
-    # rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
-
     dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
     with open(dumpfile2, 'w') as dmp:
         json.dump({'userflags': userflags, 'userflagpts': userflagpts,
-            'rejections': rejections, 'interpdeluxe': interpdeluxe}, dmp)
+            'rejections': rejections}, dmp)
 
-    # dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
-    # with open(dumpfile) as d:
-    #     up_data = json.load(d)
-    # region = up_data['region']
-    # site = up_data['site']
-    # replace = up_data['replace']
+    origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+    origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
+    pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+    pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
 
-    # notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
-    #     site + '. We will send you an email notification when outlier ' +\
-    #     'detection and gap filling are complete.'
-    #
-    # flash(notification, 'alert-success')
-    # return redirect(url_for('series_upload'))
+    #replace pldf values with origdf values where pldf has been rejected
+    for r in rejections.items():
+        rejdts = r[1]
+        if rejdts:
+            rejvar = r[0]
+            rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
+            pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
 
+    pldf = pldf.reset_index()
+    feather.write_dataframe('../spdumps/' + tmpcode + '_cleaned_checked.feather')
 
-    # origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-    # origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
-    # pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
-    # pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
-    # flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
-    #
-    # # replace pldf values with origdf values where pldf has been rejected
-    # for r in rejections.items():
-    #     rejdts = r[1]
-    #     if rejdts:
-    #         rejvar = r[0]
-    #         rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
-    #         pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
-
-
-    #process user edits and fill remaining gaps (background process)
+    #fill remaining gaps (background process)
     sp = subprocess.Popen(['Rscript', '--vanilla',
         'pipeline/fill_remaining_gaps.R', request.form['notificationEmail'],
-        tmpcode, region, site])
+        tmpcode, region, site, interpdeluxe])
     print('pre-R')
     sp.communicate() #wait for it to return
     print('post-R')
 
-    return redirect(url_for('post_round2', tmpcode=tmpcode))
+    return redirect(url_for('check_round2', tmpcode=tmpcode))
 
-@app.route("/post-round2-<string:tmpcode>", methods=["GET"])
+@app.route("/check-round2-<string:tmpcode>", methods=["GET"])
 @login_required
-def post_round2(tmpcode):
+def check_round2(tmpcode):
 
     dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
     with open(dumpfile) as d:
         useredits = json.load(d)
-            
+
     #load static html for popup menu
     with open('static/html/qaqcPopupMenu_pl.html', 'r') as html_file:
         qaqc_options_sensor = html_file.read()
@@ -2725,6 +2705,86 @@ def post_round2(tmpcode):
 
     return render_template('pipeline_qaqc2.html', tmpcode=tmpcode,
         qaqc_options=qaqc_options_sensor, useredits=useredits)
+
+@app.route("/get_pipeline_data2", methods=["POST"])
+def get_pipeline_data2():
+
+    try:
+
+        tmpcode = request.json
+
+        # tmpcode = '0fb817a766c0'
+        dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
+        with open(dumpfile) as d:
+            up_data = json.load(d)
+        region = up_data['region']
+        site = up_data['site']
+        replace = up_data['replace']
+
+        pldf = feather.read_dataframe('../spdumps/' + tmpcode +\
+            '_cleaned_checked_imp.feather')
+        flagdf = feather.read_dataframe('../spdumps/' + tmpcode +\
+            '_flags2.feather')
+
+        #json format pipeline data and flag data
+        pljson = pldf.to_json(orient='records', date_format='iso')
+
+        flagdf = flagdf.set_index('DateTime_UTC').stack().reset_index().\
+            rename(columns={'level_1': 'variable', 0: 'code'}, inplace=False)
+        flagdf = flagdf[flagdf['code'] != 0]
+        flagjson = flagdf.to_json(orient='records', date_format='iso')
+
+        variables = pldf.columns[1:-1].tolist()
+
+        # Get sunrise sunset data
+        sxx = pd.read_sql("select latitude, longitude from site where region='" +\
+            region + "' and site='" + site + "'", db.engine)
+        sdt = min(origdf.DateTime_UTC).replace(hour=0, minute=0, second=0,
+            microsecond=0)
+        edt = max(origdf.DateTime_UTC).replace(hour=0, minute=0, second=0,
+            microsecond=0) + timedelta(days=1)
+
+        ddt = edt - sdt
+        lat = sxx.latitude[0]
+        lng = sxx.longitude[0]
+        rss = []
+        for i in range(ddt.days + 1):
+            rise, sets = list(suns(sdt + timedelta(days=int(i) - 1), latitude=lat,
+                longitude=lng).calculate())
+            if rise > sets:
+                sets = sets + timedelta(days=1) # account for UTC
+            rss.append([rise, sets])
+
+        rss = pd.DataFrame(rss, columns=("rise", "set"))
+        rss.set = rss.set.shift(1)
+        sunriseset = rss.loc[1:].to_json(orient='records', date_format='iso')
+
+        drr = get_twoweek_windows(sdt, edt)
+
+    except Exception as e:
+
+        tb = traceback.format_exc()
+
+        if 'pldf' in locals():
+            pldf_head = pldf.head(2).to_string()
+            flagdf_head = flagdf.head(2).to_string()
+
+            full_error_detail = tb + pldf_head + flagdf_head +\
+                dumpfile + region + site + tmpcode
+        else:
+            full_error_detail = tb + ' PLDF DID NOT EXIST!'
+
+        log_exception('E013', full_error_detail)
+        email_msg(full_error_detail, 'sp err', 'streampulse.info@gmail.com')
+
+        msg = Markup('Error 013. StreamPULSE development has been notified.')
+        flash(msg, 'alert-danger')
+
+        return redirect(url_for('series_upload'))
+
+    return jsonify(variables=variables, pljson=pljson,
+        flagjson=flagjson, sunriseset=sunriseset, plotdates=drr)
+
 
 @app.route("/submit-dataset-<string:tmpcode>", methods=["POST"])
 @login_required
@@ -2737,7 +2797,7 @@ def submit_dataset(tmpcode):
         rejections = json.loads(request.form['rej_holder'])
 
         # tmpcode = 'dad74156dab8'
-        # tmpcode = 'c655a2b731df'
+        # tmpcode = 'b30b14a8d0a5'
         # userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
         # userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
         # rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
@@ -2754,17 +2814,17 @@ def submit_dataset(tmpcode):
 
         origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
         origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
-        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned_checked_imp.feather')
         pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
         flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
-        # replace pldf values with origdf values where pldf has been rejected
-        for r in rejections.items():
-            rejdts = r[1]
-            if rejdts:
-                rejvar = r[0]
-                rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
-                pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
+        # # replace pldf values with origdf values where pldf has been rejected
+        # for r in rejections.items():
+        #     rejdts = r[1]
+        #     if rejdts:
+        #         rejvar = r[0]
+        #         rejdts = [datetime.strptime(x[0:-5], '%Y-%m-%dT%H:%M:%S') for x in rejdts]
+        #         pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
 
 
         #insert post-pipeline, post-user-edit dataset into database

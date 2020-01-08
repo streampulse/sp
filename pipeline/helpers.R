@@ -237,8 +237,9 @@ testplot = function(d, xmin=NULL, xmax=NULL, ylims=NULL,
         'EC_uScm'=c(0, 100000),
         'Battery_V'=c(0, 1000))
 
-    nr = floor(sqrt(ncol(d)))
-    nc = ncol(d) / nr
+    ns = sqrt(ncol(d))
+    nr = ceiling(ns)
+    nc = floor(ncol(d) / ns)
     ptype = ifelse(showpoints, 'b', 'l')
     par(mfrow=c(nr, nc))
     for(c in colnames(d)){

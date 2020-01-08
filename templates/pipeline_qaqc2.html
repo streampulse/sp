@@ -209,7 +209,6 @@
   var plotdates;
   var plotstart;
   var plotend;
-  var origdata;
   var pldata;
   var flagdata;
   var brushextent;
@@ -280,23 +279,20 @@
 
   });
 
-  function PlotsPL(variables, origdisp, pldisp, flagdisp, usrflgs, rms, rejects){
+  function PlotsPL(variables, pldisp, flagdisp, usrflgs, rms, rejects){
 
-    origdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
     pldisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
     flagdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
 
     //set x domain to extent of dates
-    x.domain(d3.extent(origdisp, function(d) { return d.date; }));
+    x.domain(d3.extent(pldisp, function(d) { return d.date; }));
 
     for (var i = 0; i < variables.length; ++i) {
 
       vvv = variables[i];
 
       //set y domain to extent of data
-      var origlim = d3.extent(origdisp, function(d) { return d[vvv]; })
-      var pllim = d3.extent(pldisp, function(d) { return d[vvv]; })
-      var ylim = d3.extent(origlim.concat(pllim))
+      var ylim = d3.extent(pldisp, function(d) { return d[vvv]; })
       y.domain(ylim);
 
       //create line accessor and handler for ignoring undefined values
@@ -309,7 +305,7 @@
         .append('div').attr('id', 'svgrow_' + vvv)
         .append('div').attr('class', 'inline')
         .append("svg")
-        .datum(origdisp) //initialize and position
+        .datum(pldisp) //initialize and position
           .attr("class", vvv)
           .attr("width", width + margin.left + margin.right)
           .attr("height", height + margin.top + margin.bottom)
@@ -345,51 +341,24 @@
           .attr("class", "backgraph");
       svg.append("g")
           .attr("class", "sunriseset");
-      var outliers = {};
-      var impossibles = {};
-      var imputations = {};
+      var lin_interps = {};
+      var ici_interps = {};
       flagdisp.forEach(function(e){
         if(e.variable == vvv){
           if(e.code == 1){
-            impossibles[e.DateTime_UTC] = e.variable
-          } else if([2, 3].includes(e.code)){
-            outliers[e.DateTime_UTC] = e.variable
-          } else if(e.code >= 4){
-            imputations[e.DateTime_UTC] = e.variable
+            lin_interps[e.DateTime_UTC] = e.variable
+          } else if(e.code == 2){
+            ici_interps[e.DateTime_UTC] = e.variable
           }
         }
       });
 
       svg.on('dblclick',function(){
-        redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true,
-          origdata, pldata)
+        redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true, pldata)
       });
       svg.append("g").attr("class", "brush")
         .attr("id", vvv)
         .call(brush);
-      svg.selectAll(".plorigdot")
-          .data(origdisp.filter(function(d) {
-            return d[vvv];
-          }))
-        .enter().append("circle")
-          .attr("class", "plorigdot")
-          .attr("cx", line.x())
-          .attr("cy", line.y())
-          .classed("ploutlier", function(d){
-            return vvv == outliers[d.DateTime_UTC]
-          })
-          .classed("ploutlfixed", function(d){
-            return vvv == impossibles[d.DateTime_UTC]
-          })
-          .classed('plreject', function(d){
-            return rej_holder[vvv].includes(d.DateTime_UTC);
-          })
-          // .classed("invis", function(d){
-          //   d.DateTime_UTC <=  && d.date <= unendt;
-          //   return is_brushed;
-          //   return vvv == outliers[d.DateTime_UTC]
-          // })
-          // .selectAll('.plgapfill:not(.plflag)')
 
       svg.selectAll(".pldot")
           .data(pldisp.filter(function(d) {
@@ -399,17 +368,11 @@
           .attr("class", "pldot")
           .attr("cx", line.x())
           .attr("cy", line.y())
-          .classed("plgapfill", function(d){
-            return vvv == outliers[d.DateTime_UTC];
+          .classed("pl2linterp", function(d){
+            return vvv == lin_interps[d.DateTime_UTC];
           })
-          .classed("plgapfill2", function(d){
-            return vvv == imputations[d.DateTime_UTC];
-          })
-          .classed("plgapfixed", function(d){
-            return vvv == impossibles[d.DateTime_UTC];
-          })
-          .classed('invis', function(d){
-            return rej_holder[vvv].includes(d.DateTime_UTC);
+          .classed("pl2icinterp", function(d){
+            return vvv == ici_interps[d.DateTime_UTC];
           })
           .filter('circle:not(.invis)')
           .classed('plflag', function(d){
@@ -428,7 +391,7 @@
 
       if(! ['None', null].includes($('#backgraphlist2').val()) ){
         var backfill = $('#backgraphlist2').val();
-        PLBackGraph(backfill, vvv, pldisp, origdisp);
+        PLBackGraph(backfill, vvv, pldisp);
       }
           // .attr('r', 2)
         // .classed("maybe_outl", function(d, j){
@@ -536,8 +499,6 @@
           plotstart = plotdates[1];
           plotend = plotdates[0];
 
-          origdata = JSON.parse(response.origjson);
-          origdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
           pldata = JSON.parse(response.pljson);
           pldata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
           flagdata = JSON.parse(response.flagjson);
@@ -554,10 +515,9 @@
             d.set = parseDate(d.set);
           });
 
-          origdisp = getdisplaydata(plotstart, plotend, origdata);
           pldisp = getdisplaydata(plotstart, plotend, pldata);
 
-          PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+          PlotsPL(variables=variables, pldisp=pldisp,
             flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
           $('#flagging').show();
           $('#flagging2').show();
@@ -598,7 +558,7 @@
     });
   });
 
-  function redrawPointsPL(zoom_in, sbrush, reset, origdisp, pldisp){
+  function redrawPointsPL(zoom_in, sbrush, reset, pldisp){
 
     sbb = d3.select("." + sbrush).select(".brush").node()
     if(!sbb){ // check if there is a brush
@@ -608,7 +568,7 @@
     }
     if(!s || reset){ // nothing selected or resetting graph, extent returns to 2 wk window
       var dateview = $('#jumptodate').val()
-      var extent = d3.extent(origdisp, function(d) {
+      var extent = d3.extent(pldisp, function(d) {
         return d.date;
       })
       var extent = [ d3.max([extent[0]].concat(Date.parse(dateview.slice(0, 10)))),
@@ -633,22 +593,17 @@
       //   y.domain(d3.extent(datna, function(d) { return d[vvv]; })); // reset Y to get rid of NA values
       // }else{
       dna = {}
-      origdisp.forEach(function(e){
+      pldisp.forEach(function(e){
         dna[e.DateTime_UTC] = e[vvv]
       })
 
-      //trim datasets to desired window
+      //trim dataset to desired window
       var pltrim = $.grep(pldisp, function(x) {
-        return x.date >= extent[0] && x.date <= extent[1]
-      });
-      var origtrim = $.grep(origdisp, function(x) {
         return x.date >= extent[0] && x.date <= extent[1]
       });
 
       //set y domain to extent of data
-      var origlim = d3.extent(origtrim, function(d) { return d[vvv]; });
-      var pllim = d3.extent(pltrim, function(d) { return d[vvv]; });
-      var ylim = d3.extent(origlim.concat(pllim));
+      var ylim = d3.extent(pltrim, function(d) { return d[vvv]; });
       y.domain(ylim);
       //   y.domain(d3.extent(data, function(d) { return d[vvv]; }));
       // }
@@ -658,21 +613,21 @@
           .defined(function(d){return d[vvv];})
           .x(function(d) { return x(d.date); })
           .y(function(d) { return y(d[vvv]); });
-      d3.select("." + vvv).selectAll(".pldot, .plorigdot")
+      d3.select("." + vvv).selectAll(".pldot")
           .attr("cx", line.x())
           .attr("cy", line.y());
       d3.select("." + vvv).selectAll('.sunriseset')
           .attr('x', function(d) { return x(d.set); })
           .attr('width', function(d) { return x(d.rise) - x(d.set); });
       // if(!zoom_in){ // adding na values
-      d3.select("." + vvv).selectAll(".pldot, .plorigdot")
+      d3.select("." + vvv).selectAll(".pldot")
         .classed("outside", function(d) {
           return dna[d.DateTime_UTC] == null;
         });
       // }
       if(zoom_in){ // check for outside points
         // redraw points
-        d3.select("." + vvv).selectAll(".pldot, .plorigdot")
+        d3.select("." + vvv).selectAll(".pldot")
           .classed("outside", function(d) {
             is_inplot = extent[0] > d.date || d.date > extent[1];
             return is_inplot;
@@ -687,7 +642,7 @@
         // redraw backfill
         var backfill = $("#backgraphlist2").val();
         var dateview = $('#jumptodate').val()
-        PLBackGraph(backfill, vvv, pltrim, origtrim);
+        PLBackGraph(backfill, vvv, pltrim);
       }
     }
     d3.selectAll(".pldot").classed("selected", false);
@@ -711,16 +666,14 @@
   //zoomin
   $('body').ready(function(){
     $('body').on("click", "#zoomin", function(){
-      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=false,
-        origdata, pldata)
+      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=false, pldata)
     });
   });
 
   //zoomreset
   $(function(){
     $("#zoomreset").click(function(){
-      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true,
-        origdata, pldata)
+      redrawPointsPL(zoom_in=true, sbrush=selectedBrush, reset=true, pldata)
     });
   });
 
@@ -755,11 +708,8 @@
         var pltrim = $.grep(pldata, function(x) {
           return x.date >= extent[0] && x.date <= extent[1];
         });
-        var origtrim = $.grep(origdata, function(x) {
-          return x.date >= extent[0] && x.date <= extent[1];
-        });
         for (var i = 0; i < variables.length; ++i) {
-          PLBackGraph(backfill, variables[i], pltrim, origtrim);
+          PLBackGraph(backfill, variables[i], pltrim);
         }
       }
 
@@ -778,15 +728,13 @@
         //   data = getdisplaydata(plotstart,plotend,alldatna);
         // }else{
         pldisp = getdisplaydata(plotstart, plotend, pldata);
-        origdisp = getdisplaydata(plotstart, plotend, origdata);
         // }
         // async_replot(data=pldisp)
         // console.log(variables);
-        // console.log(origdisp);
         // console.log(pldisp);
         // console.log(flagdata);
         $("#graphs").empty();
-        PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+        PlotsPL(variables=variables, pldisp=pldisp,
           flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
@@ -830,10 +778,9 @@
         // }
         // async_replot(data=data)
         pldisp = getdisplaydata(plotstart, plotend, pldata);
-        origdisp = getdisplaydata(plotstart, plotend, origdata);
 
         $("#graphs").empty();
-        PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+        PlotsPL(variables=variables, pldisp=pldisp,
           flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
@@ -874,10 +821,9 @@
       // async_replot(data=data)
 
       pldisp = getdisplaydata(plotstart, plotend, pldata);
-      origdisp = getdisplaydata(plotstart, plotend, origdata);
 
       $("#graphs").empty();
-      PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
+      PlotsPL(variables=variables, pldisp=pldisp,
         flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
       if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
