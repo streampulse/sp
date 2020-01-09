@@ -67,43 +67,40 @@ sum_sq_diff = function(x, narow){
 }
 
 # find similar k days
-# df=select(daily_averages, -date); k=3; minobs=2
-top_k = function(df, k, minobs){
+da = select(daily_averages, -date); k=3; minobs=3
+top_k = function(da, k, minobs){
     # df is dataframe of daily values with a row for each date and a column
     # for each variable.
     # k is number of similar days to find.
-    # minobs is the min. observations required for a day.
+    # minobs is the min number of observations (across all available vars)
+    #   required to perform ICI for a given day.
 
-    # df2 <<- df
-    # df = df2
-
-    df = df[-c(1,nrow(df)),] #first and last obs are artifacts. removing them.
-    cc = complete.cases(df)
+    cc = complete.cases(da)
     narows = which(!cc)
     fullrows = which(cc)
-    D = matrix(NA, nrow(df), k) #holds nearest neighbors for each row with NAs
+    D = matrix(NA, nrow(da), k) #holds nearest neighbors for each row with NAs
 
     enough_full_rows = TRUE
     if(length(fullrows) < 30){
-        message(paste('Not filling gaps via nearest neighbors approach;\n\t',
+        usr_msgs = append(usr_msgs,
+            paste('Not filling gaps via nearest neighbors approach;',
             'fewer than 30 days without NAs for comparison.'))
         enough_full_rows = FALSE
     }
 
     if(length(narows) & enough_full_rows){
 
-        df = apply(df, 2, scale) #standardize variables for comparison of rows
+        da = apply(da, 2, scale) #standardize variables for comparison of rows
 
         #for each row with missing data, find k similar rows with none missing
-        for (i in narows){
+        for (r in narows){
 
             #skip days with less than minobs. cant say much about similarity
-            if(sum(!is.na(df[i,])) < minobs){ next }
+            if(sum(! is.na(da[r,])) < minobs){ next }
 
-            #get sums of squared differences for each full day
-            daily_deltas = apply(df[fullrows,], MARGIN=1, FUN=sum_sq_diff,
-                narow=df[i,])
-            D[i,] = fullrows[order(daily_deltas)[1:k]] #k nearest days
+            #get sums of squared differences vs each full day
+            daily_deltas = apply(da[fullrows,], 1, sum_sq_diff, narow=da[r,])
+            D[r,] = fullrows[order(daily_deltas)[1:k]] #k nearest days
         }
     }
 
@@ -240,7 +237,7 @@ fill_missing = function(df,
     data.frame(date_index, select(df,-date,-time), stringsAsFactors=FALSE)
 }
 
-df=pldf; maxspan_days=5; knn=3
+df=pldf; maxspan_days=5; knn=3; interv=15
 sint=desired_int; algorithm=fillgaps
 gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
 
@@ -252,15 +249,23 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
     # date_index = df %>% select(one_of(dtcol)) # index data
 
     #get daily sampling frequency so imputation can leverage periodicity
-    samples_per_day = 24 * 60 / as.double(sint, units='mins')
+    samples_per_day = 24 * 60 / interv
+    # samples_per_day = 24 * 60 / as.double(sint, units='mins')
 
+
+    daily_averages = df %>%
+        bind_cols(origdf[,1]) %>%
+        mutate(date=lubridate::round_date(DateTime_UTC, unit='day')) %>%
+        select(-DateTime_UTC) %>%
     # get averages for days with full sample coverage; otherwise NA (via mean())
     # nearly_complete_day = samples_per_day * 0.95 #could also use partial days
-    daily_averages = input_data %>% select(-time) %>% group_by(date) %>%
-    summarize_all(funs((n() == samples_per_day) * mean(.)))
-    colnames(df)
-    bind_cols(origdf$DateTime_UTC, df)
-    #HERE! USE TAPPLY?
+    daily_averages = df %>%
+        bind_cols(origdf[,1]) %>%
+        mutate(date=lubridate::round_date(DateTime_UTC, unit='day')) %>%
+        select(-DateTime_UTC) %>%
+        group_by(date) %>%
+        summarize_all(list(~ ( (n() == samples_per_day) * mean(.) ) )) %>%
+        filter_at(vars(-date), any_vars(. != 0))
 
     # find k nearest neighbors for each day index
     nearest_neighbors = top_k(select(daily_averages, -date), k=knn, minobs=3)

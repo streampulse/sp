@@ -18,6 +18,7 @@ source('pipeline/helpers.R')
 # names(args) = c('notificationEmail', 'tmpcode', 'region', 'site',
 #     'interpdeluxe')
 args = list('tmpcode'='e5b659a48490', 'interpdeluxe'='false')
+usr_msgs = list()
 
 #read in datasets written by main pipeline
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
@@ -50,7 +51,7 @@ for(c in colnames(pldf)){
 #pl operation 5: Imputation by Correlative Inference
 if(args$interpdeluxe == 'true'){
     na_inds = lapply(pldf, function(x) which(is.na(x)))
-    pldf = ici(pldf)
+    pldf = ici(pldf, interv=samp_int_m)
 
     #assign qaqc code 2 to gaps filled by ICI
     for(c in colnames(pldf)){
