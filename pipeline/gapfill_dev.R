@@ -67,26 +67,43 @@ sum_sq_diff = function(x, narow){
 }
 
 # find similar k days
-da = select(daily_averages, -date); k=3; minobs=3
-top_k = function(da, k, minobs){
-    # df is dataframe of daily values with a row for each date and a column
-    # for each variable.
+dl=datelist_fulldays; cmat=correlations; k=3; minobs=3
+top_k = function(dl, cmat, k, minvars){
+    #
     # k is number of similar days to find.
-    # minobs is the min number of observations (across all available vars)
-    #   required to perform ICI for a given day.
+    # minvars is the min number of variables that can be used to infer a
+    #   missing value
 
-    cc = complete.cases(da)
+
+    days_with_gaps_bool = unlist(Map(function(x) any(is.na(x)), dl))
+    dwg = dl[days_with_gaps_bool]
+    dwog = dl[! days_with_gaps_bool]
+
+    # enough_full_days = TRUE
+    if(length(dwog) < 30){
+        usr_msgs = append(usr_msgs,
+            paste('Not filling gaps via ICI;',
+            'fewer than 30 days without NAs for comparison.'))
+        stop()
+        # enough_full_days = FALSE
+    }
+
+    nearest_days = matrix(NA, length(dwg), k, dimnames=list(names(dwg), NULL))
+    for(i in 1:length(dwg)){
+
+        #calculate a weighted sum of squared differences between corresponding
+        #values for each day, based on correlation strengths
+        day_wssd = matrix(NA, length(dwg), k)
+        for(j in 1:length(dwog)){
+
+            d = dwg[[i]] - dwog[[j]]
+
+
+    cc = complete.cases(dwg)
     narows = which(!cc)
     fullrows = which(cc)
     D = matrix(NA, nrow(da), k) #holds nearest neighbors for each row with NAs
 
-    enough_full_rows = TRUE
-    if(length(fullrows) < 30){
-        usr_msgs = append(usr_msgs,
-            paste('Not filling gaps via nearest neighbors approach;',
-            'fewer than 30 days without NAs for comparison.'))
-        enough_full_rows = FALSE
-    }
 
     if(length(narows) & enough_full_rows){
 
@@ -252,23 +269,42 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
     samples_per_day = 24 * 60 / interv
     # samples_per_day = 24 * 60 / as.double(sint, units='mins')
 
-
-    daily_averages = df %>%
+    df = as.tibble(df) %>%
         bind_cols(origdf[,1]) %>%
-        mutate(date=lubridate::round_date(DateTime_UTC, unit='day')) %>%
-        select(-DateTime_UTC) %>%
+        arrange(DateTime_UTC) %>%
+        mutate(date=as.Date(lubridate::floor_date(DateTime_UTC, unit='day'))) %>%
+        select(-DateTime_UTC)
+
+    correlations = cor(select(df, -date), use='na.or.complete', method='kendall')
+
+    date_counts = table(df$date)
+
+    incomplete_days = as.Date(names(which(date_counts < samples_per_day)))
+
+    #make new df of standardized variables
+    df_std = df
+    df_std[, 1:(ncol(df) - 1)] = apply(df[, 1:(ncol(df) - 1)], 2, scale)
+
+    datelist_fulldays = df_std %>%
+        filter(! date %in% incomplete_days) %>%
+        plyr::dlply(plyr::.(date))
+
+    datelist_fulldays = Map(function(x) as.matrix(select(x, -date)),
+        datelist_fulldays)
+
     # get averages for days with full sample coverage; otherwise NA (via mean())
     # nearly_complete_day = samples_per_day * 0.95 #could also use partial days
-    daily_averages = df %>%
-        bind_cols(origdf[,1]) %>%
-        mutate(date=lubridate::round_date(DateTime_UTC, unit='day')) %>%
-        select(-DateTime_UTC) %>%
-        group_by(date) %>%
-        summarize_all(list(~ ( (n() == samples_per_day) * mean(.) ) )) %>%
-        filter_at(vars(-date), any_vars(. != 0))
+    # daily_averages = df %>%
+    #     bind_cols(origdf[,1]) %>%
+    #     mutate(date=lubridate::round_date(DateTime_UTC, unit='day')) %>%
+    #     select(-DateTime_UTC) %>%
+    #     group_by(date) %>%
+    #     summarize_all(list(~ ( (n() == samples_per_day) * mean(.) ) ))
+        # filter_at(vars(-date), any_vars(. != 0))
 
     # find k nearest neighbors for each day index
-    nearest_neighbors = top_k(select(daily_averages, -date), k=knn, minobs=3)
+    nearest_neighbors = top_k(datelist_fulldays, correlations, k=knn, minvars=3)
+    # nearest_neighbors = top_k(select(daily_averages, -date), k=knn, minobs=3)
 
     # filled = fill_missing(input_data, nearest_neighbors, daily_averages,
     filled = fill_missing(input_data,
