@@ -1,79 +1,10 @@
-
-# x = input_data[,8]; tol=12; algorithm='interpolation'
-# x=select(daypoints,-date,-time); tol=0; samp=samp; algorithm='mean'
-series_impute = function(x, tol, samp, algorithm, variable_name, ...){
-    # records locations of NA runs longer than tol, imputes all gaps,
-    # then replaces NAs for long runs.
-    # samp is the number of samples per day
-    # algorithm and ... are passed to imputeTS::na.seasplit
-    # plot(x, type='l')
-
-    # if(length(na_locations)){
-    #     x2 <<- x
-    #     samp2 <<- samp
-    # }
-    # x = x2
-    # samp = samp2
-    # tol=192; algorithm='interpolation'
-    na_locations = which(is.na(x))
-
-    # message(dim(x))
-    # message(dim(na_locations))
-    if(length(na_locations) > 1){ #if NAs in x, get indices of long runs
-        runs = rle2(diff(na_locations), indices=TRUE, return.list=FALSE)
-        runs = runs[runs[,'values'] == 1 & runs[,'lengths'] >= tol-1, ,
-            drop=FALSE]
-        long_na_runs = mapply(seq, runs[,'starts'], runs[,'stops'] + 1,
-            SIMPLIFY=FALSE)
-        long_na_run_indices = na_locations[unlist(long_na_runs)]
-    }
-
-    #impute
-    if(length(x) > samp * 2){ #don't leverage periodicity for <2 days
-        x = ts(x, start=1, frequency=samp) #add periodicity info
-    } else {
-        warning(paste('Less than 2 days of data, so interpolating without\n',
-            '\tperiodicity information.'), .call=FALSE)
-    }
-
-    imputed = try(as.numeric(suppressWarnings(na.seasplit(x,
-        algorithm=algorithm, ...))), silent=TRUE)
-    if(class(imputed) == 'try-error'){
-        message(paste0('Could not perform imputation using method: "',
-            algorithm, '"\n\tfor variable: "', variable_name,
-            '". Trying to interpolate linearly.'))
-        imputed = try(as.numeric(suppressWarnings(na.approx(x,
-            na.rm=FALSE, rule=2))), silent=TRUE)
-        if(class(imputed) == 'try-error' | length(imputed) == 0){
-            stop(paste0('Imputation still failed. Are you requesting a\n\t',
-                'time interval smaller than that of your data?'), call.=FALSE)
-        } else {
-            message('Linear interpolation succeeded.')
-        }
-    }
-
-    #restore NAs where there were long runs
-    if(length(na_locations) > 1){
-        imputed[long_na_run_indices] = NA
-    }
-
-    return(imputed)
-}
-
-#for sums of squared differences between standardized values from NA days and
-#all other days
-sum_sq_diff = function(x, narow){
-    sum((narow - x)^2, na.rm=TRUE)
-}
-
-# find similar k days
-dl=datelist_fulldays; cmat=correlations; k=3; minobs=3
-top_k = function(dl, cmat, k, minvars){
-    #
-    # k is number of similar days to find.
-    # minvars is the min number of variables that can be used to infer a
+# dl=datelist_fulldays; cmat=correlations; k=3; minobs=3
+nearest_k_days = function(dl, k, minvars){
+    # dl: a list of dataframes, named by datestring, each containing all samples
+    #   for the specified day
+    # k: number of similar days to find for each day with missing data
+    # minvars: min number of variables that can be used to infer a
     #   missing value
-
 
     days_with_gaps_bool = unlist(Map(function(x) any(is.na(x)), dl))
     dwg = dl[days_with_gaps_bool]
@@ -91,39 +22,28 @@ top_k = function(dl, cmat, k, minvars){
     nearest_days = matrix(NA, length(dwg), k, dimnames=list(names(dwg), NULL))
     for(i in 1:length(dwg)){
 
-        #calculate a weighted sum of squared differences between corresponding
-        #values for each day, based on correlation strengths
-        day_wssd = matrix(NA, length(dwg), k)
+        day_scores = vector('numeric', length(dwog))
         for(j in 1:length(dwog)){
 
-            d = dwg[[i]] - dwog[[j]]
+            d = try( (dwg[[i]] - dwog[[j]])^2 )
+            if(class(d) == 'try-error'){
+                day_scores[j] = Inf
+            } else {
+                ssds = colSums(d, na.rm=FALSE)
 
-
-    cc = complete.cases(dwg)
-    narows = which(!cc)
-    fullrows = which(cc)
-    D = matrix(NA, nrow(da), k) #holds nearest neighbors for each row with NAs
-
-
-    if(length(narows) & enough_full_rows){
-
-        da = apply(da, 2, scale) #standardize variables for comparison of rows
-
-        #for each row with missing data, find k similar rows with none missing
-        for (r in narows){
-
-            #skip days with less than minobs. cant say much about similarity
-            if(sum(! is.na(da[r,])) < minobs){ next }
-
-            #get sums of squared differences vs each full day
-            daily_deltas = apply(da[fullrows,], 1, sum_sq_diff, narow=da[r,])
-            D[r,] = fullrows[order(daily_deltas)[1:k]] #k nearest days
+                if(sum(! is.na(ssds)) < minvars){
+                    day_scores[j] = NA
+                } else {
+                    mean_ssd = mean(ssds, na.rm=TRUE)
+                    day_scores[j] = mean_ssd
+                }
+            }
         }
+
+        nearest_days[i,] = names(dwog)[order(day_scores)[1:3]]
     }
 
-    #restore bogus days at beginning and end of D (for compatibility)
-    # D = rbind(rep(NA, ncol(D)), D, rep(NA, ncol(D)))
-    return(D) #matrix with rows for NA days and columns for knn days
+    return(nearest_days)
 }
 
 # data prep function for fill_gaps
@@ -256,7 +176,7 @@ fill_missing = function(df,
 
 df=pldf; maxspan_days=5; knn=3; interv=15
 sint=desired_int; algorithm=fillgaps
-gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
+gap_fill = function(df, maxspan_days=5, knn=3, interv, algorithm, ...){
 
     # # kind of goofy to do this by date and time, but that's because I
     # # translated the code from Python
@@ -269,13 +189,17 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
     samples_per_day = 24 * 60 / interv
     # samples_per_day = 24 * 60 / as.double(sint, units='mins')
 
-    df = as.tibble(df) %>%
+    df = as_tibble(df) %>%
         bind_cols(origdf[,1]) %>%
         arrange(DateTime_UTC) %>%
+        group_by(DateTime_UTC) %>%
+        summarize_all(mean, na.rm=TRUE) %>%
+        ungroup() %>%
         mutate(date=as.Date(lubridate::floor_date(DateTime_UTC, unit='day'))) %>%
         select(-DateTime_UTC)
 
-    correlations = cor(select(df, -date), use='na.or.complete', method='kendall')
+    # correlations = cor(select(df, -date), use='na.or.complete', method='kendall')
+    correlations = cor(select(df, -date), use='na.or.complete', method='spearman')
 
     date_counts = table(df$date)
 
@@ -303,12 +227,15 @@ gap_fill = function(df, maxspan_days=5, knn=3, sint, algorithm, ...){
         # filter_at(vars(-date), any_vars(. != 0))
 
     # find k nearest neighbors for each day index
-    nearest_neighbors = top_k(datelist_fulldays, correlations, k=knn, minvars=3)
+    nearest_days = nearest_k_days(datelist_fulldays, k=knn, minvars=3)
     # nearest_neighbors = top_k(select(daily_averages, -date), k=knn, minobs=3)
 
+        #calculate a weighted sum of squared differences between corresponding
+        #values for each day, based on correlation strengths
+
     # filled = fill_missing(input_data, nearest_neighbors, daily_averages,
-    filled = fill_missing(input_data,
-        date_index, maxspan_days, samp=samples_per_day)
+    filled = fill_missing(input_data, date_index, maxspan_days,
+        samp=samples_per_day)
 
     #remove columns with 0 or 1 non-NA value. these cannot be imputed.
     vals_per_col = apply(filled[,-1], 2, function(x) sum(!is.na(x)))
