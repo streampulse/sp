@@ -50,7 +50,7 @@ import regex
 # from email.mime.multipart import MIMEMultipart
 import subprocess
 from helpers import *
-import feather
+#import feather
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -1588,6 +1588,7 @@ def series_upload():
             #go to next webpage
             flash("Please double check your variable name matching.",
                 'alert-warning')
+            
             return render_template('upload_columns.html', filenames=filenames,
                 columns=columns, tmpfile=tmp_file, variables=variables,
                 existing=existing, sitenm=site[0], replace=replace,
@@ -1597,6 +1598,8 @@ def series_upload():
         except Exception as e:
             [os.remove(f) for f in fnlong]
             tb = traceback.format_exc()
+            tb = tb + replace + notificationEmail + site[0] + filenames[0] + str(existing) +\
+                str(cdict) + str(ldict) + str(ndict) + str(variables) 
             log_exception('E004', tb)
             msg = Markup('Error 004. Check for unusual characters in your ' +\
                 'column names (degree symbol, etc.). If problem persists, ' +\
@@ -2535,7 +2538,9 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     #save dataframe and ancillary data so that it can be accessed when user returns
-    feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
+    xx.to_csv('../spdumps/' + tmpcode + '_xx.csv',  index=False)
+    #feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
+        
     dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
     with open(dumpfile, 'w') as d:
         dmp = json.dump({'region': region, 'site': site, 'cdict': cdict,
@@ -2559,6 +2564,7 @@ def confirmcolumns():
         'detection and gap filling are complete.'
     # email_msg(notification, 'StreamPULSE upload notification', uploader_email)
     flash(notification, 'alert-success')
+
     return redirect(url_for('series_upload'))
 
 @app.route("/get_pipeline_data", methods=["POST"])
@@ -2576,9 +2582,18 @@ def get_pipeline_data():
         site = up_data['site']
         replace = up_data['replace']
 
-        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
-        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
+            parse_dates=['DateTime_UTC'])
+        origdf.DateTime_UTC = origdf.DateTime_UTC.dt.tz_localize('UTC')
+        pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
+            parse_dates=['DateTime_UTC'])
+        pldf.DateTime_UTC = pldf.DateTime_UTC.dt.tz_localize('UTC')
+        flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
+            parse_dates=['DateTime_UTC'])
+        flagdf.DateTime_UTC = flagdf.DateTime_UTC.dt.tz_localize('UTC')
+        #origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        #pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        #flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
         #json format original data, pipeline data, and flag data
         origjson = origdf.to_json(orient='records', date_format='iso')
@@ -2621,10 +2636,6 @@ def get_pipeline_data():
         tb = traceback.format_exc()
 
         if 'origdf' in locals():
-            origdf_head = origdf.head(2).to_string()
-            pldf_head = pldf.head(2).to_string()
-            flagdf_head = flagdf.head(2).to_string()
-
             full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
                 dumpfile + region + site + tmpcode
         else:
@@ -2676,11 +2687,18 @@ def submit_dataset(tmpcode):
         site = up_data['site']
         replace = up_data['replace']
 
-        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
+            parse_dates=['DateTime_UTC'])
+        #origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
         origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
-        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        #pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
+            parse_dates=['DateTime_UTC'])
         pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
-        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        #flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
+            parse_dates=['DateTime_UTC'])
+        flagdf = fagdf.set_index(['DateTime_UTC']).tz_localize('UTC')
 
         # replace pldf values with origdf values where pldf has been rejected
         for r in rejections.items():
