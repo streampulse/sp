@@ -43,6 +43,28 @@ nearest_k_days = function(dwg, dwog, k, minvars){
     return(nearest_days)
 }
 
+standardize_df = function(x){
+
+    x_std = x
+    datecol = which(colnames(x) == 'date')
+    x_means = colMeans(x[, -datecol], na.rm=TRUE)
+    x_sds = apply(x[, -datecol], 2, sd, na.rm=TRUE)
+    x_std[, -datecol] = apply(x[, -datecol], 2, scale)
+
+    return(list(x_std=x_std, x_means=x_means, x_sds=x_sds))
+}
+
+unstandardize_df = function(x_std, x_means, x_sds){
+
+    x = x_std
+    datecol = which(colnames(x) == 'date')
+    x[, -datecol] = apply(x_std[, -datecol], 1,
+        function(z) (z + x_means) * x_sds)
+
+    return(x)
+    #HERE: identical(df, zz) != TRUE
+}
+
 listify_df = function(dfx){
 
     datelist_fulldays = dfx %>%
@@ -89,20 +111,10 @@ NDI = function(dwg, dwog, nearest_days){
     return(dwg)
 }
 
-df=pldf; maxspan_days=5; knn=3; interv=15
-sint=desired_int; algorithm=fillgaps
-gap_fill = function(df, maxspan_days=5, knn=3, interv, algorithm, ...){
+# df=pldf; maxspan_days=5; knn=3; interv=15
+gap_fill = function(df, knn=3, interv){
 
-    # # kind of goofy to do this by date and time, but that's because I
-    # # translated the code from Python
-    # input_data = df %>% mutate(date=as.Date(df[,dtcol]),
-    #     time=strftime(df[,dtcol], format="%H:%M:%S")) %>%
-    #     select(-one_of(dtcol)) %>% select(date, time, everything())
-    # date_index = df %>% select(one_of(dtcol)) # index data
-
-    #get daily sampling frequency so imputation can leverage periodicity
     samples_per_day = 24 * 60 / interv
-    # samples_per_day = 24 * 60 / as.double(sint, units='mins')
 
     df = as_tibble(df) %>%
         bind_cols(origdf[,1]) %>%
@@ -113,17 +125,16 @@ gap_fill = function(df, maxspan_days=5, knn=3, interv, algorithm, ...){
         mutate(date=as.Date(lubridate::floor_date(DateTime_UTC, unit='day'))) %>%
         select(-DateTime_UTC)
 
-    # correlations = cor(select(df, -date), use='na.or.complete', method='kendall')
     correlations = cor(select(df, -date), use='na.or.complete', method='spearman')
 
     date_counts = table(df$date)
 
     incomplete_days = as.Date(names(which(date_counts < samples_per_day)))
 
-    #make new df of standardized variables
-    df_std = df
-    #gotta grab means and sds here to rescale with
-    df_std[, 1:(ncol(df) - 1)] = apply(df[, 1:(ncol(df) - 1)], 2, scale)
+    #make new df of standardized variables; grab moments by which to rescale
+    std_out = standardize_df(df)
+    df_std = std_out$x_std
+    zz = unstandardize_df(df_std, std_out$x_means, std_out$x_sds)
 
     datelist_fulldays = listify_df(df_std)
 
