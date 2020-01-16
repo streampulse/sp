@@ -2698,7 +2698,7 @@ def submit_dataset(tmpcode):
         #flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
         flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
             parse_dates=['DateTime_UTC'])
-        flagdf = fagdf.set_index(['DateTime_UTC']).tz_localize('UTC')
+        flagdf = flagdf.set_index(['DateTime_UTC']).tz_localize('UTC')
 
         # replace pldf values with origdf values where pldf has been rejected
         for r in rejections.items():
