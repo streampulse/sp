@@ -1,7 +1,7 @@
 library(plyr)
 library(tidyverse)
 library(imputeTS)
-library(feather)
+# library(feather)
 library(lubridate)
 rm(list=ls()); cat('/014')                                  ####
 
@@ -19,13 +19,16 @@ source('pipeline/helpers.R')
 # names(args) = c('notificationEmail', 'tmpcode', 'region', 'site',
 #     'interpdeluxe')
 args = list('tmpcode'='e5b659a48490', 'interpdeluxe'='false')
+args = list('tmpcode'='e9cfbdc06c88', 'interpdeluxe'='false')
 usr_msgs = list()
 
 #read in datasets written by main pipeline
-origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
-pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
+origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
+pldf = read_csv(paste0('../spdumps/', args['tmpcode'],
+# origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
+# pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
     # '_cleaned_checked.feather'))                              ####
-    '_cleaned.feather'))
+    '_cleaned.csv'))
 pldf = select(pldf, -DateTime_UTC, -upload_id)
 # flagdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 # flagdf = select(flagdf, -DateTime_UTC)

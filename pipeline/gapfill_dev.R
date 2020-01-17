@@ -1,18 +1,23 @@
-# dl=datelist_fulldays; cmat=correlations; k=3; minobs=3
-nearest_k_days = function(dwg, dwog, k, minvars){
+usr_msgs = list()
+
+dwg=days_with_gaps; dwog=days_without_gaps; cmat=correlations; k=3; minvars=3
+nearest_k_days = function(dwg, dwog, cmat, k, minvars){
     # dl: a list of dataframes, named by datestring, each containing all samples
     #   for the specified day
     # k: number of similar days to find for each day with missing data
     # minvars: min number of variables that can be used to infer a
     #   missing value
 
-    # enough_full_days = TRUE
+    if(length(dwg) == 0){
+        usr_msgs <<- append(usr_msgs, 'No missing data, so not performing NDI.')
+        return('nothing to do'))
+    }
+
     if(length(dwog) < 30){
-        usr_msgs = append(usr_msgs,
-            paste('Not filling gaps via ICI;',
+        usr_msgs <<- append(usr_msgs,
+            paste('Not filling gaps via NDI;',
             'fewer than 30 days without NAs for comparison.'))
-        stop()
-        # enough_full_days = FALSE
+        return('nothing to do')
     }
 
     nearest_days = matrix(NA, length(dwg), k, dimnames=list(names(dwg), NULL))
@@ -49,7 +54,7 @@ standardize_df = function(x){
     datecol = which(colnames(x) == 'date')
     x_means = colMeans(x[, -datecol], na.rm=TRUE)
     x_sds = apply(x[, -datecol], 2, sd, na.rm=TRUE)
-    x_std[, -datecol] = apply(x[, -datecol], 2, scale)
+    x_std[, -datecol] = scale(x[, -datecol])
 
     return(list(x_std=x_std, x_means=x_means, x_sds=x_sds))
 }
@@ -58,11 +63,10 @@ unstandardize_df = function(x_std, x_means, x_sds){
 
     x = x_std
     datecol = which(colnames(x) == 'date')
-    x[, -datecol] = apply(x_std[, -datecol], 1,
-        function(z) (z + x_means) * x_sds)
+    x[, -datecol] = mapply(function(w, y, z) w * y + z,
+        x_std[, -datecol], x_sds, x_means)
 
     return(x)
-    #HERE: identical(df, zz) != TRUE
 }
 
 listify_df = function(dfx){
@@ -111,7 +115,7 @@ NDI = function(dwg, dwog, nearest_days){
     return(dwg)
 }
 
-# df=pldf; maxspan_days=5; knn=3; interv=15
+df=pldf; maxspan_days=5; knn=3; interv=15
 gap_fill = function(df, knn=3, interv){
 
     samples_per_day = 24 * 60 / interv
@@ -134,9 +138,9 @@ gap_fill = function(df, knn=3, interv){
     #make new df of standardized variables; grab moments by which to rescale
     std_out = standardize_df(df)
     df_std = std_out$x_std
-    zz = unstandardize_df(df_std, std_out$x_means, std_out$x_sds)
 
     datelist_fulldays = listify_df(df_std)
+    #GOTTA KEEP TRACK OF THE INCOMPLETE DAYS
 
     # find k nearest neighbors for each day index
     days_with_gaps_bool = unlist(Map(function(x) any(is.na(x)), datelist_fulldays))
@@ -146,6 +150,10 @@ gap_fill = function(df, knn=3, interv){
     nearest_days = nearest_k_days(days_with_gaps, days_without_gaps,
         k=knn, minvars=3)
 
+    if(length(nearest_days) == 1 && nearest_days == 'nothing to do'){
+        return(df)
+    }
+
         #calculate a weighted sum of squared differences between corresponding
         #values for each day, based on correlation strengths
 
@@ -153,6 +161,7 @@ gap_fill = function(df, knn=3, interv){
 
     datelist_fulldays = unlistify_df(df_std)
 
+    zz = unstandardize_df(df_std, std_out$x_means, std_out$x_sds)
 
     # filld <- which(complete.cases(ns))
     union(names(datelist_fulldays), rownames(nearest_days))
