@@ -1588,7 +1588,7 @@ def series_upload():
             #go to next webpage
             flash("Please double check your variable name matching.",
                 'alert-warning')
-            
+
             return render_template('upload_columns.html', filenames=filenames,
                 columns=columns, tmpfile=tmp_file, variables=variables,
                 existing=existing, sitenm=site[0], replace=replace,
@@ -1599,7 +1599,7 @@ def series_upload():
             [os.remove(f) for f in fnlong]
             tb = traceback.format_exc()
             tb = tb + replace + notificationEmail + site[0] + filenames[0] + str(existing) +\
-                str(cdict) + str(ldict) + str(ndict) + str(variables) 
+                str(cdict) + str(ldict) + str(ndict) + str(variables)
             log_exception('E004', tb)
             msg = Markup('Error 004. Check for unusual characters in your ' +\
                 'column names (degree symbol, etc.). If problem persists, ' +\
@@ -2540,7 +2540,7 @@ def confirmcolumns():
     #save dataframe and ancillary data so that it can be accessed when user returns
     xx.to_csv('../spdumps/' + tmpcode + '_xx.csv',  index=False)
     #feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
-        
+
     dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
     with open(dumpfile, 'w') as d:
         dmp = json.dump({'region': region, 'site': site, 'cdict': cdict,
@@ -2636,7 +2636,7 @@ def get_pipeline_data():
         tb = traceback.format_exc()
 
         if 'origdf' in locals():
-            full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
+            full_error_detail = tb + str(origdf.head()) + str(pldf.head()) + str(flagdf.head()) +\
                 dumpfile + region + site + tmpcode
         else:
             full_error_detail = tb + ' ORIGDF DID NOT EXIST!'
@@ -2675,7 +2675,7 @@ def submit_dataset(tmpcode):
         rejections = json.loads(request.form['rej_holder'])
 
         # tmpcode = 'dad74156dab8'
-        # tmpcode = 'c655a2b731df'
+        # tmpcode = '44f58ce85ee7'
         # userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
         # userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
         # rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
@@ -4331,7 +4331,7 @@ def query_available_results():
     resdir = app.config['RESULTS_FOLDER']
     d = os.listdir(resdir)
     d = [x for x in d if x[0:6] == 'modOut']
-    regsiteyr = [re.match('\w+_(\w+)_(\w+)_(\w+).rds', x).groups() for x in d]
+    regsiteyr = [re.match('\w+_(.+?)_(.+?)_([0-9]{4}).rds', x).groups() for x in d]
 
     resdir_powell = resdir[0: len(resdir) - 4] + 'powell_data/shiny_lists'
     dP = os.listdir(resdir_powell)
