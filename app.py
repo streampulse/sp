@@ -2815,9 +2815,8 @@ def submit_dataset(tmpcode):
         if up_data['existing'] == "no":
             # metastring = request.form['metadata']
             # metastring = metastring + lvltxt
-            metastring = metadata + lvltxt
             with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring)
+                metafile.write(lvltxt)
         else:
             #update level data in metadata files
             if os.path.isfile(metafilepath):
