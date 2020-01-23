@@ -2224,10 +2224,14 @@ def updatedb(xx, fnamelist, replace='no'):
 
         #delete records that are being replaced (this could be sped up using
         #the code from replace == 'byrow' above)
+        #if list(upIDs):
+        #    d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
+        #    for rec in d:
+        #        db.session.delete(rec)
+        #delete records that are being replaced
         if list(upIDs):
-            d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
-            for rec in d:
-                db.session.delete(rec)
+            db.session.query(Data).filter(Data.upload_id.in_(list(upIDs)))\
+                .delete(synchronize_session=False)
 
         #reconstitute flags (this too)
         for ind, r in flagged_obs.iterrows():
