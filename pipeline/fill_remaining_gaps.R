@@ -3,7 +3,7 @@ library(tidyverse)
 library(imputeTS)
 # library(feather)
 library(lubridate)
-rm(list=ls()); cat('/014')                                  ####
+# rm(list=ls()); cat('/014')                                  ####
 
 #NOTE:
 #linear interpolator now marks imputations with code 1
@@ -13,13 +13,13 @@ rm(list=ls()); cat('/014')                                  ####
 setwd('/home/mike/git/streampulse/server_copy/sp')
 
 source('pipeline/helpers.R')
+source('pipeline/helpers_ndi.R')
 
 #retrieve arguments passed from app.py
 # args = commandArgs(trailingOnly=TRUE)                                  ####
 # names(args) = c('notificationEmail', 'tmpcode', 'region', 'site',
 #     'interpdeluxe')
-args = list('tmpcode'='e5b659a48490', 'interpdeluxe'='false')
-args = list('tmpcode'='e9cfbdc06c88', 'interpdeluxe'='false')
+args = list('tmpcode'='2b2c89ed5452', 'interpdeluxe'='false')
 usr_msgs = list()
 
 #read in datasets written by main pipeline
@@ -52,12 +52,12 @@ for(c in colnames(pldf)){
     flagdf[interp_inds, c] = flagdf[interp_inds, c] + 1
 }
 
-#pl operation 5: Imputation by Correlative Inference
+#pl operation 5: Nearest Days Interpolation
 if(args$interpdeluxe == 'true'){
     na_inds = lapply(pldf, function(x) which(is.na(x)))
-    pldf = ici(pldf, interv=samp_int_m)
+    pldf = NDI(pldf, interv=samp_int_m)
 
-    #assign qaqc code 2 to gaps filled by ICI
+    #assign qaqc code 2 to gaps filled by NDI
     for(c in colnames(pldf)){
         interp_inds = na_inds[[c]][which(! is.na(pldf[na_inds[[c]], c]))]
         flagdf[interp_inds, c] = flagdf[interp_inds, c] + 2
@@ -76,14 +76,14 @@ if(length(rm_rows)){
 pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
     pldf, list('upload_id'=origdf$upload_id))
 flagdf$DateTime_UTC = origdf$DateTime_UTC
-##PROBS DONT NEED TO RESAVE ORIG
-write_feather(origdf, paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
 write_feather(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned_checked_imp.feather'))
 write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags2.feather'))
 
-#notify user that pipeline processing is complete
-system2('/home/mike/miniconda3/envs/python2/bin/python',
-#system2('/home/aaron/miniconda3/envs/sp/bin/python',
-    args=c('pipeline/notify_user.py', args))
+# #notify user that pipeline processing is complete
+# system2('/home/mike/miniconda3/envs/python2/bin/python',
+# #system2('/home/aaron/miniconda3/envs/sp/bin/python',
+#     args=c('pipeline/notify_user.py', args))
 
-message('end of pipeline.R')
+usr_msgs
+
+message('end of fill_remaining_gaps.R')

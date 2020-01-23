@@ -55,10 +55,6 @@ lin_interp_gaps = function(d, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
     return(d)
 }
 
-ici = function(d){
-    NULL
-}
-
 range_check = function(d, flagd){
     # d=pldf;flagd=flagdf
 
