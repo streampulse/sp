@@ -7,7 +7,7 @@ library(lubridate)
 
 #NOTE:
 #linear interpolator now marks imputations with code 1
-#ICI imputer uses code 2
+#NDI imputer uses code 2
 
 #setwd('/home/aaron/sp')                                  ####
 setwd('/home/mike/git/streampulse/server_copy/sp')
@@ -22,15 +22,11 @@ names(args) = c('tmpcode', 'interpdeluxe')
 # args = list('tmpcode'='2b2c89ed5452', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
-# dumpfile = jsonlite::fromJSON(paste(readLines(
-#     paste0('../spdumps/', args['tmpcode'], '_useredits.json')
-# ), collapse=''))
-origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
-pldf = read_csv(paste0('../spdumps/', args['tmpcode'],
-# origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
-# pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
-    # '_cleaned_checked.feather'))                              ####
-    '_cleaned.csv'))
+# origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
+# pldf = read_csv(paste0('../spdumps/', args['tmpcode'], '_cleaned.csv'))
+origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
+pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
+    '_cleaned_checked.feather'))                              ####
 pldf = select(pldf, -DateTime_UTC, -upload_id)
 # flagdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 # flagdf = select(flagdf, -DateTime_UTC)

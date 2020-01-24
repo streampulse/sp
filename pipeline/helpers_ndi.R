@@ -30,9 +30,9 @@ nearest_k_days = function(dwg, dwog, cmat, k, minvars){
         day_scores = vector('numeric', length(dwog))
         for(j in 1:length(dwog)){
 
-            #RSD=root squared difference
-            #CSRSD=correlation-scaled RSD
-            #MCSRSD=mean CSRSD
+            #RMSD: root mean squared difference
+            #CSRMSD: correlation-scaled RMSD
+            #MCSRMSD: mean CSRMSD
 
             #get MCSRSD between each day and the current dwg
             squarediffs = try( (dwg[[i]] - dwog[[j]])^2 )
@@ -40,17 +40,17 @@ nearest_k_days = function(dwg, dwog, cmat, k, minvars){
             if(class(squarediffs) == 'try-error'){
                 day_scores[j] = Inf
             } else {
-                rsd = sqrt(colSums(squarediffs, na.rm=FALSE))
-                gapvars = names(rsd[which(is.na(rsd))])
-                mean_inverse_gapvar_abscorrs = 1 -
+                RMSDs = sqrt(colMeans(squarediffs, na.rm=FALSE))
+                gapvars = names(RMSDs[which(is.na(RMSDs))])
+                inverse_mean_gapvar_abscorrs = 1 -
                     colMeans(abs(cmat[gapvars, , drop=FALSE]))
-                csrsd = rsd * mean_inverse_gapvar_abscorrs
+                CSRMSDs = RMSDs * inverse_mean_gapvar_abscorrs
 
-                if(sum(! is.na(csrsd)) < minvars){
+                if(sum(! is.na(CSRMSDs)) < minvars){
                     day_scores[j] = NA
                 } else {
-                    mcsrsd = mean(csrsd, na.rm=TRUE)
-                    day_scores[j] = mcsrsd
+                    MCSRMSD = mean(CSRMSDs, na.rm=TRUE)
+                    day_scores[j] = MCSRMSD
                 }
             }
         }

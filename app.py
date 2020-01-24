@@ -2661,8 +2661,7 @@ def round2_gapfill(tmpcode):
 
     dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
     with open(dumpfile2, 'w') as dmp:
-        json.dump({'userflags': userflags, 'userflagpts': userflagpts,
-            'rejections': rejections}, dmp)
+        json.dump({'userflags': userflags, 'userflagpts': userflagpts}, dmp)
 
     origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
     origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
@@ -2682,12 +2681,13 @@ def round2_gapfill(tmpcode):
 
     #fill remaining gaps (background process)
     sp = subprocess.Popen(['Rscript', '--vanilla',
-        'pipeline/fill_remaining_gaps.R', tmpcode, interpdeluxe])
+        'pipeline/fill_remaining_gaps.R', tmpcode, region, site, interpdeluxe])
     print('pre-R')
     sp.communicate() #wait for it to return
     print('post-R')
 
-    return redirect(url_for('check_round2', tmpcode=tmpcode))
+    return redirect(url_for('check_round2', tmpcode=tmpcode,
+        userflagpts=userflagpts, userflags=userflags))
 
 @app.route("/check-round2-<string:tmpcode>", methods=["GET"])
 @login_required
@@ -2697,8 +2697,6 @@ def check_round2(tmpcode):
     dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
     with open(dumpfile2, 'r') as d:
         useredits = json.load(d)
-
-    #OI, HOW ARE USER FLAGS BEING PASSED TO THIS POINT?
 
     #load static html for popup menu
     with open('static/html/qaqcPopupMenu_pl.html', 'r') as html_file:

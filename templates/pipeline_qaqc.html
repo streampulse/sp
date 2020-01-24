@@ -142,10 +142,12 @@
           <br>
           <p class='lead text-center'>Next: imputation of gaps</p>
           <p>
-            Gaps of &lt;3 hours will be filled via univariate, linear interpolation.
+            Gaps of &lt; 3 hours will be filled via univariate, linear interpolation.
             You may impute remaining gaps by leveraging correlation between
-            variables (method described below). You will have a chance to visually
-            inspect imputation results either way.
+            variables and similarity between days
+            (<button id='ndi' class='btn-link' type='button' data-toggle='modal'
+            data-target='#ndi_modal'>NDI method</button>).
+            You will have a chance to visually inspect imputation results either way.
           </p>
           <br>
         </div>
@@ -157,22 +159,93 @@
           </div>
           <div class='col-md-3 col-md-offset-1'>
             <button id="interpdeluxe_button" type="button" value="" class="btn btn-primary btn-block">
-              Interpolation + ICI
+              Interpolation + NDI
             </button>
             <button id="interpdeluxe_submitter" type="submit" value="" hidden>
             </button>
           </div>
-          <div class='col-md-5 col-md-offset-1'>
+          <div class='col-md-3 col-md-offset-1'>
             <button id="gobackpl_button" type='button' value="" class="btn btn-warning btn-block">
               Go back
             </button>
           </div>
         </div>
-        <div class='row'>
-          <p>
-            <strong>Imputation by Correlative Inference (ICI)</strong>...
-            (description pending additional development)
-          </p>
+
+        <div class="modal fade" id="ndi_modal" tabindex="-1" role="dialog" aria-labelledby="modalLabelSmall" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="modalLabelSmall">Modal Title</h4>
+              </div>
+              <div class="modal-body">
+                <p>
+                  <strong>Nearest Days Imputation (NDI)</strong> consists of the following steps:
+                </p>
+                <ol>
+                  <li>
+                    Standardize all variables (center on 0 and scale to unit variance).
+                  </li>
+                  <li>
+                    Determine nonparametric correlations between all pairs of variables
+                    (we use Spearman Rank Correlation because it's computationally more
+                    efficient than Kendall).
+                  </li>
+                  <li>
+                    Filter days with missing observations ("incomplete days"), i.e. fewer than the
+                    maximum number of observations allowed by the sampling interval.
+                    Separate days with missing values ("gap days")
+                    from those with no missing values ("complete days").
+                  </li>
+                  <li>
+                    For each gap day, calculate difference scores between it and
+                    all complete days; i.e. for each pair of days being compared:
+                  </li>
+                  <ol>
+                    <li>
+                      Calculate root mean squared differences (RMSDs) for each variable.
+                    </li>
+                    <li>
+                      Calculate absolute correlations between each variable
+                      with missing values and all other variables. If there are multiple
+                      variables with missing values, calculate mean absolute correlations (MACs).
+                    </li>
+                    <li>
+                      Invert each MAC and multiply it by the RMSD for each variable,
+                      yielding correlation-scaled RMSDs (CSRMSDs).
+                      This way, the RMSD for each variable will shrink proportionally to its MAC.
+                    </li>
+                    <li>
+                      Calculate the difference score for the pair of days as the mean
+                      of the CSRMSDs.
+                    </li>
+                  </ol>
+                  <li>
+                    For each day with missing values (<code>Di</code>):
+                  </li>
+                  <ol>
+                    <li>
+                      Identify the three days with the lowest difference scores.
+                    </li>
+                    <li>
+                      Calculate the elementwise means for these three days, yielding
+                      a composite day of "data" (<code>Dx</code>) that incorporates
+                      some interdaily variation.
+                    </li>
+                    <li>
+                      Linearly interpolate <code>Di - Dx</code> and add it back to <code>Di</code>.
+                    </li>
+                  </ol>
+                  <li>
+                    Reassemble filled gap days, complete days, and incomplete days.
+                    Undo the centering and scaling operations.
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
         </div>
       </form>
     <br><br>
@@ -241,6 +314,10 @@
   var rm_holder = [];
   var instance_id = 1;
   var pointcounts = {'flags': 0}//, 'rejections': 0}
+
+  $('#ndi').on('click', function() {
+      $('#ndi_modal').show();
+  });
 
   $('body').ready(function(){
 
