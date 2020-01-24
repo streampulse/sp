@@ -152,50 +152,53 @@
           <br>
         </div>
         <div class='row'>
-          <div class='col-md-3 col-md-offset-1'>
+          <div class='col-md-5 col-md-offset-1'>
             <button id="interpbasic_button" type="submit" value="" class="btn btn-info btn-block">
               Interpolation only
             </button>
           </div>
-          <div class='col-md-3 col-md-offset-1'>
+          <div class='col-md-5 col-md-offset-1'>
             <button id="interpdeluxe_button" type="button" value="" class="btn btn-primary btn-block">
               Interpolation + NDI
             </button>
             <button id="interpdeluxe_submitter" type="submit" value="" hidden>
             </button>
           </div>
-          <div class='col-md-3 col-md-offset-1'>
+        </div>
+        <div class='row'>
+          <br>
+          <div class='col-md-8 col-md-offset-2'>
             <button id="gobackpl_button" type='button' value="" class="btn btn-warning btn-block">
               Go back
             </button>
           </div>
         </div>
 
-        <div class="modal fade" id="ndi_modal" tabindex="-1" role="dialog" aria-labelledby="modalLabelSmall" aria-hidden="true">
+        <div class="modal fade" id="ndi_modal" tabindex="-1" role="dialog"
+        aria-labelledby="modalLabelSmall" aria-hidden="true">
           <div class="modal-dialog modal-lg">
             <div class="modal-content">
               <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                   <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title" id="modalLabelSmall">Modal Title</h4>
+                <h4 class="modal-title" id="modalLabelSmall">
+                  Nearest Days Imputation (NDI)
+                </h4>
               </div>
-              <div class="modal-body">
-                <p>
-                  <strong>Nearest Days Imputation (NDI)</strong> consists of the following steps:
-                </p>
+              <div class="modal-body text-left">
                 <ol>
                   <li>
                     Standardize all variables (center on 0 and scale to unit variance).
                   </li>
                   <li>
-                    Determine nonparametric correlations between all pairs of variables
+                    Generate a matrix of nonparametric correlations between all pairs of variables
                     (we use Spearman Rank Correlation because it's computationally more
-                    efficient than Kendall).
+                    efficient than Kendall). Take the absolute value of each.
                   </li>
                   <li>
-                    Filter days with missing observations ("incomplete days"), i.e. fewer than the
-                    maximum number of observations allowed by the sampling interval.
+                    Filter days with missing observations ("incomplete days"), i.e. with fewer than the
+                    maximum number of daily observations allowed by the sampling interval.
                     Separate days with missing values ("gap days")
                     from those with no missing values ("complete days").
                   </li>
@@ -208,14 +211,16 @@
                       Calculate root mean squared differences (RMSDs) for each variable.
                     </li>
                     <li>
-                      Calculate absolute correlations between each variable
-                      with missing values and all other variables. If there are multiple
-                      variables with missing values, calculate mean absolute correlations (MACs).
+                      Calculate mean absolute correlations (MACs) between each variable
+                      with missing values and all other variables. If there is only one
+                      variable with missing values, this operation merely retrieves the
+                      absolute correlations from the precomputed matrix.
                     </li>
                     <li>
                       Invert each MAC and multiply it by the RMSD for each variable,
                       yielding correlation-scaled RMSDs (CSRMSDs).
-                      This way, the RMSD for each variable will shrink proportionally to its MAC.
+                      This way, the RMSD for each variable will shrink proportionally
+                      to its MAC with the missing variable(s).
                     </li>
                     <li>
                       Calculate the difference score for the pair of days as the mean
@@ -239,7 +244,7 @@
                     </li>
                   </ol>
                   <li>
-                    Reassemble filled gap days, complete days, and incomplete days.
+                    Reassemble the filled gap days, complete days, and incomplete days.
                     Undo the centering and scaling operations.
                   </li>
                 </ol>
