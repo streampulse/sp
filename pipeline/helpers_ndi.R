@@ -1,4 +1,3 @@
-usr_msgs = list()
 
 # dwg=days_with_gaps; dwog=days_without_gaps; cmat=correlations; k=3; minvars=3
 # i = j = 1
@@ -10,14 +9,12 @@ nearest_k_days = function(dwg, dwog, cmat, k, minvars){
     #   missing value
 
     if(length(dwg) == 0){
-        usr_msgs <<- append(usr_msgs, 'No missing data, so not performing NDI.')
+        usr_msg_code <<- '1'
         return('nothing to do')
     }
 
     if(length(dwog) < 30){
-        usr_msgs <<- append(usr_msgs,
-            paste('Not filling gaps via NDI;',
-            'fewer than 30 days without NAs for comparison.'))
+        usr_msg_code <<- '2'
         return('nothing to do')
     }
 

@@ -2682,8 +2682,7 @@ def round2_gapfill(tmpcode):
 
     #fill remaining gaps (background process)
     sp = subprocess.Popen(['Rscript', '--vanilla',
-        'pipeline/fill_remaining_gaps.R', request.form['notificationEmail'],
-        tmpcode, region, site, interpdeluxe])
+        'pipeline/fill_remaining_gaps.R', tmpcode, interpdeluxe])
     print('pre-R')
     sp.communicate() #wait for it to return
     print('post-R')
@@ -2694,14 +2693,28 @@ def round2_gapfill(tmpcode):
 @login_required
 def check_round2(tmpcode):
 
+    # tmpcode='2b2c89ed5452'
     dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
-    with open(dumpfile) as d:
+    with open(dumpfile2, 'r') as d:
         useredits = json.load(d)
+
+    #OI, HOW ARE USER FLAGS BEING PASSED TO THIS POINT?
 
     #load static html for popup menu
     with open('static/html/qaqcPopupMenu_pl.html', 'r') as html_file:
         qaqc_options_sensor = html_file.read()
     qaqc_options_sensor = qaqc_options_sensor.replace('\n', '')
+
+    usrmsg = '../spdumps/' + tmpcode + '_usrmsg.txt'
+    with open(usrmsg, 'r') as u:
+        usr_msg_code = u.read()
+
+    if usr_msg_code == 1:
+        flash('No missing datapoints found, so NDI was not performed.',
+            'alert-warning')
+    elif usr_msg_code == 2:
+        flash('Fewer than 30 days without NAs, so NDI was not performed.',
+            'alert-warning')
 
     return render_template('pipeline_qaqc2.html', tmpcode=tmpcode,
         qaqc_options=qaqc_options_sensor, useredits=useredits)

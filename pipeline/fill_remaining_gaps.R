@@ -14,15 +14,17 @@ setwd('/home/mike/git/streampulse/server_copy/sp')
 
 source('pipeline/helpers.R')
 source('pipeline/helpers_ndi.R')
+usr_msg_code = '0'
 
 #retrieve arguments passed from app.py
-# args = commandArgs(trailingOnly=TRUE)                                  ####
-# names(args) = c('notificationEmail', 'tmpcode', 'region', 'site',
-#     'interpdeluxe')
-args = list('tmpcode'='2b2c89ed5452', 'interpdeluxe'='false')
-usr_msgs = list()
+args = commandArgs(trailingOnly=TRUE)                                  ####
+names(args) = c('tmpcode', 'interpdeluxe')
+# args = list('tmpcode'='2b2c89ed5452', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
+# dumpfile = jsonlite::fromJSON(paste(readLines(
+#     paste0('../spdumps/', args['tmpcode'], '_useredits.json')
+# ), collapse=''))
 origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
 pldf = read_csv(paste0('../spdumps/', args['tmpcode'],
 # origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
@@ -72,7 +74,7 @@ if(length(rm_rows)){
     flagdf = flagdf[-rm_rows, ]
 }
 
-#save flag codes, cleaned data to be read in by flask controllers
+#save flag codes, imputed dataset to be read in by flask controllers
 pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
     pldf, list('upload_id'=origdf$upload_id))
 flagdf$DateTime_UTC = origdf$DateTime_UTC
@@ -84,6 +86,7 @@ write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags2.feather'))
 # #system2('/home/aaron/miniconda3/envs/sp/bin/python',
 #     args=c('pipeline/notify_user.py', args))
 
-usr_msgs
+writeLines(usr_msg_code, sep='',
+    con=paste0('../spdumps/', args['tmpcode'], '_usrmsg.txt'))
 
 message('end of fill_remaining_gaps.R')
