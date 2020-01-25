@@ -121,138 +121,135 @@
 <div class='row'>
   <div class="col-md-6 col-md-offset-3 text-center" id='confirmpldiv' style='display: none'>
     <br><br>
-      <form id="confirmpl" class="form-horizontal" method="POST" action="/round2-gapfill-{{tmpcode}}">
-        <input type="hidden" name="userflagpts" value="">
-        <input type="hidden" name="userflags" value="">
-        <!-- <input type="hidden" name="rm_holder" value=""> -->
-        <input type="hidden" name="rej_holder" value="">
-        <!-- <input type="hidden" name="instance_id" value=""> -->
-        <input type="hidden" name="interpdeluxe" value="false">
-        <div class='col-md-10 col-md-offset-1 text-left'>
-          <p class='lead text-center'>Submission details</p>
-          <p id='submit_details'></p>
-          <!-- <br>
-          <p class='text-muted'>
-            *This value reflects the number of times "Flag all selected points"
-            was clicked. If a continuous segment of flagged points
-            was broken into two or more segments by flag removal,
-            or if "Apply flag to all variables" was checked,
-            each resultant segment will be treated as a separate "event" within our system.
-          </p> -->
-          <br>
-          <p class='lead text-center'>Next: imputation of gaps</p>
-          <p>
-            Gaps of &lt; 3 hours will be filled via univariate, linear interpolation.
-            You may impute remaining gaps by leveraging correlation between
-            variables and similarity between days
-            (<button id='ndi' class='btn-link' type='button' data-toggle='modal'
-            data-target='#ndi_modal'>NDI method</button>).
-            You will have a chance to visually inspect imputation results either way.
-          </p>
-          <br>
+    <form id="confirmpl" class="form-horizontal" method="POST" action="/round2-gapfill-{{tmpcode}}">
+      <input type="hidden" name="userflagpts" value="">
+      <input type="hidden" name="userflags" value="">
+      <!-- <input type="hidden" name="rm_holder" value=""> -->
+      <input type="hidden" name="rej_holder" value="">
+      <!-- <input type="hidden" name="instance_id" value=""> -->
+      <input type="hidden" name="interpdeluxe" value="false">
+      <div class='col-md-10 col-md-offset-1 text-left'>
+        <p class='lead text-center'>Submission details</p>
+        <p id='submit_details'></p>
+        <!-- <br>
+        <p class='text-muted'>
+          *This value reflects the number of times "Flag all selected points"
+          was clicked. If a continuous segment of flagged points
+          was broken into two or more segments by flag removal,
+          or if "Apply flag to all variables" was checked,
+          each resultant segment will be treated as a separate "event" within our system.
+        </p> -->
+        <br>
+        <p class='lead text-center'>Next: imputation of gaps</p>
+        <p>
+          Gaps of &lt; 3 hours will be filled via univariate, linear interpolation.
+          You may impute remaining gaps by leveraging correlation between
+          variables and similarity between days
+          (<button id='ndi' class='btn-link' type='button' data-toggle='modal'
+          data-target='#ndi_modal'>NDI method</button>).
+          You will have a chance to visually inspect imputation results either way.
+        </p>
+        <br>
+      </div>
+      <div class='row'>
+        <div class='col-md-4'>
+          <button id="interpbasic_button" type="submit" value="" class="btn btn-info btn-block">
+            Interpolation only
+          </button>
         </div>
-        <div class='row'>
-          <div class='col-md-5 col-md-offset-1'>
-            <button id="interpbasic_button" type="submit" value="" class="btn btn-info btn-block">
-              Interpolation only
-            </button>
-          </div>
-          <div class='col-md-5 col-md-offset-1'>
-            <button id="interpdeluxe_button" type="button" value="" class="btn btn-primary btn-block">
-              Interpolation + NDI
-            </button>
-            <button id="interpdeluxe_submitter" type="submit" value="" hidden>
-            </button>
-          </div>
+        <div class='col-md-4'>
+          <button id="interpdeluxe_button" type="button" value="" class="btn btn-primary btn-block">
+            Interpolation + NDI
+          </button>
+          <button id="interpdeluxe_submitter" type="submit" value="" hidden>
+          </button>
         </div>
-        <div class='row'>
-          <br>
-          <div class='col-md-8 col-md-offset-2'>
-            <button id="gobackpl_button" type='button' value="" class="btn btn-warning btn-block">
-              Go back
-            </button>
-          </div>
+        <div class='col-md-4'>
+          <button id="gobackpl_button" type='button' value="" class="btn btn-warning btn-block">
+            Go back
+          </button>
         </div>
+      </div>
 
-        <div class="modal fade" id="ndi_modal" tabindex="-1" role="dialog"
-        aria-labelledby="modalLabelSmall" aria-hidden="true">
-          <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-                <h4 class="modal-title" id="modalLabelSmall">
-                  Nearest Days Imputation (NDI)
-                </h4>
-              </div>
-              <div class="modal-body text-left">
+      <div class="modal fade" id="ndi_modal" tabindex="-1" role="dialog"
+      aria-labelledby="modalLabelSmall" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+              <h4 class="modal-title" id="modalLabelSmall">
+                Nearest Days Imputation (NDI)
+              </h4>
+            </div>
+            <div class="modal-body text-left">
+              <ol>
+                <li>
+                  Standardize all variables (center on 0 and scale to unit variance).
+                </li>
+                <li>
+                  Generate a matrix of nonparametric correlations between all pairs of variables
+                  (we use Spearman Rank Correlation because it's computationally more
+                  efficient than Kendall). Take the absolute value of each.
+                </li>
+                <li>
+                  Filter days with missing observations ("incomplete days"), i.e. with fewer than the
+                  maximum number of daily observations allowed by the sampling interval.
+                  Separate days with missing values ("gap days")
+                  from those with no missing values ("complete days").
+                </li>
+                <li>
+                  For each gap day, calculate difference scores between it and
+                  all complete days; i.e. for each pair of days being compared:
+                </li>
                 <ol>
                   <li>
-                    Standardize all variables (center on 0 and scale to unit variance).
+                    Calculate root mean squared differences (RMSDs) for each variable.
                   </li>
                   <li>
-                    Generate a matrix of nonparametric correlations between all pairs of variables
-                    (we use Spearman Rank Correlation because it's computationally more
-                    efficient than Kendall). Take the absolute value of each.
+                    Calculate mean absolute correlations (MACs) between each variable
+                    with missing values and all other variables. If there is only one
+                    variable with missing values, this operation merely retrieves the
+                    absolute correlations from the precomputed matrix.
                   </li>
                   <li>
-                    Filter days with missing observations ("incomplete days"), i.e. with fewer than the
-                    maximum number of daily observations allowed by the sampling interval.
-                    Separate days with missing values ("gap days")
-                    from those with no missing values ("complete days").
+                    Invert each MAC and multiply it by the RMSD for each variable,
+                    yielding correlation-scaled RMSDs (CSRMSDs).
+                    This way, the RMSD for each variable will shrink proportionally
+                    to its MAC with the missing variable(s).
                   </li>
                   <li>
-                    For each gap day, calculate difference scores between it and
-                    all complete days; i.e. for each pair of days being compared:
-                  </li>
-                  <ol>
-                    <li>
-                      Calculate root mean squared differences (RMSDs) for each variable.
-                    </li>
-                    <li>
-                      Calculate mean absolute correlations (MACs) between each variable
-                      with missing values and all other variables. If there is only one
-                      variable with missing values, this operation merely retrieves the
-                      absolute correlations from the precomputed matrix.
-                    </li>
-                    <li>
-                      Invert each MAC and multiply it by the RMSD for each variable,
-                      yielding correlation-scaled RMSDs (CSRMSDs).
-                      This way, the RMSD for each variable will shrink proportionally
-                      to its MAC with the missing variable(s).
-                    </li>
-                    <li>
-                      Calculate the difference score for the pair of days as the mean
-                      of the CSRMSDs.
-                    </li>
-                  </ol>
-                  <li>
-                    For each day with missing values (<code>Di</code>):
-                  </li>
-                  <ol>
-                    <li>
-                      Identify the three days with the lowest difference scores.
-                    </li>
-                    <li>
-                      Calculate the elementwise means for these three days, yielding
-                      a composite day of "data" (<code>Dx</code>) that incorporates
-                      some interdaily variation.
-                    </li>
-                    <li>
-                      Linearly interpolate <code>Di - Dx</code> and add it back to <code>Di</code>.
-                    </li>
-                  </ol>
-                  <li>
-                    Reassemble the filled gap days, complete days, and incomplete days.
-                    Undo the centering and scaling operations.
+                    Calculate the difference score for the pair of days as the mean
+                    of the CSRMSDs.
                   </li>
                 </ol>
-              </div>
+                <li>
+                  For each day with missing values (<code>Di</code>):
+                </li>
+                <ol>
+                  <li>
+                    Identify the three days with the lowest difference scores.
+                  </li>
+                  <li>
+                    Calculate the elementwise means for these three days, yielding
+                    a composite day of "data" (<code>Dx</code>) that incorporates
+                    some interdaily variation.
+                  </li>
+                  <li>
+                    Linearly interpolate <code>Di - Dx</code> and add it back to <code>Di</code>.
+                  </li>
+                </ol>
+                <li>
+                  Reassemble the filled gap days, complete days, and incomplete days.
+                  Undo the centering and scaling operations.
+                </li>
+              </ol>
             </div>
           </div>
         </div>
-      </form>
+      </div>
+    </form>
     <br><br>
   </div>
 </div>

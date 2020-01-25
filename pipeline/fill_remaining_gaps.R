@@ -1,7 +1,7 @@
 library(plyr)
 library(tidyverse)
 library(imputeTS)
-# library(feather)
+library(feather)
 library(lubridate)
 # rm(list=ls()); cat('/014')                                  ####
 
@@ -51,11 +51,17 @@ for(c in colnames(pldf)){
 }
 
 #pl operation 5: Nearest Days Interpolation
-if(args$interpdeluxe == 'true'){
+if(args['interpdeluxe'] == 'true'){
     na_inds = lapply(pldf, function(x) which(is.na(x)))
-    pldf = NDI(pldf, interv=samp_int_m)
+    ndiout = try( NDI(pldf, interv=samp_int_m) )
+    if('try-error' %in% class(pldf)){
+        usr_msg_code <<- '3'
+        message('here')
+    } else {
+        pldf = ndiout
+    }
 
-    #assign qaqc code 2 to gaps filled by NDI
+    #assign qaqc code 2 to any gaps filled by NDI
     for(c in colnames(pldf)){
         interp_inds = na_inds[[c]][which(! is.na(pldf[na_inds[[c]], c]))]
         flagdf[interp_inds, c] = flagdf[interp_inds, c] + 2

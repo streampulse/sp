@@ -2677,11 +2677,11 @@ def round2_gapfill(tmpcode):
             pldf.loc[rejdts, rejvar] = origdf.loc[rejdts, rejvar]
 
     pldf = pldf.reset_index()
-    feather.write_dataframe('../spdumps/' + tmpcode + '_cleaned_checked.feather')
+    feather.write_dataframe(pldf, '../spdumps/' + tmpcode + '_cleaned_checked.feather')
 
     #fill remaining gaps (background process)
     sp = subprocess.Popen(['Rscript', '--vanilla',
-        'pipeline/fill_remaining_gaps.R', tmpcode, region, site, interpdeluxe])
+        'pipeline/fill_remaining_gaps.R', tmpcode, interpdeluxe])
     print('pre-R')
     sp.communicate() #wait for it to return
     print('post-R')
@@ -2704,15 +2704,22 @@ def check_round2(tmpcode):
     qaqc_options_sensor = qaqc_options_sensor.replace('\n', '')
 
     usrmsg = '../spdumps/' + tmpcode + '_usrmsg.txt'
-    with open(usrmsg, 'r') as u:
-        usr_msg_code = u.read()
+    if not os.path.exists(usrmsg):
+        flash('An error occurred during imputation. Some or all data gaps ' +\
+            'may remain.', 'alert-danger')
+    else:
+        with open(usrmsg, 'r') as u:
+            usr_msg_code = u.read()
 
-    if usr_msg_code == 1:
-        flash('No missing datapoints found, so NDI was not performed.',
-            'alert-warning')
-    elif usr_msg_code == 2:
-        flash('Fewer than 30 days without NAs, so NDI was not performed.',
-            'alert-warning')
+        if usr_msg_code == 1:
+            flash('No missing datapoints found, so NDI was not performed.',
+                'alert-warning')
+        elif usr_msg_code == 2:
+            flash('Fewer than 30 days without NAs, so NDI was not performed.',
+                'alert-warning')
+        elif usr_msg_code == 3:
+            flash('An error occurred during NDI. Only univariate linear ' +\
+                'interpolation was performed.', 'alert-warning')
 
     return render_template('pipeline_qaqc2.html', tmpcode=tmpcode,
         qaqc_options=qaqc_options_sensor, useredits=useredits)
