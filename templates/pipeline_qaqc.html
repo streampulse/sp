@@ -142,12 +142,14 @@
         <br>
         <p class='lead text-center'>Next: imputation of gaps</p>
         <p>
-          Gaps of &lt; 3 hours will be filled via univariate, linear interpolation.
-          You may impute remaining gaps by leveraging correlation between
-          variables and similarity between days
-          (<button id='ndi' class='btn-link' type='button' data-toggle='modal'
-          data-target='#ndi_modal'>NDI method</button>).
-          You will have a chance to visually inspect imputation results either way.
+          <span>
+            Gaps of &lt; 3 hours will be filled via univariate, linear interpolation.
+            You may impute remaining gaps by leveraging correlation between
+            variables and similarity between days (</span><span><button
+            id='ndi' class='btn-link' type='button' data-toggle='modal'
+            data-target='#ndi_modal' style='padding: 0'>NDI method</button></span><span>).
+            You will have a chance to visually inspect imputation results either way.
+          </span>
         </p>
         <br>
       </div>

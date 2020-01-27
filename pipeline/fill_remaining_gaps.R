@@ -53,11 +53,12 @@ for(c in colnames(pldf)){
 #pl operation 5: Nearest Days Interpolation
 if(args['interpdeluxe'] == 'true'){
     na_inds = lapply(pldf, function(x) which(is.na(x)))
-    ndiout = try( NDI(pldf, interv=samp_int_m) )
-    if('try-error' %in% class(pldf)){
-        usr_msg_code <<- '3'
-        message('here')
-    } else {
+    ndiout = tryCatch(NDI(pldf, interv=samp_int_m),
+        error=function(e){
+            usr_msg_code <<- '3'
+            return('err') #if all errors have "error" class, just return e
+        })
+    if(! (length(ndiout) == 1 && ndiout == 'err') ){
         pldf = ndiout
     }
 

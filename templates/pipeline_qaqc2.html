@@ -212,8 +212,9 @@
   var pldata;
   var flagdata;
   var brushextent;
-  var userflags = [];
-  var userflagpts = {};
+  var useredits = {{ useredits|safe }}
+  var userflags = useredits['userflags'];
+  var userflagpts = useredits['userflagpts'];
   var rej_holder = {};
   var rm_holder = [];
   var instance_id = 1;
@@ -482,7 +483,7 @@
     $("#getpl").click(function(){
       $.ajax({
         type: 'POST',
-        url:'/get_pipeline_data',
+        url:'/get_pipeline_data2',
         data: JSON.stringify(tmpcode),
         contentType: 'application/json;charset=UTF-8',
         success: function(response){
