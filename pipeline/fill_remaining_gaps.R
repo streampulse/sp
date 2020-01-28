@@ -19,7 +19,7 @@ usr_msg_code = '0'
 #retrieve arguments passed from app.py
 args = commandArgs(trailingOnly=TRUE)                                  ####
 names(args) = c('tmpcode', 'interpdeluxe')
-# args = list('tmpcode'='2b2c89ed5452', 'interpdeluxe'='false')
+# args = list('tmpcode'='3956a8df3d66', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
 # origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
@@ -27,14 +27,22 @@ names(args) = c('tmpcode', 'interpdeluxe')
 origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
 pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
     '_cleaned_checked.feather'))                              ####
-pldf = select(pldf, -DateTime_UTC, -upload_id)
+pldf = as_tibble(pldf) %>%
+    select(-DateTime_UTC, -upload_id) %>%
+    bind_cols(select(origdf, DateTime_UTC)) %>%
+    arrange(DateTime_UTC) %>%
+    group_by(DateTime_UTC) %>%
+    summarize_all(mean, na.rm=TRUE) %>%
+    ungroup()
+
 # flagdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 # flagdf = select(flagdf, -DateTime_UTC)
 
-#determine the sampling interval
-samp_int_m = determine_sample_interval(origdf)
-#and fill in any missing records
-# origdf = populate_missing_rows(origdf, samp_int_m)
+#fill in any missing records
+samp_int_m = determine_sample_interval(pldf)
+pldf = populate_missing_rows(pldf, samp_int_m)
+dtcol = pldf$DateTime_UTC
+pldf$DateTime_UTC = NULL
 
 #keep track of NAs; make a new df for storing flag codes
 na_inds = lapply(pldf, function(x) which(is.na(x)))
@@ -52,36 +60,44 @@ for(c in colnames(pldf)){
 
 #pl operation 5: Nearest Days Interpolation
 if(args['interpdeluxe'] == 'true'){
+
     na_inds = lapply(pldf, function(x) which(is.na(x)))
+    pldf = bind_cols(list('DateTime_UTC'=dtcol), pldf)
+
     ndiout = tryCatch(NDI(pldf, interv=samp_int_m),
         error=function(e){
             usr_msg_code <<- '3'
             return('err') #if all errors have "error" class, just return e
         })
+
     if(! (length(ndiout) == 1 && ndiout == 'err') ){
         pldf = ndiout
+    } else {
+        pldf = bind_cols(list('DateTime_UTC'=dtcol), pldf)
     }
+    pldf$upload_id = origdf$upload_id[1]
 
     #assign qaqc code 2 to any gaps filled by NDI
-    for(c in colnames(pldf)){
+    dfcols = colnames(pldf)
+    for(c in dfcols[! dfcols %in% c('DateTime_UTC', 'upload_id')]){
         interp_inds = na_inds[[c]][which(! is.na(pldf[na_inds[[c]], c]))]
         flagdf[interp_inds, c] = flagdf[interp_inds, c] + 2
     }
 }
 
 #remove entirely empty rows
-rm_rows = which(apply(pldf, 1, function(x) all(is.na(x))))
+rm_rows = which(apply(select(pldf, -DateTime_UTC, -upload_id), 1,
+    function(x) all(is.na(x)) ))
 if(length(rm_rows)){
     pldf = pldf[-rm_rows, ]
-    origdf = origdf[-rm_rows, ]
+    # origdf = origdf[-rm_rows, ]
     flagdf = flagdf[-rm_rows, ]
 }
 
 #save flag codes, imputed dataset to be read in by flask controllers
-pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
-    pldf, list('upload_id'=origdf$upload_id))
-flagdf$DateTime_UTC = origdf$DateTime_UTC
-write_feather(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned_checked_imp.feather'))
+flagdf$DateTime_UTC = pldf$DateTime_UTC
+write_feather(pldf, paste0('../spdumps/', args['tmpcode'],
+    '_cleaned_checked_imp.feather'))
 write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags2.feather'))
 
 # #notify user that pipeline processing is complete

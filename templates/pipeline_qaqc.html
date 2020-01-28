@@ -15,8 +15,8 @@
 <div class='row'>
   <div class="col-md-10 col-md-offset-1 text-center">
     <p class='lead'>
-      Please carefully inspect <strong>all</strong> of your data for errors and either
-      fix or flag them before submitting.
+      Please carefully inspect <strong>all</strong> of your data. By "flagging"
+      data points, you can mark them for future scrutiny or immediate deletion.
       Click and drag on any plot to view the interaction menu.
     <!-- <a href="qaqc_help">
       <p style="font: 20px sans-serif">Instructions Here</p>
@@ -227,7 +227,7 @@
                   </li>
                 </ol>
                 <li>
-                  For each day with missing values (<code>Di</code>):
+                  For each day with missing values (<code>Di</code>; a matrix):
                 </li>
                 <ol>
                   <li>
@@ -240,6 +240,9 @@
                   </li>
                   <li>
                     Linearly interpolate <code>Di - Dx</code> and add it back to <code>Di</code>.
+                    <!--Variables with no known data values on a particular day will
+                    not be imputed, as a baseline for interpolation cannot be
+                    confidently established.-->
                   </li>
                 </ol>
                 <li>
@@ -1466,7 +1469,7 @@
 
       $('#submit_details').empty().append(
         // 'Total data points: <strong>~' + npoints + '</strong><br>' +
-        'Total Automated corrections: <strong>' + nedits + '</strong><br>' +
+        'Total automated corrections: <strong>' + nedits + '</strong><br>' +
         '&nbsp;&nbsp;Infeasible values adjusted: <strong>' + nimpossibles + '</strong><br>' +
         '&nbsp;&nbsp;Potential anomalies adjusted: <strong>' + noutls + '</strong><br>' +
         '&nbsp;&nbsp;Missing points imputed: <strong>' +

@@ -148,12 +148,7 @@ NDI = function(df, knn=3, interv){
 
     samples_per_day = 24 * 60 / interv
 
-    df_ = as_tibble(df) %>%
-        bind_cols(origdf[,1]) %>%
-        arrange(DateTime_UTC) %>%
-        group_by(DateTime_UTC) %>%
-        summarize_all(mean, na.rm=TRUE) %>%
-        ungroup() %>%
+    df_ = df %>%
         mutate(date=as.Date(lubridate::floor_date(DateTime_UTC, unit='day')))
 
     date_counts = table(df_$date)
@@ -191,7 +186,8 @@ NDI = function(df, knn=3, interv){
     df_std = unlistify(gapdays_filled, days_without_gaps, listout$dtcol,
         listout$incompletes)
     df_ = unstandardize_df(df_std, std_out$x_means, std_out$x_sds)
-    df = select(df_, -date) %>% as.data.frame()
+    # df = as.data.frame(select(df_, -DateTime_UTC))
+    df = as.data.frame(df_)
 
     return(df)
 }

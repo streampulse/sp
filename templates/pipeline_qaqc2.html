@@ -223,17 +223,17 @@
   $('body').ready(function(){
 
     var legdat = [[0, 66, 'pldot', 2, 'Unmodified', 'Generics'],
-      [0, 33, 'plorigdot', 2, 'Original', ''],
-      [25, 33, 'ploutlier', 5, 'Potential error', 'Anomalies'],
-      [25, 0, 'ploutlfixed', 5, 'Infeasible', ''],
-      [50, 66, 'plgapfill2', 5, 'Imputed', 'Corrections'],
-      [50, 33, 'plgapfill', 5, 'Adjusted error', ''],
-      [50, 0, 'plgapfixed', 5, 'Adjusted infeasible *', ''],
-      [57, -70, 'actuallyinvis', 2, '*cannot be rejected', ''],
-      [75, 66, 'invis', 5, 'Rejected correction', 'User Input'],
-      [75, 33, 'plreject', 5, 'Accepted original', ''],
-      [75, 0, 'plflag', 5, 'Flagged *', ''],
-      [75, -33, 'plflag', 2, 'Flagged', '']]
+      // [0, 33, 'plorigdot', 2, 'Original', ''],
+      // [25, 33, 'ploutlier', 5, 'Potential error', 'Anomalies'],
+      // [25, 0, 'ploutlfixed', 5, 'Infeasible', ''],
+      [50, 66, 'pl2linterp', 5, 'Linear interpolation', 'Corrections'],
+      [50, 33, 'pl2ndinterp', 5, 'NDI imputation', ''],
+      // [50, 0, 'plgapfixed', 5, 'Adjusted infeasible *', ''],
+      // [57, -70, 'actuallyinvis', 2, '*cannot be rejected', ''],
+      [75, 66, 'invis', 3, 'Rejected correction', 'User Input'],
+      // [75, 33, 'plreject', 5, 'Accepted original', ''],
+      [75, 33, 'plflag', 3, 'Flagged', ''],
+      [75, 0, 'plflag', 2, 'Flagged', '']]
 
     var lheight = height / 4;
 
@@ -343,13 +343,13 @@
       svg.append("g")
           .attr("class", "sunriseset");
       var lin_interps = {};
-      var ici_interps = {};
+      var ndi_interps = {};
       flagdisp.forEach(function(e){
         if(e.variable == vvv){
           if(e.code == 1){
             lin_interps[e.DateTime_UTC] = e.variable
           } else if(e.code == 2){
-            ici_interps[e.DateTime_UTC] = e.variable
+            ndi_interps[e.DateTime_UTC] = e.variable
           }
         }
       });
@@ -372,8 +372,8 @@
           .classed("pl2linterp", function(d){
             return vvv == lin_interps[d.DateTime_UTC];
           })
-          .classed("pl2icinterp", function(d){
-            return vvv == ici_interps[d.DateTime_UTC];
+          .classed("pl2ndinterp", function(d){
+            return vvv == ndi_interps[d.DateTime_UTC];
           })
           .filter('circle:not(.invis)')
           .classed('plflag', function(d){
@@ -507,7 +507,6 @@
           variables = response.variables;
           for(let v of variables){
             rej_holder[v] = [];
-            userflagpts[v] = {'id': [], 'dt': []};
           }
 
           sundat = JSON.parse(response.sunriseset);
@@ -1223,8 +1222,8 @@
       if(! undo_bool){
 
         var rejections = d3.select("." + selectedBrush)
-          .selectAll('.plgapfill:not(.plflag):not(.invis):not(.plgapfixed), ' +
-            '.plgapfill2:not(.plflag):not(.invis):not(.plgapfixed)')
+          .selectAll('.pl2linterp:not(.plflag):not(.invis), ' +
+            '.pl2ndinterp:not(.plflag):not(.invis)')
           .filter(function(d) {
             var is_brushed = unstdt <= d.date && d.date <= unendt;
             return is_brushed;
@@ -1241,7 +1240,7 @@
 
       } else {
         var undos = d3.select("." + selectedBrush)
-          .selectAll('.plgapfill.invis:not(.plflag), .plgapfill2.invis:not(.plflag)')
+          .selectAll('.pl2linterp.invis:not(.plflag), .pl2ndinterp.invis:not(.plflag)')
           .filter(function(d) {
             var is_brushed = unstdt <= d.date && d.date <= unendt;
             return is_brushed;
@@ -1299,8 +1298,8 @@
       // var npoints = pldata.length * (Object.keys(pldata[0]).length - 1)
       // npoints = Math.round(npoints / 100) * 100
       var nedits = flagdata.length;
-      var nimpossibles = flagdata.map(x => x.code == 1).reduce((a, b) => a + b, 0)
-      var noutls = flagdata.map(x => x.code == 2).reduce((a, b) => a + b, 0)
+      var nlinterps = flagdata.map(x => x.code == 1).reduce((a, b) => a + b, 0)
+      var nndinterps = flagdata.map(x => x.code == 2).reduce((a, b) => a + b, 0)
       var nrejections = Object.keys(rej_holder)
         .map(x => rej_holder[x].length)
         .reduce((a, b) => a + b, 0)
@@ -1309,15 +1308,12 @@
       // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
 
       $('#submit_details').empty().append(
-        'OI! UPDATE THIS SECTION!' +
         // 'Total data points: <strong>~' + npoints + '</strong><br>' +
-        'Total Automated corrections: <strong>' + nedits + '</strong><br>' +
-        '&nbsp;&nbsp;Infeasible values adjusted: <strong>' + nimpossibles + '</strong><br>' +
-        '&nbsp;&nbsp;Potential anomalies adjusted: <strong>' + noutls + '</strong><br>' +
-        '&nbsp;&nbsp;Missing points imputed: <strong>' +
-        (nedits - noutls - nimpossibles) + '</strong><br>' +
-        'Automated corrections rejected: <strong>' + nrejections + '</strong><br>' +
-        'Automated corrections accepted: <strong>' + (nedits - nrejections) + '</strong><br>' +
+        'Total imputations: <strong>' + nedits + '</strong><br>' +
+        '&nbsp;&nbsp;Linear interpolation: <strong>' + nlinterps + '</strong><br>' +
+        '&nbsp;&nbsp;NDI: <strong>' + nndinterps + '</strong><br>' +
+        'Imputations rejected: <strong>' + nrejections + '</strong><br>' +
+        'Imputations accepted: <strong>' + (nedits - nrejections) + '</strong><br>' +
         // 'Segments flagged: <strong>' + nflags + '*</strong><br>' +
         'Data points flagged: <strong>' + nflagpoints + '</strong><br>');
         // 'corrections flagged: ' + nflagpoints + '<br>');
