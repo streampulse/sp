@@ -23,7 +23,8 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # args = list('tmpcode'='e5b659a48490')
 
 #read in dataset saved during first part of upload process
-origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv')) %>%
+origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
+    guess_max=10000) %>%
 #origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
     mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 
@@ -75,9 +76,9 @@ for(c in colnames(pldf)){
 #remove entirely empty rows
 rm_rows = which(apply(pldf, 1, function(x) all(is.na(x))))
 if(length(rm_rows)){
-    pldf = pldf[-rm_rows, ]
-    origdf = origdf[-rm_rows, ]
-    flagdf = flagdf[-rm_rows, ]
+    pldf = pldf[-rm_rows, , drop=FALSE]
+    origdf = origdf[-rm_rows, , drop=FALSE]
+    flagdf = flagdf[-rm_rows, , drop=FALSE]
 }
 
 #save flag codes, cleaned data to be read by flask when user follows email link
