@@ -99,8 +99,7 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
         llim2 = min(ff$Klo, na.rm=TRUE)
         ulim2 = max(ff$Kup, na.rm=TRUE)
         # plot(doy, fit_daily$K600_daily_mean,
-        plot(doy, ff$K600_daily_mean,
-            col='orange',
+        plot(doy, ff$K600_daily_mean, col='orange',
             type='l', xlab='', las=0, ylab='', xaxs='i', yaxs='i',
             lwd=2, xaxt='n', bty='u', yaxt='n', ylim=c(llim2, ulim2),
             xlim=c(max(st, maxmin_day[1]), min(en, maxmin_day[2])))
