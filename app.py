@@ -4666,7 +4666,8 @@ def model_details_upload():
 
     #pull in data, format for database entry
     deets = dict(request.form) #not readable by bulk_insert_mappings
-    deets = pd.DataFrame.from_dict(deets, orient='columns')
+    deets = pd.DataFrame.from_dict(deets, orient='index')
+    deets = deets.transpose()
     deets = deets.to_dict('records')[0] #readable by bulk_insert_mappings
 
     #convert R string booleans to 0 and 1
