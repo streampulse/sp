@@ -143,7 +143,28 @@ gap_fill = function(dwg, dwog, nearest_days){
     return(dwg)
 }
 
-# df=pldf; maxspan_days=5; knn=3; interv=15
+find_snappoints = function(x, original_indices, interv){
+
+    ds = median(x)
+
+    if(length(x) %% 2 == 0){
+        ds = c(floor(ds), ceiling(ds))
+        ndi_datetimes = ndi_sections[ds, 'DateTime_UTC']
+        ndi_difftimes = difftime(ndi_datetimes,
+            as.Date(ndi_datetimes[2]), units='days')
+        ds = ds[which.min(abs(ndi_difftimes))]
+    }
+
+    ds = original_indices[ds]
+    nsamps_to_midday = 24 * 60 / interv / 2
+    dbs = c(max(ds - nsamps_to_midday, original_indices[1]),
+        #never going to reach midday, right?ds + nsamps_to_midday)
+
+
+    return(list('daystart'=ds, 'bounds'=dbs))
+}
+
+# df=pldf; knn=3; interv=15
 NDI = function(df, knn=3, interv){
 
     samples_per_day = 24 * 60 / interv
