@@ -144,13 +144,14 @@ gap_fill = function(dwg, dwog, nearest_days){
 }
 
 # x=ndi_ind_list[[1]]; original_indices=twos; interv=15; original_dates=twodates
-find_snappoints = function(x, original_indices, original_dates, interv){
+find_snappoints = function(x, ndi_sections_, original_indices, original_dates,
+    interv){
 
     ds = median(x)
 
     if(length(x) %% 2 == 0){
         ds = c(floor(ds), ceiling(ds))
-        ndi_datetimes = ndi_sections[ds, 'DateTime_UTC']
+        ndi_datetimes = ndi_sections_[ds, 'DateTime_UTC']
         ndi_difftimes = difftime(ndi_datetimes,
             as.Date(ndi_datetimes[2]), units='days')
         ds = ds[which.min(abs(ndi_difftimes))]
@@ -226,4 +227,114 @@ rle_custom = function(x){
         starts=c(1, ends[-length(ends)] + 1),
         stops=ends, lengths=r$lengths, deparse.level=1)
     return(r)
+}
+
+# dfcols_=dfcols; flagdf_=flagdf; ndiout_=ndiout; pldf_=pldf
+snap_days = function(dfcols_, flagdf_, ndiout_, pldf_){
+
+    for(c in dfcols_[dfcols_ != 'DateTime_UTC']){
+
+        twos = which(flagdf_[[c]] == 2)
+        # plot(ndiout_$DateTime_UTC, ndiout_$pH, col='orange', type='l', lwd=2)
+        # lines(pldf_$DateTime_UTC, pldf_$pH, lwd=2)
+
+        if(length(twos)){
+
+            twodates = ndiout_$DateTime_UTC[twos]
+            ndi_sections = ndiout_[twos, c('DateTime_UTC', c)]
+
+            #get new day indices within NDI sections
+            ndi_rounded_dates = round(ndi_sections$DateTime_UTC, 'hour')
+            daystarts = which(substr(ndi_rounded_dates, 12, 19) ==
+                    '00:00:00')
+
+            if(! length(daystarts)){
+                next
+            }
+
+            r = rle_custom(diff(daystarts))
+            r = r[r[, 'values'] == 1, , drop=FALSE]
+
+            if(nrow(r) > 1){
+                r = r[-nrow(r), , drop=FALSE]
+            }
+
+            ds_fac = cut(1:length(daystarts), c(0, r[, 'stops'] + 1, Inf))
+            ndi_ind_list = split(daystarts, ds_fac, drop=TRUE)
+            ndi_list = unname(lapply(ndi_ind_list,
+                find_snappoints, ndi_sections, twos, twodates, samp_int_m))
+            ndi_list = Filter(function(x) ! is.null(x), ndi_list)
+
+            if(! length(ndi_list)){
+                next
+            }
+
+            #identify NDI sections in which exactly 2 days abut.
+            #these and these only need to be edge-snapped
+            ndi_edges = rle_custom(flagdf_[[c]] == 2)
+            ndi_edges = ndi_edges[ndi_edges[, 'values'] == 1, , drop=FALSE]
+            na_edges = rle_custom(is.na(pldf_[[c]]))
+            na_edges = na_edges[na_edges[, 'values'] == 1, , drop=FALSE]
+
+            for(j in nrow(ndi_edges):1){
+                gapless_ndi = paste(ndi_edges[j, 'starts'],
+                    ndi_edges[j, 'stops']) %in%
+                    paste(na_edges[, 'starts'], na_edges[, 'stops'])
+                if(! gapless_ndi) ndi_edges = ndi_edges[-j, , drop=FALSE]
+            }
+
+            #make sure everything is chill.
+            #associate NDI section boundaries with newday indices
+            if(nrow(ndi_edges)){
+
+                ndi_edges = alply(ndi_edges, 1, function(x){
+                    list(matrix(x, nrow=1))
+                })
+
+                ds_db_lined_up = all(mapply(function(x, y){
+                    x$daystart >= y[[1]][2] && x$daystart <= y[[1]][3]
+                }, ndi_list, ndi_edges))
+
+                if(! ds_db_lined_up){
+                    stop()
+                }
+
+                ndi_list = mapply(function(x, y){
+                    x$bounds = y[[1]][2:3]
+                    return(x)
+                }, ndi_list, ndi_edges, SIMPLIFY=FALSE)
+
+            } else {
+                next
+            }
+
+            #snap NDI day edges:
+            #adjust values linearly toward midpoint in proportion to the length
+            #of each dangling side
+            for(j in 1:length(ndi_list)){
+
+                ndi_section = ndi_list[[j]]
+                ds = ndi_section$daystart
+                lb = ndi_section$bounds[1]
+                rb = ndi_section$bounds[2]
+
+                snapdist = diff(ndiout_[(ds - 1):ds, c])
+                ndilen = rb - lb + 1
+                ndilen_l = ds - lb
+                ndilen_r = rb - ds + 1
+                snapprop_l = ndilen_l / ndilen
+                snapprop_r = 1 - snapprop_l
+                snapshift_l = seq(0, snapdist * snapprop_l,
+                    length.out=ndilen_l)
+                snapshift_r = seq(-1 * snapdist * snapprop_r, 0,
+                    length.out=ndilen_r)
+
+                ndiout_[lb:(ds - 1), c] = ndiout_[lb:(ds - 1), c] + snapshift_l
+                ndiout_[ds:rb, c] = ndiout_[ds:rb, c] + snapshift_r
+
+            }
+        }
+    }
+
+    return(ndiout_)
 }
