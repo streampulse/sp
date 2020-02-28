@@ -143,7 +143,8 @@ gap_fill = function(dwg, dwog, nearest_days){
     return(dwg)
 }
 
-find_snappoints = function(x, original_indices, interv){
+# x=ndi_ind_list[[1]]; original_indices=twos; interv=15; original_dates=twodates
+find_snappoints = function(x, original_indices, original_dates, interv){
 
     ds = median(x)
 
@@ -155,13 +156,18 @@ find_snappoints = function(x, original_indices, interv){
         ds = ds[which.min(abs(ndi_difftimes))]
     }
 
+    gapsize = diff(as.numeric(substr(original_dates[c(ds - 1, ds)], 9, 10)))
+    if(gapsize > 1) return(NULL) #a whole day was skipped, so no need to snap
+
     ds = original_indices[ds]
-    nsamps_to_midday = 24 * 60 / interv / 2
-    dbs = c(max(ds - nsamps_to_midday, original_indices[1]),
-        #never going to reach midday, right?ds + nsamps_to_midday)
 
+    # nsamps_to_midday = 24 * 60 / interv / 2
+    # dbs = c(max(ds - nsamps_to_midday, original_indices[1]),
+    #     #never going to reach midday, right?
+    #     ds + nsamps_to_midday)
+    # dbs = c()
 
-    return(list('daystart'=ds, 'bounds'=dbs))
+    return(list('daystart'=ds))
 }
 
 # df=pldf; knn=3; interv=15
@@ -211,4 +217,13 @@ NDI = function(df, knn=3, interv){
     df = as.data.frame(df_)
 
     return(df)
+}
+
+rle_custom = function(x){
+    r = rle(x)
+    ends = cumsum(r$lengths)
+    r = cbind(values=r$values,
+        starts=c(1, ends[-length(ends)] + 1),
+        stops=ends, lengths=r$lengths, deparse.level=1)
+    return(r)
 }
