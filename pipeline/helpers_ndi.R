@@ -158,7 +158,9 @@ find_snappoints = function(x, ndi_sections_, original_indices, original_dates,
     }
 
     gapsize = diff(as.numeric(substr(original_dates[c(ds - 1, ds)], 9, 10)))
-    if(gapsize > 1) return(NULL) #a whole day was skipped, so no need to snap
+
+    fullday_skip = FALSE
+    if(gapsize > 1) fullday_skip = TRUE
 
     ds = original_indices[ds]
 
@@ -168,7 +170,7 @@ find_snappoints = function(x, ndi_sections_, original_indices, original_dates,
     #     ds + nsamps_to_midday)
     # dbs = c()
 
-    return(list('daystart'=ds))
+    return(list('daystart'=ds, 'fullday_skip'=fullday_skip))
 }
 
 # df=pldf; knn=3; interv=15
@@ -246,7 +248,7 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_){
             #get new day indices within NDI sections
             ndi_rounded_dates = round(ndi_sections$DateTime_UTC, 'hour')
             daystarts = which(substr(ndi_rounded_dates, 12, 19) ==
-                    '00:00:00')
+                '00:00:00')
 
             if(! length(daystarts)){
                 next
@@ -263,25 +265,33 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_){
             ndi_ind_list = split(daystarts, ds_fac, drop=TRUE)
             ndi_list = unname(lapply(ndi_ind_list,
                 find_snappoints, ndi_sections, twos, twodates, samp_int_m))
-            ndi_list = Filter(function(x) ! is.null(x), ndi_list)
+            # ndi_list = Filter(function(x) ! is.null(x), ndi_list)
 
             if(! length(ndi_list)){
                 next
             }
 
-            #identify NDI sections in which exactly 2 days abut.
-            #these and these only need to be edge-snapped
+            #identify NDI sections in which multiple days abut.
+            #these need to be edge-snapped
             ndi_edges = rle_custom(flagdf_[[c]] == 2)
             ndi_edges = ndi_edges[ndi_edges[, 'values'] == 1, , drop=FALSE]
             na_edges = rle_custom(is.na(pldf_[[c]]))
             na_edges = na_edges[na_edges[, 'values'] == 1, , drop=FALSE]
 
+            fullday_skips = matrix(ncol=4, nrow=2,
+                dimnames=list(NULL, c('values', 'starts', 'stops', 'lengths')))
+            fullday_skips = fullday_skips[-(1:2),]
             for(j in nrow(ndi_edges):1){
                 gapless_ndi = paste(ndi_edges[j, 'starts'],
                     ndi_edges[j, 'stops']) %in%
                     paste(na_edges[, 'starts'], na_edges[, 'stops'])
-                if(! gapless_ndi) ndi_edges = ndi_edges[-j, , drop=FALSE]
+                if(! gapless_ndi){
+                    fullday_skips = rbind(fullday_skips,
+                        ndi_edges[j, , drop=FALSE])
+                    ndi_edges = ndi_edges[-j, , drop=FALSE]
+                }
             }
+            fullday_skips = fullday_skips[nrow(fullday_skips):1, ]
 
             #make sure everything is chill.
             #associate NDI section boundaries with newday indices
@@ -291,18 +301,37 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_){
                     list(matrix(x, nrow=1))
                 })
 
-                ds_db_lined_up = all(mapply(function(x, y){
-                    x$daystart >= y[[1]][2] && x$daystart <= y[[1]][3]
-                }, ndi_list, ndi_edges))
+                fds_bool = sapply(ndi_list, function(x) x$fullday_skip)
 
-                if(! ds_db_lined_up){
-                    stop()
+                if(any(fds_bool)){
+                    for(k in 1:length(ndi_list[fds_bool])){
+                        ds_k = ndi_list[fds_bool][[k]]$daystart
+                        if(ds_k != fullday_skips[k * 2, 2]){
+                            stop('not chill')
+                        }
+                    }
                 }
 
-                ndi_list = mapply(function(x, y){
+                if(any(! fds_bool)){
+                    ds_db_lined_up = all(mapply(function(x, y){
+                        x$daystart >= y[[1]][2] && x$daystart <= y[[1]][3]
+                    }, ndi_list[! fds_bool], ndi_edges))
+
+                    if(! ds_db_lined_up){
+                        stop('not chill')
+                    }
+                }
+
+                ndi_list[! fds_bool] = mapply(function(x, y){
                     x$bounds = y[[1]][2:3]
                     return(x)
-                }, ndi_list, ndi_edges, SIMPLIFY=FALSE)
+                }, ndi_list[! fds_bool], ndi_edges, SIMPLIFY=FALSE)
+
+                for(k in 1:length(ndi_list[fds_bool])){
+                    fds_bounds = c(fullday_skips[k * 2 - 1, 2],
+                        fullday_skips[k * 2, 3])
+                    ndi_list[fds_bool][[k]]$bounds = fds_bounds
+                }
 
             } else {
                 next
@@ -317,10 +346,23 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_){
                 ds = ndi_section$daystart
                 lb = ndi_section$bounds[1]
                 rb = ndi_section$bounds[2]
+                dend = Position(function(x) ! is.na(x),
+                    ndiout_[lb:(ds - 1), c], right=TRUE) + lb - 1
+                # points(ndiout_$DateTime_UTC[dend],
+                #     ndiout_$AirPres_kPa[dend], col='blue')
+                # points(ndiout_$DateTime_UTC[c(ds, dend)],
+                #     ndiout_$AirPres_kPa[c(ds, dend)], col='blue')
+                # points(ndiout_$DateTime_UTC[c(lb, rb)],
+                #     ndiout_$AirPres_kPa[c(lb, rb)], col='darkgreen')
 
-                snapdist = diff(ndiout_[(ds - 1):ds, c])
+                # if(ndi_section$fullday_skip){
+                #
+                # } else {
                 ndilen = rb - lb + 1
-                ndilen_l = ds - lb
+                na_len = sum(is.na(ndiout_[lb:rb, c]))
+                snapdist = diff(ndiout_[c(dend, ds), c])
+                snapdist = snapdist * ((ndilen - na_len) / ndilen)
+                ndilen_l = dend - lb + 1
                 ndilen_r = rb - ds + 1
                 snapprop_l = ndilen_l / ndilen
                 snapprop_r = 1 - snapprop_l
@@ -329,8 +371,10 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_){
                 snapshift_r = seq(-1 * snapdist * snapprop_r, 0,
                     length.out=ndilen_r)
 
-                ndiout_[lb:(ds - 1), c] = ndiout_[lb:(ds - 1), c] + snapshift_l
+                ndiout_[lb:dend, c] = ndiout_[lb:dend, c] + snapshift_l
                 ndiout_[ds:rb, c] = ndiout_[ds:rb, c] + snapshift_r
+                # lines(ndiout_$DateTime_UTC, ndiout_$AirPres_kPa, col='red')
+                # lines(pldf$DateTime_UTC, pldf$AirPres_kPa)
 
             }
         }

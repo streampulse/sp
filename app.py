@@ -522,7 +522,7 @@ pseudo_core = pseudo_core.set_index('SITECD')
 #DateTime_UTC must remain in the first position
 variables = ['DateTime_UTC', 'DO_mgL', 'DOSecondary_mgL', 'satDO_mgL', 'DOsat_pct', 'WaterTemp_C', 'WaterTemp2_C', 'WaterTemp3_C',
 'WaterPres_kPa', 'AirTemp_C', 'AirPres_kPa', 'Level_m', 'Depth_m',
-'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'CDOM_ppb', 'CDOM_mV', 'FDOM_mV',
+'Discharge_m3s', 'Velocity_ms', 'pH', 'pH_mV', 'RedoxPotential_mV', 'CDOM_ppb', 'CDOM_mV', 'FDOM_mV',
 'Turbidity_NTU', 'Turbidity_mV', 'Turbidity_FNU', 'Nitrate_mgL', 'SpecCond_mScm',
 'SpecCond_uScm', 'EC_uScm', 'CO2_ppm', 'ChlorophyllA_ugL', 'Light_lux', 'Light_PAR', 'Light2_lux',
 'Light2_PAR', 'Light3_lux', 'Light3_PAR', 'Light4_lux', 'Light4_PAR',

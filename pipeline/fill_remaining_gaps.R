@@ -81,6 +81,9 @@ if(args['interpdeluxe'] == 'true'){
 
         plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l', lwd=2)
         lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
+        plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l',
+            lwd=2, ylim=c(14.84, 14.9))
+        lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
         ndiout = tryCatch(snap_days(dfcols, flagdf, ndiout, pldf),
             error=function(e){
                 return('err')
