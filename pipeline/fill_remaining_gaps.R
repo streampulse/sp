@@ -19,7 +19,7 @@ usr_msg_code = '0'
 #retrieve arguments passed from app.py
 # args = commandArgs(trailingOnly=TRUE)                                  ####
 # names(args) = c('tmpcode', 'interpdeluxe')
-args = list('tmpcode'='098031a2d560', 'interpdeluxe'='false')
+args = list('tmpcode'='0d461dccee2a', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
 # origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
@@ -79,17 +79,20 @@ if(args['interpdeluxe'] == 'true'){
             flagdf[interp_inds, c] = flagdf[interp_inds, c] + 2
         }
 
-        plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l', lwd=2)
-        lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
-        plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l',
-            lwd=2, ylim=c(14.84, 14.9))
-        lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
-        ndiout = tryCatch(snap_days(dfcols, flagdf, ndiout, pldf),
+        # plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l', lwd=2)
+        # lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
+        # abline(v=pldf$DateTime_UTC[substr(pldf$DateTime_UTC, 12, 19) == '00:00:00'],
+        #     lty=3, col='gray30')
+        # plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l',
+        #     lwd=2, ylim=c(14.84, 14.9))
+        # lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
+        ndiout = tryCatch(snap_days(dfcols, flagdf, ndiout, pldf,
+                interv=samp_int_m),
             error=function(e){
                 return('err')
             })
-        lines(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='red')
-        lines(pldf$DateTime_UTC, pldf$AirPres_kPa)
+        # lines(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='red')
+        # lines(pldf$DateTime_UTC, pldf$AirPres_kPa)
 
         if(length(ndiout) == 1 && ndiout == 'err'){
             usr_msg_code <<- '4' #unknown error
