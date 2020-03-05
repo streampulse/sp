@@ -319,6 +319,7 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
         ndi_rounded_dates = round(ndi_sections$DateTime_UTC, 'hour')
         daystarts = which(substr(ndi_rounded_dates, 12, 19) ==
             '00:00:00')
+        twodates[daystarts]
 
         if(length(daystarts)){
 
@@ -356,6 +357,9 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
 
         ds_fac = cut(1:length(daystarts), c(0, r[, 'stops'] + 1, Inf))
         ndi_ind_list = split(daystarts, ds_fac, drop=TRUE)
+        #some mid-gap daystarts may have been included; remove them.
+        ndi_ind_list = Filter(function(x) any(! is.na(ndiout_[twos[x], c])),
+            ndi_ind_list)
         ndi_list = unname(lapply(ndi_ind_list,
             find_snappoints, ndi_sections, twos, twodates, unpaired_ndi_tracker))
         # ndi_list = Filter(function(x) ! is.null(x), ndi_list)
