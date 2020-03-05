@@ -288,8 +288,10 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
             if(any(abutting_na_run_bool)){
 
                 abutting_na_run = na_runs[abutting_na_run_bool,]
-                ndi_unpaired_l = flagdf_[abutting_na_run[2] - 1, c] != 2
-                ndi_unpaired_r = flagdf_[abutting_na_run[3] + 1, c] != 2
+                previous_value = flagdf_[abutting_na_run[2] - 1, c]
+                ndi_unpaired_l = previous_value != 2 || is.na(previous_value)
+                next_value = flagdf_[abutting_na_run[3] + 1, c]
+                ndi_unpaired_r = next_value != 2 || is.na(next_value)
 
                 ll = length(unpaired_ndi_tracker)
                 if(ndi_unpaired_l){
@@ -389,7 +391,9 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
                 ndi_edges = ndi_edges[-j, , drop=FALSE]
             }
         }
-        fullday_skips = fullday_skips[nrow(fullday_skips):1, , drop=FALSE]
+        if(nrow(fullday_skips)){
+            fullday_skips = fullday_skips[nrow(fullday_skips):1, , drop=FALSE]
+        }
 
         #sequester fullday skips that are also unpaired NDI sections
         if(length(unpaired_ndi_tracker)){
@@ -432,6 +436,9 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
 
         #make sure everything is chill.
         #associate NDI section boundaries with newday indices
+        if(! nrow(fullday_skips) && ! length(unpaired_ndi_tracker) &&
+            ! nrow(ndi_edges)) next
+
         if(nrow(fullday_skips)){
 
             fds_bool = sapply(ndi_list,
@@ -499,8 +506,6 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
 
         }
 
-        if(! nrow(fullday_skips) && ! length(unpaired_ndi_tracker) &&
-            ! nrow(ndi_edges)) next
 
         #snap NDI day edges:
         #adjust values linearly toward midpoint in proportion to the length
@@ -527,9 +532,6 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
             # points(ndiout_$DateTime_UTC[c(lb, rb)],
             #     ndiout_$AirPres_kPa[c(lb, rb)], col='darkgreen')
 
-            # if(ndi_section$fullday_skip){
-            #
-            # } else {
             ndilen = rb - lb + 1
             na_len = sum(is.na(ndiout_[lb:rb, c]))
             if(! ndi_section$unpaired){
@@ -540,7 +542,9 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
                 } else {
                     snapdist = diff(ndiout_[c(dend, rb + 1), c])
                 }
+                if(is.na(snapdist)) next #unpaired side is the end of the series
             }
+
             snapdist = snapdist * ((ndilen - na_len) / ndilen)
             ndilen_l = dend - lb + 1
             ndilen_r = rb - ds + 1
@@ -558,9 +562,6 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
                     length.out=ndilen_r)
                 ndiout_[ds:rb, c] = ndiout_[ds:rb, c] + snapshift_r
             }
-
-            # lines(ndiout_$DateTime_UTC, ndiout_$AirPres_kPa, col='red')
-            # lines(pldf$DateTime_UTC, pldf$AirPres_kPa)
 
         }
     }

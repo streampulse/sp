@@ -26,8 +26,8 @@ do
     sed -e 's/\\N/""/g' -i $fn'.csv'
 
     #split CSVs into 1GB chunks without breaking lines
-    #split -C 1000m $fn'.csv' $fn -a 2 --additional-suffix=.csv --numeric-suffixes=1
-    split -C 1000m $fn'.csv' $fn -a 2 --additional-suffix=.csv --hex-suffixes=1
+    split -C 1000m $fn'.csv' $fn -a 2 --additional-suffix=.csv --numeric-suffixes=1
+    #split -C 1000m $fn'.csv' $fn -a 2 --additional-suffix=.csv --hex-suffixes=1
 
     #replace header in all chunks and remove original file
     sed -i "1i $(head -n 1 $fn'.csv')" $fn$globcsv

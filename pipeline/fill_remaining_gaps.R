@@ -3,7 +3,7 @@ library(tidyverse)
 library(imputeTS)
 library(feather)
 library(lubridate)
-rm(list=ls()); cat('/014')                                  ####
+# rm(list=ls()); cat('/014')                                  ####
 
 #NOTE:
 #linear interpolator now marks imputations with code 1
@@ -17,9 +17,9 @@ source('pipeline/helpers_ndi.R')
 usr_msg_code = '0'
 
 #retrieve arguments passed from app.py
-# args = commandArgs(trailingOnly=TRUE)                                  ####
-# names(args) = c('tmpcode', 'interpdeluxe')
-args = list('tmpcode'='0d461dccee2a', 'interpdeluxe'='false')
+args = commandArgs(trailingOnly=TRUE)                                  ####
+names(args) = c('tmpcode', 'interpdeluxe')
+# args = list('tmpcode'='3750a8854434', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
 # origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
@@ -69,6 +69,8 @@ if(args['interpdeluxe'] == 'true'){
             usr_msg_code <<- '3'
             return('err') #if all errors have "error" class, just return e
         })
+    # plot(ndiout$DateTime_UTC, ndiout$WaterTemp_C, col='red', type='l')
+    # lines(pldf$DateTime_UTC, pldf$WaterTemp_C)
 
     if(! (length(ndiout) == 1 && ndiout == 'err') ){
 
@@ -79,10 +81,29 @@ if(args['interpdeluxe'] == 'true'){
             flagdf[interp_inds, c] = flagdf[interp_inds, c] + 2
         }
 
-        # plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l', lwd=2)
-        # lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
+        # par(mfrow=c(4, 2), mar=c(0,0,0,0), oma=c(0,0,0,0))
+        # for(dfc in dfcols[-1]){
+        #     plot(ndiout$DateTime_UTC, ndiout[,dfc], col='orange', type='l', lwd=2)
+        #     lines(pldf$DateTime_UTC, pldf[, dfc, drop=TRUE], lwd=2)
+        #     abline(v=pldf$DateTime_UTC[substr(pldf$DateTime_UTC, 12, 19) == '00:00:00'],
+        #         lty=3, col='gray30')
+        #     mtext(dfc, 3, line=-4)
+        # }
+        #
+        # par(mfrow=c(1,1), mar=c(4,4,4,4))
+        # plot(ndiout$DateTime_UTC, ndiout[[c]], col='orange', type='l', lwd=2)
+        # lines(pldf$DateTime_UTC, pldf[[c]], lwd=2)
         # abline(v=pldf$DateTime_UTC[substr(pldf$DateTime_UTC, 12, 19) == '00:00:00'],
         #     lty=3, col='gray30')
+        #
+        # xlims = as.numeric(as.POSIXct(c('2016-11-01', '2016-11-03')))
+        # # xlims = as.numeric(as.POSIXct(c('2016-10-04', '2016-10-06')))
+        # plot(ndiout$DateTime_UTC, ndiout[[c]], col='orange', type='l',
+        #     lwd=2, xlim=xlims)
+        # lines(pldf$DateTime_UTC, pldf[[c]], lwd=2)
+        # abline(v=pldf$DateTime_UTC[substr(pldf$DateTime_UTC, 12, 19) == '00:00:00'],
+        #     lty=3, col='gray30')
+
         # plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l',
         #     lwd=2, ylim=c(14.84, 14.9))
         # lines(pldf$DateTime_UTC, pldf$AirPres_kPa, lwd=2)
@@ -91,8 +112,9 @@ if(args['interpdeluxe'] == 'true'){
             error=function(e){
                 return('err')
             })
-        # lines(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='red')
-        # lines(pldf$DateTime_UTC, pldf$AirPres_kPa)
+
+        # lines(ndiout$DateTime_UTC, ndiout[[c]], col='red')
+        # lines(pldf$DateTime_UTC, pldf[[c]])
 
         if(length(ndiout) == 1 && ndiout == 'err'){
             usr_msg_code <<- '4' #unknown error
