@@ -15,7 +15,7 @@
 <div class='row'>
   <div class="col-md-10 col-md-offset-1 text-center">
     <p class='lead'>
-      Please carefully inspect all imputated values. If they seem unreasonable,
+      Please carefully inspect all imputed values. If they seem unreasonable,
       reject them. You may also add more data flags.
       Click and drag on any plot to view the interaction menu.
     <!-- <a href="qaqc_help">
@@ -280,7 +280,8 @@
 
   });
 
-  function PlotsPL(variables, pldisp, flagdisp, usrflgs, rms, rejects){
+  function PlotsPL(variables, pldisp, flagdisp, usrflgs, rms, rejects,
+    rnd1_flags){
 
     pldisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
     flagdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -362,33 +363,42 @@
         .call(brush);
 
       svg.selectAll(".pldot")
-          .data(pldisp.filter(function(d) {
-            return d[vvv];
-          }))
+        .data(pldisp.filter(function(d) {
+          return d[vvv];
+        }))
         .enter().append("circle")
-          .attr("class", "pldot")
-          .attr("cx", line.x())
-          .attr("cy", line.y())
-          .classed("pl2linterp", function(d){
-            return vvv == lin_interps[d.DateTime_UTC];
-          })
-          .classed("pl2ndinterp", function(d){
-            return vvv == ndi_interps[d.DateTime_UTC];
-          })
-          .filter('circle:not(.invis)')
-          .classed('plflag', function(d){
+        .attr("class", "pldot")
+        .attr("cx", line.x())
+        .attr("cy", line.y())
+        .classed("pl2linterp", function(d){
+          return vvv == lin_interps[d.DateTime_UTC];
+        })
+        .classed("pl2ndinterp", function(d){
+          return vvv == ndi_interps[d.DateTime_UTC];
+        })
+        .filter('circle:not(.invis)')
+        .classed('plflag', function(d){
             return usrflgs.some(function(x){
               return (x.var[0] == vvv || x.hasOwnProperty('applyAll')) &&
                 x.startDate <= d.date && x.endDate >= d.date;
             });
           })
-          .filter('.plflag')
-          .classed('plflag', function(d){
-            return ! rms.some(function(x){
-              return (x.var[0] == vvv || x.hasOwnProperty('applyAll')) &&
-                x.startDate <= d.date && x.endDate >= d.date;
-            });
+        .filter('.plflag')
+        .classed('plflag', function(d){
+          return ! rms.some(function(x){
+            return (x.var[0] == vvv || x.hasOwnProperty('applyAll')) &&
+              x.startDate <= d.date && x.endDate >= d.date;
           });
+        });
+
+      //HERE; RUN IN DEBUGGER: NOT GETTING INTO BLOCK?
+      if(typeof rnd1_flags != 'undefined'){
+        var flagdts = parseDate(rnd1_flags[vvv].dt)
+        d3.select('.' + vvv).selectAll('.pldot')
+          .classed('plflag', function(d){
+            return flagdts.includes(d.date)
+          });
+      }
 
       if(! ['None', null].includes($('#backgraphlist2').val()) ){
         var backfill = $('#backgraphlist2').val();
@@ -518,7 +528,8 @@
           pldisp = getdisplaydata(plotstart, plotend, pldata);
 
           PlotsPL(variables=variables, pldisp=pldisp,
-            flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+            flagdisp=flagdata, usrflgs=userflags, rms=rm_holder,
+            rnd1_flags=userflagpts);
           $('#flagging').show();
           $('#flagging2').show();
 

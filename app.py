@@ -2744,14 +2744,14 @@ def check_round2(tmpcode):
             usr_msg_code = u.read()
 
         if usr_msg_code == '1':
-            flash('No missing datapoints found, so NDI was not performed.',
+            flash('No missing datapoints found, so imputation was not performed.',
                 'alert-warning')
         elif usr_msg_code == '2':
             flash('Fewer than 30 days without NAs, so NDI was not performed.',
                 'alert-warning')
         elif usr_msg_code == '3':
             flash('An error occurred during NDI. Only univariate linear ' +\
-                'interpolation was performed.', 'alert-warning')
+                'interpolation of gaps <= 3 hrs was performed.', 'alert-warning')
 
     return render_template('pipeline_qaqc2.html', tmpcode=tmpcode,
         qaqc_options=qaqc_options_sensor, useredits=useredits)

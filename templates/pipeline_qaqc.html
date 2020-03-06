@@ -1258,7 +1258,7 @@
         let rmflagpts = b.data().map(x => x.DateTime_UTC)
         var rm_inds = rmflagpts.map(x => userflagpts[v]['dt'].indexOf(x));
 
-        rm_inds.sort().reverse()
+        rm_inds.sort(function(a, b){return b - a})
         rm_inds.forEach(x => {
           if(x > -1) {
             window.userflagpts[v]['dt'].splice(x, 1)
