@@ -212,9 +212,9 @@
   var pldata;
   var flagdata;
   var brushextent;
-  var useredits = {{ useredits|safe }}
-  var userflags = useredits['userflags'];
-  var userflagpts = useredits['userflagpts'];
+  // var useredits = {{ useredits|safe }}
+  // var userflags = useredits['userflags'];
+  // var userflagpts = useredits['userflagpts'];
   var rej_holder = {};
   var rm_holder = [];
   var instance_id = 1;
@@ -391,12 +391,11 @@
           });
         });
 
-      //HERE; RUN IN DEBUGGER: NOT GETTING INTO BLOCK?
-      if(typeof rnd1_flags != 'undefined'){
-        var flagdts = parseDate(rnd1_flags[vvv].dt)
+      if(typeof rnd1_flags != 'undefined' && rnd1_flags[vvv].id.length > 0){
+        var flagdts = rnd1_flags[vvv].dt
         d3.select('.' + vvv).selectAll('.pldot')
           .classed('plflag', function(d){
-            return flagdts.includes(d.date)
+            return flagdts.includes(d.DateTime_UTC)
           });
       }
 
@@ -527,9 +526,13 @@
 
           pldisp = getdisplaydata(plotstart, plotend, pldata);
 
+          var useredits = response.useredits;
+          window.userflags = useredits['userflags']
+          window.userflagpts = useredits['userflagpts']
+
           PlotsPL(variables=variables, pldisp=pldisp,
             flagdisp=flagdata, usrflgs=userflags, rms=rm_holder,
-            rnd1_flags=userflagpts);
+            rejects=undefined, rnd1_flags=userflagpts);
           $('#flagging').show();
           $('#flagging2').show();
 

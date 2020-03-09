@@ -2725,11 +2725,6 @@ def round2_gapfill(tmpcode):
 @login_required
 def check_round2(tmpcode):
 
-    # tmpcode='9a9d11819df6'
-    dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
-    with open(dumpfile2, 'r') as d:
-        useredits = json.load(d)
-
     #load static html for popup menu
     with open('static/html/qaqcPopupMenu_pl2.html', 'r') as html_file:
         qaqc_options_sensor = html_file.read()
@@ -2754,7 +2749,7 @@ def check_round2(tmpcode):
                 'interpolation of gaps <= 3 hrs was performed.', 'alert-warning')
 
     return render_template('pipeline_qaqc2.html', tmpcode=tmpcode,
-        qaqc_options=qaqc_options_sensor, useredits=useredits)
+        qaqc_options=qaqc_options_sensor)
 
 @app.route("/get_pipeline_data2", methods=["POST"])
 def get_pipeline_data2():
@@ -2763,13 +2758,17 @@ def get_pipeline_data2():
 
         tmpcode = request.json
 
-        # tmpcode = '3956a8df3d66'
+        # tmpcode='01e51a7c5ddc'
         dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
         with open(dumpfile) as d:
             up_data = json.load(d)
         region = up_data['region']
         site = up_data['site']
         replace = up_data['replace']
+
+        dumpfile2 = '../spdumps/' + tmpcode + '_useredits.json'
+        with open(dumpfile2, 'r') as d:
+            useredits = json.load(d)
 
         pldf = feather.read_dataframe('../spdumps/' + tmpcode +\
             '_cleaned_checked_imp.feather')
@@ -2833,8 +2832,8 @@ def get_pipeline_data2():
 
         return redirect(url_for('series_upload'))
 
-    return jsonify(variables=variables, pljson=pljson,
-        flagjson=flagjson, sunriseset=sunriseset, plotdates=drr)
+    return jsonify(variables=variables, pljson=pljson, flagjson=flagjson,
+        sunriseset=sunriseset, plotdates=drr, useredits=useredits)
 
 @app.route("/submit-dataset-<string:tmpcode>", methods=["POST"])
 @login_required
