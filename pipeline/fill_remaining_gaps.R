@@ -20,6 +20,7 @@ usr_msg_code = '0'
 args = commandArgs(trailingOnly=TRUE)                                  ####
 names(args) = c('tmpcode', 'interpdeluxe')
 # args = list('tmpcode'='3750a8854434', 'interpdeluxe'='false')
+# args = list('tmpcode'='539b05f6f61d', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
 # origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
@@ -89,20 +90,32 @@ if(args['interpdeluxe'] == 'true'){
         #         lty=3, col='gray30')
         #     mtext(dfc, 3, line=-4)
         # }
-        #
+
         # par(mfrow=c(1,1), mar=c(4,4,4,4))
         # plot(ndiout$DateTime_UTC, ndiout[[c]], col='orange', type='l', lwd=2)
         # lines(pldf$DateTime_UTC, pldf[[c]], lwd=2)
-        # abline(v=pldf$DateTime_UTC[substr(pldf$DateTime_UTC, 12, 19) == '00:00:00'],
-        #     lty=3, col='gray30')
+        # # abline(v=pldf$DateTime_UTC[substr(pldf$DateTime_UTC, 12, 19) == '00:00:00'],
+        # #     lty=3, col='gray30')
+        # # for(i in 1:nrow(fullday_skips)){
+        # for(i in 1:2){
+        #     abline(v=pldf$DateTime_UTC[fullday_skips[i,2:3]], col='gray')
+        #     print(paste0(i, ': ', fullday_skips[i,2], '-', fullday_skips[i,3],
+        #         '; ', fullday_skips[i,3] - fullday_skips[i,2]))
+        #     # readline()
+        # }
+        # # abline(v=pldf$DateTime_UTC[fullday_skips[,2]], col='gray')
         #
-        # xlims = as.numeric(as.POSIXct(c('2016-11-01', '2016-11-03')))
-        # # xlims = as.numeric(as.POSIXct(c('2016-10-04', '2016-10-06')))
+        # xlims = as.numeric(as.POSIXct(c('2006-10-04', '2007-1-06')))
         # plot(ndiout$DateTime_UTC, ndiout[[c]], col='orange', type='l',
         #     lwd=2, xlim=xlims)
         # lines(pldf$DateTime_UTC, pldf[[c]], lwd=2)
         # abline(v=pldf$DateTime_UTC[substr(pldf$DateTime_UTC, 12, 19) == '00:00:00'],
         #     lty=3, col='gray30')
+        # for(i in 1:2){
+        #     abline(v=pldf$DateTime_UTC[fullday_skips[i,2:3]], col='gray')
+        #     print(paste0(i, ': ', fullday_skips[i,2], '-', fullday_skips[i,3],
+        #         '; ', fullday_skips[i,3] - fullday_skips[i,2]))
+        # }
 
         # plot(ndiout$DateTime_UTC, ndiout$AirPres_kPa, col='orange', type='l',
         #     lwd=2, ylim=c(14.84, 14.9))

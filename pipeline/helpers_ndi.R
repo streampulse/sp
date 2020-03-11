@@ -160,7 +160,7 @@ find_snappoints = function(x, ndi_sections_, original_indices, original_dates,
 
     # plot(ndiout$DateTime_UTC, ndiout[[c]], col='orange', type='l', lwd=2)
     # lines(pldf$DateTime_UTC, pldf[[c]], lwd=2)
-    gapsize = diff(as.numeric(substr(original_dates[c(ds - 1, ds)], 9, 10)))
+    gapsize = as.numeric(diff(original_dates[c(ds - 1, ds)]))
     # dend = Position(function(x) ! is.na(x),
     #     ndiout_[lb:(ds - 1), c], right=TRUE) + lb - 1
 
@@ -321,7 +321,7 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
         ndi_rounded_dates = round(ndi_sections$DateTime_UTC, 'hour')
         daystarts = which(substr(ndi_rounded_dates, 12, 19) ==
             '00:00:00')
-        twodates[daystarts]
+        # twodates[daystarts]
 
         if(length(daystarts)){
 
@@ -452,6 +452,7 @@ snap_days = function(dfcols_, flagdf_, ndiout_, pldf_, interv){
                     }
                 }
             }
+            # fullday_skips[c(1, 2, 9, 10, 13, 14, 19, 20),]
 
             #identify bounds for paired fullday skips
             for(k in 1:length(ndi_list[fds_bool])){

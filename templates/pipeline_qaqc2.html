@@ -1318,7 +1318,10 @@
         .map(x => rej_holder[x].length)
         .reduce((a, b) => a + b, 0)
       // var nflags = userflags.length;
-      var nflagpoints = pointcounts['flags']
+      var nflagpoints = Object.keys(userflagpts)
+        .map(x => userflagpts[x])
+        .map(y => y.id.length)
+        .reduce((z, w) => z + w)
       // var nflaggededits = d3.selectAll('.plgapfill').filter('.plflag').size();
 
       $('#submit_details').empty().append(

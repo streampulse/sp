@@ -2861,11 +2861,11 @@ def submit_dataset(tmpcode):
         site = up_data['site']
         replace = up_data['replace']
 
-        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-        origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
+        # origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        # origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
         pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned_checked_imp.feather')
         pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
-        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        # flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
         # # replace pldf values with origdf values where pldf has been rejected
         # for r in rejections.items():
