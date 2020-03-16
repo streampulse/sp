@@ -17,7 +17,8 @@
     <p class='lead'>
       Please carefully inspect <strong>all</strong> of your data. By "flagging"
       data points, you can mark them for future scrutiny (Interesting, Questionable)
-      or immediate deletion (Bad Data).
+      or immediate deletion (Bad Data). If you're replacing a dataset that was
+      previously quality controlled, some datapoints below may already be flagged.
       Click and drag on any plot to view the interaction menu.
     <!-- <a href="qaqc_help">
       <p style="font: 20px sans-serif">Instructions Here</p>
@@ -154,7 +155,7 @@
         </p>
         <br>
       </div>
-      <div class='row'>
+      <div class='row' id='interp_options'>
         <div class='col-md-4'>
           <button id="interpbasic_button" type="submit" value="" class="btn btn-info btn-block">
             Interpolation only
@@ -171,6 +172,14 @@
           <button id="gobackpl_button" type='button' value="" class="btn btn-warning btn-block">
             Go back
           </button>
+        </div>
+      </div>
+
+      <div class='row'>
+        <div class="col-md-6 col-md-offset-3 text-center" id='hold_yer_horses_div' style='display: none'>
+          <br><br>
+            Please leave this tab open. Imputation may take up to a few minutes.
+          <br><br>
         </div>
       </div>
 
@@ -266,6 +275,7 @@
       width = $("#graphs").width() - margin.left - margin.right - 45, //45 for buttons
       height = 250 - margin.top - margin.bottom;
   var parseDate = d3.utcParse("%Y-%m-%dT%H:%M:%S.%LZ");
+  var parseDate2 = d3.utcParse("%Y-%m-%d %H:%M:%S");
   var x = d3.scaleUtc().range([0, width]),
       y = d3.scaleLinear().range([height, 0]),
       xAxis = d3.axisBottom().scale(x).ticks(10).tickFormat(function(date, i){
@@ -315,6 +325,7 @@
   var origdata;
   var pldata;
   var flagdata;
+  var oldqaqc;
   var brushextent;
   var userflags = [];
   var userflagpts = {};
@@ -387,7 +398,7 @@
 
   });
 
-  function PlotsPL(variables, origdisp, pldisp, flagdisp, usrflgs, rms, rejects){
+  function PlotsPL(variables, origdisp, pldisp, flagdisp, usrflgs, rms, oldqaqc){
 
     origdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
     pldisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -519,6 +530,9 @@
             return rej_holder[vvv].includes(d.DateTime_UTC);
           })
           .filter('circle:not(.invis)')
+          .classed('oldqaqc', function(d){
+            return oldqaqc[vvv].includes(d.DateTime_UTC);
+          })
           .classed('plflag', function(d){
             return usrflgs.some(function(x){
               return (x.var[0] == vvv || x.hasOwnProperty('applyAll')) &&
@@ -650,6 +664,10 @@
           flagdata = JSON.parse(response.flagjson);
           flagdata.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
           variables = response.variables;
+          oldqaqc = JSON.parse(response.oldqaqc);
+          for(let v of Object.keys(oldqaqc)){
+            oldqaqc[v] = oldqaqc[v].map(x => parseDate2(x));
+          }
           for(let v of variables){
             rej_holder[v] = [];
             userflagpts[v] = {'id': [], 'dt': []};
@@ -665,7 +683,7 @@
           pldisp = getdisplaydata(plotstart, plotend, pldata);
 
           PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-            flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+            flagdisp=flagdata, usrflgs=userflags, rms=rm_holder, oldqaqc=oldqaqc);
           $('#flagging').show();
           $('#flagging2').show();
 
@@ -894,7 +912,7 @@
         // console.log(flagdata);
         $("#graphs").empty();
         PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder, oldqaqc=oldqaqc);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
@@ -941,7 +959,7 @@
 
         $("#graphs").empty();
         PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder, oldqaqc=oldqaqc);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
@@ -985,7 +1003,7 @@
 
       $("#graphs").empty();
       PlotsPL(variables=variables, origdisp=origdisp, pldisp=pldisp,
-        flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+        flagdisp=flagdata, usrflgs=userflags, rms=rm_holder, oldqaqc=oldqaqc);
       if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
       //show panback if applicable
@@ -1502,8 +1520,17 @@
   //send form when deluxe interp button is clicked
   $('body').ready(function(){
     $('body').on("click", "#interpdeluxe_button", function(){
-      $('input[name=interpdeluxe]').val('true')
+      $('#interp_options').hide();
+      $('#hold_yer_horses_div').show();
+      $('input[name=interpdeluxe]').val('true');
       $('#interpdeluxe_submitter').trigger('click');
+    });
+  });
+
+  $('body').ready(function(){
+    $('body').on("click", "#interpbasic_button", function(){
+      $('#interp_options').hide();
+      $('#hold_yer_horses_div').show();
     });
   });
 

@@ -221,14 +221,15 @@ UTC. That column's name may have been changed here."
 O: Outliers/anomalies removed
 G: Gaps imputed
 C: Corrected for drift (biofouling, calibration, etc.)
-D: Derived from other variables (describe)"
+D: Derived from other variables (describe)
+nothing checked: Unknown"
         data-placement='right' style="display:inline-block; vertical-align=middle">
         <i class="fa fa-question-circle-o" style="color: blue"></i>
       </div>
       <div style="display:inline-block; vertical-align=middle">
         <p><strong>Data status</strong></p>
       </div>
-      <p><strong>(check all that apply)</strong></p>
+      <p><strong>(check all that apply; check none if unknown)</strong></p>
 
       {#% for m in columns %#}
       {% for m in range(columns|length) %}

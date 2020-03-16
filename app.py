@@ -797,6 +797,7 @@ def sp_in(ff, gmtoff): # ff must be a list
 def sp_in_lev(f):
 
     filenamesNoV = session.get('filenamesNoV')
+    print(os.stat(f).st_size)
     xx = pd.read_csv(f, parse_dates=[0])
 
     #get list of all filenames on record
@@ -1354,18 +1355,35 @@ def series_upload():
             replace = 'file'
         else:
             replace = 'no'
+
         #checks
         if 'file' not in request.files:
             flash('No file specified.','alert-danger')
             return redirect(request.url)
         ufiles = request.files.getlist("file")
         ufnms = [x.filename for x in ufiles]
+
         # ufnms = ['SR_GG_2017-12-22_XX.csv','SR_G-f_2017-12-22_XX.csv']
         # f=ufnms[0]
         # f = 'ss d_-d'
         if len(ufnms[0]) == 0:
             flash('No files selected.','alert-danger')
             return redirect(request.url)
+
+        # fsizes = []
+        # for x in ufiles:
+        #     x.save('../spdumps/' + x.filename)
+        #     fsize = os.stat('../spdumps/' + x.filename).st_size
+        #     print(fsize)
+        #     fsizes.append(fsize)
+        #     os.remove('../spdumps/' + x.filename)
+        # if sum(fsizes) > 5000000:
+        #     flash('Total size of selected file(s) was ' +\
+        #         str(round(sum(fsizes) / 1000000, 1)) +\
+        #         ' MB, but must not exceed 5 MB.' +\
+        #         ' Please separate and/or subdivide your file(s).',
+        #         'alert-danger')
+        #     return redirect(request.url)
 
         #get list of all files in spupload directory
         upfold = app.config['UPLOAD_FOLDER']
@@ -1449,6 +1467,8 @@ def series_upload():
         filenames = []
         fnlong = []
         filenamesNoV = [] #for filenames without version numbers, and upload IDs
+        fsizes = []
+
         for file in ufiles:
             if file and allowed_file(file.filename):
 
@@ -1473,6 +1493,8 @@ def series_upload():
                     fup = os.path.join(upfold, filename)
 
                 file.save(fup) # save locally
+                fsizes.append(os.stat(fup).st_size)
+
                 # sb.upload_file_to_item(sbupf, fup) #broken (need to get credentials)
 
                 filenames.append(filename) #fname list passed on for display
@@ -1486,6 +1508,15 @@ def series_upload():
                 flash(msg, 'alert-danger')
 
                 return redirect(request.url)
+
+        if sum(fsizes) > 5000000:
+            flash('Total size of selected file(s) was ' +\
+                str(round(sum(fsizes) / 1000000, 1)) +\
+                ' MB, but must not exceed 5 MB.' +\
+                ' Please separate and/or subdivide your file(s).',
+                'alert-danger')
+            [os.remove(x) for x in fnlong]
+            return redirect(request.url)
 
         #persist filenames across requests
         session['filenamesNoV'] = filenamesNoV
@@ -2565,7 +2596,7 @@ def get_pipeline_data():
 
         tmpcode = request.json
 
-        # tmpcode = '0fb817a766c0'
+        # tmpcode = 'de914e4df002'
         dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
         with open(dumpfile) as d:
             up_data = json.load(d)
@@ -2587,6 +2618,30 @@ def get_pipeline_data():
         flagjson = flagdf.to_json(orient='records', date_format='iso')
 
         variables = origdf.columns[1:-1].tolist()
+
+        #retrieve qaqc information if it exists (only if this is a reupload)
+        if replace != 'no':
+
+            sdt0 = origdf.DateTime_UTC.min()
+            edt0 = origdf.DateTime_UTC.max()
+            # region='NC'; site='UEno'; sdt0='2018-05-11'; edt0='2018-06-13'
+            # variables=['DO_mgL', 'WaterTemp_C']
+            # variables=['chili']
+
+            qaqcdf = pd.read_sql('select DateTime_UTC, variable from data where ' +\
+                'region="' + region + '" and site="' + site + '" and DateTime_UTC >="' +\
+                str(sdt0) + '" and DateTime_UTC <="' + str(edt0) + '" and variable in ("' +\
+                '","'.join(variables) + '") and flag is not null;', db.engine)
+
+            qaqcjson = {}
+            if not qaqcdf.empty:
+                for v in variables:
+                    qj = qaqcdf.loc[qaqcdf.variable == v, 'DateTime_UTC']
+                    qaqcjson[v] = qj.dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
+            else:
+                qaqcjson = dict([[v, []] for v in variables])
+
+            qaqcjson = json.dumps(qaqcjson)
 
         # Get sunrise sunset data
         sxx = pd.read_sql("select latitude, longitude from site where region='" +\
@@ -2635,8 +2690,9 @@ def get_pipeline_data():
 
         return redirect(url_for('series_upload'))
 
+    print(qaqcjson)
     return jsonify(variables=variables, origjson=origjson, pljson=pljson,
-        flagjson=flagjson, sunriseset=sunriseset, plotdates=drr)
+        flagjson=flagjson, sunriseset=sunriseset, plotdates=drr, oldqaqc=qaqcjson)
 
 @app.route("/pipeline-complete-<string:tmpcode>", methods=["GET"])
 @login_required
@@ -2980,9 +3036,8 @@ def submit_dataset(tmpcode):
 
         # if request.form['existing'] == "no":
         if up_data['existing'] == "no":
-            # metastring = request.form['metadata']
-            # metastring = metastring + lvltxt
-            metastring = metadata + lvltxt
+            metastring = up_data['metadata']
+            metastring = metastring + lvltxt
             with open(metafilepath, 'a') as metafile:
                 metafile.write(metastring)
         else:
@@ -3010,11 +3065,11 @@ def submit_dataset(tmpcode):
 
         if up_data['existing'] == "no":
             error_details = '\n\nusgs: ' + up_data['usgs'] + '\nsitename: ' +\
-                up_data['sitename'] + '\nlat: ' + up_data['lat'] +\
+                up_data['site'] + '\nlat: ' + up_data['lat'] +\
                 '\nlon: ' + up_data['lng'] + '\nembargo: ' +\
                 up_data['embargo'] + '\ncontactname: ' +\
                 up_data['contactName'] + '\ncontactemail: ' +\
-                up_data['contactEmail'] + '\n\nmeta: ' + metastring +\
+                up_data['contactEmail'] +\
                 '\n\nfn_to_db: ' + ', '.join(up_data['fn_to_db']) + '\nreplace: ' +\
                 replace + '\n\n'
         else:

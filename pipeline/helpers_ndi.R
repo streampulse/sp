@@ -160,7 +160,8 @@ find_snappoints = function(x, ndi_sections_, original_indices, original_dates,
 
     # plot(ndiout$DateTime_UTC, ndiout[[c]], col='orange', type='l', lwd=2)
     # lines(pldf$DateTime_UTC, pldf[[c]], lwd=2)
-    gapsize = as.numeric(diff(original_dates[c(ds - 1, ds)]))
+    gapsize = as.numeric(difftime(original_dates[ds],
+        original_dates[ds - 1], units='days'))
     # dend = Position(function(x) ! is.na(x),
     #     ndiout_[lb:(ds - 1), c], right=TRUE) + lb - 1
 

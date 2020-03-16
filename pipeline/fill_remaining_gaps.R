@@ -5,7 +5,7 @@ library(feather)
 library(lubridate)
 # rm(list=ls()); cat('/014')                                  ####
 
-#NOTE:
+# NOTE:
 #linear interpolator now marks imputations with code 1
 #NDI imputer uses code 2
 

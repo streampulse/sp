@@ -157,6 +157,15 @@
   </div>
 </div>
 
+<div class='row'>
+  <div class="col-md-6 col-md-offset-3 text-center" id='hold_yer_horses_div' style='display: none'>
+    <br><br>
+      Submission processing. This may take up to a few minutes.
+      Please leave this tab open until you see a notification of upload completion.
+    <br><br>
+  </div>
+</div>
+
 <script type="application/javascript">
 
   var margin = {top: 40, right: 60, bottom: 40, left: 40},
@@ -280,8 +289,7 @@
 
   });
 
-  function PlotsPL(variables, pldisp, flagdisp, usrflgs, rms, rejects,
-    rnd1_flags){
+  function PlotsPL(variables, pldisp, flagdisp, usrflgs, rms, rnd1_flags){
 
     pldisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
     flagdisp.forEach(function(d){ d.date = parseDate(d['DateTime_UTC']) });
@@ -375,6 +383,9 @@
         })
         .classed("pl2ndinterp", function(d){
           return vvv == ndi_interps[d.DateTime_UTC];
+        })
+        .classed('invis', function(d){
+          return rej_holder[vvv].includes(d.DateTime_UTC);
         })
         .filter('circle:not(.invis)')
         .classed('plflag', function(d){
@@ -532,7 +543,7 @@
 
           PlotsPL(variables=variables, pldisp=pldisp,
             flagdisp=flagdata, usrflgs=userflags, rms=rm_holder,
-            rejects=undefined, rnd1_flags=userflagpts);
+            rnd1_flags=userflagpts);
           $('#flagging').show();
           $('#flagging2').show();
 
@@ -749,7 +760,8 @@
         // console.log(flagdata);
         $("#graphs").empty();
         PlotsPL(variables=variables, pldisp=pldisp,
-          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder,
+          rnd1_flags=userflagpts);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
@@ -795,7 +807,8 @@
 
         $("#graphs").empty();
         PlotsPL(variables=variables, pldisp=pldisp,
-          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+          flagdisp=flagdata, usrflgs=userflags, rms=rm_holder,
+          rnd1_flags=userflagpts);
         if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
         //show panback if applicable
@@ -838,7 +851,8 @@
 
       $("#graphs").empty();
       PlotsPL(variables=variables, pldisp=pldisp,
-        flagdisp=flagdata, usrflgs=userflags, rms=rm_holder);
+        flagdisp=flagdata, usrflgs=userflags, rms=rm_holder,
+        rnd1_flags=userflagpts);
       if($("#shownight").is(":checked")) { Sunlight(variables, sundat) };
 
       //show panback if applicable
@@ -1349,6 +1363,16 @@
       $('#graphs').show();
       $('#confirmpldiv').hide();
       $('#submitpldiv').show();
+
+    });
+  });
+
+  //tell user to wait while submission processing
+  $('body').ready(function(){
+    $('body').on("click", "#confirmpl_button", function(){
+
+      $('#confirmpldiv').hide();
+      $('#hold_yer_horses_div').show();
 
     });
   });

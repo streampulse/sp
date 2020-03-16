@@ -6,8 +6,9 @@
 </p>
 <p>
   <strong>Note:</strong> Before clicking the link,
-  please set aside 5-15 minutes for careful data
-  inspection.
+  please set aside plenty of time for careful data
+  inspection. For proper quality control of very large uploads
+  (multiple years of data), you may need 30 minutes or more.
 </p>
 <p>
     <a href="%s">%s</a>
