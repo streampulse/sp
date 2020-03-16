@@ -50,7 +50,7 @@ import regex
 # from email.mime.multipart import MIMEMultipart
 import subprocess
 from helpers import *
-import feather
+#import feather
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -1238,7 +1238,7 @@ def sitelist():
         db.engine)
 
     #calculate remaining embargo days
-    timedeltas = datetime.utcnow() - sitedata.addDate
+    timedeltas = pd.Series([datetime.utcnow() - x for x in sitedata.addDate])
     days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
     sitedata['Embargo (days)'] = sitedata['Embargo (days)'] * 365 - days_past
     sitedata.loc[sitedata['Embargo (days)'] <= 0, 'Embargo (days)'] = 0
@@ -1619,6 +1619,7 @@ def series_upload():
             #go to next webpage
             flash("Please double check your variable name matching.",
                 'alert-warning')
+
             return render_template('upload_columns.html', filenames=filenames,
                 columns=columns, tmpfile=tmp_file, variables=variables,
                 existing=existing, sitenm=site[0], replace=replace,
@@ -1628,6 +1629,8 @@ def series_upload():
         except Exception as e:
             [os.remove(f) for f in fnlong]
             tb = traceback.format_exc()
+            tb = tb + replace + notificationEmail + site[0] + filenames[0] + str(existing) +\
+                str(cdict) + str(ldict) + str(ndict) + str(variables)
             log_exception('E004', tb)
             msg = Markup('Error 004. Check for unusual characters in your ' +\
                 'column names (degree symbol, etc.). If problem persists, ' +\
@@ -2252,10 +2255,14 @@ def updatedb(xx, fnamelist, replace='no'):
 
         #delete records that are being replaced (this could be sped up using
         #the code from replace == 'byrow' above)
+        #if list(upIDs):
+        #    d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
+        #    for rec in d:
+        #        db.session.delete(rec)
+        #delete records that are being replaced
         if list(upIDs):
-            d = Data.query.filter(Data.upload_id.in_(list(upIDs))).all()
-            for rec in d:
-                db.session.delete(rec)
+            db.session.query(Data).filter(Data.upload_id.in_(list(upIDs)))\
+                .delete(synchronize_session=False)
 
         #reconstitute flags (this too)
         for ind, r in flagged_obs.iterrows():
@@ -2566,7 +2573,9 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     #save dataframe and ancillary data so that it can be accessed when user returns
-    feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
+    xx.to_csv('../spdumps/' + tmpcode + '_xx.csv',  index=False)
+    #feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
+
     dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
     with open(dumpfile, 'w') as d:
         dmp = json.dump({'region': region, 'site': site, 'cdict': cdict,
@@ -2587,6 +2596,7 @@ def confirmcolumns():
         'detection and gap filling are complete.'
 
     flash(notification, 'alert-success')
+
     return redirect(url_for('series_upload'))
 
 @app.route("/get_pipeline_data", methods=["POST"])
@@ -2604,9 +2614,18 @@ def get_pipeline_data():
         site = up_data['site']
         replace = up_data['replace']
 
-        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
-        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
+            parse_dates=['DateTime_UTC'])
+        origdf.DateTime_UTC = origdf.DateTime_UTC.dt.tz_localize('UTC')
+        pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
+            parse_dates=['DateTime_UTC'])
+        pldf.DateTime_UTC = pldf.DateTime_UTC.dt.tz_localize('UTC')
+        flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
+            parse_dates=['DateTime_UTC'])
+        flagdf.DateTime_UTC = flagdf.DateTime_UTC.dt.tz_localize('UTC')
+        #origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        #pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        #flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
         #json format original data, pipeline data, and flag data
         origjson = origdf.to_json(orient='records', date_format='iso')
@@ -2673,11 +2692,7 @@ def get_pipeline_data():
         tb = traceback.format_exc()
 
         if 'origdf' in locals():
-            origdf_head = origdf.head(2).to_string()
-            pldf_head = pldf.head(2).to_string()
-            flagdf_head = flagdf.head(2).to_string()
-
-            full_error_detail = tb + origdf_head + pldf_head + flagdf_head +\
+            full_error_detail = tb + str(origdf.head()) + str(pldf.head()) + str(flagdf.head()) +\
                 dumpfile + region + site + tmpcode
         else:
             full_error_detail = tb + ' ORIGDF DID NOT EXIST!'
@@ -2902,7 +2917,6 @@ def submit_dataset(tmpcode):
         rejections = json.loads(request.form['rej_holder'])
 
         # tmpcode = 'dad74156dab8'
-        # tmpcode = 'b30b14a8d0a5'
         # userflags = [{"flagid":"Questionable","instance_id":1,"startDate":"2017-08-16T11:27:04.390Z","endDate":"2017-08-16T21:30:43.902Z","comment":"","var":["WaterTemp_C"]},{"flagid":"Questionable","instance_id":2,"startDate":"2017-08-16T09:55:36.585Z","endDate":"2017-08-16T15:43:10.243Z","comment":"","var":["WaterTemp_C"]}]
         # userflagpts = {"WaterTemp_C":{"id":[1,1,"rm",1,1,1,1,1,1,1,"rm","rm",1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2],"dt":["2017-08-16T11:30:00.000Z","2017-08-16T11:45:00.000Z","rm","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z","2017-08-16T15:00:00.000Z","2017-08-16T15:15:00.000Z","2017-08-16T15:30:00.000Z","rm","rm","2017-08-16T18:15:00.000Z","2017-08-16T18:30:00.000Z","2017-08-16T18:45:00.000Z","2017-08-16T19:00:00.000Z","2017-08-16T19:15:00.000Z","2017-08-16T19:30:00.000Z","2017-08-16T19:45:00.000Z","2017-08-16T20:00:00.000Z","2017-08-16T20:15:00.000Z","2017-08-16T20:30:00.000Z","2017-08-16T20:45:00.000Z","2017-08-16T21:00:00.000Z","2017-08-16T21:15:00.000Z","2017-08-16T21:30:00.000Z","2017-08-16T10:00:00.000Z","2017-08-16T10:15:00.000Z","2017-08-16T10:30:00.000Z","2017-08-16T10:45:00.000Z","2017-08-16T11:00:00.000Z","2017-08-16T11:15:00.000Z","2017-08-16T13:45:00.000Z","2017-08-16T14:00:00.000Z","2017-08-16T14:15:00.000Z","2017-08-16T14:30:00.000Z","2017-08-16T14:45:00.000Z"]},"pH":{"id":[],"dt":[]},"SpecCond_uScm":{"id":[],"dt":[]},"Depth_m":{"id":[],"dt":[]},"CDOM_ppb":{"id":[],"dt":[]},"Turbidity_NTU":{"id":[],"dt":[]},"DO_mgL":{"id":[],"dt":[]},"DOsat_pct":{"id":[],"dt":[]},"pH_mV":{"id":[],"dt":[]}}
         # rejections = {"WaterTemp_C":["2017-08-20T15:00:00.000Z","2017-08-20T16:00:00.000Z"],"pH":[],"SpecCond_uScm":[],"Depth_m":[],"CDOM_ppb":[],"Turbidity_NTU":[],"DO_mgL":[],"DOsat_pct":[],"pH_mV":[]}
@@ -2922,6 +2936,20 @@ def submit_dataset(tmpcode):
         pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned_checked_imp.feather')
         pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
         # flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+
+        ##JUNK FROM MASTER BRANCH?
+        #origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
+        #    parse_dates=['DateTime_UTC'])
+        ##origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        #origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
+        ##pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        #pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
+        #    parse_dates=['DateTime_UTC'])
+        #pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
+        ##flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        #flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
+        #    parse_dates=['DateTime_UTC'])
+        #flagdf = flagdf.set_index(['DateTime_UTC']).tz_localize('UTC')
 
         # # replace pldf values with origdf values where pldf has been rejected
         # for r in rejections.items():
@@ -3039,7 +3067,7 @@ def submit_dataset(tmpcode):
             metastring = up_data['metadata']
             metastring = metastring + lvltxt
             with open(metafilepath, 'a') as metafile:
-                metafile.write(metastring)
+                metafile.write(lvltxt)
         else:
             #update level data in metadata files
             if os.path.isfile(metafilepath):
@@ -4553,7 +4581,7 @@ def query_available_results():
     resdir = app.config['RESULTS_FOLDER']
     d = os.listdir(resdir)
     d = [x for x in d if x[0:6] == 'modOut']
-    regsiteyr = [re.match('\w+_(\w+)_(\w+)_(\w+).rds', x).groups() for x in d]
+    regsiteyr = [re.match('\w+_(.+?)_(.+?)_([0-9]{4}).rds', x).groups() for x in d]
 
     resdir_powell = resdir[0: len(resdir) - 4] + 'powell_data/shiny_lists'
     dP = os.listdir(resdir_powell)
@@ -4885,7 +4913,8 @@ def model_details_upload():
 
     #pull in data, format for database entry
     deets = dict(request.form) #not readable by bulk_insert_mappings
-    deets = pd.DataFrame.from_dict(deets, orient='columns')
+    deets = pd.DataFrame.from_dict(deets, orient='index')
+    deets = deets.transpose()
     deets = deets.to_dict('records')[0] #readable by bulk_insert_mappings
 
     #convert R string booleans to 0 and 1

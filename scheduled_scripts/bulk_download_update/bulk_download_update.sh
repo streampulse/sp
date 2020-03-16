@@ -55,4 +55,4 @@ do
     cd /var/lib/mysql-files
 done
 
-conda deactivate sp
+conda deactivate

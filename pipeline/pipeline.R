@@ -23,7 +23,9 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 # args = list('tmpcode'='e5b659a48490')
 
 #read in dataset saved during first part of upload process
-origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
+origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv'),
+    guess_max=10000) %>%
+#origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
     mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 
 #determine the sampling interval and fill in any missing records
@@ -72,9 +74,9 @@ for(c in colnames(pldf)){
 #remove entirely empty rows
 rm_rows = which(apply(pldf, 1, function(x) all(is.na(x))))
 if(length(rm_rows)){
-    pldf = pldf[-rm_rows, ]
-    origdf = origdf[-rm_rows, ]
-    flagdf = flagdf[-rm_rows, ]
+    pldf = pldf[-rm_rows, , drop=FALSE]
+    origdf = origdf[-rm_rows, , drop=FALSE]
+    flagdf = flagdf[-rm_rows, , drop=FALSE]
 }
 
 #save flag codes, cleaned data to be read by flask controllers when
@@ -82,9 +84,12 @@ if(length(rm_rows)){
 pldf = dplyr::bind_cols(list('DateTime_UTC'=origdf$DateTime_UTC),
     pldf, list('upload_id'=origdf$upload_id))
 flagdf$DateTime_UTC = origdf$DateTime_UTC
-write_feather(origdf, paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
-write_feather(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned.feather'))
-write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
+#write_feather(origdf, paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
+#write_feather(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned.feather'))
+#write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
+write.csv(origdf, paste0('../spdumps/', args['tmpcode'], '_orig.csv'), row.names=FALSE)
+write.csv(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned.csv'), row.names=FALSE)
+write.csv(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.csv'), row.names=FALSE)
 
 #notify user that pipeline processing is complete
 system2('/home/mike/miniconda3/envs/python2/bin/python',

@@ -378,32 +378,14 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
     <br>
 
     <p class='lead'>
-      Data may be revised on a per-file or per-record (i.e. per-datapoint) basis.
+      Data may be revised on a per-file or per-record (i.e. per-timepoint) basis.
       Each method has advantages and disadvantages. In either case, only one
       revised file may be uploaded at a time. Flag information that you've added
       via the data cleaning tool is preserved across revisions.
     </p>
-    <h3>Replace the contents of a previously uploaded file</h3>
-    <p>
-      This method locates all data points associated with the filename you are
-      re-uploading, removes them from the database, then inserts the contents
-      of the new file into the database. The original file will still be stored
-      in CSV format on our server.
-    </p>
-    <p>This method is the only way to:</p>
-    <ul>
-      <li>Rename variables (e.g. Turbidity_NTU &rarr; Turbidity_FNU)</li>
-      <li>Remove variables</li>
-      <li>Revise data spanning more than one year</li>
-    </ul>
-    <p>
-      The disadvantage of this method is that you must know which file or files
-      are associated with the data points you want to revise.
-    </p>
 
     <h3>Replace data points record-by-record</h3>
     <p>
-      This method is more intuitive, but also more computationally demanding.
       For each record you want to revise, the system must first determine if
       it already exists. Rather than search through hundreds of millions of records
       every time, we search through a subset of up to a year of records. Therefore
@@ -421,6 +403,34 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
       <li>Revise data spanning more than one year</li>
     </ul>
 
+    <h3>Replace the contents of a previously uploaded file</h3>
+    <p>
+      This method locates all data points associated with the filename you are
+      re-uploading, removes them from the database, then inserts the contents
+      of the new file into the database. The original file will still be stored
+      in CSV format on our server.
+    </p>
+    <p>This method is the only way to:</p>
+    <ul>
+      <li>Rename variables (e.g. Turbidity_NTU &rarr; Turbidity_FNU)</li>
+      <li>Remove variables</li>
+      <li>Revise data spanning more than one year</li>
+    </ul>
+    <p>
+      This method has two disadvantages:
+    </p>
+    <ul>
+      <li>
+        It can take a very long time, especially for datasets spanning more than one year.
+        It may take so long that a time-out error occurs, resulting in your precious QA/QC time
+        being wasted (we're working on this). As such, this method should be used as a last resort.
+      </li>
+      <li>
+        You must know which file or files are associated with the data points you want to revise.
+      </li>
+    </ul>
+    </p>
+
     <p><strong>If you have any questions</strong>, please
       <a href="mailto:streampulse.info@gmail.com">send us an email.</a>
     </p>
@@ -431,11 +441,11 @@ write_csv(datatable, path=&quot;NC_Eno_2016-10-13.csv&quot;)
     <hr>
   </div>
 
-  <input type="checkbox" id="replaceFile" name="replaceFile">
-  Check this box if replacing an entire file.
-  <br>
   <input type="checkbox" id="replaceRecords" name="replaceRecords">
   Check this box if replacing data record-by-record.
+  <br>
+  <input type="checkbox" id="replaceFile" name="replaceFile">
+  Check this box if replacing an entire file (<strong>see instructions!</strong>).
 
   <br><br>
   <p>

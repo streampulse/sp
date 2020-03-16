@@ -10,7 +10,8 @@ library(rvest)
 # setup ####
 
 # setwd('/home/aaron/sp')
-wd1 = '/home/mike/git/streampulse/server_copy/sp'
+wd1 = '/home/aaron/sp'
+#wd1 = '/home/mike/git/streampulse/server_copy/sp'
 setwd(wd1)
 
 logfile = paste0(wd1, '/scheduled_scripts/cuahsi/cuahsi_upload.log')

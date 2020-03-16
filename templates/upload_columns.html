@@ -177,12 +177,7 @@
         <div class="input-group">
           <span class="input-group-addon">
             {% if c == columns[0] %}
-              <div data-toggle=''
-title="Remember, if you're not uploading an automatically formatted logger file
-(i.e. if your LOGGERID isn't one of CS, EM, HA, HD, HP, HW), it's assumed
-that the first column in your CSV contains date-time stamps converted to
-UTC. That column's name may have been changed here."
-                data-placement='right' style="display:inline-block; vertical-align=middle">
+              <div class='tooltip-target3'>
                 <i class="fa fa-question-circle-o" style="color: blue"></i>
               </div>
               <div style='display:inline-block; vertical-align=middle'>
@@ -217,13 +212,7 @@ UTC. That column's name may have been changed here."
     <input type="hidden" name="ldict" value="">
     <div class='col-md-4 text-center'>
       <br>
-      <div data-toggle='' title="R: Raw (directly from sensor/logger)
-O: Outliers/anomalies removed
-G: Gaps imputed
-C: Corrected for drift (biofouling, calibration, etc.)
-D: Derived from other variables (describe)
-nothing checked: Unknown"
-        data-placement='right' style="display:inline-block; vertical-align=middle">
+      <div class='tooltip-target2'>
         <i class="fa fa-question-circle-o" style="color: blue"></i>
       </div>
       <div style="display:inline-block; vertical-align=middle">
@@ -340,7 +329,6 @@ nothing checked: Unknown"
 <br><br>
 
 
-
 <script type="application/javascript">
 
   $('#embargo').selectize({
@@ -454,9 +442,56 @@ nothing checked: Unknown"
 </script>
 
 <script type="application/javascript">
-  $(document).ready(function(){
-      $('[data-toggle="tooltip"]').tooltip();
+  // $(document).ready(function(){
+  //     $('[data-toggle="tooltip"]').tooltip();
+  // });
+
+  var changeTooltipPosition2 = function(event) {
+    var tooltipX = event.pageX - 8;
+    var tooltipY = event.pageY + 8;
+    $('div.tooltip2').css({top: tooltipY, left: tooltipX});
+  };
+
+  var showTooltip2 = function(event) {
+    $('div.tooltip2').remove();
+    $('<div class="tooltip2">R: Raw (directly from sensor/logger)<br>O: Outliers/anomalies removed<br>G: Gaps imputed<br>C: Corrected for drift (biofouling, calibration, etc.)<br>D: Derived from other variables (describe)</div>')
+      .appendTo('body');
+    changeTooltipPosition2(event);
+  };
+
+  var hideTooltip2 = function() {
+     $('div.tooltip2').remove();
+  };
+
+  $(".tooltip-target2").bind({
+     mousemove: changeTooltipPosition2,
+     mouseenter: showTooltip2,
+     mouseleave: hideTooltip2
   });
+
+  var changeTooltipPosition3 = function(event) {
+    var tooltipX = event.pageX - 8;
+    var tooltipY = event.pageY + 8;
+    $('div.tooltip3').css({top: tooltipY, left: tooltipX});
+  };
+
+  var showTooltip3 = function(event) {
+    $('div.tooltip3').remove();
+    $('<div class="tooltip3">Remember, if you\'re not uploading an automatically formatted logger file<br>(i.e. if your LOGGERID isn\'t one of CS, EM, HA, HD, HP, HW),<br>it\'s assumed that the first column in your CSV contains date-time stamps converted to UTC.<br>That column\'s name may have been changed here.</div>')
+      .appendTo('body');
+    changeTooltipPosition3(event);
+  };
+
+  var hideTooltip3 = function() {
+     $('div.tooltip3').remove();
+  };
+
+  $(".tooltip-target3").bind({
+     mousemove: changeTooltipPosition3,
+     mouseenter: showTooltip3,
+     mouseleave: hideTooltip3
+  });
+
 </script>
 
 {% endblock %}

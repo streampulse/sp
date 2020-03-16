@@ -38,7 +38,7 @@
       </span>
       <span style="display:inline-block">
         <button id="allsp" class="btn btn-sm btn-info" style="font-family:mono">
-          {% set bulksize = bulk_file_sizes["all_sp_data.zip"]|filesizeformat %}
+          {% set bulksize = bulk_file_sizes["all_sp_data.csv.zip"]|filesizeformat %}
           {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
           Download {{ spaces|safe }}({{ bulksize }})
         </button>
@@ -52,7 +52,7 @@
       </span>
       <span style="display:inline-block">
         <button id="allneon" class="btn btn-sm btn-info" style="font-family:mono">
-          {% set bulksize = bulk_file_sizes["all_neon_data.zip"]|filesizeformat %}
+          {% set bulksize = bulk_file_sizes["all_neon_data.csv.zip"]|filesizeformat %}
           {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
           Download {{ spaces|safe }}({{ bulksize }})
         </button>
@@ -66,7 +66,7 @@
       </span>
       <span style="display:inline-block">
         <button id="allpowell" class="btn btn-sm btn-info" style="font-family:mono">
-          {% set bulksize = bulk_file_sizes["all_powell_data.zip"]|filesizeformat %}
+          {% set bulksize = bulk_file_sizes["all_powell_data.csv.zip"]|filesizeformat %}
           {% set spaces = "&nbsp;" * (8 - bulksize|length) %}
           Download {{ spaces|safe }}({{ bulksize }})
         </button>

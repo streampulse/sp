@@ -536,7 +536,7 @@ function rm_flag() {
     });
 
     brushdown = false;
-    rmflag_ajax();
+    rmflag_ajax(dat);
 
     return false;
 
@@ -594,9 +594,9 @@ function add_flag(red_points_only) {
     if (dat.flagid != null){
 
       if(red_points_only){
-        flag_ajax_serial(counter, so);
+        flag_ajax_serial(dat, counter, so);
       } else {
-        flag_ajax_batch();
+        flag_ajax_batch(dat);
       }
       return false;
 
@@ -610,11 +610,11 @@ function add_flag(red_points_only) {
 }
 
 //flag all selected points, the fast way
-function flag_ajax_batch(){
+function flag_ajax_batch(senddata){
   $.ajax({
     type: 'POST',
     url:'/_addflag',
-    data: JSON.stringify(dat),
+    data: JSON.stringify(senddata),
     contentType: 'application/json;charset=UTF-8',
     success: function(){
       $('.popupbox').remove();
@@ -628,18 +628,18 @@ function flag_ajax_batch(){
 }
 
 //flag only selected points that are red. waits for callbacks
-function flag_ajax_serial(counter, selection){
+function flag_ajax_serial(senddata, counter, selection){
   $.ajax({
     type: 'POST',
     url:'/_addflag',
-    data: JSON.stringify(dat),
+    data: JSON.stringify(senddata),
     contentType: 'application/json;charset=UTF-8',
     success: function(){
       if (counter < so.length - 1){
         counter++;
-        dat['startDate'] = so[counter].DateTime_UTC; //focus on next red point
-        dat['endDate'] = so[counter].DateTime_UTC;
-        flag_ajax_serial(counter, so);
+        senddata['startDate'] = so[counter].DateTime_UTC; //focus on next red point
+        senddata['endDate'] = so[counter].DateTime_UTC;
+        flag_ajax_serial(senddata, counter, so);
       } else {
         $('.popupbox').remove();
       }
@@ -652,11 +652,11 @@ function flag_ajax_serial(counter, selection){
 }
 
 //remove all flags from selected points
-function rmflag_ajax(){
+function rmflag_ajax(senddata){
   $.ajax({
     type: 'POST',
     url:'/_rmflag',
-    data: JSON.stringify(dat),
+    data: JSON.stringify(senddata),
     contentType: 'application/json;charset=UTF-8',
     success: function(){
       $('.popupbox').remove();
