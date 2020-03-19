@@ -19,8 +19,7 @@ usr_msg_code = '0'
 #retrieve arguments passed from app.py
 args = commandArgs(trailingOnly=TRUE)                                  ####
 names(args) = c('tmpcode', 'interpdeluxe')
-# args = list('tmpcode'='3750a8854434', 'interpdeluxe'='false')
-# args = list('tmpcode'='539b05f6f61d', 'interpdeluxe'='false')
+# args = list('tmpcode'='5cc358829484', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
 # origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
@@ -141,10 +140,12 @@ if(args['interpdeluxe'] == 'true'){
 
 }
 
-#remove entirely empty rows
+#remove entirely empty rows and store their indices in a file
 # rm_rows = which(apply(pldf, 1,
 rm_rows = which(apply(select(pldf, -DateTime_UTC), 1,
     function(x) all(is.na(x)) ))
+# rmrowfile = paste0('../spdumps/', args['tmpcode'], '_rmrows2.csv')
+# write.csv(data.frame(x=rm_rows), rmrowfile, row.names=FALSE)
 if(length(rm_rows)){
     pldf = pldf[-rm_rows, ]
     # origdf = origdf[-rm_rows, ]
