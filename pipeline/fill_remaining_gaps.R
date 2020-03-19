@@ -9,8 +9,8 @@ library(lubridate)
 #linear interpolator now marks imputations with code 1
 #NDI imputer uses code 2
 
-#setwd('/home/aaron/sp')                                  ####
-setwd('/home/mike/git/streampulse/server_copy/sp')
+setwd('/home/aaron/sp')                                  ####
+#setwd('/home/mike/git/streampulse/server_copy/sp')
 
 source('pipeline/helpers.R')
 source('pipeline/helpers_ndi.R')

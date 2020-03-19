@@ -10,8 +10,8 @@ library(lubridate)
 #gap fillers mark imputations, not including those following anomaly removal,
     #with code 4
 
-#setwd('/home/aaron/sp')
-setwd('/home/mike/git/streampulse/server_copy/sp')
+setwd('/home/aaron/sp')
+#setwd('/home/mike/git/streampulse/server_copy/sp')
 
 source('pipeline/helpers.R')
 find_outliers = readChar('find_outliers.R', file.info('find_outliers.R')$size)
@@ -94,8 +94,8 @@ write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.feather'))
 #write.csv(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.csv'), row.names=FALSE)
 
 #notify user that pipeline processing is complete
-system2('/home/mike/miniconda3/envs/python2/bin/python',
-#system2('/home/aaron/miniconda3/envs/sp/bin/python',
+#system2('/home/mike/miniconda3/envs/python2/bin/python',
+system2('/home/aaron/miniconda3/envs/sp/bin/python',
     args=c('pipeline/notify_user.py', args))
 
 message('end of pipeline.R')
