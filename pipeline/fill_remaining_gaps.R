@@ -1,7 +1,7 @@
 library(plyr)
 library(tidyverse)
 library(imputeTS)
-library(feather)
+#library(feather)
 library(lubridate)
 # rm(list=ls()); cat('/014')                                  ####
 
@@ -22,11 +22,11 @@ names(args) = c('tmpcode', 'interpdeluxe')
 # args = list('tmpcode'='5cc358829484', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
-# origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
-# pldf = read_csv(paste0('../spdumps/', args['tmpcode'], '_cleaned.csv'))
-origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
-pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
-    '_cleaned_checked.feather'))                              ####
+origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
+pldf = read_csv(paste0('../spdumps/', args['tmpcode'], '_cleaned_checked.csv'))
+#origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
+#pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
+#    '_cleaned_checked.feather'))                              ####
 pldf = as_tibble(pldf) %>%
     select(-DateTime_UTC, -upload_id) %>%
     bind_cols(select(origdf, DateTime_UTC)) %>%
@@ -155,9 +155,11 @@ if(length(rm_rows)){
 #save flag codes, imputed dataset to be read in by flask controllers
 flagdf$DateTime_UTC = pldf$DateTime_UTC
 pldf$upload_id = rep(origdf$upload_id[1], nrow(pldf))
-write_feather(pldf, paste0('../spdumps/', args['tmpcode'],
-    '_cleaned_checked_imp.feather'))
-write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags2.feather'))
+write.csv(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned_checked_imp.csv'), row.names=FALSE)
+write.csv(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags2.csv'), row.names=FALSE)
+#write_feather(pldf, paste0('../spdumps/', args['tmpcode'],
+#    '_cleaned_checked_imp.feather'))
+#write_feather(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags2.feather'))
 
 # #notify user that pipeline processing is complete
 # system2('/home/mike/miniconda3/envs/python2/bin/python',

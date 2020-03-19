@@ -50,7 +50,7 @@ import regex
 # from email.mime.multipart import MIMEMultipart
 import subprocess
 from helpers import *
-import feather
+# import feather
 
 pandas2ri.activate() #for converting pandas df to R df
 
@@ -2592,8 +2592,8 @@ def confirmcolumns():
         return redirect(url_for('series_upload'))
 
     #save dataframe and ancillary data so that it can be accessed when user returns
-    # xx.to_csv('../spdumps/' + tmpcode + '_xx.csv',  index=False)
-    feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
+    xx.to_csv('../spdumps/' + tmpcode + '_xx.csv',  index=False)
+    # feather.write_dataframe(xx, '../spdumps/' + tmpcode + '_xx.feather')
 
     dumpfile = '../spdumps/' + tmpcode + '_confirmcolumns.json'
     with open(dumpfile, 'w') as d:
@@ -2633,18 +2633,18 @@ def get_pipeline_data():
         site = up_data['site']
         replace = up_data['replace']
 
-        # origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
-        #     parse_dates=['DateTime_UTC'])
-        # origdf.DateTime_UTC = origdf.DateTime_UTC.dt.tz_localize('UTC')
-        # pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
-        #     parse_dates=['DateTime_UTC'])
-        # pldf.DateTime_UTC = pldf.DateTime_UTC.dt.tz_localize('UTC')
-        # flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
-        #     parse_dates=['DateTime_UTC'])
-        # flagdf.DateTime_UTC = flagdf.DateTime_UTC.dt.tz_localize('UTC')
-        origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
-        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
+            parse_dates=['DateTime_UTC'])
+        origdf.DateTime_UTC = origdf.DateTime_UTC.dt.tz_localize('UTC')
+        pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
+            parse_dates=['DateTime_UTC'])
+        pldf.DateTime_UTC = pldf.DateTime_UTC.dt.tz_localize('UTC')
+        flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
+            parse_dates=['DateTime_UTC'])
+        flagdf.DateTime_UTC = flagdf.DateTime_UTC.dt.tz_localize('UTC')
+        # origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+        # pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+        # flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
 
         #json format original data, pipeline data, and flag data
         origjson = origdf.to_json(orient='records', date_format='iso')
@@ -2779,13 +2779,19 @@ def round2_gapfill(tmpcode):
     rejections = json.loads(request.form['rej_holder'])
     interpdeluxe = request.form['interpdeluxe']
 
-    # tmpcode='dca8d6dbca4c'
+    # tmpcode='ab10a36ee492'
 
-    origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-    origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
-    pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
-    pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
-    # pldf.apply(lambda x: sum(x.isnull()), axis=0)
+    origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
+        parse_dates=['DateTime_UTC']).set_index(['DateTime_UTC'])
+    # origdf.DateTime_UTC = origdf.DateTime_UTC.dt.tz_localize('UTC')
+    # origdf.head(1)
+    pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
+        parse_dates=['DateTime_UTC']).set_index(['DateTime_UTC'])
+    # pldf.DateTime_UTC = pldf.DateTime_UTC.dt.tz_localize('UTC')
+    # origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
+    # origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
+    # pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
+    # pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
 
     #replace pldf values with origdf values where pldf has been rejected
     for r in rejections.items():
@@ -2799,7 +2805,8 @@ def round2_gapfill(tmpcode):
     userflags, userflagpts, pldf = rm_bad_data(userflags, userflagpts, pldf, True)
 
     pldf = pldf.reset_index()
-    feather.write_dataframe(pldf, '../spdumps/' + tmpcode + '_cleaned_checked.feather')
+    pldf.to_csv('../spdumps/' + tmpcode + '_cleaned_checked.csv',  index=False)
+    # feather.write_dataframe(pldf, '../spdumps/' + tmpcode + '_cleaned_checked.feather')
 
     #fill remaining gaps (background process)
     sp = subprocess.Popen(['Rscript', '--vanilla',
@@ -2867,11 +2874,18 @@ def get_pipeline_data2():
             # qaqcjson = json.load(oj)
             qaqcjson = oj.read()
 
-        pldf = feather.read_dataframe('../spdumps/' + tmpcode +\
-            '_cleaned_checked_imp.feather')
+        # pldf = feather.read_dataframe('../spdumps/' + tmpcode +\
+        #     '_cleaned_checked_imp.feather')
+        pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned_checked_imp.csv',
+            parse_dates=['DateTime_UTC'])
+        # pldf.DateTime_UTC = pldf.DateTime_UTC.dt.tz_localize('UTC')
         pldf.apply(lambda x: sum(x.isnull()), axis=0)
-        flagdf = feather.read_dataframe('../spdumps/' + tmpcode +\
-            '_flags2.feather')
+        # flagdf = feather.read_dataframe('../spdumps/' + tmpcode +\
+        #     '_flags2.feather')
+        flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags2.csv',
+            parse_dates=['DateTime_UTC'])
+        # flagdf.DateTime_UTC = flagdf.DateTime_UTC.dt.tz_localize('UTC')
+
 
         #json format pipeline data and flag data
         pljson = pldf.to_json(orient='records', date_format='iso')
@@ -2957,22 +2971,21 @@ def submit_dataset(tmpcode):
         site = up_data['site']
         replace = up_data['replace']
 
-        # origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-        # origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
-        pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned_checked_imp.feather')
-        pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
-        # pldf.iloc[0,0] = np.nan
-        # pldf.iloc[:, 0:3].apply(lambda x: sum(x.isna()), axis=0)
-        # pldf.isna().apply(sum, axis=0)
-        flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
-        flagdf = flagdf.set_index(['DateTime_UTC']).tz_localize(None)
-        flagdf2 = feather.read_dataframe('../spdumps/' + tmpcode + '_flags2.feather')
-        flagdf2 = flagdf2.set_index(['DateTime_UTC']).tz_localize(None)
-        # flagdf.iloc[:, 0:3].apply(lambda x: sum(x == 4), axis=0)
-        # flagdf2.iloc[:, 0:3].apply(lambda x: sum(x != 0), axis=0)
-        # flagdf2.iloc[:, 0:3].apply(lambda x: sum(x == 1), axis=0)
-        # flagdf2.iloc[:, 0:3].apply(lambda x: sum(x == 2), axis=0)
-        # flagdf.loc[:, np.invert(flagdf.columns == 'DateTime_UTC')] = 0
+        pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned_checked_imp.csv',
+            parse_dates=['DateTime_UTC']).set_index(['DateTime_UTC'])
+        # pldf.DateTime_UTC = pldf.DateTime_UTC.dt.tz_localize('UTC')
+        flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
+            parse_dates=['DateTime_UTC']).set_index(['DateTime_UTC'])
+        # flagdf.DateTime_UTC = flagdf.DateTime_UTC.dt.tz_localize('UTC')
+        flagdf2 = pd.read_csv('../spdumps/' + tmpcode + '_flags2.csv',
+            parse_dates=['DateTime_UTC']).set_index(['DateTime_UTC'])
+        # flagdf2.DateTime_UTC = flagdf2.DateTime_UTC.dt.tz_localize('UTC')
+        # pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned_checked_imp.feather')
+        # pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
+        # flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
+        # flagdf = flagdf.set_index(['DateTime_UTC']).tz_localize(None)
+        # flagdf2 = feather.read_dataframe('../spdumps/' + tmpcode + '_flags2.feather')
+        # flagdf2 = flagdf2.set_index(['DateTime_UTC']).tz_localize(None)
 
         #compile imputation codes from rnd1 and rnd2; 1 for linterp, 2 for ndi
         flagmerge = flagdf2.iloc[:, 0:flagdf2.shape[1]]
@@ -2996,20 +3009,6 @@ def submit_dataset(tmpcode):
         # zz = pd.DataFrame({'a':['t','y','u'], 'b':['v','b','n']})
         # flagmerge.apply(lambda x: sum(x != 0), axis=0)
         # flagmerge.apply(lambda x: sum(x == 'ndi'), axis=0)
-
-        # #JUNK FROM MASTER BRANCH?
-        # origdf = pd.read_csv('../spdumps/' + tmpcode + '_orig.csv',
-        #    parse_dates=['DateTime_UTC'])
-        # #origdf = feather.read_dataframe('../spdumps/' + tmpcode + '_orig.feather')
-        # origdf = origdf.set_index(['DateTime_UTC']).tz_localize(None)
-        # #pldf = feather.read_dataframe('../spdumps/' + tmpcode + '_cleaned.feather')
-        # pldf = pd.read_csv('../spdumps/' + tmpcode + '_cleaned.csv',
-        #    parse_dates=['DateTime_UTC'])
-        # pldf = pldf.set_index(['DateTime_UTC']).tz_localize(None)
-        # #flagdf = feather.read_dataframe('../spdumps/' + tmpcode + '_flags.feather')
-        # flagdf = pd.read_csv('../spdumps/' + tmpcode + '_flags.csv',
-        #    parse_dates=['DateTime_UTC'])
-        # flagdf = flagdf.set_index(['DateTime_UTC']).tz_localize('UTC')
 
         # remove pldf values where they've been rejected
         for r in rejections.items():
