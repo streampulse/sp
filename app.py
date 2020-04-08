@@ -2426,6 +2426,7 @@ def confirmcolumns():
     #get combined inputs (tmpfile), varname mappings (cdict), and filenames
     tmpfile = request.form['tmpfile']
     tmpcode = tmpfile.split('_')[2]
+    print(tmpcode)
     cdict = json.loads(request.form['cdict'])
     cdict = dict([(r['name'], r['value']) for r in cdict])
     ldict = json.loads(request.form['ldict'])
