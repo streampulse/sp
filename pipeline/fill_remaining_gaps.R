@@ -10,7 +10,7 @@ library(lubridate)
 #NDI imputer uses code 2
 
 setwd('/home/aaron/sp')                                  ####
-#setwd('/home/mike/git/streampulse/server_copy/sp')
+# setwd('/home/mike/git/streampulse/server_copy/sp')
 
 source('pipeline/helpers.R')
 source('pipeline/helpers_ndi.R')
@@ -19,11 +19,13 @@ usr_msg_code = '0'
 #retrieve arguments passed from app.py
 args = commandArgs(trailingOnly=TRUE)                                  ####
 names(args) = c('tmpcode', 'interpdeluxe')
-# args = list('tmpcode'='5cc358829484', 'interpdeluxe'='false')
+# args = list('tmpcode'='b9209c6b336d', 'interpdeluxe'='false')
 
 #read in datasets written by main pipeline
-origdf = read_csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv'))
-pldf = read_csv(paste0('../spdumps/', args['tmpcode'], '_cleaned_checked.csv'))
+origdf = read.csv(paste0('../spdumps/', args['tmpcode'], '_orig.csv')) %>%
+    mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
+pldf = read.csv(paste0('../spdumps/', args['tmpcode'], '_cleaned_checked.csv')) %>%
+    mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 #origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_orig.feather'))
 #pldf = read_feather(paste0('../spdumps/', args['tmpcode'],
 #    '_cleaned_checked.feather'))                              ####

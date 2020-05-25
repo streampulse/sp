@@ -55,6 +55,7 @@ lin_interp_gaps = function(d, na_thresh=1, samp_int=NULL, gap_thresh=Inf){
     return(d)
 }
 
+# d=pldf; flagd=flagdf
 range_check = function(d, flagd){
     # d=pldf;flagd=flagdf
 
@@ -101,6 +102,7 @@ range_check = function(d, flagd){
         'benthic_lux'=c(0, 1000000),
         'benthic_PAR'=c(0, 100000),
         'EC_uScm'=c(0, 100000),
+        'RedoxPotential_mV'=c(-99999, 99999),
         'Battery_V'=c(0, 1000))
 
     for(c in colnames(d)){
