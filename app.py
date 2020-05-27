@@ -2612,7 +2612,7 @@ def confirmcolumns():
 
     notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
         site + '. We will send you an email notification when outlier ' +\
-        'detection and gap filling are complete.'
+        'detection and gap filling are complete. If you do not receive an email in 24 hours, there has been an error.'
 
     flash(notification, 'alert-success')
 
@@ -4831,19 +4831,19 @@ def reachchar_exfiles_download():
 @app.route('/_allsp_download', methods=['POST'])
 def allsp_download():
 
-    return send_from_directory('../bulk_download_files', 'all_sp_data.csv.zip',
+    return send_from_directory('../bulk_download_files', 'all_sp_data.zip',
         as_attachment=True)
 
 @app.route('/_allneon_download', methods=['POST'])
 def allneon_download():
 
-    return send_from_directory('../bulk_download_files', 'all_neon_data.csv.zip',
+    return send_from_directory('../bulk_download_files', 'all_neon_data.zip',
         as_attachment=True)
 
 @app.route('/_allpowell_download', methods=['POST'])
 def allpowell_download():
 
-    return send_from_directory('../bulk_download_files', 'all_powell_data.csv.zip',
+    return send_from_directory('../bulk_download_files', 'all_powell_data.zip',
         as_attachment=True)
 
 @app.route('/_allgrab_download', methods=['POST'])
