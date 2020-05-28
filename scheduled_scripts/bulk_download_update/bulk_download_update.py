@@ -182,11 +182,11 @@ db.engine.execute("select 'region','site','start_date','end_date'," +\
     "enclosed by '\"' lines terminated by '\\n';")
 
 #export all daily model results
-db.engine.execute("select 'region','site','year','solar_date','GPP'," +\
+db.engine.execute("select 'region','site','year','date','GPP'," +\
     "'GPP_lower','GPP_upper','ER','ER_lower','ER_upper','K600','K600_lower'," +\
-    "'K600_upper','msgs_fit','warnings','errors' union all select " +\
-    "region,site,year,solar_date,GPP,GPP_lower,GPP_upper,ER,ER_lower," +\
-    "ER_upper,K600,K600_lower,K600_upper,msgs_fit,warnings,errors from results" +\
+    "'K600_upper','valid_day','warnings','errors' union all select " +\
+    "region,site,year,date,GPP,GPP_lower,GPP_upper,ER,ER_lower," +\
+    "ER_upper,K600,K600_lower,K600_upper,valid_day,warnings,errors from results" +\
     " where concat(results.region, '_', results.site) not " +\
     "in ('" + "','".join(embargoed_sites) + "')" +\
     " into outfile '/var/lib/mysql-files/all_daily_model_results.csv' " +\
