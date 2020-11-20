@@ -1,15 +1,10 @@
-#thigns changed: solar_data now "date", msgs_fit dropped
 
-# library(httr)
-# library(jsonlite)
 library(RMariaDB)
 library(DBI)
 library(tidyverse)
 library(glue)
 
-# setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
-# setwd('/home/aaron/sp/scheduled_scripts/')
-setwd('/home/mike/git/streampulse/server_copy/sp/shiny/model_viz/data/')
+setwd('/home/aaron/sp/shiny/model_viz/data/')
 
 conf = readLines('../../../config.py')
 extract_from_config = function(key){
@@ -23,7 +18,6 @@ con = dbConnect(RMariaDB::MariaDB(), dbname='sp',
     username='root', password=pw)
 
 f = list.files('.')
-# preds = f[grep('predictions', f)]
 mods = f[grep('modOut', f)]
 
 #filter embargoed site results before continuing
@@ -42,7 +36,6 @@ DBI::dbExecute(con, 'alter table results auto_increment=1;')
 
 for(i in 1:length(mods)){
 
-    # pred = readRDS(preds[i])
     mod = readRDS(mods[i])
     r_s_y = str_match(mods[i], 'modOut_([A-Za-z]{2})_(.+?)_([0-9]{4}).rds$')[2:4]
 
