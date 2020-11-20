@@ -687,8 +687,19 @@ def read_hobo(f):
     return xx
 
 def read_csci(f, gmtoff):
+
+    # xt = pd.read_csv('~/Downloads/NC_ColeMill_2020-09-10_CS.csv', header=0, skiprows=[0,2,3])
+    # gmtoff = -5
     xt = pd.read_csv(f, header=0, skiprows=[0,2,3])
-    xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(gmtoff)) for x in xt.TIMESTAMP]
+
+    #handle multiple potential date formats
+    if re.match('^[0-9]{2}/[0-9]{1,2}/[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}$', xt.TIMESTAMP.loc[1]):
+        xt['DateTimeUTC'] = [datetime.strptime(x, '%y/%m/%d %H:%M:%S')-timedelta(hours=int(gmtoff)) for x in xt.TIMESTAMP]
+    elif re.match('^[0-9]{2}/[0-9]{1,2}/[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}$', xt.TIMESTAMP.loc[1]):
+        xt['DateTimeUTC'] = [datetime.strptime(x, '%y/%m/%d %H:%M')-timedelta(hours=int(gmtoff)) for x in xt.TIMESTAMP]
+    else :
+        xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(gmtoff)) for x in xt.TIMESTAMP]
+
     cols = xt.columns.tolist()
     return xt[cols[-1:]+cols[1:-1]]
 
@@ -1559,6 +1570,8 @@ def series_upload():
         try:
             if site[0] in core.index.tolist():
                 gmtoff = core.loc[site].GMTOFF[0]
+                # fnlong = ['/home/mike/git/streampulse/server_copy/spuploads/NC_ColeMill_2020-10-13_CS.dat']
+                # gmtoff = -5
                 x = sp_in(fnlong, gmtoff)
             elif site[0] in pseudo_core.index.tolist():
                 gmtoff = pseudo_core.loc[site].GMTOFF[0]
