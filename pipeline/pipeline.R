@@ -24,7 +24,8 @@ names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
 
 #read in dataset saved during first part of upload process
 origdf = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv')) %>%
-    mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
+    mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC')) %>%
+    arrange(DateTime_UTC)
 #origdf = read_feather(paste0('../spdumps/', args['tmpcode'], '_xx.feather')) %>%
 #    mutate(DateTime_UTC=force_tz(as.POSIXct(DateTime_UTC), 'UTC'))
 
