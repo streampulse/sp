@@ -173,6 +173,7 @@
         <p><strong>Variable name<br>in database</strong></p>
       </div>
 
+      {% set selected_vars = cdict.keys() %}
       {% for c in columns %}
         <div class="input-group">
           <span class="input-group-addon">
@@ -188,10 +189,12 @@
               </div>
           </span>
           <select class="form-control" id="ddA{{c}}" name="{{c}}">
-            {% set selected_vars = cdict.keys() %}
             {% if c in selected_vars %}
               <option value=""></option>
-              {% for v in variables | reject('in', selected_vars) | sort %}
+
+              {% set unmatched_vars_plus = unmatched_vars|list + [cdict[c]] %}
+
+              {% for v in unmatched_vars_plus %}
                 {% if v == cdict[c] %}
                   <option value="{{v}}" selected>{{v}}</option>
                 {% else %}
@@ -200,7 +203,7 @@
               {% endfor %}
             {% else %}
               <option selected value=""></option>
-              {% for v in variables | reject('in', selected_vars) | sort %}
+              {% for v in unmatched_vars %}
                 <option value="{{v}}">{{v}}</option>
               {% endfor %}
             {% endif %}
@@ -353,6 +356,7 @@
     var selected_var = jq_elem.val();
     var selector_id = jq_elem.attr('id');
     var all_vars = {{ variables|safe }}
+    console.log(all_vars)
     var all_selected_vars = $('option:selected').map(function(){
       return $(this).val();
     }).get();
@@ -376,6 +380,9 @@
         .attr("value", replaced_var).text(replaced_var);
       var all_unselected_vars_sorted = unselected_vars.concat(replaced_var)
         .sort(function(a, b){
+          // var aa = a.toLowerCase()
+          // var bb = b.toLowerCase()
+
           return a.toLowerCase().localeCompare(b.toLowerCase());
         });
       var preceding_option_ind = all_unselected_vars_sorted.indexOf(replaced_var) - 1;
