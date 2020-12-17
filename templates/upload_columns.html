@@ -173,6 +173,7 @@
         <p><strong>Variable name<br>in database</strong></p>
       </div>
 
+      {% set selected_vars = cdict.keys() %}
       {% for c in columns %}
         <div class="input-group">
           <span class="input-group-addon">
@@ -188,9 +189,12 @@
               </div>
           </span>
           <select class="form-control" id="ddA{{c}}" name="{{c}}">
-            {% if c in cdict.keys() %}
+            {% if c in selected_vars %}
               <option value=""></option>
-              {% for v in variables %}
+
+              {% set unmatched_vars_plus = unmatched_vars|list + [cdict[c]] %}
+
+              {% for v in unmatched_vars_plus %}
                 {% if v == cdict[c] %}
                   <option value="{{v}}" selected>{{v}}</option>
                 {% else %}
@@ -199,7 +203,7 @@
               {% endfor %}
             {% else %}
               <option selected value=""></option>
-              {% for v in variables %}
+              {% for v in unmatched_vars %}
                 <option value="{{v}}">{{v}}</option>
               {% endfor %}
             {% endif %}
@@ -224,48 +228,48 @@
       {% for m in range(columns|length) %}
 
           {#% if columns[m] != '' %#}
-          {% if columns[m] in cdict.keys() and cdict[columns[m]] not in ['DateTime_UTC', 'Battery_V'] %}
+          {% if columns[m] in selected_vars and cdict[columns[m]] not in ['DateTime_UTC', 'Battery_V'] %}
             <div style='height:34px' id="iB{{m}}" name="{{columns[m]}}">
           {% else %}
             <div style='visibility:hidden; height:34px' id="iB{{m}}" name="{{columns[m]}}">
           {% endif %}
                <div class="checkbox-inline">
-                 {% if columns[m] in cdict.keys() and 'R' in ldict[columns[m]] %}
+                 {% if columns[m] in selected_vars and 'R' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rR{{m}}" name="optcheckbox" checked>R</label>
                  {% else %}
                    <label><input type="checkbox" id="rR{{m}}" name="optcheckbox">R</label>
                  {% endif %}
                </div>
                <div class="checkbox-inline">
-                 {% if columns[m] in cdict.keys() and 'O' in ldict[columns[m]] %}
+                 {% if columns[m] in selected_vars and 'O' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rO{{m}}" name="optcheckbox" checked>O</label>
                  {% else %}
                    <label><input type="checkbox" id="rO{{m}}" name="optcheckbox">O</label>
                  {% endif %}
                </div>
                <div class="checkbox-inline">
-                 {% if columns[m] in cdict.keys() and 'G' in ldict[columns[m]] %}
+                 {% if columns[m] in selected_vars and 'G' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rG{{m}}" name="optcheckbox" checked>G</label>
                  {% else %}
                    <label><input type="checkbox" id="rG{{m}}" name="optcheckbox">G</label>
                  {% endif %}
                </div>
                <div class="checkbox-inline">
-                 {% if columns[m] in cdict.keys() and 'C' in ldict[columns[m]] %}
+                 {% if columns[m] in selected_vars and 'C' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rC{{m}}" name="optcheckbox" checked>C</label>
                  {% else %}
                    <label><input type="checkbox" id="rC{{m}}" name="optcheckbox">C</label>
                  {% endif %}
                </div>
                <div class="checkbox-inline">
-                 {% if columns[m] in cdict.keys() and 'D' in ldict[columns[m]] %}
+                 {% if columns[m] in selected_vars and 'D' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rD{{m}}" name="optcheckbox" checked>D</label>
                  {% else %}
                    <label><input type="checkbox" id="rD{{m}}" name="optcheckbox">D</label>
                  {% endif %}
                </div>
                <!-- <div class="checkbox-inline">
-                 {% if columns[m] in cdict.keys() and 'V' in ldict[columns[m]] %}
+                 {% if columns[m] in selected_vars and 'V' in ldict[columns[m]] %}
                    <label><input type="checkbox" id="rV{{m}}" name="optcheckbox" checked>V</label>
                  {% else %}
                    <label><input type="checkbox" id="rV{{m}}" name="optcheckbox">V</label>
@@ -283,7 +287,7 @@
       <p><strong>Describe derivation</strong></p>
       <p><strong>of variable</strong></p>
       {% for w in range(columns|length) %}
-        {% if columns[w] in cdict.keys() and ndict[columns[w]] != '' %}
+        {% if columns[w] in selected_vars and ndict[columns[w]] != '' %}
           <input id="iC{{w}}" name="{{columns[w]}}" style='visibility:visible'
           class="form-control text-left" value="{{ndict[columns[w]]}}" required>
           </input>
@@ -348,6 +352,63 @@
       ' + msg + '</div>'
   }
 
+  function update_match_options(jq_elem){
+    var selected_var = jq_elem.val();
+    var selector_id = jq_elem.attr('id');
+    var all_vars = {{ variables|safe }}
+    console.log(all_vars)
+    var all_selected_vars = $('option:selected').map(function(){
+      return $(this).val();
+    }).get();
+    var unselected_vars = all_vars.filter(x => ! all_selected_vars.includes(x));
+    var $other_sel = $("select:not([id='" + selector_id + "']");
+    if(selected_var !== ''){
+      $other_sel.children('option')
+        .filter( $("option[value='" + selected_var + "']") )
+        .remove();
+    };
+    var remaining_options = $($other_sel[0]).children('option').map(function(){
+      return $(this).val()
+    }).get()
+    var replaced_var = all_vars.filter(function(x){
+      return ! all_selected_vars.concat(remaining_options).includes(x);
+    });
+    console.log(replaced_var)
+    if(replaced_var.length){
+      replaced_var = replaced_var[0]
+      var option_to_restore = $('<option></option>')
+        .attr("value", replaced_var).text(replaced_var);
+      var all_unselected_vars_sorted = unselected_vars.concat(replaced_var)
+        .sort(function(a, b){
+          // var aa = a.toLowerCase()
+          // var bb = b.toLowerCase()
+
+          return a.toLowerCase().localeCompare(b.toLowerCase());
+        });
+      var preceding_option_ind = all_unselected_vars_sorted.indexOf(replaced_var) - 1;
+      console.log(option_to_restore)
+      console.log(all_unselected_vars_sorted)
+      console.log(preceding_option_ind)
+      if(preceding_option_ind >= 0){
+        var preceding_option = all_unselected_vars_sorted[preceding_option_ind];
+        option_to_restore.insertAfter($other_sel.children('option[value="' + preceding_option + '"]'));
+        console.log(preceding_option)
+      } else {
+        option_to_restore.insertAfter($other_sel.children('option[value=""]'));
+        // $other_sel.prepend(option_to_restore)
+        console.log('oi')
+      }
+      //unarray it; handle selections at start; handle blank selection
+    }
+    // $el.each(function(){
+    //   $(this).empty()
+    //   $.each(new_options, function(key, value){
+    //     $(this).append($("<option></option>")
+    //        .attr("value", value).text(key));
+    //   });
+    // })
+  }
+
   // $(function(){
   //   $('button[name=columnin]').click(function() {
   //     cvals = [];
@@ -384,6 +445,9 @@
           iC.attr('style', 'visibility: hidden');
         };
 
+        //also update the variable match options, i.e.
+        //restore/remove the one that was (de)selected
+        update_match_options($(this))
       });
     });
   });

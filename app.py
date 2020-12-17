@@ -56,6 +56,14 @@ pandas2ri.activate() #for converting pandas df to R df
 
 app = Flask(__name__)
 
+#allow use of more python methods in Jinja2 templates
+# app.jinja_env.filters['zip'] = zip
+# app.jinja_env.filters['dict'] = dict
+# app.jinja_env.filters['list'] = list
+#app.jinja_env.globals.update(zip=zip)
+# app.jinja_env.filters['values'] = values
+# app.jinja_env.globals.update(zip=zip)
+
 # app.session_interface = RedisSessionInterface()
 
 app.config['SECRET_KEY'] = cfg.SECRET_KEY
@@ -1655,10 +1663,15 @@ def series_upload():
             flash("Please double check your variable name matching.",
                 'alert-warning')
 
+            matched_vars = [cdict[x] for x in columns if x in cdict.keys()]
+            unmatched_vars = [x for x in variables if x not in matched_vars]
+            unmatched_vars = sorted(unmatched_vars, key=lambda x: x.replace('_', '0').lower())
+
             return render_template('upload_columns.html', filenames=filenames,
                 columns=columns, tmpfile=tmp_file, variables=variables,
                 existing=existing, sitenm=site[0], replace=replace,
                 cdict=cdict, ldict=ldict, ndict=ndict,
+                unmatched_vars = unmatched_vars,
                 notificationEmail=notificationEmail)
 
         except Exception as e:
