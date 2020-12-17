@@ -690,7 +690,10 @@ def read_csci(f, gmtoff):
 
     # xt = pd.read_csv('~/Downloads/NC_ColeMill_2020-09-10_CS.csv', header=0, skiprows=[0,2,3])
     # gmtoff = -5
-    xt = pd.read_csv(f, header=0, skiprows=[0,2,3])
+    try:
+        xt = pd.read_csv(f, header=0, skiprows=[0,2,3])
+    except:
+        xt = pd.read_csv(f, header=0, skiprows=[0,2,3], sep='\t')
 
     #handle multiple potential date formats
     if re.match('^[0-9]{2}/[0-9]{1,2}/[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}$', xt.TIMESTAMP.loc[1]):
