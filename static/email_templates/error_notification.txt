@@ -7,6 +7,11 @@
   Common reasons for this include:
   <ol>
     <li>
+      Datetime formatting issues. If your upload uses the <code>_XX.csv</code> file extension,
+      your datetime column must be the first column, and it must be formatted <code>YYYY-MM-DD HH:MM:SS</code>.
+      Sometimes Excel changes datetime formatting and doesn't tell you.
+    </li>
+    <li>
       Error messages masquerading as data values.
     </li>
     <li>
