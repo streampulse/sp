@@ -1,0 +1,20 @@
+<p>Hello StreamPULSE user,</p>
+<p>
+  Sorry, but something went wrong while we were processing your recent upload:
+    {filename}
+</p>
+<p>
+  Common reasons for this include:
+</p>
+<p>
+  If your upload complies with all of the
+  <a href="https://data.streampulse.org/series_upload">instructions</a>
+  and you're still receiving this message, please contact
+  <a href='mailto:streampulse.info@gmail.com'>StreamPULSE development</a>.
+</p>
+<p>
+  This message was sent from the email address of the Global
+  Rivers Dissolved Oxygen database, an affiliate of StreamPULSE.
+</p>
+<br>
+

@@ -2635,9 +2635,15 @@ def confirmcolumns():
             'lng': request.form.get('lng'), 'fnlong': fnlong, 'replace': replace}, d)
 
     #initiate data processing pipeline as background process
-    subprocess.Popen(['Rscript', '--vanilla',
+    R_process = subprocess.Popen(['Rscript', '--vanilla',
         'pipeline/pipeline.R', request.form['notificationEmail'], tmpcode,
         region, site])
+    if R_process.returncode != 0:
+        with open('static/email_templates/error_notification.txt', 'r') as f:
+            error_notification_email = f.read()
+        error_notification_email.format(filename=', '.join(filenamesNoV))
+
+        email_msg(error_notification_email, 'StreamPULSE Error', request.form['notificationEmail'])
 
     notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
         site + '. We will send you an email notification when outlier ' +\
