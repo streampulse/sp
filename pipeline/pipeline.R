@@ -9,9 +9,8 @@ library(lubridate)
 #outlier detectors mark anomalies with code 2
 #gap fillers mark imputations, not including those following anomaly removal,
     #with code 4
-
-setwd('/home/aaron/sp')
-# setwd('/home/mike/git/streampulse/server_copy/sp')
+#setwd('/home/aaron/sp')
+ setwd('/home/mike/git/streampulse/server_copy/sp')
 
 source('pipeline/helpers.R')
 find_outliers = readChar('find_outliers.R', file.info('find_outliers.R')$size)
@@ -20,7 +19,7 @@ find_outliers = eval(parse(text=find_outliers))
 #retrieve arguments passed from app.py
 args = commandArgs(trailingOnly=TRUE)
 names(args) = c('notificationEmail', 'tmpcode', 'region', 'site')
-# args = list('tmpcode'='538aed80b5d0')
+# args = list('tmpcode'='04b4447bb586')
 
 #read in dataset saved during first part of upload process
 origdf = read.csv(paste0('../spdumps/', args['tmpcode'], '_xx.csv')) %>%
@@ -95,8 +94,8 @@ write.csv(pldf, paste0('../spdumps/', args['tmpcode'], '_cleaned.csv'), row.name
 write.csv(flagdf, paste0('../spdumps/', args['tmpcode'], '_flags.csv'), row.names=FALSE)
 
 #notify user that pipeline processing is complete
-# system2('/home/mike/miniconda3/envs/python2/bin/python',
-system2('/home/aaron/miniconda3/envs/sp/bin/python',
+ system2('/home/mike/miniconda3/envs/python2/bin/python',
+#system2('/home/aaron/miniconda3/envs/sp/bin/python',
     args=c('pipeline/notify_user.py', args))
 
 message('end of pipeline.R')

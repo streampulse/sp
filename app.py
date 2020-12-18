@@ -2641,9 +2641,11 @@ def confirmcolumns():
     if R_process.returncode != 0:
         with open('static/email_templates/error_notification.txt', 'r') as f:
             error_notification_email = f.read()
-        error_notification_email.format(filename=', '.join(filenamesNoV))
+        report_filenames = [x[0] for x in filenamesNoV]
+        error_notification_email = error_notification_email.format(filename=', '.join(report_filenames))
 
-        email_msg(error_notification_email, 'StreamPULSE Error', request.form['notificationEmail'])
+        email_msg(error_notification_email, 'StreamPULSE Error',
+            request.form['notificationEmail'], header=False, render_html=True)
 
     notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
         site + '. We will send you an email notification when outlier ' +\

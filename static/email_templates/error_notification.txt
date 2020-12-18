@@ -5,6 +5,14 @@
 </p>
 <p>
   Common reasons for this include:
+  <ol>
+    <li>
+      Error messages masquerading as data values.
+    </li>
+    <li>
+      Our server trying to do too much at once!
+    </li>
+  </ol>
 </p>
 <p>
   If your upload complies with all of the
