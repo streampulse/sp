@@ -2465,6 +2465,7 @@ def confirmcolumns():
 
     fnlong = session.get('fnlong')
     filenamesNoV = session.get('filenamesNoV')
+    filenames_for_reporting = [x[0] for x in session.get('filenamesNoV')]
 
     #sanitize inputs
     if request.form['existing'] == "no":
@@ -2635,7 +2636,7 @@ def confirmcolumns():
             'lng': request.form.get('lng'), 'fnlong': fnlong, 'replace': replace}, d)
 
     #initiate data processing pipeline as background process
-    report_filenames = ','.join([x[0] for x in filenamesNoV])
+    report_filenames = ', '.join([x[0] for x in filenames_for_reporting])
     #R_process = subprocess.Popen(['Rscript', '--vanilla',
     subprocess.Popen(['Rscript', '--vanilla',
         'pipeline/pipeline.R', request.form['notificationEmail'], tmpcode,
@@ -2648,11 +2649,11 @@ def confirmcolumns():
     #    email_msg(error_notification_email, 'StreamPULSE Error',
     #        request.form['notificationEmail'], header=False, render_html=True)
 
-        try:
-            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
-            [os.remove(f) for f in fnlong]
-        except:
-            pass
+    #    try:
+    #        os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+    #        [os.remove(f) for f in fnlong]
+    #    except:
+    #        pass
 
     notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
         site + '. We will send you an email notification when outlier ' +\
