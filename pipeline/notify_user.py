@@ -7,7 +7,8 @@ os.chdir(app_dir)
 from helpers import email_msg
 from sys import argv
 
-script_name, notificationEmail, tmpcode, region, site, report_filenames = argv
+script_name, notificationEmail, tmpcode, region, site, report_filenames, tmpfile, files_to_remove = argv
+
 
 email_template = 'static/email_templates/pipeline_complete.txt'
 with open(email_template, 'r') as e:

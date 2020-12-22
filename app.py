@@ -2640,7 +2640,9 @@ def confirmcolumns():
     #R_process = subprocess.Popen(['Rscript', '--vanilla',
     subprocess.Popen(['Rscript', '--vanilla',
         'pipeline/pipeline.R', request.form['notificationEmail'], tmpcode,
-        region, site, report_filenames])
+        region, site, report_filenames,
+        os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"),
+        ', '.join(fnlong)])
     #if R_process.returncode != 0:
     #    with open('static/email_templates/error_notification.txt', 'r') as f:
     #        error_notification_email = f.read()
