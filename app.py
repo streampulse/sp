@@ -2647,6 +2647,12 @@ def confirmcolumns():
         email_msg(error_notification_email, 'StreamPULSE Error',
             request.form['notificationEmail'], header=False, render_html=True)
 
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], tmpfile + ".csv"))
+            [os.remove(f) for f in fnlong]
+        except:
+            pass
+
     notification = 'StreamPULSE is processing your upload for ' + region + '_' +\
         site + '. We will send you an email notification when outlier ' +\
         'detection and gap filling are complete. If you do not receive an email in 24 hours, there has been an error.'
