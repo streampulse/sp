@@ -2638,7 +2638,8 @@ def confirmcolumns():
     R_process = subprocess.Popen(['Rscript', '--vanilla',
         'pipeline/pipeline.R', request.form['notificationEmail'], tmpcode,
         region, site])
-    if R_process.returncode != 0:
+
+    if R_process.returncode is not None and R_process.returncode != 0:
         with open('static/email_templates/error_notification.txt', 'r') as f:
             error_notification_email = f.read()
         report_filenames = [x[0] for x in filenamesNoV]
