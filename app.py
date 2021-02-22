@@ -2465,7 +2465,7 @@ def confirmcolumns():
 
     fnlong = session.get('fnlong')
     filenamesNoV = session.get('filenamesNoV')
-    filenames_for_reporting = [x[0] for x in session.get('filenamesNoV')]
+    filenames_for_reporting = [x[0] for x in filenamesNoV]
 
     #sanitize inputs
     if request.form['existing'] == "no":
@@ -2636,7 +2636,7 @@ def confirmcolumns():
             'lng': request.form.get('lng'), 'fnlong': fnlong, 'replace': replace}, d)
 
     #initiate data processing pipeline as background process
-    report_filenames = ', '.join([x[0] for x in filenames_for_reporting])
+    report_filenames = ', '.join(filenames_for_reporting)
     #R_process = subprocess.Popen(['Rscript', '--vanilla',
     subprocess.Popen(['Rscript', '--vanilla',
         'pipeline/pipeline.R', request.form['notificationEmail'], tmpcode,

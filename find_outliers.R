@@ -235,7 +235,7 @@ function(df){
                 #for flagging in qa/qc
                 if(length(outlier_inds) %% 2 == 0){
                     outlier_inds = matrix(outlier_inds, ncol=2, byrow=TRUE)
-                    outlier_inds = outlier_inds[! outlier_inds[, 1] > outlier_inds[, 2], ]
+                    outlier_inds = outlier_inds[! outlier_inds[, 1] > outlier_inds[, 2], , drop=FALSE]
                     seq_list = mapply(function(x, y){ seq(x+1, y, 1) },
                         outlier_inds[,1], outlier_inds[,2],
                         SIMPLIFY=FALSE)
