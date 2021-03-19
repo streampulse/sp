@@ -5,6 +5,7 @@ library(tidyverse)
 library(glue)
 
 setwd('/home/aaron/sp/shiny/model_viz/data/')
+# setwd('~/git/streampulse/server_copy/sp/shiny/model_viz/data/')
 
 conf = readLines('../../../config.py')
 extract_from_config = function(key){
@@ -23,10 +24,12 @@ mods = f[grep('modOut', f)]
 #filter embargoed site results before continuing
 sitedata = dbGetQuery(con, glue("select region as regionID, site as siteID, name as siteName,",
     "latitude, longitude, usgs as USGSgageID, addDate, `by` as ds_ref, ",
-    "embargo as embargoDaysRemaining, contact, contactEmail, firstRecord, ",
+    "embargo as embargoYears, contact, contactEmail, firstRecord, ",
     "lastRecord, variableList, grabVarList, concat(region, '_', site) as ",
     "regionsite from site;"))
-embargoed_sites = sitedata[sitedata$embargoDaysRemaining > 0, 'regionsite']
+
+embargo_end = sitedata$addDate + 365 * 24 * 60 * 60 * sitedata$embargoYears
+embargoed_sites = sitedata[Sys.time() <= embargo_end, 'regionsite']
 
 regsite = str_match(mods, 'modOut_(.*?)_[0-9]{4}.rds$')[, 2]
 mods = mods[! regsite %in% embargoed_sites]
