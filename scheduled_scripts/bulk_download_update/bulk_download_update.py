@@ -49,6 +49,7 @@ def zipfile_listdir_recursive(dir_name):
 
 
 #get all site table data except for id column; extract list of embargoed sites
+print('collecting sitedata, etc.')
 sitedata = pd.read_sql("select region as regionID, site as siteID, name as siteName," +\
     "latitude, longitude, usgs as USGSgageID, addDate, `by` as ds_ref, " +\
     "embargo as embargoDaysRemaining, contact, contactEmail, firstRecord, " +\
@@ -102,6 +103,7 @@ os.remove(basic_site_data_path)
 # sitecols = list(sitecols)[0][0]
 
 #export all public sp data (will move and zip later in shell script)
+print('collecting public sp data')
 db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
     ",'flagID','flagComment' union all select data.region, data.site, " +\
     "data.DateTime_UTC, data.variable, data.value, " +\
@@ -112,6 +114,7 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
     "enclosed by '\"' lines terminated by '\\n';")
 
 #export all neon data (will move and zip later in shell script)
+print('collecting neon data')
 db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
     ",'flagID','flagComment' union all select data.region, data.site, " +\
     "data.DateTime_UTC, data.variable, data.value, " +\
@@ -128,6 +131,7 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
 #    "enclosed by '\"' lines terminated by '\\n';")
 
 #export all grab data (will move and zip later in shell script)
+print('collecting grab data')
 db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" +\
     ",'method','writeInMethod','methodDetail'" +\
     ",'flagID','flagComment' union all select grabdata.region, grabdata.site, " +\
@@ -140,6 +144,7 @@ db.engine.execute("select 'regionID','siteID','dateTimeUTC','variable','value'" 
     "enclosed by '\"' lines terminated by '\\n';")
 
 #collect all site metadata text files and zip
+print('collecting metadata')
 metafolder = app.config['META_FOLDER']
 writefiles = zipfile_listdir_recursive(metafolder)
 rel_wfs = [re.match(metafolder + '/(.*)', f).group(1) for f in writefiles]
@@ -150,6 +155,7 @@ for i in range(len(writefiles)):
 zf.close()
 
 #collect all reach characterization data files and zip
+print('collecting reach characterization data')
 reachcharfolder = app.config['REACH_CHAR_FOLDER']
 writefiles = zipfile_listdir_recursive(reachcharfolder)
 rel_wfs = [re.match(reachcharfolder + '/(.*)', f).group(1) for f in writefiles]
@@ -165,6 +171,7 @@ zf.close()
 #     "columns WHERE table_schema = 'sp' AND table_name = 'results';")
 # modelcols = list(modelcols)[0][0]
 # modelcols = modelcols.replace("'", "")
+print('collecting model summary data')
 db.engine.execute("select 'region','site','start_date','end_date'," +\
     "'requested_variables','year','run_finished','model','method'," +\
     "'engine','rm_flagged','used_rating_curve','pool','proc_err','obs_err'" +\
@@ -182,6 +189,7 @@ db.engine.execute("select 'region','site','start_date','end_date'," +\
     "enclosed by '\"' lines terminated by '\\n';")
 
 #export all daily model results
+print('collecting model results')
 db.engine.execute("select 'region','site','year','date','GPP'," +\
     "'GPP_lower','GPP_upper','ER','ER_lower','ER_upper','K600','K600_lower'," +\
     "'K600_upper','valid_day','warnings','errors' union all select " +\
@@ -193,6 +201,7 @@ db.engine.execute("select 'region','site','year','date','GPP'," +\
     "fields terminated by ',' enclosed by '\"' lines terminated by '\\n';")
 
 #collect all streampulse model outputs and zip
+print('collecting model objects')
 modeloutfolder = app.config['RESULTS_FOLDER']
 writefiles = zipfile_listdir_recursive(modeloutfolder)
 writefiles = [x for x in writefiles if re.search('(?:predictions|modOut)_((?:.*))_[0-9]{4}.rds',
