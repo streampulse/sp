@@ -9,7 +9,7 @@ import re
 import zipfile
 
 app_dir = '/home/aaron/sp'
-#app_dir = '/home/mike/git/streampulse/server_copy/sp'
+# app_dir = '/home/mike/git/streampulse/server_copy/sp'
 sys.path.insert(0, app_dir)
 os.chdir(app_dir)
 import config as cfg
@@ -52,7 +52,7 @@ def zipfile_listdir_recursive(dir_name):
 print('collecting sitedata, etc.')
 sitedata = pd.read_sql("select region as regionID, site as siteID, name as siteName," +\
     "latitude, longitude, usgs as USGSgageID, addDate, `by` as ds_ref, " +\
-    "embargo as embargoDaysRemaining, contact, contactEmail, firstRecord, " +\
+    "embargo as embargoYears, contact, contactEmail, firstRecord, " +\
     "lastRecord, variableList, grabVarList, concat(region, '_', site) as " +\
     "regionsite from site;", db.engine)
 
@@ -67,13 +67,14 @@ sitedata = pd.read_sql("select region as regionID, site as siteID, name as siteN
 #     "files/all_basic_site_data.csv' fields terminated by ',' enclosed by '\"'" +\
 #     " lines terminated by '\\n';")
 
-embargoed_sites = sitedata.loc[sitedata['embargoDaysRemaining'] > 0,
-    'regionsite'].tolist()
+embargo_days = sitedata.embargoYears.apply(lambda x: timedelta(days = x * 365))
+embargo_end = sitedata.addDate + embargo_days
+embargoed_sites = sitedata.loc[datetime.utcnow() <= embargo_end, 'regionsite'].tolist()
 
 #convert embargo duration and addDate to days of embargo remaining
 timedeltas = datetime.utcnow() - sitedata.addDate
 days_past = timedeltas.map(lambda x: int(x.total_seconds() / 60 / 60 / 24))
-sitedata['embargoDaysRemaining'] = sitedata['embargoDaysRemaining'] * 365 - days_past
+sitedata['embargoDaysRemaining'] = sitedata['embargoYears'] * 365 - days_past
 sitedata.loc[sitedata['embargoDaysRemaining'] <= 0, 'embargoDaysRemaining'] = 0
 
 #fill out datasource column

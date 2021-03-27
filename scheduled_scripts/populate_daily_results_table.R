@@ -4,8 +4,8 @@ library(DBI)
 library(tidyverse)
 library(glue)
 
-# setwd('/home/aaron/sp/shiny/model_viz/data/')
-setwd('~/git/streampulse/server_copy/sp/shiny/model_viz/data/')
+setwd('/home/aaron/sp/shiny/model_viz/data/')
+#setwd('~/git/streampulse/server_copy/sp/shiny/model_viz/data/')
 
 conf = readLines('../../../config.py')
 extract_from_config = function(key){
@@ -157,7 +157,7 @@ for(i in 1:length(mods)){
 results_overwrite = arrange(results_overwrite, region, site, year)
 DBI::dbExecute(con, 'delete from results;')
 DBI::dbExecute(con, 'alter table results auto_increment=1;')
-DBI::dbWriteTable(con, 'results', results_overwrite, append=FALSE)
+DBI::dbWriteTable(con, 'results', results_overwrite, append=TRUE)
 
 if(nrow(details_append) > 0){
     DBI::dbWriteTable(con, 'model', details_append, append=TRUE)
