@@ -929,6 +929,8 @@ def panda_usgs(x,jsof):
 def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
         # usgs='05406457'; startDate='2019-01-01'; endDate='2019-12-31'
         # regionsite=['WI_BEC']
+        # regionsite = sites;startDate= min(xx.DateTime_UTC).strftime("%Y-%m-%d")
+        #     endDate=max(xx.DateTime_UTC).strftime("%Y-%m-%d");vvv= ['00065']
     # regionsite is a list
     # vvv is a list of variable codes
     #00060 is cfs, discharge; 00065 is feet, height
@@ -955,8 +957,13 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
         return ['USGS_error']
     xf = r.json()
     xx = [panda_usgs(x, xf) for x in range(len(xf['value']['timeSeries']))]
-    xoo = []
 
+    if type(xx) == list and len(xx) == 0:
+        xx = pd.DataFrame(columns = ['region', 'site', 'DateTime_UTC', 'variable',
+            'value', 'flagtype', 'flagcomment'])
+        return xx
+
+    xoo = []
     try:
         for s in sitex:
             x2 = [list(k.values())[0] for k in xx if list(k.keys())[0]==s]
