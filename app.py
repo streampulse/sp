@@ -927,6 +927,8 @@ def panda_usgs(x,jsof):
     return out
 
 def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
+        # usgs='05406457'; startDate='2019-01-01'; endDate='2019-12-31'
+        # regionsite=['WI_BEC']
     # regionsite is a list
     # vvv is a list of variable codes
     #00060 is cfs, discharge; 00065 is feet, height
@@ -959,6 +961,7 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
         for s in sitex:
             x2 = [list(k.values())[0] for k in xx if list(k.keys())[0]==s]
             x2 = reduce(lambda x,y: x.merge(y,how='outer',left_index=True,right_index=True), x2)
+            x2.index = pd.to_datetime(x2.index, utc=True)
             x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
             x2['site']=sitedict[s]
             xoo.append(x2.reset_index())
@@ -4401,6 +4404,8 @@ def api():
     #this function used to handle mutiple sites in a list,
     #but now that behavior is a relic
 
+    # sites=['WI_BEC'];startDate='2016-01-01';endDate='2016-12-31';variables='DO_mgL,DOsat_pct,satDO_mgL,WaterPres_kPa,Depth_m,WaterTemp_C,Light_PAR,AirPres_kPa,Discharge_m3s,Level_m'
+
     #pull in requests
     startDate = request.args.get('startdate')
     endDate = request.args.get('enddate')
@@ -4479,7 +4484,7 @@ def api():
 
     if len(xu) is not 0:
         # subset usgs data based on each site's dates
-        xx = pd.concat([xx,xu])
+        xx = pd.concat([xx,xu], sort=True)
 
     #rearrange columns
     # flagcols = ['flagtype','flagcomment']
