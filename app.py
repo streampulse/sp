@@ -718,12 +718,22 @@ def read_manta(f, gmtoff):
 
     #manta has a weird custom of repeating two header rows every time the power
     #cycles. these additional headers get removed below.
+
     #this will fail if the first header row is incomplete. just tell users to
     #remove those rows when they see them
+
+    gmtoff = -7
+    # f = '~/AZ_LV_2020-11-08_EM.csv'
+    f = '~/AZ_LV_2021-01-19_EM.csv'
+    # f = '~/AZ_LV_2021-04-02_EM.csv'
+    # f = '~/AZ_LV_2020-12-29_EM.csv'
+    # f = '~/AZ_LV_2021-03-04_EM.csv'
+    # f = '~/AZ_LV_2021-04-28_EM.csv'
 
     xt = pd.read_csv(f, skiprows=[0]) #skip the first row that just has site name
     if 'Eureka' in xt.columns[0]:#if the wrong header row is first, replace it
         xt.columns = xt.loc[0].tolist()
+    xt = xt.dropna(0, thresh=2) #drop empty rows, "logging off" rows, etc.
     xt = xt[xt.DATE.str.contains('[0-9]+/[0-9]+/[0-9]{4}')] #drop excess header/blank rows
     xt['DateTime'] = xt['DATE'] + " " + xt['TIME']
     xt['DateTimeUTC'] = [dtparse.parse(x) - timedelta(hours=int(gmtoff)) \
