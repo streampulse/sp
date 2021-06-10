@@ -7,7 +7,12 @@ os.chdir(app_dir)
 from helpers import email_msg
 from sys import argv
 
-script_name, notificationEmail, tmpcode, region, site, report_filenames, tmpfile, files_to_remove = argv
+#script_name, notificationEmail, tmpcode, region, site, report_filenames, tmpfile, files_to_remove = argv
+notificationEmail = argv[1]
+tmpcode = argv[2]
+region = argv[3]
+site = argv[4]
+report_filenames = [x for x in argv[5:] if '/' not in x]
 
 email_template = 'static/email_templates/error_notification.txt'
 with open(email_template, 'r') as e:

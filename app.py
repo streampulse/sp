@@ -718,6 +718,8 @@ def read_manta(f, gmtoff):
 
     #manta has a weird custom of repeating two header rows every time the power
     #cycles. these additional headers get removed below.
+    #this will fail if the first header row is incomplete. just tell users to
+    #remove those rows when they see them
 
     xt = pd.read_csv(f, skiprows=[0]) #skip the first row that just has site name
     if 'Eureka' in xt.columns[0]:#if the wrong header row is first, replace it
@@ -727,7 +729,7 @@ def read_manta(f, gmtoff):
     xt['DateTimeUTC'] = [dtparse.parse(x) - timedelta(hours=int(gmtoff)) \
         for x in xt.DateTime]
     xt.drop(["DATE","TIME","DateTime"], axis=1, inplace=True)
-    xt = xt[[x for x in xt.columns.tolist() if " ." not in x and x!=" "]]
+    xt = xt[[x for x in xt.columns.tolist() if " ." not in x and x != " "]]
     xt.columns = [re.sub("\/|%","",x) for x in xt.columns.tolist()]
     splitcols = [x.split(" ") for x in xt.columns.tolist()]
     xt.columns = [x[0]+"_"+x[-1] if len(x)>1 else x[0] for x in splitcols]
