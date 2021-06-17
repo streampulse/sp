@@ -722,9 +722,9 @@ def read_manta(f, gmtoff):
     #this will fail if the first header row is incomplete. just tell users to
     #remove those rows when they see them
 
-    gmtoff = -7
+    # gmtoff = -7
     # f = '~/AZ_LV_2020-11-08_EM.csv'
-    f = '~/AZ_LV_2021-01-19_EM.csv'
+    # f = '~/AZ_LV_2021-01-19_EM.csv'
     # f = '~/AZ_LV_2021-04-02_EM.csv'
     # f = '~/AZ_LV_2020-12-29_EM.csv'
     # f = '~/AZ_LV_2021-03-04_EM.csv'
