@@ -21,6 +21,12 @@
         [<a href='https://www.nature.com/articles/sdata2018292'>link</a>]
       </label>
     </div>
+    <div class="radio text-left" style='margin-left:10px'>
+      <label><input type="radio" name="optradio" value='nwqp'>
+        National Water Quality Program: Regional Stream Quality Assessments
+        [<a href='https://www.sciencebase.gov/catalog/item/5d01251ae4b0573a18f7d339'>link</a>]
+      </label>
+    </div>
     <p class='text-muted'>
       * NEON data are available at 1-minute resolution. Here alone, they are thinned to
       15-minute resolution, to improve loading time.
@@ -146,6 +152,7 @@ var dsite = $('#dsite').selectize({
 var dsitei = dsite[0].selectize;
 
 var powell_sites = {{ powell_sites|safe }};
+var nwqp_sites = {{ nwqp_sites|safe }};
 var sites = {{ sites|safe }};
 
 var sitedict = {}
@@ -158,12 +165,26 @@ var sitedictP = {}
   sitedictP['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
 {% endfor %}
 
+var sitedictNWQP = {}
+{% for sv, sn, sd, ed, va in nwqp_sites %}
+  sitedictNWQP['{{sv}}'] = {dates:['{{sd}}','{{ed}}'], vars:"{{','.join(va)}}"}
+{% endfor %}
+
 $('input[name=optradio]').change(function(){
   var selected_dsource = $('input[name=optradio]:checked').val();
   dsitei.clearOptions();
   $('#datepicker').val('');
   $("#viz_vars").empty();
-  src = selected_dsource == 'pow' ? powell_sites : sites;
+
+  //src = selected_dsource == 'pow' ? powell_sites : sites;
+  if(selected_dsource == 'pow'){
+      src = powell_sites;
+  } else if(selected_dsource == 'nwqp'){
+      src = nwqp_sites;
+  } else {
+      src = sites;
+  };
+
   for(var i = 0; i < src.length; i++){
     dsitei.addOption({'value':src[i][0], 'text':src[i][1]});
   }
@@ -189,6 +210,8 @@ $('#dsite').change(function(){
   var selected_dsource = $('input[name=optradio]:checked').val();
   if(selected_dsource == 'pow'){
     var siteinfo = sitedictP[selected_site];
+  } else if(selected_dsource == 'nwqp'){
+    var siteinfo = sitedictNWQP[selected_site];
   } else {
     var siteinfo = sitedict[selected_site];
   }

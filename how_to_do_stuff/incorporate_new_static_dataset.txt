@@ -1,0 +1,27 @@
+e.g. bring in the powell center synthesis or the NWQP set.
+these sets won't change, so we don't need to manage them along with the "normal" sp data.
+instead, they get their own database tables, and their own special workarounds so that they can be vizzed etc without slowing things down.
+this example was created while incorporating the nwqp set, so "NWQP" or "nwqp" is the word that will change if this has to happen again.
+
+make db table
+    execute in sql:
+        create table nwqp like data;
+    write R script to insert new data
+        powell example is in git/streampulse/model/ancillary
+        nwqp example is in git/streampulse/other_projects/nwqp_ingest
+visualize inputs
+    copy sp/site_update_stored_procedure_nwqp.sql and change the name "nwqp" within
+    make a new script like scheduled_scripts/update_nwqp_site_data.py and run it
+    update visualize and get_viz funcs in app.py
+    update html and js in templates/visualize.html (search "nwqp")
+    HERE: allow interquartile overlays (some other app.py func no doubt?)
+visualize results
+sitelist
+download
+download_bulk
+map
+
+run the script that updates varlist, firstrecord, lastrecord in site data
+build rds files so we can see model results
+copy shiny/model_viz/<results folder with manufactured rds objects> to server
+
