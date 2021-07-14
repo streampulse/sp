@@ -1346,9 +1346,10 @@ def sitelist():
 
     #add column for data source
     sitedata['by'] = sitedata['by'].apply(str)
-    sitedata['by'] = sitedata['by'].replace(r'^(?!\-900|\-902)\-?[0-9]+$',
+    sitedata['by'] = sitedata['by'].replace(r'^(?!\-900|\-902|\-904)\-?[0-9]+$',
         'sp', regex=True)
-    title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE'}
+    title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE',
+            '-904': 'USGS (NWQP)'}
     sitedata['by'] = sitedata['by'].map(title_mapping)
     sitedata.rename(columns={'by':'Source'}, inplace=True)
 
@@ -3908,7 +3909,13 @@ def interquartile():
 
     var = request.json['variable']
     dsource = request.json['source']
-    src = 'powell' if dsource == 'pow' else 'data'
+    if dsource == 'pow':
+        src = 'powell'
+    elif dsource == 'nwqp':
+        src = 'nwqp'
+    else:
+        src = 'data'
+
     region, site = request.json['site'].split('_')
     # region='VT'; site='Pass'; var='DO_mgL'
 
@@ -5205,8 +5212,15 @@ def site_map():
     #powell_sites = pd.read_csv('static/map/powell_sites.csv')
     #powell_dict = powell_sites.to_dict('records')
 
+    nwqp_data = pd.read_sql('select id, region, site, name, latitude, ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'from site where `by` = -904;', db.engine)
+    nwqp_data.addDate = nwqp_data.addDate.astype('str')
+    nwqp_dict = nwqp_data.to_dict('records')
+
     return render_template('map.html', site_data=site_dict,
-        core_sites=core_sites, powell_sites=powell_dict)
+        core_sites=core_sites, powell_sites=powell_dict,
+        nwqp_sites=nwqp_dict)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

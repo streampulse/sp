@@ -8,18 +8,33 @@ make db table
         create table nwqp like data;
     write R script to insert new data
         powell example is in git/streampulse/model/ancillary
-        nwqp example is in git/streampulse/other_projects/nwqp_ingest
+        nwqp example is git/streampulse/other_projects/nwqp_ingest/src/munge.R
 visualize inputs
     copy sp/site_update_stored_procedure_nwqp.sql and change the name "nwqp" within
     make a new script like scheduled_scripts/update_nwqp_site_data.py and run it
     update visualize and get_viz funcs in app.py
     update html and js in templates/visualize.html (search "nwqp")
-    HERE: allow interquartile overlays (some other app.py func no doubt?)
+    update interquartile() in app.py (won't work till you create "model rds" objects
 visualize results
+    manufacture rds files like those returned by streammetabolizer
+        this happens in streampulse/other_projects/nwqp_ingest/src/munge.R
+        could also use the powell version of this, which starts from model output objects and is here: model_viz/powell_data/structure_powell_data.R
+    update __ in app.py
+kernel density plot?
 sitelist
+    update title_mapping in app.py/sitelist()
+        and the regex just above that
 download
 download_bulk
 map
+    update app.py/site_map()
+    update templates/map.html
+        don't forget the legend string
+ignore these:
+    app.py/query_available_results()
+    app.py/request_results()
+    app.py/allXX_download()
+    app.py/request_predictions()
 
 run the script that updates varlist, firstrecord, lastrecord in site data
 build rds files so we can see model results
