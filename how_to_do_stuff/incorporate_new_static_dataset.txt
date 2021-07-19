@@ -9,6 +9,7 @@ make db table
     write R script to insert new data
         powell example is in git/streampulse/model/ancillary
         nwqp example is git/streampulse/other_projects/nwqp_ingest/src/munge.R
+    run /home/mike/git/streampulse/server_copy/sp/scheduled_scripts/update_nwqp_site_data.py
 visualize inputs
     copy sp/site_update_stored_procedure_nwqp.sql and change the name "nwqp" within
     make a new script like scheduled_scripts/update_nwqp_site_data.py and run it
@@ -19,13 +20,16 @@ visualize results
     manufacture rds files like those returned by streammetabolizer
         this happens in streampulse/other_projects/nwqp_ingest/src/munge.R
         could also use the powell version of this, which starts from model output objects and is here: model_viz/powell_data/structure_powell_data.R
-    update __ in app.py
+    update global, ui, server, helpers
 kernel density plot?
+    at the time of this writing, the density plot is just for models fit by sp users
 sitelist
     update title_mapping in app.py/sitelist()
         and the regex just above that
 download
+    took no action for NWQP
 download_bulk
+    took no action for NWQP
 map
     update app.py/site_map()
     update templates/map.html
@@ -35,8 +39,4 @@ ignore these:
     app.py/request_results()
     app.py/allXX_download()
     app.py/request_predictions()
-
-run the script that updates varlist, firstrecord, lastrecord in site data
-build rds files so we can see model results
-copy shiny/model_viz/<results folder with manufactured rds objects> to server
 

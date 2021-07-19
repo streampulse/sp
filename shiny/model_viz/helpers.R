@@ -1,4 +1,5 @@
 processing_func = function (ts, st, en) {
+
     gpp = ts$GPP; gppup = ts$GPP.upper; gpplo = ts$GPP.lower
     er = ts$ER; erup = ts$ER.upper; erlo = ts$ER.lower
 
@@ -98,6 +99,17 @@ season_ts_func = function (ts_full, fit_daily, st, en, overlay=NULL){
         par(new=TRUE)
         llim2 = min(ff$Klo, na.rm=TRUE)
         ulim2 = max(ff$Kup, na.rm=TRUE)
+
+        if(is.infinite(llim2) || is.infinite(ulim2)){
+            llim2 = min(ff$K600_daily_mean, na.rm=TRUE)
+            ulim2 = max(ff$K600_daily_mean, na.rm=TRUE)
+        }
+
+        if(is.infinite(llim2)){
+            llim2 = 100
+            ulim2 = 0
+        }
+
         # plot(doy, fit_daily$K600_daily_mean,
         plot(doy, ff$K600_daily_mean, col='orange',
             type='l', xlab='', las=0, ylab='', xaxs='i', yaxs='i',
@@ -307,15 +319,24 @@ O2_legend = function(overlay, powell){
 
 KvER_plot = function(mod_out, slice, click=NULL){
 
-    mod = lm(slice$ER_daily_mean ~ slice$K600_daily_mean)
-    R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
+    mod = try(lm(slice$ER_daily_mean ~ slice$K600_daily_mean),
+              silent = TRUE)
+
+    if(! inherits(mod, 'try-error')){
+        R2 = sprintf('%1.2f', summary(mod)$adj.r.squared)
+    } else {
+        R2 = 'NA'
+    }
+
     plot(slice$K600_daily_mean, slice$ER_daily_mean,
         col='darkgreen', ylab='', xlab='Daily mean K600',
         bty='l', font.lab=1, cex.axis=0.8, las=1)
     mtext(expression(paste("Daily mean ER (g"~O[2]~"m"^"-2"*")")), side=2, line=2.5)
     mtext(bquote('Adj.' ~ R^2 * ':' ~ .(R2)), side=3, line=0, adj=1,
         cex=0.8, col='gray50')
-    abline(mod, lty=2, col='gray50', lwd=2)
+    if(! inherits(mod, 'try-error') && ! any(is.na(mod$coefficients))){
+        abline(mod, lty=2, col='gray50', lwd=2)
+    }
 
     #highlight point and display date on click
     if(! is.null(click) && ! is.null(click$x)){
@@ -403,6 +424,13 @@ KvQ_plot = function(mod_out, slicex, slicey, powell, click=NULL){
         by='date', all=TRUE)
     log_Q = log(slicexy$discharge.daily)
 
+    if(all(is.na(log_Q))){
+        plot(1, 1, xlab='Log daily mean Q (cms)', ylab='Daily mean K600',
+             bty='l', font.lab=1, cex.axis=0.8, las=1, type='n')
+        text(1, 1, labels='K600 fixed', adj=0.5)
+        return()
+    }
+
     # if(! powell){
     #     xminplot = min(c(log_Q, nodes), na.rm=TRUE)
     #     xmaxplot = max(c(log_Q, nodes), na.rm=TRUE)
@@ -477,6 +505,12 @@ QvKres_plot = function(mod_out, slicex, slicey, click=NULL){
         by='date', all.x=TRUE)
     log_Q = log(slicexy$discharge.daily)
 
+    if(all(is.na(log_Q))){
+        plot(1, 1, xlab='Log daily mean Q (cms)', ylab='Daily mean K600 residuals',
+             bty='l', font.lab=1, cex.axis=0.8, las=1, type='n')
+        text(1, 1, labels='K600 fixed', adj=0.5)
+        return()
+    }
 
     #get K residuals (based on K-Q linear relationship)
     KQmod = lm(slicexy$K600_daily_mean ~ log_Q, na.action=na.exclude)
