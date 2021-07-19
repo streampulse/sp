@@ -55,7 +55,7 @@ shinyUI(
                     'users. The best available model fits and metabolism',
                     'estimates for each site and calendar year are stored here.',
                     'You can also use this tool to explore model results from',
-                    'the Powell Center metabolism synthesis.')),
+                    'the Powell Center metabolism synthesis and the NWQP Regional Stream Quality Assessments.')),
                 p('To view private results, enter a valid user token. You do',
                     'not need a token to view public results.'),
                 br(),
@@ -85,7 +85,7 @@ shinyUI(
                             # textInput('MPhidden_counter3', label=NULL, value=0)
                         ),
                         radioButtons('datasourceMP', 'Choose data source',
-                            list('StreamPULSE', 'Powell Center Synthesis'),
+                            list('StreamPULSE', 'Powell Center Synthesis', 'NWQP'),
                             selected='StreamPULSE'),
                         selectInput('MPinput_site', label='Select site',
                             choices=c('No site selected' = '',
@@ -147,7 +147,7 @@ shinyUI(
                                 'vertical-align:middle;'),
 
                             radioButtons('datasource', 'Choose data source',
-                                list('StreamPULSE', 'Powell Center Synthesis'),
+                                list('StreamPULSE', 'Powell Center Synthesis', 'NWQP'),
                                 selected='StreamPULSE')
                         ),
                         div(align='center', style=paste0(

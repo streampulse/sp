@@ -1346,9 +1346,10 @@ def sitelist():
 
     #add column for data source
     sitedata['by'] = sitedata['by'].apply(str)
-    sitedata['by'] = sitedata['by'].replace(r'^(?!\-900|\-902)\-?[0-9]+$',
+    sitedata['by'] = sitedata['by'].replace(r'^(?!\-900|\-902|\-904)\-?[0-9]+$',
         'sp', regex=True)
-    title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE'}
+    title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE',
+            '-904': 'USGS (NWQP)'}
     sitedata['by'] = sitedata['by'].map(title_mapping)
     sitedata.rename(columns={'by':'Source'}, inplace=True)
 
@@ -3758,7 +3759,7 @@ def visualize():
     #acquire site data and filter rows by authenticated sites
     sitedata = pd.read_sql("select region, site, name, variableList " +\
         "as variable, firstRecord as startdate, lastRecord as enddate " +\
-        "from site where `by` != -902;", db.engine)
+        "from site where `by` not in (-902, -904);", db.engine)
     sitedata['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedata.region,
         sitedata.site)]
 
@@ -3784,14 +3785,20 @@ def visualize():
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
 
-    #separating powell/sp data could be final step to save some time, but
-    #i'm allowing reduncancy here because the execution time cost is lower than
+    #separating powell/sp/nwqp data could be final step to save some time, but
+    #i'm allowing redundancy here because the execution time cost is lower than
     #the cost of reorganization
     sitedataP = pd.read_sql("select region, site, name, variableList " +\
         "as variable, firstRecord as startdate, lastRecord as enddate " +\
         "from site where `by` = '-902' and variableList is not NULL;", db.engine)
     sitedataP['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedataP.region,
         sitedataP.site)]
+
+    sitedataNWQP = pd.read_sql("select region, site, name, variableList " +\
+        "as variable, firstRecord as startdate, lastRecord as enddate " +\
+        "from site where `by` = '-904' and variableList is not NULL;", db.engine)
+    sitedataNWQP['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedataNWQP.region,
+        sitedataNWQP.site)]
 
     #powell data: reformat and filter columns; return data as nested lists
     sitedataP.variable = sitedataP.variable.apply(lambda x: x.split(','))
@@ -3806,12 +3813,25 @@ def visualize():
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
 
+    #same for nwqp data
+    sitedataNWQP.variable = sitedataNWQP.variable.apply(lambda x: x.split(','))
+    sitedataNWQP.startdate = sitedataNWQP.startdate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataNWQP.enddate = sitedataNWQP.enddate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataNWQP.name = sitedataNWQP.region + " - " + sitedataNWQP.name
+    dvvNWQP = sitedataNWQP[['regionsite','name','startdate','enddate','variable']]
+    dvvNWQP.iloc[:,1:2] = dvvNWQP.iloc[:,1:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
+    dvvNWQP = dvvNWQP.values
+    sitedictNWQP = sorted([list(x) for x in dvvNWQP], key=lambda tup: tup[1])
+
     #get set of sites for which models have been fit (for overlays)
     outputs = os.listdir(cfg.RESULTS_FOLDER)
     avail_mods = list(set([o[7:len(o) - 9] for o in outputs if o[0:3] == 'mod']))
 
     return render_template('visualize.html', sites=sitedict,
-        powell_sites=sitedictP, avail_mods=avail_mods)
+        powell_sites=sitedictP, nwqp_sites=sitedictNWQP, avail_mods=avail_mods)
 
 @app.route('/_getgrabvars', methods=["POST"])
 def getgrabvars():
@@ -3889,7 +3909,13 @@ def interquartile():
 
     var = request.json['variable']
     dsource = request.json['source']
-    src = 'powell' if dsource == 'pow' else 'data'
+    if dsource == 'pow':
+        src = 'powell'
+    elif dsource == 'nwqp':
+        src = 'nwqp'
+    else:
+        src = 'data'
+
     region, site = request.json['site'].split('_')
     # region='VT'; site='Pass'; var='DO_mgL'
 
@@ -3949,7 +3975,12 @@ def getviz():
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
     dsource = request.json['source']
-    src = 'powell' if dsource == 'pow' else 'data'
+    if dsource == 'pow':
+        src = 'powell'
+    elif dsource == 'nwqp':
+        src = 'nwqp'
+    else:
+        src = 'data'
     # region='NC'; site='NHC'; startDate='2017-11-01'; endDate='2018-01-01'
     # region='AK'; site='CARI-down'; startDate='2018-04-01'; endDate='2018-04-20'
     # variables=['DO_mgL','WaterTemp_C','Light_lux']; src='data'
@@ -5181,8 +5212,15 @@ def site_map():
     #powell_sites = pd.read_csv('static/map/powell_sites.csv')
     #powell_dict = powell_sites.to_dict('records')
 
+    nwqp_data = pd.read_sql('select id, region, site, name, latitude, ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'from site where `by` = -904;', db.engine)
+    nwqp_data.addDate = nwqp_data.addDate.astype('str')
+    nwqp_dict = nwqp_data.to_dict('records')
+
     return render_template('map.html', site_data=site_dict,
-        core_sites=core_sites, powell_sites=powell_dict)
+        core_sites=core_sites, powell_sites=powell_dict,
+        nwqp_sites=nwqp_dict)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
