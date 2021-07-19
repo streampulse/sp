@@ -5200,7 +5200,7 @@ def site_map():
 
     site_data = pd.read_sql('select id, region, site, name, latitude, ' +\
         'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
-        'from site where `by` != -902;', db.engine)
+        'from site where `by` not in (-902, -904);', db.engine)
     site_data.addDate = site_data.addDate.astype('str')
     site_dict = site_data.to_dict('records')
 
