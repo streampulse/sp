@@ -891,7 +891,7 @@ def sp_in_lev(f):
 
 def wash_ts(x):
 
-    cx = list(x.select_dtypes(include=['datetime64']).columns)
+    cx = list(x.select_dtypes(include=['datetime64', 'datetime64[ns, UTC]']).columns)
     dt_col = [x.pop(i) for i in cx] #remove datetime col(s)
 
     if len(cx) > 1: #more than one dataset, so merge datetime cols
