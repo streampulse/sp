@@ -34,6 +34,7 @@ map
     update app.py/site_map()
     update templates/map.html
         don't forget the legend string
+        and the line that excludes nwqp from "normal" data
 ignore these:
     app.py/query_available_results()
     app.py/request_results()

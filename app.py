@@ -641,7 +641,7 @@ def read_hobo(f):
 
     # f = '~/Downloads/MD_BARN2_2018-09-20_HP.csv'
     # f = '~/Downloads/MD_BARN2_2018-09-20_HP2.csv'
-    # f = '~/Downloads/NC_Eno_2016-10-17_HP.csv'
+    # f = '~/MS_7288135_2021-07-01_HP.csv'
 
     xt = pd.read_csv(f, nrows=1, header=None)
     if len(xt.loc[0,:].dropna()) == 1:
@@ -652,6 +652,7 @@ def read_hobo(f):
         "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired|Sensor" +\
         "|Missing|New", x) is None]
     xt = xt[cols]
+    # xt.rename(columns={'Date ': 'Date Time, GMT-04:00'}, inplace = True)
 
     tzoff = re.sub('^(?:.*)?GMT(.[0-9]{2}).*$', '\\1', xt.columns[0])
     regex1 = '(.*?),([^\(]+)'
@@ -685,7 +686,7 @@ def read_hobo(f):
     if "_HD" in f:
         xt = xt.rename(columns={'TempC':'DOLoggerTemp_C'})
     if "_HP" in f:
-        xt = xt.rename(columns={'TempC':'LightLoggerTemp_C'})
+        xt = xt.rename(columns={'TempC':'LightLoggerTemp_C', 'PARmolms':'Light_PAR'})
     if "_HC" in f:
         xt = xt.rename(columns={'TempC':'CondLoggerTemp_C'})
     xt.columns = [cc + inum for cc in xt.columns]

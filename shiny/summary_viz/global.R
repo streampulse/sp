@@ -4,8 +4,8 @@ library(DBI)
 library(ks)
 
 #read in mysql pw
-conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
-# conf = readLines('/home/aaron/sp/config.py')
+#onf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
+conf = readLines('/home/aaron/sp/config.py')
 ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
 pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
 
