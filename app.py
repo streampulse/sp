@@ -641,7 +641,7 @@ def read_hobo(f):
 
     # f = '~/Downloads/MD_BARN2_2018-09-20_HP.csv'
     # f = '~/Downloads/MD_BARN2_2018-09-20_HP2.csv'
-    # f = '~/Downloads/MS_AB_2021-07-01_HW.csv'
+    # f = '~/MS_SB_2021-07-01_HW.csv'
 
     xt = pd.read_csv(f, nrows=1, header=None)
     if len(xt.loc[0,:].dropna()) == 1:
@@ -679,13 +679,16 @@ def read_hobo(f):
     xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
 
-    xt.columns
+    # xt.columns
     if 'AbsPrespsi' in xt.columns:
         xt.AbsPrespsi = xt.AbsPrespsi * 6.89476
         xt = xt.rename(columns={'AbsPrespsi':'AbsPreskPa'})
     if 'TempF' in xt.columns:
         xt.TempF = (xt.TempF - 32) * (5/9)
         xt = xt.rename(columns={'TempF':'TempC'})
+    if 'WaterLevelfeet' in xt.columns:
+        xt.WaterLevelfeet = (xt.WaterLevelfeet * 0.3048)
+        xt = xt.rename(columns={'WaterLevelfeet':'WaterLevelmeters'})
 
     if "_HW" in f:
         xt = xt.rename(columns={'AbsPreskPa':'WaterPres_kPa','TempC':'WaterTemp_C','WaterLevelmeters':'Level_m'})
