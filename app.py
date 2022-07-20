@@ -1039,7 +1039,7 @@ def authenticate_sites(sites, user=None, token=None):
     public = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
 
     if user is not None: # return public sites and authenticated sites
-        user_authed = pd.Series(sites[0] in auth_sites)
+        user_authed = sites[sites.isin(pd.Series(auth_sites))]
         xx = xx[public | (xx['by']==int(user)) | user_authed]
     else: # return only public sites
         xx = xx[public]
@@ -1464,6 +1464,19 @@ def series_upload():
         #get list of all files in spupload directory
         upfold = app.config['UPLOAD_FOLDER']
         ld = os.listdir(upfold)
+
+        #check for empty files
+        fsz = []
+        for x in ufiles:
+            x.seek(0, os.SEEK_END)
+            fsz.append(x.tell() == 0)
+            x.seek(0, 0)
+        fsz = np.array(fsz)
+        empty_files = np.array(ufnms)[fsz]
+        if len(empty_files):
+            flash('Attempt to upload empty file(s): ' + ', '.join(list(empty_files)),
+                  'alert-danger')
+            return redirect(request.url)
 
         #check names of uploaded files
         core_regex = "^[A-Z]{2}_(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
