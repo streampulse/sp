@@ -1039,6 +1039,7 @@ def authenticate_sites(sites, user=None, token=None):
     public = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
 
     if user is not None: # return public sites and authenticated sites
+        sites = pd.Series(sites)
         user_authed = sites[sites.isin(pd.Series(auth_sites))]
         xx = xx[public | (xx['by']==int(user)) | user_authed]
     else: # return only public sites

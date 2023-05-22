@@ -35,6 +35,9 @@ do
     sed -i "1i $(head -n 1 $fn'.csv')" $fn$globcsv
     rm $fn'.csv'
 
+    #remove duplicate header in the first chunk
+    sed -i '1d' $fn'01.csv'
+
     #zip together and remove CSVs
     zip -r $fn'.zip' $fn$globcsv
     rm $fn$globcsv
