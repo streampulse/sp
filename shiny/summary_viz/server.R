@@ -18,10 +18,14 @@ shinyServer(function(input, output, session){
     height10 = reactive({
         ifelse(is.null(input$height10), 0, input$height10)
     })
+    KDHeight = reactive({
+        ifelse(is.null(input$KDHeight), 0, input$KDHeight)
+    })
 
     js$getHeight90()
     js$getHeight50()
     js$getHeight10()
+    js$getKDHeight()
 
     #handle auth
     observe({

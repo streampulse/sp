@@ -48,8 +48,8 @@ kdens_plot = function(overlay, tmin, tmax, recompute_overall_dens=FALSE){
         # }
     }
 
-    ylims = c(-25, 5)
-    xlims = c(-5, 25)
+    ylims = c(-15, 5)
+    xlims = c(-5, 15)
 
     #overall plot
     if(recompute_overall_dens){

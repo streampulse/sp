@@ -53,6 +53,7 @@
     var site_data = {{ site_data|tojson|safe }};
     var core_sites = {{ core_sites|tojson|safe }};
     var powell_sites = {{ powell_sites|tojson|safe }};
+    var nwqp_sites = {{ nwqp_sites|tojson|safe }};
     var linkmap = {'NC_Eno':'http://pulseofstreams.weebly.com/north-carolina.html',
       'NC_UEno':'http://pulseofstreams.weebly.com/north-carolina.html',
       'NC_Mud':'http://pulseofstreams.weebly.com/north-carolina.html',
@@ -107,11 +108,13 @@
     //create map base
     var spmap = L.map('mapid', {zoomSnap: 0.5}).setView([30, 20], 2);
 
-    L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+    L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
       attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+      tileSize: 512,
       maxZoom: 17,
       minZoom: 2,
-      id: 'mapbox.outdoors',
+      zoomOffset: -1,
+      id: 'mapbox/outdoors-v11',
       accessToken: 'pk.eyJ1IjoidmxhaG0iLCJhIjoiY2pqYWQwbXpjMGFuODNxcWh6bWE5ZWZvMiJ9.xvVhktbooqGTJkK0sGpiow'
     }).addTo(spmap);
 
@@ -132,8 +135,9 @@
     //filter sites without lat/long info (so far only happened with one NEON site)
     site_data = site_data.filter( e => ! isNaN(e.latitude) );
     powell_sites = powell_sites.filter( e => ! isNaN(e.latitude) );
+    nwqp_sites = nwqp_sites.filter( e => ! isNaN(e.latitude) );
 
-    //process non-powell sites
+    //process normal (non-powell/non-nwqp) sites
     for (var p in site_data){
 
       //replace nulls with 'N/A'
@@ -236,6 +240,36 @@
       );
     }
 
+    //process nwqp sites
+    for (var p in nwqp_sites){
+
+      //replace nulls with 'N/A'
+      var pp = nwqp_sites[p]
+      for (attribute in pp){
+        if (pp[attribute] == null){
+          pp[attribute] = 'N/A';
+        }
+      }
+
+      var circle = L.circleMarker([pp.latitude, pp.longitude], {
+        color: '#474863',
+        weight: 1,
+        fillColor: '#9400D3',
+        fillOpacity: 1.0,
+        radius: 5
+      }).addTo(spmap);
+
+      circle.bindPopup(
+        "<b>Site Name: </b>" + pp.name + "<br>" +
+        "<b>Site Code: </b>" + pp.region + "_" + pp.site + "<br>" +
+        "<b>Lat/Long: </b>" + pp.latitude.toFixed(4) + "/" + pp.longitude.toFixed(4) +
+          "<br>" +
+        "<b>USGS Gage ID: </b>" + pp.usgs + "<br>" +
+        "<b>Source: </b>" + "<a href='https://www.sciencebase.gov/catalog/item/5d01251ae4b0573a18f7d339'" +
+          " target='_blank' rel='noopener noreferrer'>link</a>" + "<br>"
+      );
+    }
+
     //mapclick listener that creates a latlong popup when clicking baselayer
     // var popup = L.popup();
     // function onMapClick(e) {
@@ -256,30 +290,12 @@
         div.innerHTML += '<i class="legend" style="background: #8bc3f6; height=50px; width=50px"></i>Leveraged (public)<br>';
         div.innerHTML += '<i class="legend" style="background: gray; height=50px; width=50px"></i>Leveraged (embargoed)<br>';
         div.innerHTML += '<i class="legend" style="background: #61b876; height=50px; width=50px"></i>Powell Center Synthesis<br>';
+        div.innerHTML += '<i class="legend" style="background: #9400D3; height=50px; width=50px"></i>NWQP (RSQA)<br>';
 
         return div;
     };
 
     legend.addTo(spmap);
-
-    // //add powell center synthesis sites
-    // for (var p in powell_sites){
-    //   var pp = powell_sites[p]
-    //   var circle = L.circleMarker([pp.lat, pp.lon], {
-    //     color: '#474863',
-    //     weight: 1,
-    //     fillColor: '#61b876',
-    //     fillOpacity: 1.0,
-    //     radius: 5
-    //   }).addTo(spmap);
-    //
-    //   circle.bindPopup(
-    //     "<b>Site Name: </b>" + pp.site_name + "<br>" +
-    //     "<b>Lat/Long: </b>" + pp.lat.toFixed(4) + "/" + pp.lon.toFixed(4) +
-    //       "<br>" +
-    //     "<b>Source: </b>" + '<em>Publication pending</em>' + "<br>"
-    //   );
-    // }
 
   </script>
 

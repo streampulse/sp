@@ -7,7 +7,12 @@ os.chdir(app_dir)
 from helpers import email_msg
 from sys import argv
 
-script_name, notificationEmail, tmpcode, region, site, report_filenames, tmpfile, files_to_remove = argv
+#report_filenames and files_to_remove come through as individual list items, so err if upload contains more than one file
+#script_name, notificationEmail, tmpcode, region, site, report_filenames, tmpfile, files_to_remove = argv
+notificationEmail = argv[1]
+tmpcode = argv[2]
+region = argv[3]
+site = argv[4]
 
 
 email_template = 'static/email_templates/pipeline_complete.txt'

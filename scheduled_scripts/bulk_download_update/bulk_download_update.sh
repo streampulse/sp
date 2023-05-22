@@ -6,6 +6,8 @@ conda activate sp
 fp_base="/home/aaron/sp/"
 fp_bulk="../bulk_download_files/"
 fp_py="scheduled_scripts/bulk_download_update/bulk_download_update.py"
+rm "/var/lib/mysql-files/all_sp_data.csv"
+rm "/var/lib/mysql-files/all_neon_data.csv"
 python "$fp_base$fp_py"
 globcsv="??.csv"
 

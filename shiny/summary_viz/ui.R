@@ -15,6 +15,9 @@ shinyjs.getHeight50 = function() {
 shinyjs.getHeight10 = function() {
     Shiny.onInputChange('height10', $(window).height() * .1);
 }
+shinyjs.getKDHeight = function() {
+    Shiny.onInputChange('KDHeight', $('#kdens').height());
+}
 "
 
 shinyUI(
@@ -24,7 +27,7 @@ shinyUI(
         tags$style(type="text/css", ".recalculating { opacity: 1.0; }" ),
         shinyjs::useShinyjs(),
         shinyjs::extendShinyjs(text=get_plotheight,
-            functions=c('getHeight90', 'getHeight10', 'getHeight50', 'init')),
+            functions=c('getHeight90', 'getHeight10', 'getHeight50', 'getKDHeight', 'init')),
         navbarPage(title=p(strong(a('StreamPULSE',
             href='https://data.streampulse.org/'))), inverse=TRUE,
             windowTitle='Compiled results',

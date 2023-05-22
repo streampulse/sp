@@ -15,7 +15,8 @@ populate_missing_rows = function(d, samp_int){
     daterange = range(d$DateTime_UTC, na.rm=TRUE)
     dt_filled = data.frame(DateTime_UTC=seq(daterange[1], daterange[2],
         by=paste(samp_int, 'min')))
-    d = right_join(d, dt_filled, by='DateTime_UTC')
+    d = right_join(d, dt_filled, by='DateTime_UTC') %>%
+        arrange(DateTime_UTC)
 
     if('upload_id' %in% colnames(d)){
         d = mutate(d, upload_id=imputeTS::na_locf(upload_id))

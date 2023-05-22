@@ -91,9 +91,13 @@ shinyServer(function(input, output, session){
 
         if(input$datasource == 'StreamPULSE'){
             out = list(sitenames=sitenames, siteyears=siteyears)
-        } else {
+        } else if(input$datasource == 'Powell Center Synthesis'){
             sitenames = sitenmyr_all_pow[,1]
             siteyears = sitenmyr_all_pow[,2]
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        } else {
+            sitenames = sitenmyr_all_nwqp[,1]
+            siteyears = sitenmyr_all_nwqp[,2]
             out = list(sitenames=sitenames, siteyears=siteyears)
         }
 
@@ -171,9 +175,13 @@ shinyServer(function(input, output, session){
 
         if(input$datasourceMP == 'StreamPULSE'){
             out = list(sitenames=sitenames, siteyears=siteyears)
-        } else {
+        } else if(input$datasourceMP == 'Powell Center Synthesis'){
             sitenames = sitenmyr_all_pow[,1]
             siteyears = sitenmyr_all_pow[,2]
+            out = list(sitenames=sitenames, siteyears=siteyears)
+        } else {
+            sitenames = sitenmyr_all_nwqp[,1]
+            siteyears = sitenmyr_all_nwqp[,2]
             out = list(sitenames=sitenames, siteyears=siteyears)
         }
 
@@ -253,6 +261,10 @@ shinyServer(function(input, output, session){
             sitenames = sitenmyr_all_pow[,1]
             siteyears = sitenmyr_all_pow[,2]
         }
+        if(input$datasourceMP == 'NWQP'){
+            sitenames = sitenmyr_all_nwqp[,1]
+            siteyears = sitenmyr_all_nwqp[,2]
+        }
 
         updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
             selected='', options=list(placeholder='No site selected'))
@@ -291,6 +303,10 @@ shinyServer(function(input, output, session){
         if(input$datasource == 'Powell Center Synthesis'){
             sitenames = sitenmyr_all_pow[,1]
             siteyears = sitenmyr_all_pow[,2]
+        }
+        if(input$datasource == 'NWQP'){
+            sitenames = sitenmyr_all_nwqp[,1]
+            siteyears = sitenmyr_all_nwqp[,2]
         }
 
         # updateSelectizeInput(session, 'MPinput_site', choices=sitenames,
@@ -433,6 +449,10 @@ shinyServer(function(input, output, session){
                 mod_out = readRDS(paste0('data/', fnames[modOut_ind[1]]))
                 predictions = readRDS(paste0('data/',
                     fnames[predictions_ind[1]]))
+            } else if(input$datasource == 'NWQP'){
+                mod_out = readRDS(paste0('nwqp_data/shiny_lists/',
+                    regionsite, '_', year, '.rds'))
+                predictions = mod_out$predictions
             } else {
                 mod_out = readRDS(paste0('powell_data/shiny_lists/',
                     regionsite, '_', year, '.rds'))
@@ -485,6 +505,10 @@ shinyServer(function(input, output, session){
                 MPmod_out = readRDS(paste0('data/', fnames[MPmodOut_ind[1]]))
                 MPpredictions = readRDS(paste0('data/',
                     fnames[MPpredictions_ind[1]]))
+            } else if(input$datasourceMP == 'NWQP'){
+                MPmod_out = readRDS(paste0('nwqp_data/shiny_lists/',
+                    MPregionsite, '_', MPyear, '.rds'))
+                MPpredictions = MPmod_out$predictions
             } else {
                 MPmod_out = readRDS(paste0('powell_data/shiny_lists/',
                     MPregionsite, '_', MPyear, '.rds'))

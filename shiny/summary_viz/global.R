@@ -4,7 +4,7 @@ library(DBI)
 library(ks)
 
 #read in mysql pw
-# conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
+#conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
 conf = readLines('/home/aaron/sp/config.py')
 ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
 pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
@@ -13,7 +13,7 @@ pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
 con = dbConnect(RMariaDB::MariaDB(), dbname='sp', username='root', password=pw)
 site = dbReadTable(con, "site")
 results = dbReadTable(con, "results")
-doy = as.numeric(strftime(results$solar_date, format='%j'))
+doy = as.numeric(strftime(results$date, format='%j'))
 
 #get list of fitted model names available on server
 modnames = dir('../model_viz/data', pattern='modOut')

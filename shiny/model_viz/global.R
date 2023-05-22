@@ -3,7 +3,7 @@ library(RMariaDB)
 library(DBI)
 
 #read in mysql pw
-# conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
+#conf = readLines('/home/mike/git/streampulse/server_copy/sp/config.py')
 conf = readLines('/home/aaron/sp/config.py')
 ind = which(lapply(conf, function(x) grepl('MYSQL_PW', x)) == TRUE)
 pw = str_match(conf[ind], '.*\\"(.*)\\"')[2]
@@ -36,10 +36,12 @@ defaultv = list(sitenames=sitenames, siteyears=siteyears)
 # dx = '/home/mike/git/streampulse/model/ancillary/powell_data_import/RDS_components/'
 # powIn = dir('powell_data/inData', pattern='inData')
 modlists = dir('powell_data/shiny_lists/')
+modlists_nwqp = dir('nwqp_data/shiny_lists/')
 # powI = dir(paste0(dx, 'inData'), pattern='inData')
 # powOut = dir(paste0(dx, 'outData'), pattern='outData')
 # powOutEx = dir(paste0(dx, 'outExtra'), pattern='outExtra')
 sitenmyr_all_pow = str_match(modlists, '^(\\w+_[0-9]+)_([0-9]{4})')[,2:3]
+sitenmyr_all_nwqp = str_match(modlists_nwqp, '^([a-zA-Z_0-9]+)?_([0-9]{4})')[,2:3]
 
 #create mapping of input data fields and their pretty equivalents
 varmap = list('DO.sat'=list('DO sat', 'DO sat (%)'),

@@ -641,7 +641,7 @@ def read_hobo(f):
 
     # f = '~/Downloads/MD_BARN2_2018-09-20_HP.csv'
     # f = '~/Downloads/MD_BARN2_2018-09-20_HP2.csv'
-    # f = '~/Downloads/NC_Eno_2016-10-17_HP.csv'
+    # f = '~/MS_SB_2021-07-01_HW.csv'
 
     xt = pd.read_csv(f, nrows=1, header=None)
     if len(xt.loc[0,:].dropna()) == 1:
@@ -652,6 +652,7 @@ def read_hobo(f):
         "Host|Connected|Attached|Stopped|End|Unnamed|Good|Bad|Expired|Sensor" +\
         "|Missing|New", x) is None]
     xt = xt[cols]
+    # xt.rename(columns={'Date ': 'Date Time, GMT-04:00'}, inplace = True)
 
     tzoff = re.sub('^(?:.*)?GMT(.[0-9]{2}).*$', '\\1', xt.columns[0])
     regex1 = '(.*?),([^\(]+)'
@@ -677,15 +678,26 @@ def read_hobo(f):
     xt = xt.rename(columns=dict(list(zip(xt.columns.tolist(), newcols))))
     xt = xt.dropna(subset=['DateTime'])
     xt['DateTimeUTC'] = [dtparse.parse(x)-timedelta(hours=int(tzoff)) for x in xt.DateTime]
-    # xt = xt.rename(columns={'HWAbsPreskPa':'WaterPres_kPa','HWTempC':'WaterTemp_C','HAAbsPreskPa':'AirPres_kPa','HATempC':'AirTemp_C',})
+
+    # xt.columns
+    if 'AbsPrespsi' in xt.columns:
+        xt.AbsPrespsi = xt.AbsPrespsi * 6.89476
+        xt = xt.rename(columns={'AbsPrespsi':'AbsPreskPa'})
+    if 'TempF' in xt.columns:
+        xt.TempF = (xt.TempF - 32) * (5/9)
+        xt = xt.rename(columns={'TempF':'TempC'})
+    if 'WaterLevelfeet' in xt.columns:
+        xt.WaterLevelfeet = (xt.WaterLevelfeet * 0.3048)
+        xt = xt.rename(columns={'WaterLevelfeet':'WaterLevelmeters'})
+
     if "_HW" in f:
-        xt = xt.rename(columns={'AbsPreskPa':'WaterPres_kPa','TempC':'WaterTemp_C'})
+        xt = xt.rename(columns={'AbsPreskPa':'WaterPres_kPa','TempC':'WaterTemp_C','WaterLevelmeters':'Level_m'})
     if "_HA" in f:
         xt = xt.rename(columns={'AbsPreskPa':'AirPres_kPa','TempC':'AirTemp_C'})
     if "_HD" in f:
         xt = xt.rename(columns={'TempC':'DOLoggerTemp_C'})
     if "_HP" in f:
-        xt = xt.rename(columns={'TempC':'LightLoggerTemp_C'})
+        xt = xt.rename(columns={'TempC':'LightLoggerTemp_C', 'PARmolms':'Light_PAR'})
     if "_HC" in f:
         xt = xt.rename(columns={'TempC':'CondLoggerTemp_C'})
     xt.columns = [cc + inum for cc in xt.columns]
@@ -719,15 +731,27 @@ def read_manta(f, gmtoff):
     #manta has a weird custom of repeating two header rows every time the power
     #cycles. these additional headers get removed below.
 
+    #this will fail if the first header row is incomplete. just tell users to
+    #remove those rows when they see them
+
+    # gmtoff = -7
+    # f = '~/AZ_LV_2020-11-08_EM.csv'
+    # f = '~/AZ_LV_2021-01-19_EM.csv'
+    # f = '~/AZ_LV_2021-04-02_EM.csv'
+    # f = '~/AZ_LV_2020-12-29_EM.csv'
+    # f = '~/AZ_LV_2021-03-04_EM.csv'
+    # f = '~/AZ_LV_2021-04-28_EM.csv'
+
     xt = pd.read_csv(f, skiprows=[0]) #skip the first row that just has site name
     if 'Eureka' in xt.columns[0]:#if the wrong header row is first, replace it
         xt.columns = xt.loc[0].tolist()
+    xt = xt.dropna(0, thresh=2) #drop empty rows, "logging off" rows, etc.
     xt = xt[xt.DATE.str.contains('[0-9]+/[0-9]+/[0-9]{4}')] #drop excess header/blank rows
     xt['DateTime'] = xt['DATE'] + " " + xt['TIME']
     xt['DateTimeUTC'] = [dtparse.parse(x) - timedelta(hours=int(gmtoff)) \
         for x in xt.DateTime]
     xt.drop(["DATE","TIME","DateTime"], axis=1, inplace=True)
-    xt = xt[[x for x in xt.columns.tolist() if " ." not in x and x!=" "]]
+    xt = xt[[x for x in xt.columns.tolist() if " ." not in x and x != " "]]
     xt.columns = [re.sub("\/|%","",x) for x in xt.columns.tolist()]
     splitcols = [x.split(" ") for x in xt.columns.tolist()]
     xt.columns = [x[0]+"_"+x[-1] if len(x)>1 else x[0] for x in splitcols]
@@ -879,7 +903,7 @@ def sp_in_lev(f):
 
 def wash_ts(x):
 
-    cx = list(x.select_dtypes(include=['datetime64']).columns)
+    cx = list(x.select_dtypes(include=['datetime64', 'datetime64[ns, UTC]']).columns)
     dt_col = [x.pop(i) for i in cx] #remove datetime col(s)
 
     if len(cx) > 1: #more than one dataset, so merge datetime cols
@@ -927,6 +951,10 @@ def panda_usgs(x,jsof):
     return out
 
 def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
+        # usgs='05406457'; startDate='2019-01-01'; endDate='2019-12-31'
+        # regionsite=['WI_BEC']
+        # regionsite = sites;startDate= min(xx.DateTime_UTC).strftime("%Y-%m-%d")
+        #     endDate=max(xx.DateTime_UTC).strftime("%Y-%m-%d");vvv= ['00065']
     # regionsite is a list
     # vvv is a list of variable codes
     #00060 is cfs, discharge; 00065 is feet, height
@@ -953,12 +981,18 @@ def get_usgs(regionsite, startDate, endDate, vvv=['00060', '00065']):
         return ['USGS_error']
     xf = r.json()
     xx = [panda_usgs(x, xf) for x in range(len(xf['value']['timeSeries']))]
-    xoo = []
 
+    if type(xx) == list and len(xx) == 0:
+        xx = pd.DataFrame(columns = ['region', 'site', 'DateTime_UTC', 'variable',
+            'value', 'flagtype', 'flagcomment'])
+        return xx
+
+    xoo = []
     try:
         for s in sitex:
             x2 = [list(k.values())[0] for k in xx if list(k.keys())[0]==s]
             x2 = reduce(lambda x,y: x.merge(y,how='outer',left_index=True,right_index=True), x2)
+            x2.index = pd.to_datetime(x2.index, utc=True)
             x2 = x2.sort_index().apply(lambda x: pd.to_numeric(x, errors='coerce')).resample('15Min').mean()
             x2['site']=sitedict[s]
             xoo.append(x2.reset_index())
@@ -1005,7 +1039,7 @@ def authenticate_sites(sites, user=None, token=None):
     public = [(datetime.utcnow()-x).days+1 for x in xx['addDate']] > xx['embargo']*365
 
     if user is not None: # return public sites and authenticated sites
-        user_authed = pd.Series(sites[0] in auth_sites)
+        user_authed = sites[sites.isin(pd.Series(auth_sites))]
         xx = xx[public | (xx['by']==int(user)) | user_authed]
     else: # return only public sites
         xx = xx[public]
@@ -1324,9 +1358,10 @@ def sitelist():
 
     #add column for data source
     sitedata['by'] = sitedata['by'].apply(str)
-    sitedata['by'] = sitedata['by'].replace(r'^(?!\-900|\-902)\-?[0-9]+$',
+    sitedata['by'] = sitedata['by'].replace(r'^(?!\-900|\-902|\-904)\-?[0-9]+$',
         'sp', regex=True)
-    title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE'}
+    title_mapping = {'-900': 'NEON', '-902': 'USGS (Powell Center)', 'sp': 'StreamPULSE',
+            '-904': 'USGS (NWQP)'}
     sitedata['by'] = sitedata['by'].map(title_mapping)
     sitedata.rename(columns={'by':'Source'}, inplace=True)
 
@@ -1429,6 +1464,19 @@ def series_upload():
         #get list of all files in spupload directory
         upfold = app.config['UPLOAD_FOLDER']
         ld = os.listdir(upfold)
+
+        #check for empty files
+        fsz = []
+        for x in ufiles:
+            x.seek(0, os.SEEK_END)
+            fsz.append(x.tell() == 0)
+            x.seek(0, 0)
+        fsz = np.array(fsz)
+        empty_files = np.array(ufnms)[fsz]
+        if len(empty_files):
+            flash('Attempt to upload empty file(s): ' + ', '.join(list(empty_files)),
+                  'alert-danger')
+            return redirect(request.url)
 
         #check names of uploaded files
         core_regex = "^[A-Z]{2}_(.*)_[0-9]{4}-[0-9]{2}-[0-9]{2}_[A-Z]{2}" +\
@@ -3736,7 +3784,7 @@ def visualize():
     #acquire site data and filter rows by authenticated sites
     sitedata = pd.read_sql("select region, site, name, variableList " +\
         "as variable, firstRecord as startdate, lastRecord as enddate " +\
-        "from site where `by` != -902;", db.engine)
+        "from site where `by` not in (-902, -904);", db.engine)
     sitedata['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedata.region,
         sitedata.site)]
 
@@ -3762,14 +3810,20 @@ def visualize():
     dvv = dvv.values
     sitedict = sorted([list(x) for x in dvv], key=lambda tup: tup[1])
 
-    #separating powell/sp data could be final step to save some time, but
-    #i'm allowing reduncancy here because the execution time cost is lower than
+    #separating powell/sp/nwqp data could be final step to save some time, but
+    #i'm allowing redundancy here because the execution time cost is lower than
     #the cost of reorganization
     sitedataP = pd.read_sql("select region, site, name, variableList " +\
         "as variable, firstRecord as startdate, lastRecord as enddate " +\
         "from site where `by` = '-902' and variableList is not NULL;", db.engine)
     sitedataP['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedataP.region,
         sitedataP.site)]
+
+    sitedataNWQP = pd.read_sql("select region, site, name, variableList " +\
+        "as variable, firstRecord as startdate, lastRecord as enddate " +\
+        "from site where `by` = '-904' and variableList is not NULL;", db.engine)
+    sitedataNWQP['regionsite'] = [x[0] + "_" + x[1] for x in zip(sitedataNWQP.region,
+        sitedataNWQP.site)]
 
     #powell data: reformat and filter columns; return data as nested lists
     sitedataP.variable = sitedataP.variable.apply(lambda x: x.split(','))
@@ -3784,12 +3838,25 @@ def visualize():
     dvvP = dvvP.values
     sitedictP = sorted([list(x) for x in dvvP], key=lambda tup: tup[1])
 
+    #same for nwqp data
+    sitedataNWQP.variable = sitedataNWQP.variable.apply(lambda x: x.split(','))
+    sitedataNWQP.startdate = sitedataNWQP.startdate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataNWQP.enddate = sitedataNWQP.enddate.apply(lambda x:
+        x.strftime('%Y-%m-%d'))
+    sitedataNWQP.name = sitedataNWQP.region + " - " + sitedataNWQP.name
+    dvvNWQP = sitedataNWQP[['regionsite','name','startdate','enddate','variable']]
+    dvvNWQP.iloc[:,1:2] = dvvNWQP.iloc[:,1:2].apply(lambda x:
+        x.str.decode('unicode_escape'))
+    dvvNWQP = dvvNWQP.values
+    sitedictNWQP = sorted([list(x) for x in dvvNWQP], key=lambda tup: tup[1])
+
     #get set of sites for which models have been fit (for overlays)
     outputs = os.listdir(cfg.RESULTS_FOLDER)
     avail_mods = list(set([o[7:len(o) - 9] for o in outputs if o[0:3] == 'mod']))
 
     return render_template('visualize.html', sites=sitedict,
-        powell_sites=sitedictP, avail_mods=avail_mods)
+        powell_sites=sitedictP, nwqp_sites=sitedictNWQP, avail_mods=avail_mods)
 
 @app.route('/_getgrabvars', methods=["POST"])
 def getgrabvars():
@@ -3867,7 +3934,13 @@ def interquartile():
 
     var = request.json['variable']
     dsource = request.json['source']
-    src = 'powell' if dsource == 'pow' else 'data'
+    if dsource == 'pow':
+        src = 'powell'
+    elif dsource == 'nwqp':
+        src = 'nwqp'
+    else:
+        src = 'data'
+
     region, site = request.json['site'].split('_')
     # region='VT'; site='Pass'; var='DO_mgL'
 
@@ -3927,7 +4000,12 @@ def getviz():
     endDate = request.json['endDate']#.split("T")[0]
     variables = request.json['variables']
     dsource = request.json['source']
-    src = 'powell' if dsource == 'pow' else 'data'
+    if dsource == 'pow':
+        src = 'powell'
+    elif dsource == 'nwqp':
+        src = 'nwqp'
+    else:
+        src = 'data'
     # region='NC'; site='NHC'; startDate='2017-11-01'; endDate='2018-01-01'
     # region='AK'; site='CARI-down'; startDate='2018-04-01'; endDate='2018-04-20'
     # variables=['DO_mgL','WaterTemp_C','Light_lux']; src='data'
@@ -4401,6 +4479,8 @@ def api():
     #this function used to handle mutiple sites in a list,
     #but now that behavior is a relic
 
+    # sites=['WI_BEC'];startDate='2016-01-01';endDate='2016-12-31';variables='DO_mgL,DOsat_pct,satDO_mgL,WaterPres_kPa,Depth_m,WaterTemp_C,Light_PAR,AirPres_kPa,Discharge_m3s,Level_m'
+
     #pull in requests
     startDate = request.args.get('startdate')
     endDate = request.args.get('enddate')
@@ -4479,7 +4559,7 @@ def api():
 
     if len(xu) is not 0:
         # subset usgs data based on each site's dates
-        xx = pd.concat([xx,xu])
+        xx = pd.concat([xx,xu], sort=True)
 
     #rearrange columns
     # flagcols = ['flagtype','flagcomment']
@@ -5145,7 +5225,7 @@ def site_map():
 
     site_data = pd.read_sql('select id, region, site, name, latitude, ' +\
         'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
-        'from site where `by` != -902;', db.engine)
+        'from site where `by` not in (-902, -904);', db.engine)
     site_data.addDate = site_data.addDate.astype('str')
     site_dict = site_data.to_dict('records')
 
@@ -5157,8 +5237,15 @@ def site_map():
     #powell_sites = pd.read_csv('static/map/powell_sites.csv')
     #powell_dict = powell_sites.to_dict('records')
 
+    nwqp_data = pd.read_sql('select id, region, site, name, latitude, ' +\
+        'longitude, datum, usgs, addDate, embargo, site.by, contact, contactEmail ' +\
+        'from site where `by` = -904;', db.engine)
+    nwqp_data.addDate = nwqp_data.addDate.astype('str')
+    nwqp_dict = nwqp_data.to_dict('records')
+
     return render_template('map.html', site_data=site_dict,
-        core_sites=core_sites, powell_sites=powell_dict)
+        core_sites=core_sites, powell_sites=powell_dict,
+        nwqp_sites=nwqp_dict)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

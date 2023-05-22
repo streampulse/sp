@@ -1,5 +1,7 @@
 function(df){
 
+    print('find_outliers.R')
+
     #read in r packages
     library(imputeTS)
     library(plotrix)
@@ -131,6 +133,8 @@ function(df){
             while(length(outlier_inds) > 1 &
                     n_outlier_pieces > 50 & counter < 6){
 
+                # if(counter == 5) break
+
                 outdif = diff(outlier_inds)
                 rm_multjump = rm_oneway = NULL
 
@@ -231,6 +235,7 @@ function(df){
                 #for flagging in qa/qc
                 if(length(outlier_inds) %% 2 == 0){
                     outlier_inds = matrix(outlier_inds, ncol=2, byrow=TRUE)
+                    outlier_inds = outlier_inds[! outlier_inds[, 1] > outlier_inds[, 2], , drop=FALSE]
                     seq_list = mapply(function(x, y){ seq(x+1, y, 1) },
                         outlier_inds[,1], outlier_inds[,2],
                         SIMPLIFY=FALSE)
