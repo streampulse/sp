@@ -1403,7 +1403,8 @@
 
         var rejections = d3.select("." + selectedBrush)
           .selectAll('.plgapfill:not(.plflag):not(.invis):not(.plgapfixed), ' +
-            '.plgapfill2:not(.plflag):not(.invis):not(.plgapfixed)')
+            '.plgapfill2:not(.plflag):not(.invis):not(.plgapfixed), ' +
+            '.ploutlier:not(.plflag):not(.invis):not(.plgapfixed)')
           .filter(function(d) {
             var is_brushed = unstdt <= d.date && d.date <= unendt;
             return is_brushed;
