@@ -4,6 +4,14 @@
 # devtools::install_github('NEONScience/NEON-reaeration/reaRate')
 #rm(list=ls()); cat('\014')
 
+# setwd('/home/mike/git/streampulse/server_copy/sp/scheduled_scripts/')
+# known_sites <- c("WALK", "MCRA", "PRIN", "MAYF", "PRPO", "SUGG", "BLUE", "LECO", "LEWI", "CARI", "ARIK",
+#     "BARC", "GUIL", "COMO", "WLOU", "KING", "POSE", "MART", "CUPE", "HOPB", "MCDI", "REDB",
+#     "BIGC", "TOOK", "BLDE", "OKSR", "SYCA", "CRAM", "BLWA", "PRLA", "LIRO", "TOMB", "FLNT", "TECR")
+
+
+
+
 library(httr)
 library(jsonlite)
 library(dplyr)
@@ -44,19 +52,21 @@ prod_varlists = list(c('Level_m','SpecCond_uScm','DO_mgL','DOsat_pct','pH',
     'Nitrate_mgL', 'O2GasTransferVelocity_ms', 'Discharge_m3s', 'WaterTemp_C')#,
     # 'Depth_m')
 
-
-varname_mappings = list(sensorDepth='Level_m',
-    specificConductance='SpecCond_uScm',
-    dissolvedOxygen='DO_mgL',
-    dissolvedOxygenSaturation='DOsat_pct',
-    pH='pH',
-    chlorophyll='ChlorophyllA_ugL',
-    turbidity='Turbidity_FNU',
-    fDOM='fDOM_ppb',
-    surfWaterNitrateMean='Nitrate_mgL',
-    maxpostDischarge='Discharge_m3s',
-    surfWaterTempMean='WaterTemp_C',
-    surfacewaterElevMean='Depth_m')
+varname_mappings = list(
+    sensorDepth = 'Level_m',
+    specificConductance = 'SpecCond_uScm',
+    dissolvedOxygen = 'DO_mgL',
+    dissolvedOxygenSaturation = 'DOsat_pct',
+    localDissolvedOxygenSat = 'DOsat_pct',
+    pH = 'pH',
+    chlorophyll = 'ChlorophyllA_ugL',
+    turbidity = 'Turbidity_FNU',
+    fDOM = 'fDOM_ppb',
+    surfWaterNitrateMean = 'Nitrate_mgL',
+    maxpostDischarge = 'Discharge_m3s',
+    surfWaterTempMean = 'WaterTemp_C',
+    surfacewaterElevMean = 'Depth_m'
+)
 
 #update log file
 write(paste('\n\tRunning script at:', Sys.time()),
@@ -284,6 +294,7 @@ for(p in 1:length(products)){
                 varind = grep('SciRvw', colnames(data))
                 rgx = str_match(colnames(data)[varind],
                     '^(\\w*)(?:FinalQFSciRvw|SciRvwQF)$')
+                rgx <- rgx[!grepl('seaLevel|chlaRelFluoro', rgx[, 1]), ]
                 varlist = flagprefixlist = rgx[,2]
                 if('specificCond' %in% varlist){
                     varlist[which(varlist == 'specificCond')] =
@@ -292,6 +303,10 @@ for(p in 1:length(products)){
                 if('dissolvedOxygenSat' %in% varlist){
                     varlist[which(varlist == 'dissolvedOxygenSat')] =
                         'dissolvedOxygenSaturation'
+                }
+                if ('localDOSat' %in% varlist) {
+                    varlist[which(varlist == 'localDOSat')] =
+                        'localDissolvedOxygenSat'
                 }
                 varlist = varlist[varlist != 'fDOM']
             } else if(prods_abb[p] == 'Nitrate'){
