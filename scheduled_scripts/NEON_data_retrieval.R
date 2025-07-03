@@ -785,20 +785,20 @@ for (p in 1:length(products)) {
     #below: two ways to ensure consistent sample interval of 15 mins. appears not
     #to be necessary after full test on DO product and all its variables+sites
 
-    d_collect <- d_collect %>%
-        mutate(
-            m15 = floor_date(as.POSIXct(DateTime_UTC), '15 minutes')
-        ) %>%
-        group_by(m15, site, variable) %>%
-        summarize(across(everything(), first), .groups = 'drop') %>%
-        select(-m15)
+    # d_collect <- d_collect %>%
+    #     mutate(
+    #         m15 = floor_date(as.POSIXct(DateTime_UTC), '15 minutes')
+    #     ) %>%
+    #     group_by(m15, site, variable) %>%
+    #     summarize(across(everything(), first), .groups = 'drop') %>%
+    #     select(-m15)
 
     # setDT(d_collect)
     # d_collect[, m15 := floor_date(as.POSIXct(DateTime_UTC), "15 minutes")]
     # summary_cols <- setdiff(names(d_collect), c("m15", "site", "variable"))
     # d_collect <- d_collect[, lapply(.SD, first), by = .(m15, site, variable)]
     # d_collect[, m15 := NULL]
-    browser()
+
     dbWriteTable(con, 'data', d_collect, append = TRUE)
 
     write(
