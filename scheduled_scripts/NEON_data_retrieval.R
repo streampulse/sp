@@ -146,9 +146,9 @@ for (p in 1:length(products)) {
     retrieved_sets = paste(resout$site, resout$date)
 
     #for non-waterqual, only ingest datasets for which we have waterqual (DO, etc) data
-    if (prods_abb[p] == 'DO') {
-        relevant_sitemonths = retrieved_sets
-    }
+    # if (prods_abb[p] == 'DO') {
+    #     relevant_sitemonths = retrieved_sets
+    # }
 
     #download list of available datasets for the current data product
     write(
@@ -180,15 +180,15 @@ for (p in 1:length(products)) {
         stringsAsFactors = FALSE
     )
 
-    if (prods_abb[p] == 'DO') {
-        relevant_sitemonths = c(
-            relevant_sitemonths,
-            do.call(paste, sets_to_grab[, 2:3])
-        )
-    } else {
-        in_DO = do.call(paste, sets_to_grab[, 2:3]) %in% relevant_sitemonths
-        sets_to_grab = sets_to_grab[in_DO, ]
-    }
+    # if (prods_abb[p] == 'DO') {
+    #     relevant_sitemonths = c(
+    #         relevant_sitemonths,
+    #         do.call(paste, sets_to_grab[, 2:3])
+    #     )
+    # } else {
+    #     in_DO = do.call(paste, sets_to_grab[, 2:3]) %in% relevant_sitemonths
+    #     sets_to_grab = sets_to_grab[in_DO, ]
+    # }
 
     #filter sets known to have issues
     if (prods_abb[p] != 'DO') {
